@@ -1,0 +1,43 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+.tmp/
+tests/_artifacts/
+tests/.pytest-tmp/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Local/editor files
+.idea/
+.vscode/
+*.swp
+*.tmp
+
+# Project data and generated outputs
+data/raw/*
+!data/raw/README.md
+results/
+experiments/bootstrap/
+experiments/**/outputs/
+experiments/**/cache/
+paper/figures/generated/
+paper/tables/generated/
+
+# Large or local artifacts
+*.parquet
+*.h5
+*.hdf5
+*.pkl
+*.pickle
+*.zip
+*.tar
+*.tar.gz

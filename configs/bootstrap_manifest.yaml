@@ -1,0 +1,7 @@
+# Bootstrap smoke-run config.
+# This file is intentionally non-scientific; it exists only to verify that
+# the manifest writer and run target are wired correctly.
+run_id: bootstrap
+seed: 0
+task: E0.S3
+
