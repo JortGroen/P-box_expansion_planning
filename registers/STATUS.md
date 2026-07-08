@@ -8,7 +8,7 @@ Format: `Story | Owner | status | tasks | blocked-by | PR`
 | E0.S2 Control registers | C | done | 2/2 | -- | -- |
 | E0.S3 Run-manifest utility | C | done | 2/2 | -- | -- |
 | E0.S4 Agent working agreement | C | done | 1/1 | -- | -- |
-| E1.S1 Grid loading | A | todo | 0/3 | G0 | -- |
+| E1.S1 Grid loading | A | blocked | 1/3 | Q-1 | -- |
 | E1.S2 Laptop micro-benchmark | A | todo | 0/2 | E1.S1 | -- |
 | E1.S3 Time series & critical weeks | A | todo | 0/3 | G0, E1.S1 | -- |
 | E1.S4 Tier-1 evaluator | A | todo | 0/3 | G0 | -- |
