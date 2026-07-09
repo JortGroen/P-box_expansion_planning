@@ -8,7 +8,7 @@ Format: `Story | Owner | status | tasks | blocked-by | PR`
 | E0.S2 Control registers | C | done | 2/2 | -- | -- |
 | E0.S3 Run-manifest utility | C | done | 2/2 | -- | -- |
 | E0.S4 Agent working agreement | C | done | 1/1 | -- | -- |
-| E1.S1 Grid loading | A | review | 3/3 | -- | #2 |
+| E1.S1 Grid loading | A | done | 3/3 | -- | #2 |
 | E1.S2 Laptop micro-benchmark | A | todo | 0/2 | E1.S1 | -- |
 | E1.S3 Time series & critical weeks | A | todo | 0/3 | G0, E1.S1 | -- |
 | E1.S4 Tier-1 evaluator | A | todo | 0/3 | G0 | -- |
@@ -24,7 +24,7 @@ Format: `Story | Owner | status | tasks | blocked-by | PR`
 | E3.S4 CRN harness | A | todo | 0/2 | G1 | -- |
 | E4.S1 Dense rho sweep | B | todo | 0/3 | E3.S2, E3.S4 | -- |
 | E4.S2 Fallback stub | B | todo | 0/1 | E5 invariant skeleton | -- |
-| E5.S1 Fuzzy number class | B | review | 2/2 | -- | -- |
+| E5.S1 Fuzzy number class | B | done | 2/2 | -- | #1 |
 | E5.S2 Vertex propagation | B | todo | 0/3 | G3 or pre-G3 test mode | -- |
 | E5.S3 Model-error widening | B | todo | 0/1 | E5.S2 | -- |
 | E5.S4 Independent cross-check | B | todo | 0/2 | E5.S1-E5.S3 | -- |
