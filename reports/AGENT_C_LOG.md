@@ -25,3 +25,8 @@ DID: Created fresh branch `agent-c/E2.S1-license-register` from `origin/main`, r
 VERIFIED: Pre-change `.\scripts\task.ps1 test` passed 21 tests; post-change `.\scripts\task.ps1 test` passed 21 tests. Source checks found clear provenance for SimBench, When2Heat, PVGIS, EUR-Lex, and Mueller/Jansen, but unresolved license/access/source questions for ElaadNL, KNMI, IEC 60076-7, and Cicenas.
 OPEN: Q-2 blocks E2.S1 completion and any use/download/extraction for unclear-license or access-limited rows.
 NEXT: Wait for PI answer to Q-2, then either revise sources or record approved terms/checksums before preparing E2.S1 for sign-off.
+## 2026-07-09 01:20 - E2.S1.T2-T3 - blocked
+DID: Merged latest `origin/main` into `agent-c/E2.S1-license-register`, re-read the required instructions/registers, and continued only E2.S1 T2-T3. Resolved the KNMI license row to CC-BY-4.0 for the 10-minute in-situ dataset, clarified IEC 60076-7 as citation-only/no-download, and kept ElaadNL/Cicenas as explicit no-download rows pending PI approval.
+VERIFIED: Pre-change task-wrapper test passed 21 tests; post-change task-wrapper test passed 22 tests. Added a DATA_REGISTER placeholder guard for E2.S1 rows.
+OPEN: Q-2 remains blocking for ElaadNL reuse terms and the Cicenas source URL/file plus license terms. E2.S1 is not done and no raw data was downloaded.
+NEXT: Await PI answer to Q-2, then either replace sources or record approved source terms/checksums before moving E2.S1 to review.

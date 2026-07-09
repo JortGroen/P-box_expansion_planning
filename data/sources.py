@@ -63,10 +63,10 @@ _SOURCE_SPECS: tuple[SourceSpec, ...] = (
         item="PV and weather inputs",
         source="PVGIS plus KNMI historical weather",
         doi_url="PVGIS: https://re.jrc.ec.europa.eu/pvg_tools/en/; KNMI API: https://developer.dataplatform.knmi.nl/open-data-api",
-        license="PVGIS: free/no restrictions; KNMI reuse license not found during E2.S1.T2",
+        license="PVGIS: free/no restrictions; KNMI 10-minute in-situ dataset: CC-BY-4.0",
         retrieval_script="data/get_weather_pv.py",
         raw_subdir="weather_pv",
-        notes="No weather download until KNMI license/API-key terms are confirmed by PI.",
+        notes="No raw download in T2-T3; checksum must be recorded after selecting and downloading concrete PVGIS/KNMI files.",
     ),
     SourceSpec(
         data_id="D-008",

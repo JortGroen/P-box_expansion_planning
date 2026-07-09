@@ -40,3 +40,9 @@ def test_data_register_references_e2_s1_retrieval_scripts() -> None:
     for spec in source_specs():
         assert spec.data_id in register
         assert f"`{spec.retrieval_script}`" in register
+
+def test_data_register_has_no_e2_s1_placeholders() -> None:
+    register = Path("registers/DATA_REGISTER.md").read_text(encoding="utf-8")
+
+    for placeholder in ("TBD", "to check", "URL to verify", "DOI/URL to verify"):
+        assert placeholder not in register
