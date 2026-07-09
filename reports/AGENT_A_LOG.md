@@ -9,3 +9,9 @@ VERIFIED: `python -m pytest -p no:cacheprovider tests/test_grid_loader.py` passe
 OPEN: Q-1 blocks completion of E1.S1 live grid loading and deterministic baseline convergence. The PI dashboard checkout has unrelated modified files from cleanup; Agent A did not edit them further.
 NEXT: After Q-1 is resolved, run `src.grid_loader.inventory_rows()` in the approved environment, fill `reports/grid_inventory.md` with real inventory rows, and verify all three deterministic baselines converge.
 
+## 2026-07-09 14:48 - E1.S1 - done
+DID: Verified the approved `.venv` grid stack after DEP-001 (`pandapower 3.5.3`, `simbench 1.6.2`, `lightsim2grid 0.13.1`). Ran `src.grid_loader.inventory_rows()` for SimBench semi-urban, SimBench urban, and CIGRE MV. Updated `reports/grid_inventory.md` with real inventory rows and deterministic baseline convergence evidence; marked Q-1 resolved and E1.S1 ready for review.
+VERIFIED: `src.grid_loader.inventory_rows()` returned `baseline_converged: true` for all three candidate grids. `.\scripts\task.ps1 test` passed: 7 tests.
+OPEN: E1.S1 awaits PI review/G0 use. No E1.S2, E1.S3, or E1.S4 work was started.
+NEXT: PI reviews `reports/grid_inventory.md` for G0; Agent A waits for the next unblocked task or gate decision.
+
