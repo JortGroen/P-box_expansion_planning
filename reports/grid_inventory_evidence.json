@@ -1,0 +1,50 @@
+{
+  "config_hash": "1ba5f9c18c466dd3e6231dc43763291e7a0051804dcede80b30e6901daeb6f0e",
+  "config_path": "reports/grid_inventory_input.json",
+  "extra": {
+    "artifact_type": "grid_inventory_evidence",
+    "candidate_grids": [
+      {
+        "code": "1-MV-semiurb--0-sw",
+        "key": "simbench_semiurb",
+        "role": "primary candidate",
+        "source": "simbench"
+      },
+      {
+        "code": "1-MV-urban--0-sw",
+        "key": "simbench_urban",
+        "role": "secondary SimBench candidate",
+        "source": "simbench"
+      },
+      {
+        "code": "create_cigre_network_mv",
+        "key": "cigre_mv",
+        "role": "cross-check candidate",
+        "source": "pandapower"
+      }
+    ],
+    "command": ".\\.venv\\Scripts\\python.exe -c \"import json; from src.grid_loader import inventory_rows; print(json.dumps(inventory_rows(), indent=2, sort_keys=True))\"",
+    "task_id": "E1.S1",
+    "timestamp_utc": "2026-07-09T16:41:48.055938Z"
+  },
+  "git_commit": "485f5d77314439bf7fb1ae5b7d07894968ad40e6",
+  "output_checksums": {
+    "reports/grid_inventory.md": "db609911f413bf0a30cbfc0a6d502d773b4d139277976296c3d0af28ad0ec128"
+  },
+  "package_versions": {
+    "hypothesis": "6.156.4",
+    "lightsim2grid": "0.13.1",
+    "matplotlib": "3.11.0",
+    "numba": "0.66.0",
+    "numpy": "2.3.5",
+    "pandapower": "3.5.3",
+    "pandas": "2.3.3",
+    "pytest": "9.1.1",
+    "scipy": "1.16.3",
+    "simbench": "1.6.2"
+  },
+  "schema_version": 1,
+  "seeds": {
+    "none": "deterministic"
+  }
+}
