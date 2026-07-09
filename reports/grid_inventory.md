@@ -50,6 +50,12 @@ lightsim2grid 0.13.1
 `src.grid_loader.inventory_rows()` loaded all three candidate grids and ran the
 deterministic pandapower baseline power flow for each one.
 
+Run input and evidence:
+
+- `reports/grid_inventory_input.json` records the candidate grid codes and command.
+- `reports/grid_inventory_evidence.json` records the git commit, timestamp,
+  package versions, candidate grid codes, command, and checksum for this report.
+
 ## Inventory Table
 
 | key | role | code | buses | lines | trafos | loads | static_generators | total_load_mw | total_sgen_mw | line_length_km | trafo_s_rated_mva | baseline_converged |
