@@ -21,3 +21,9 @@ VERIFIED: Evidence manifest points to git commit `2b07fe6b1fb4b4a6b444b9975afe5a
 OPEN: E1.S1 remains ready for PI review/merge in PR #2; no E1.S2, E1.S3, or E1.S4 work was started.
 NEXT: PI reviews the added evidence artifact before merging E1.S1.
 
+## 2026-07-09 18:42 - E1.S1 - done
+DID: Updated `reports/grid_inventory.md` with the G0 aggregate-loading definition, primary decision-transformer `net.trafo` indices `[0, 1]`, unit count, nameplate MVA values, and closed busbar-parallel switch evidence. Regenerated `reports/grid_inventory_evidence.json` against the updated report and kept `registers/STATUS.md` at E1.S1 review.
+VERIFIED: Evidence manifest points to git commit `485f5d77314439bf7fb1ae5b7d07894968ad40e6` and report checksum `db609911f413bf0a30cbfc0a6d502d773b4d139277976296c3d0af28ad0ec128`.
+OPEN: PR #2 still awaits PI review/merge. No E1.S2, E1.S3, or E1.S4 work was started.
+NEXT: PI reviews the updated G0/E1.S1 evidence and transformer-detail sections before merging PR #2.
+
