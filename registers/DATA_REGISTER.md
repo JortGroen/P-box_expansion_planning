@@ -13,5 +13,5 @@ claims until the PI signs it.
 | D-005 | Flexibility delivery statistics | Mueller and Jansen 2019, Applied Energy 239:836-845 | DOI/URL to verify in E2.S1 | citation only | TBD | TBD | review tag to import | proposed | -- |
 | D-006 | EU flexibility procurement framing | EU Directive 2019/944 Article 32 | URL to verify in E2.S1 | public law | TBD | TBD | review tag to import | proposed | -- |
 | D-007 | Transformer loading rationale | IEC 60076-7 loading guide | standard reference to verify | standard; access limits to check | TBD | TBD | review tag to import | proposed | -- |
-| D-008 | Indicative Dutch unit costs | Cicenas 2025 TU Delft MSc thesis with Stedin/Eneco context | URL to verify in E2.S1 | to check | TBD | TBD | review tag to import | proposed | -- |
+| D-008 | Indicative Dutch unit costs | Cicenas 2025 TU Delft MSc thesis with Stedin/Eneco context | URL to verify in E2.S1 | to check | `data/get_unit_costs.py` | TBD | review tag to import | proposed | -- |
 
