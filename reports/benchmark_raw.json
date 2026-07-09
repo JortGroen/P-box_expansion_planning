@@ -1,0 +1,392 @@
+{
+  "benchmarks": [
+    {
+      "backend": "pandapower_native",
+      "backend_kwargs": {
+        "lightsim2grid": false
+      },
+      "converged": [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+      ],
+      "grid_code": "1-MV-semiurb--0-sw",
+      "grid_key": "simbench_semiurb",
+      "grid_summary": {
+        "baseline_converged": null,
+        "buses": 117,
+        "code": "1-MV-semiurb--0-sw",
+        "key": "simbench_semiurb",
+        "line_length_km": 67.28,
+        "lines": 121,
+        "loads": 115,
+        "max_line_i_ka": 0.28300000000000003,
+        "role": "primary candidate",
+        "source": "simbench",
+        "static_generators": 121,
+        "storages": 0,
+        "total_load_mw": 31.639999999999997,
+        "total_sgen_mw": 23.798999999999996,
+        "trafo3w": 0,
+        "trafo_s_rated_mva": 80.0,
+        "trafos": 2
+      },
+      "max_ms": 128.93290002830327,
+      "mean_ms": 108.49142001243308,
+      "median_ms": 104.93774997303262,
+      "min_ms": 90.16569994855672,
+      "stdev_ms": 12.367296504722011,
+      "timings_ms": [
+        106.63659998681396,
+        98.82909990847111,
+        90.16569994855672,
+        118.27760003507137,
+        123.61610005609691,
+        128.93290002830327,
+        114.69400010537356,
+        103.23889995925128,
+        100.3587000304833,
+        100.16460006590933
+      ],
+      "warmup_converged": [
+        true,
+        true
+      ]
+    },
+    {
+      "backend": "lightsim2grid_runpp",
+      "backend_kwargs": {
+        "lightsim2grid": true
+      },
+      "converged": [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+      ],
+      "grid_code": "1-MV-semiurb--0-sw",
+      "grid_key": "simbench_semiurb",
+      "grid_summary": {
+        "baseline_converged": null,
+        "buses": 117,
+        "code": "1-MV-semiurb--0-sw",
+        "key": "simbench_semiurb",
+        "line_length_km": 67.28,
+        "lines": 121,
+        "loads": 115,
+        "max_line_i_ka": 0.28300000000000003,
+        "role": "primary candidate",
+        "source": "simbench",
+        "static_generators": 121,
+        "storages": 0,
+        "total_load_mw": 31.639999999999997,
+        "total_sgen_mw": 23.798999999999996,
+        "trafo3w": 0,
+        "trafo_s_rated_mva": 80.0,
+        "trafos": 2
+      },
+      "max_ms": 244.7822999674827,
+      "mean_ms": 128.7976200110279,
+      "median_ms": 108.29534998629242,
+      "min_ms": 98.15420000813901,
+      "stdev_ms": 45.287425438256506,
+      "timings_ms": [
+        130.79220009967685,
+        166.01280006580055,
+        108.27339999377728,
+        106.87259992118925,
+        108.31729997880757,
+        98.15420000813901,
+        103.4194000530988,
+        244.7822999674827,
+        105.38870003074408,
+        115.96329999156296
+      ],
+      "warmup_converged": [
+        true,
+        true
+      ]
+    },
+    {
+      "backend": "pandapower_native",
+      "backend_kwargs": {
+        "lightsim2grid": false
+      },
+      "converged": [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+      ],
+      "grid_code": "1-MV-urban--0-sw",
+      "grid_key": "simbench_urban",
+      "grid_summary": {
+        "baseline_converged": null,
+        "buses": 144,
+        "code": "1-MV-urban--0-sw",
+        "key": "simbench_urban",
+        "line_length_km": 37.82,
+        "lines": 147,
+        "loads": 139,
+        "max_line_i_ka": 0.535,
+        "role": "secondary SimBench candidate",
+        "source": "simbench",
+        "static_generators": 134,
+        "storages": 0,
+        "total_load_mw": 49.706999999999994,
+        "total_sgen_mw": 13.557000000000002,
+        "trafo3w": 0,
+        "trafo_s_rated_mva": 126.0,
+        "trafos": 2
+      },
+      "max_ms": 152.24640001542866,
+      "mean_ms": 127.62432000599802,
+      "median_ms": 123.12910001492128,
+      "min_ms": 107.64120006933808,
+      "stdev_ms": 14.960023153713072,
+      "timings_ms": [
+        152.24640001542866,
+        138.9301000162959,
+        119.60480001289397,
+        134.8856999538839,
+        112.4460999853909,
+        107.64120006933808,
+        118.10039996635169,
+        146.77400002256036,
+        118.96110000088811,
+        126.65340001694858
+      ],
+      "warmup_converged": [
+        true,
+        true
+      ]
+    },
+    {
+      "backend": "lightsim2grid_runpp",
+      "backend_kwargs": {
+        "lightsim2grid": true
+      },
+      "converged": [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+      ],
+      "grid_code": "1-MV-urban--0-sw",
+      "grid_key": "simbench_urban",
+      "grid_summary": {
+        "baseline_converged": null,
+        "buses": 144,
+        "code": "1-MV-urban--0-sw",
+        "key": "simbench_urban",
+        "line_length_km": 37.82,
+        "lines": 147,
+        "loads": 139,
+        "max_line_i_ka": 0.535,
+        "role": "secondary SimBench candidate",
+        "source": "simbench",
+        "static_generators": 134,
+        "storages": 0,
+        "total_load_mw": 49.706999999999994,
+        "total_sgen_mw": 13.557000000000002,
+        "trafo3w": 0,
+        "trafo_s_rated_mva": 126.0,
+        "trafos": 2
+      },
+      "max_ms": 194.77240007836372,
+      "mean_ms": 117.8715200163424,
+      "median_ms": 114.59050001576543,
+      "min_ms": 71.36609998997301,
+      "stdev_ms": 34.204854634383075,
+      "timings_ms": [
+        123.99490003008395,
+        136.55579998157918,
+        114.09920000005513,
+        194.77240007836372,
+        105.14450003392994,
+        95.61489999759942,
+        85.60620003845543,
+        71.36609998997301,
+        115.08180003147572,
+        136.4793999819085
+      ],
+      "warmup_converged": [
+        true,
+        true
+      ]
+    },
+    {
+      "backend": "pandapower_native",
+      "backend_kwargs": {
+        "lightsim2grid": false
+      },
+      "converged": [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+      ],
+      "grid_code": "create_cigre_network_mv",
+      "grid_key": "cigre_mv",
+      "grid_summary": {
+        "baseline_converged": null,
+        "buses": 15,
+        "code": "create_cigre_network_mv",
+        "key": "cigre_mv",
+        "line_length_km": 24.949999999999996,
+        "lines": 15,
+        "loads": 18,
+        "max_line_i_ka": 0.195,
+        "role": "cross-check candidate",
+        "source": "pandapower",
+        "static_generators": 9,
+        "storages": 0,
+        "total_load_mw": 44.742149999999995,
+        "total_sgen_mw": 1.71,
+        "trafo3w": 0,
+        "trafo_s_rated_mva": 50.0,
+        "trafos": 2
+      },
+      "max_ms": 98.75820006709546,
+      "mean_ms": 85.46199002303183,
+      "median_ms": 86.95515006547794,
+      "min_ms": 63.69770003948361,
+      "stdev_ms": 13.347609326030124,
+      "timings_ms": [
+        81.30550000350922,
+        63.69770003948361,
+        80.56839997880161,
+        98.75820006709546,
+        98.7322999862954,
+        97.7275000186637,
+        91.48340008687228,
+        95.4386000521481,
+        82.4269000440836,
+        64.48139995336533
+      ],
+      "warmup_converged": [
+        true,
+        true
+      ]
+    },
+    {
+      "backend": "lightsim2grid_runpp",
+      "backend_kwargs": {
+        "lightsim2grid": true
+      },
+      "converged": [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+      ],
+      "grid_code": "create_cigre_network_mv",
+      "grid_key": "cigre_mv",
+      "grid_summary": {
+        "baseline_converged": null,
+        "buses": 15,
+        "code": "create_cigre_network_mv",
+        "key": "cigre_mv",
+        "line_length_km": 24.949999999999996,
+        "lines": 15,
+        "loads": 18,
+        "max_line_i_ka": 0.195,
+        "role": "cross-check candidate",
+        "source": "pandapower",
+        "static_generators": 9,
+        "storages": 0,
+        "total_load_mw": 44.742149999999995,
+        "total_sgen_mw": 1.71,
+        "trafo3w": 0,
+        "trafo_s_rated_mva": 50.0,
+        "trafos": 2
+      },
+      "max_ms": 103.66939997766167,
+      "mean_ms": 90.56454999372363,
+      "median_ms": 91.03179996600375,
+      "min_ms": 78.04419996682554,
+      "stdev_ms": 7.497586574213134,
+      "timings_ms": [
+        85.42540005873889,
+        91.46079991478473,
+        103.66939997766167,
+        95.98260000348091,
+        96.35550004895777,
+        78.04419996682554,
+        86.54299995396286,
+        83.08939996641129,
+        94.47240002918988,
+        90.60280001722276
+      ],
+      "warmup_converged": [
+        true,
+        true
+      ]
+    }
+  ],
+  "package_versions": {
+    "lightsim2grid": "0.13.1",
+    "numba": "0.66.0",
+    "numpy": "2.3.5",
+    "pandapower": "3.5.3",
+    "pandas": "2.3.3",
+    "simbench": "1.6.2"
+  },
+  "platform": "Windows-11-10.0.26200-SP0",
+  "python": "3.12.7",
+  "repeats": 10,
+  "schema_version": 1,
+  "task_id": "E1.S2",
+  "timeserie_probe": {
+    "has_high_level_TimeSerie": false,
+    "has_raw_TimeSeriesCPP": true,
+    "module_imported": true,
+    "note": "Installed package exposes raw TimeSeriesCPP but not the high-level TimeSerie helper; no direct TimeSerie benchmark was run in E1.S2.",
+    "public_symbols": [
+      "Computers",
+      "GRID2OP_INSTALLED",
+      "SolverType",
+      "TimeSeriesCPP",
+      "np",
+      "warnings"
+    ]
+  },
+  "warmups": 2
+}
