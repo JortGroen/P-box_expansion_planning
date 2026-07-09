@@ -14,3 +14,9 @@ DID: Restarted in the dedicated Agent C worktree and re-read `AGENTS.md`, `agent
 VERIFIED: `DECISIONS.md` shows G0 pending; `STATUS.md` marks E2.S1 blocked by G0. No implementation performed.
 OPEN: E2.S1 cannot start until the PI passes or revises G0.
 NEXT: Wait for G0, or reassign Agent C to a non-gated support task explicitly approved by the PI.
+
+## 2026-07-09 00:00 - E2.S1 - in-progress
+DID: Started E2.S1 under signed G0. Added metadata-first retrieval script entrypoints for SimBench, ElaadNL, When2Heat, KNMI/PVGIS, and unit-cost provenance, plus a shared source registry and tests. No raw data was downloaded and no license/status row was signed.
+VERIFIED: Pre-implementation `.\scripts\task.ps1 test` passed 14 tests; post-change `.\scripts\task.ps1 test` passed 17 tests.
+OPEN: URL/license checks, checksums, and PI sign-off remain open for E2.S1 T2-T3.
+NEXT: Continue E2.S1 T2 license/URL verification, then record checksums and update DATA_REGISTER rows.
