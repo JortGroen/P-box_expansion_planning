@@ -20,3 +20,8 @@ DID: Started E2.S1 under signed G0. Added metadata-first retrieval script entryp
 VERIFIED: Pre-implementation `.\scripts\task.ps1 test` passed 14 tests; post-change `.\scripts\task.ps1 test` passed 17 tests.
 OPEN: URL/license checks, checksums, and PI sign-off remain open for E2.S1 T2-T3.
 NEXT: Continue E2.S1 T2 license/URL verification, then record checksums and update DATA_REGISTER rows.
+## 2026-07-09 00:40 - E2.S1.T2-T3 - blocked
+DID: Created fresh branch `agent-c/E2.S1-license-register` from `origin/main`, re-read the required instructions/registers, and continued only E2.S1 T2-T3. Updated `DATA_REGISTER.md` with verified URLs/licenses where clear, explicit no-download rationales where no file was downloaded, and `proposed-blocked` rows where source/license/access terms remain unclear.
+VERIFIED: Pre-change `.\scripts\task.ps1 test` passed 21 tests; post-change `.\scripts\task.ps1 test` passed 21 tests. Source checks found clear provenance for SimBench, When2Heat, PVGIS, EUR-Lex, and Mueller/Jansen, but unresolved license/access/source questions for ElaadNL, KNMI, IEC 60076-7, and Cicenas.
+OPEN: Q-2 blocks E2.S1 completion and any use/download/extraction for unclear-license or access-limited rows.
+NEXT: Wait for PI answer to Q-2, then either revise sources or record approved terms/checksums before preparing E2.S1 for sign-off.

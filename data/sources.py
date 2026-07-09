@@ -31,52 +31,52 @@ _SOURCE_SPECS: tuple[SourceSpec, ...] = (
     SourceSpec(
         data_id="D-001",
         item="SimBench benchmark grids and time series",
-        source="SimBench dataset paper and package",
-        doi_url="DOI/URL to verify in E2.S1",
-        license="to check",
+        source="SimBench package and official repository",
+        doi_url="https://github.com/e2nIEE/simbench; package pin simbench==1.6.2",
+        license="Database: ODbL 1.0 with DbCL 1.0 contents; code: BSD-3-Clause",
         retrieval_script="data/get_simbench.py",
         raw_subdir="simbench",
-        notes="Package-backed source; no raw data redistribution without license confirmation.",
+        notes="No raw download: use the pinned package source; raw redistribution is not committed.",
     ),
     SourceSpec(
         data_id="D-002",
         item="EV charging behavior",
         source="ElaadNL open datasets",
-        doi_url="URL to verify in E2.S1",
-        license="to check",
+        doi_url="https://elaad.nl/delen/download",
+        license="Unclear on public download page; no reuse license found during E2.S1.T2",
         retrieval_script="data/get_elaadnl.py",
         raw_subdir="elaadnl",
-        notes="Metadata-only until URL, license, and checksum workflow are confirmed.",
+        notes="No download until PI confirms license/terms or replacement source.",
     ),
     SourceSpec(
         data_id="D-003",
         item="Heat-pump profiles",
         source="When2Heat, Open Power System Data",
-        doi_url="DOI 10.25832/when2heat",
-        license="to check",
+        doi_url="https://doi.org/10.25832/when2heat/2023-07-27; https://data.open-power-system-data.org/when2heat/",
+        license="Creative Commons Attribution 4.0",
         retrieval_script="data/get_when2heat.py",
         raw_subdir="when2heat",
-        notes="Metadata-only until retrieval URL and license are confirmed.",
+        notes="No raw download in T2-T3; checksum must be recorded after selecting and downloading a concrete file.",
     ),
     SourceSpec(
         data_id="D-004",
         item="PV and weather inputs",
-        source="PVGIS plus KNMI or DWD/ERA5 weather",
-        doi_url="URLs to verify in E2.S1",
-        license="to check",
+        source="PVGIS plus KNMI historical weather",
+        doi_url="PVGIS: https://re.jrc.ec.europa.eu/pvg_tools/en/; KNMI API: https://developer.dataplatform.knmi.nl/open-data-api",
+        license="PVGIS: free/no restrictions; KNMI reuse license not found during E2.S1.T2",
         retrieval_script="data/get_weather_pv.py",
         raw_subdir="weather_pv",
-        notes="G0 selects KNMI historical winters; PVGIS/KNMI URLs still need verification.",
+        notes="No weather download until KNMI license/API-key terms are confirmed by PI.",
     ),
     SourceSpec(
         data_id="D-008",
         item="Indicative Dutch unit costs",
         source="Cicenas 2025 TU Delft MSc thesis with Stedin/Eneco context",
-        doi_url="URL to verify in E2.S1",
-        license="to check",
+        doi_url="Source URL/file required from PI; verified literature-review anchor exists",
+        license="Unclear until thesis source URL/file and reuse terms are confirmed",
         retrieval_script="data/get_unit_costs.py",
         raw_subdir="unit_costs",
-        notes="Metadata-only until source URL, license, and extraction target are confirmed.",
+        notes="No extraction until PI supplies or approves the source URL/file and license terms.",
     ),
 )
 
@@ -117,7 +117,7 @@ def write_metadata(
     directory.mkdir(parents=True, exist_ok=True)
     payload: dict[str, object] = asdict(spec)
     payload["download_performed"] = False
-    payload["status"] = "metadata-only; pending license and URL verification"
+    payload["status"] = "metadata-only; pending PI sign-off before data use"
     if extra:
         payload["extra"] = dict(sorted(extra.items()))
 

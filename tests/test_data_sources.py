@@ -30,7 +30,7 @@ def test_metadata_writer_records_no_download_by_default() -> None:
     payload = json.loads(path.read_text(encoding="utf-8"))
     assert payload["data_id"] == "D-003"
     assert payload["download_performed"] is False
-    assert payload["status"] == "metadata-only; pending license and URL verification"
+    assert payload["status"] == "metadata-only; pending PI sign-off before data use"
     assert payload["extra"] == {"test": True}
 
 

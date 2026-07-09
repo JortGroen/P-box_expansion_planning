@@ -14,7 +14,6 @@ RECOMMENDATION: <A or B, one line why>
 STATUS: open
 ```
 
-No open questions yet.
 
 ## Q-1 - E1.S1 - 2026-07-08 - BLOCKING: yes
 CONTEXT: Agent A prepared the E1.S1 grid loader in `src/grid_loader.py`, but the live grid-stack probe hangs inside `import simbench`. The command `python -u -c "print('start'); import simbench as sb; print('simbench imported', getattr(sb, '__version__', 'unknown'))"` printed only `start` and did not complete after several minutes.
@@ -22,4 +21,11 @@ QUESTION: How should Agent A resolve the local Python/grid-stack import hang so 
 OPTIONS: A) PI repairs/provides the approved Python environment for the Agent A worktree - E1.S1 can then run exactly as specified.  B) PI authorizes Agent A to create or repair an isolated environment for this worktree - may require package installation/network access but keeps E1.S1 moving.
 RECOMMENDATION: A, because E0 already defines the approved environment and this avoids Agent A changing dependencies or environment policy.
 STATUS: resolved by DEP-001 in `registers/DECISIONS.md`; verified in Agent A `.venv` on 2026-07-09.
+
+## Q-2 - E2.S1 - 2026-07-09 - BLOCKING: yes
+CONTEXT: Agent C performed E2.S1.T2 URL/license checks for the data register. SimBench, When2Heat, PVGIS, EUR-Lex, and the Mueller/Jansen citation have clear enough provenance for proposed no-download rows, but ElaadNL has no explicit reuse license on the public download page, KNMI API access is documented without a located reuse license, IEC 60076-7 is access-limited, and the Cicenas thesis source URL/file plus reuse terms are not in the repo.
+QUESTION: Should Agent C keep these unclear/access-limited sources as no-download proposed rows until PI supplies/approves source terms, or replace any of them before E2.S1 can be sign-off-ready?
+OPTIONS: A) PI supplies or approves license/access/source details for ElaadNL, KNMI, IEC 60076-7, and Cicenas before any download/extraction/use - E2.S1 remains blocked but preserves provenance.  B) PI replaces one or more unclear sources with alternatives that have explicit open licenses - E2.S1 T2-T3 continues after register revision.
+RECOMMENDATION: A, because project rules require escalation when a data license is unclear and the current rows already preserve explicit no-download rationales.
+STATUS: open
 
