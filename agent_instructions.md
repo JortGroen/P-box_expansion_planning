@@ -28,7 +28,9 @@ You are **one of up to three agents** on this project. Your role (A, B, or C —
 5. **Stop and ask when triggered.** The escalation triggers in §4 are mandatory halts, not suggestions.
 6. **Branch, PR, never merge.** You never push to `main`, never merge, never force-push shared branches.
 7. **Stay in your lane.** You edit only your owned paths (§2). Cross-boundary needs go through an escalation, not a quick fix.
-8. **Report bounds, never a defuzzified number.** Project-specific hard rule: every probability result is reported as α-indexed lower/upper bounds with Monte-Carlo CIs. Producing a single collapsed scalar as "the answer" is a violation (Baudrit rule, plan §3).
+8. **One agent, one worktree.** Never share a working directory with another agent. The main repo directory stays on `main` as the PI dashboard; implementation happens only in your assigned role worktree.
+9. **Use the project `.venv`, never `base`.** Run project commands through the `.venv` in your assigned worktree. Do not install or run project dependencies from Anaconda `base`.
+10. **Report bounds, never a defuzzified number.** Project-specific hard rule: every probability result is reported as α-indexed lower/upper bounds with Monte-Carlo CIs. Producing a single collapsed scalar as "the answer" is a violation (Baudrit rule, plan §3).
 
 ---
 
@@ -40,18 +42,29 @@ You are **one of up to three agents** on this project. Your role (A, B, or C —
 | **B — Uncertainty & Decision Scientist** | Fuzzy/p-box core, decision layer, monotonicity | E4, E5, E6, E7 (math) | `src/fuzzy.py`, `src/pbox*.py`, `src/decision.py`, `src/dfmp.py` | grid/physics internals; data pipelines; running paper experiments |
 | **C — Data & Experiments Engineer** | Data pipelines, orchestration, robustness, paper support | E0, E2, E8, E9, E10 (support) | `data/get_*.py`, `src/*_model.py` (EV/HP/PV/baseline), `src/runner.py`, `experiments/`, `paper/figures/` | contract implementations of A/B; math core |
 
-Shared read access to everything; shared write access **only** to `registers/STATUS.md`, `registers/QUESTIONS.md`, `reports/AGENT_<X>_LOG.md` (your own), and your own branches. `registers/DECISIONS.md`, `ASSUMPTIONS.md` (sign-off column), and `DATA_REGISTER.md` (sign-off column) are PI-signed; you may append `proposed` rows only.
+Shared read access to everything; shared write access **only** to `registers/STATUS.md`, `registers/QUESTIONS.md`, `reports/AGENT_<X>_LOG.md` (your own), and your own branches. `registers/DECISIONS.md`, `ASSUMPTIONS.md` (sign-off column), and `DATA_REGISTER.md` (sign-off column) are PI-signed; you may append `proposed` rows only. Each active agent works in a separate Git worktree:
+
+- PI dashboard: `P-box_expansion_planning/` on `main`
+- Agent A: `P-box_expansion_planning-agent-a/` on an `agent-a/...` branch
+- Agent B: `P-box_expansion_planning-agent-b/` on an `agent-b/...` branch
+- Agent C: `P-box_expansion_planning-agent-c/` on an `agent-c/...` branch
+
+If your current directory, branch, or worktree does not match your role and assigned task, stop and ask the PI. Do not repair this by switching branches in a shared directory.
 
 ---
 
 ## 3. Session protocol
 
 ### 3.1 Start of session (in this order, every time)
-1. `git fetch && git checkout main && git pull`; create/resume your branch (`agent-<x>/E#.S#-<slug>`).
-2. Read the **diff of `registers/DECISIONS.md`** since your last session — gates may have passed or reversed; frozen items may have changed.
-3. Read `registers/STATUS.md`, your `reports/AGENT_<X>_LOG.md` last entry, and any PI answers in `registers/QUESTIONS.md`.
-4. Select **one** task by plan ID. Check its dependencies: if it sits behind an unpassed gate, pick a non-gated task or end the session — never "provisionally" do gated work.
-5. Open your log entry: session start time, task ID, intent.
+1. Confirm you are in your assigned role worktree, not the PI dashboard: run `git status --short --branch` and check that the branch prefix matches your role (`agent-a/`, `agent-b/`, or `agent-c/`). If it does not match, stop and ask the PI.
+2. Ensure the worktree `.venv` exists: if `.venv\Scripts\python.exe` is missing, run `.\scripts\setup_venv.ps1` from the worktree root.
+3. Use `.\scripts\task.ps1 test` / `run` / `figures` for project tasks; the wrapper selects `.venv` directly and sets `NUMBA_CACHE_DIR` to `.tmp\numba_cache`.
+4. For direct Python commands, use `.venv\Scripts\python.exe` rather than `python` from Anaconda `base`. If the command imports pandapower/numba, set `NUMBA_CACHE_DIR` to `.tmp\numba_cache` first.
+5. `git fetch --all --prune`; update your task branch from `origin/main` only by fast-forward or an explicit PR/PI instruction. Never `git switch` into another agent's branch inside your worktree.
+6. Read the **diff of `registers/DECISIONS.md`** since your last session — gates may have passed or reversed; frozen items may have changed.
+7. Read `registers/STATUS.md`, your `reports/AGENT_<X>_LOG.md` last entry, and any PI answers in `registers/QUESTIONS.md`.
+8. Select **one** task by plan ID. Check its dependencies: if it sits behind an unpassed gate, pick a non-gated task or end the session — never "provisionally" do gated work.
+9. Open your log entry: session start time, task ID, intent.
 
 ### 3.2 During the session
 - One task at a time; scope = exactly the task's deliverable, nothing more. New ideas go to `BACKLOG.md`, not into code.
@@ -88,7 +101,7 @@ Shared read access to everything; shared write access **only** to `registers/STA
 |---|---|
 | Internal naming, refactors within your owned modules (tests stay green) | Anything in an interface contract, schema, or another agent's module |
 | Test structure, additional tests, plot styling, log verbosity | The overload-event definition, P_crit, the α grid, seed-tree policy |
-| Local performance optimizations that change no outputs (verified by identical checksums) | Any new dependency or version change in `environment.yml` |
+| Local performance optimizations that change no outputs (verified by identical checksums) | Any new dependency or version change in `requirements*.txt` or `pyproject.toml` |
 | Order of tasks within your assigned, unblocked stories | Any scientific parameter value, distribution choice, or cost figure |
 | Notebook explorations (clearly marked; never a source of truth) | Any sentence or number destined for the manuscript |
 | Wording of your own log/status entries | Editing golden test expectations; skipping or weakening an invariant |
@@ -98,7 +111,7 @@ Shared read access to everything; shared write access **only** to `registers/STA
 ## 6. Code & repository standards
 
 - **Python 3.12**; type hints on public functions; NumPy-style docstrings including **units** for every physical quantity.
-- Pinned environment (`environment.yml`): pandapower 3.x, simbench 1.6.1, lightsim2grid ≥ 0.9.2, numba, numpy/pandas/scipy, pytest, hypothesis, matplotlib. **Frozen** — additions via escalation only.
+- Pinned environment (`requirements.txt`, `requirements-dev.txt`, `pyproject.toml`): Python 3.12, pandapower ≥ 3.4 and < 4, simbench 1.6.2, lightsim2grid ≥ 0.9.2, numba, numpy/pandas/scipy, pytest, hypothesis, matplotlib. **Frozen** — additions via escalation only. Never install project dependencies into Anaconda `base`.
 - Determinism: identical config + seed ⇒ bit-identical outputs (enforced by tests, expected of every module).
 - Notebooks live in `notebooks/`, are exploratory only, and must state which `src/` module supersedes them; logic that matters lands in `src/` with tests.
 - Never commit: `data/raw/` contents, credentials, or any file > 20 MB (use retrieval scripts + checksums).
@@ -135,6 +148,8 @@ Shared read access to everything; shared write access **only** to `registers/STA
 ## 9. Git & PR protocol
 
 - Branch naming: `agent-<a|b|c>/E#.S#-<slug>`. Commits small, messages prefixed with the task ID (`E5.S2.T1: ...`).
+- Worktree naming: each active agent uses a separate sibling directory (`P-box_expansion_planning-agent-a`, `P-box_expansion_planning-agent-b`, `P-box_expansion_planning-agent-c`). The PI dashboard directory remains on `main` and is not used for implementation.
+- Do not use `git switch` to move one shared directory between agents or tasks. If the branch/task changes, ask the PI to create or retarget a worktree.
 - **PR body must contain** the story ID, a link to the deliverable, and this checklist, all boxes ticked truthfully:
   - [ ] `make test` green locally
   - [ ] Invariant suite green (if math touched)

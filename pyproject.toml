@@ -7,7 +7,16 @@ name = "pbox-expansion-planning"
 version = "0.1.0"
 description = "P-box uncertainty propagation for flexibility-aware distribution grid reinforcement deferral."
 requires-python = ">=3.12"
-dependencies = []
+dependencies = [
+  "numpy>=1.26,<2.4",
+  "pandas>=2.3,<2.4",
+  "scipy<1.17",
+  "numba",
+  "matplotlib",
+  "pandapower>=3.4,<4",
+  "simbench==1.6.2",
+  "lightsim2grid>=0.9.2",
+]
 
 [project.optional-dependencies]
 dev = [
@@ -18,4 +27,3 @@ dev = [
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]
-

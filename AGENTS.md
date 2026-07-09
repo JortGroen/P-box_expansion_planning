@@ -13,12 +13,23 @@ Authority order:
 Bootstrap rules:
 
 - If your role is not stated as Agent A, B, or C, stop and ask the PI before implementation.
+- Work from your assigned role worktree only; the main repository directory is the PI dashboard and must stay on `main`.
+- Never share one working directory across agents, and never `git switch` to another agent's branch inside a role worktree.
+- Use the project `.venv` in your assigned worktree; never install or run project dependencies from Anaconda `base`.
+- Use `scripts/task.ps1`; it selects `.venv` and sets `NUMBA_CACHE_DIR=.tmp/numba_cache` for pandapower/numba imports.
 - Use one task ID from `actionable_project_plan_agentic.md` per session.
 - Work only in your owned paths.
 - Scientific values, dependency changes, interface changes, gate decisions, and manuscript numbers require PI approval.
 - Every experimental result must be produced through the runner and have a manifest.
 - Every new logic change needs tests.
 - Report alpha-indexed lower/upper bounds only; never report a defuzzified probability as the answer.
+
+Worktree layout:
+
+- PI dashboard: `P-box_expansion_planning/` on `main`
+- Agent A: `P-box_expansion_planning-agent-a/` on `agent-a/...`
+- Agent B: `P-box_expansion_planning-agent-b/` on `agent-b/...`
+- Agent C: `P-box_expansion_planning-agent-c/` on `agent-c/...`
 
 Agent logs:
 
@@ -34,4 +45,3 @@ Control registers:
 - `registers/RISKS.md`
 - `registers/STATUS.md`
 - `registers/QUESTIONS.md`
-
