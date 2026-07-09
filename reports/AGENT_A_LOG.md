@@ -15,3 +15,9 @@ VERIFIED: `src.grid_loader.inventory_rows()` returned `baseline_converged: true`
 OPEN: E1.S1 awaits PI review/G0 use. No E1.S2, E1.S3, or E1.S4 work was started.
 NEXT: PI reviews `reports/grid_inventory.md` for G0; Agent A waits for the next unblocked task or gate decision.
 
+## 2026-07-09 15:48 - E1.S1 - done
+DID: Added the version-controlled inventory input artifact `reports/grid_inventory_input.json` and generated `reports/grid_inventory_evidence.json` beside the grid inventory report. The evidence manifest records the source git commit, command, package versions, candidate grid codes, timestamp, and checksum for `reports/grid_inventory.md`. Kept `registers/STATUS.md` at E1.S1 review.
+VERIFIED: Evidence manifest points to git commit `2b07fe6b1fb4b4a6b444b9975afe5a468bb98d05` and report checksum `350c62ceac487d04a0c98c733c3da674d6c5da0564582934a55e2b3b85b8ba0b`.
+OPEN: E1.S1 remains ready for PI review/merge in PR #2; no E1.S2, E1.S3, or E1.S4 work was started.
+NEXT: PI reviews the added evidence artifact before merging E1.S1.
+
