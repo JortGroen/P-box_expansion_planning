@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "task_id": "E1.S1",
+  "description": "Candidate grid inventory and deterministic baseline convergence run for G0 evidence.",
+  "command": ".\\.venv\\Scripts\\python.exe -c \"import json; from src.grid_loader import inventory_rows; print(json.dumps(inventory_rows(), indent=2, sort_keys=True))\"",
+  "numba_cache_dir": ".tmp\\numba_cache",
+  "candidate_grids": [
+    {
+      "key": "simbench_semiurb",
+      "source": "simbench",
+      "code": "1-MV-semiurb--0-sw"
+    },
+    {
+      "key": "simbench_urban",
+      "source": "simbench",
+      "code": "1-MV-urban--0-sw"
+    },
+    {
+      "key": "cigre_mv",
+      "source": "pandapower.networks",
+      "code": "create_cigre_network_mv"
+    }
+  ]
+}
