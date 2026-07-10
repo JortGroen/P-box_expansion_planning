@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "task_id": "E1.S2",
+  "description": "Laptop micro-benchmark for candidate-grid deterministic AC solves.",
+  "command": "Run the E1.S2 inline benchmark script from Agent A log/session: load CANDIDATE_GRIDS, run two warmups and ten measured pandapower.runpp solves per grid/backend, and write reports/benchmark_raw.json.",
+  "warmups": 2,
+  "repeats": 10,
+  "runpp_kwargs_common": {
+    "algorithm": "nr",
+    "calculate_voltage_angles": true,
+    "init": "auto"
+  },
+  "backends": [
+    {
+      "name": "pandapower_native",
+      "kwargs": {
+        "lightsim2grid": false
+      }
+    },
+    {
+      "name": "lightsim2grid_runpp",
+      "kwargs": {
+        "lightsim2grid": true
+      }
+    }
+  ],
+  "candidate_grids": [
+    {
+      "key": "simbench_semiurb",
+      "code": "1-MV-semiurb--0-sw"
+    },
+    {
+      "key": "simbench_urban",
+      "code": "1-MV-urban--0-sw"
+    },
+    {
+      "key": "cigre_mv",
+      "code": "create_cigre_network_mv"
+    }
+  ]
+}

@@ -27,3 +27,9 @@ VERIFIED: Evidence manifest points to git commit `485f5d77314439bf7fb1ae5b7d0789
 OPEN: PR #2 still awaits PI review/merge. No E1.S2, E1.S3, or E1.S4 work was started.
 NEXT: PI reviews the updated G0/E1.S1 evidence and transformer-detail sections before merging PR #2.
 
+## 2026-07-09 21:31 - E1.S2 - done
+DID: Ran the laptop AC micro-benchmark for E1.S1 candidate grids with native pandapower `runpp` and `runpp(lightsim2grid=True)`: 2 warmups and 10 measured solves per grid/backend. Wrote `reports/BENCHMARK.md`, `reports/benchmark_input.json`, `reports/benchmark_raw.json`, and `reports/benchmark_evidence.json`. The report includes timing summaries, a TimeSerie API probe, and a G1 budget table.
+VERIFIED: All measured solves converged. Primary-grid median timings were 104.938 ms native pandapower and 108.295 ms through the lightsim2grid `runpp` path. Evidence manifest points to git commit `0abb7f47d3856e57449346813f9aae001ac0d839` and checksums for `reports/BENCHMARK.md` and `reports/benchmark_raw.json`.
+OPEN: G1 remains pending PI review. No E1.S3, E1.S4, or E3 work was started.
+NEXT: PI reviews `reports/BENCHMARK.md` for G1 compute-plan decisions.
+
