@@ -25,7 +25,7 @@ Format: `Story | Owner | status | tasks | blocked-by | PR`
 | E4.S1 Dense rho sweep | B | todo | 0/3 | E3.S2, E3.S4 | -- |
 | E4.S2 Fallback stub | B | todo | 0/1 | E5 invariant skeleton | -- |
 | E5.S1 Fuzzy number class | B | done | 2/2 | -- | #1 |
-| E5.S2 Vertex propagation | B | todo | 0/3 | G3 or pre-G3 test mode | -- |
+| E5.S2 Vertex propagation | B | review | 3/3 | pre-G3 test mode | #6 |
 | E5.S3 Model-error widening | B | todo | 0/1 | E5.S2 | -- |
 | E5.S4 Independent cross-check | B | todo | 0/2 | E5.S1-E5.S3 | -- |
 | E6.S1 alpha_star | B | todo | 0/1 | E5.S2 | -- |
