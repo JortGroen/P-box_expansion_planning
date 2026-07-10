@@ -10,9 +10,11 @@ Format: `Story | Owner | status | tasks | blocked-by | PR`
 | E0.S4 Agent working agreement | C | done | 1/1 | -- | -- |
 | E1.S1 Grid loading | A | done | 3/3 | -- | #2 |
 | E1.S2 Laptop micro-benchmark | A | done | 2/2 | -- | #7 |
+| E1.S2b TimeSeriesCPP AC benchmark | A | todo | 0/3 | -- | -- |
+| E1.S1b Transformer headroom diagnostic | A | todo | 0/4 | -- | -- |
 | E1.S3 Time series & critical weeks | A | done | 3/3 | -- | #10 |
-| E1.S3b G0-A1 import-window diagnostic | A | todo | 0/4 | G0-A1, E1.S3 | -- |
-| E1.S4 Tier-1 evaluator | A | todo | 0/3 | G0 | -- |
+| E1.S3b G0-A1 import-window diagnostic | A | review | 4/4 | -- | #15 |
+| E1.S4 Tier-1 evaluator | A | todo | 0/5 | -- | -- |
 | E2.S1 Data acquisition | C | in-progress | 1/3 | -- | -- |
 | E2.S2 EV model | C | todo | 0/3 | E2.S1 | -- |
 | E2.S3 HP model | C | todo | 0/3 | E2.S1 | -- |
@@ -20,9 +22,9 @@ Format: `Story | Owner | status | tasks | blocked-by | PR`
 | E2.S5 Baseline & diversity | C | todo | 0/1 | E1.S3 | -- |
 | E2.S6 Adoption scenarios | C | todo | 0/2 | E2.S1 | -- |
 | E3.S1 Flexibility aggregator | A | todo | 0/3 | E2 models | -- |
-| E3.S2 IC-1 NetLoadProvider | A | todo | 0/3 | G1, E3.S1 | -- |
-| E3.S3 Tier-2 AC harness | A | todo | 0/2 | E1.S1, G1 | -- |
-| E3.S4 CRN harness | A | todo | 0/2 | G1 | -- |
+| E3.S2 IC-1 NetLoadProvider | A | todo | 0/3 | E3.S1 | -- |
+| E3.S3 Tier-2 AC harness | A | todo | 0/2 | E1.S1, E1.S2b | -- |
+| E3.S4 CRN harness | A | todo | 0/2 | -- | -- |
 | E4.S1 Dense rho sweep | B | todo | 0/3 | E3.S2, E3.S4 | -- |
 | E4.S2 Fallback stub | B | todo | 0/1 | E5 invariant skeleton | -- |
 | E5.S1 Fuzzy number class | B | done | 2/2 | -- | #1 |
