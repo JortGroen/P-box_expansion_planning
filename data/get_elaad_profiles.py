@@ -12,14 +12,19 @@ from data.sources import write_metadata
 
 
 def main(argv: Sequence[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Record KNMI/PVGIS source metadata for E2.S1.")
-    parser.add_argument("--metadata-dir", default="data/metadata")
+    parser = argparse.ArgumentParser(
+        description="Record ElaadNL profile-generator metadata for E2.S1."
+    )
+    parser.add_argument("--metadata-dir", default="data/metadata/elaad_profiles")
     args = parser.parse_args(argv)
 
     path = write_metadata(
-        "D-004",
+        "D-002",
         Path(args.metadata_dir),
-        extra={"g0_weather_scope": "KNMI historical winters including at least one design-cold winter"},
+        extra={
+            "generation_spec": "reports/elaad_profile_generation_spec.md",
+            "next_step": "one-profile API probe before bulk generation",
+        },
     )
     print(path)
     return 0
