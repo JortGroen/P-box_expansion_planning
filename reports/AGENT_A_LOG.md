@@ -39,3 +39,9 @@ VERIFIED: Pre-change `.\scripts\task.ps1 test` passed: 23 tests. Post-change `.\
 OPEN: SimBench-only diagnostic windows do not reach the 95% coverage reference: scenario 0 reaches at most 58.3%/45.8%/42.9% for top 24/96/672 annual steps, while scenarios 1 and 2 peak outside winter. E9.S3 still needs the planned full-year screen before a critical-window claim is validated. No E1.S4, E3, or lightsim2grid TimeSeriesCPP adapter work was started.
 NEXT: PI reviews the E1.S3 report and manifest for G1; Agent A waits for the next assigned task after PR review/merge.
 
+## 2026-07-10 20:41 - E1.S3b - done
+DID: Started fresh branch `agent-a/E1.S3b-import-window-diagnostic` from latest `origin/main`. Extended `src/profiles.py` with the G0-A1 import/export split, annual import-ranked week extraction, top-672 import-step coverage-vs-K, adaptive top-K plus one margin window proposal, and separate export-direction exceedance reporting. Generated `reports/import_window_diagnostic.md`, `reports/import_window_evidence.json`, `data/import_windows.csv`, `data/import_window_coverage.csv`, `data/import_window_proposal.csv`, `data/export_direction_exceedance.csv`, and `reports/import_window_coverage.png`.
+VERIFIED: Pre-change `.\scripts\task.ps1 test` passed: 33 tests. Post-change `.\scripts\task.ps1 test` passed: 37 tests. Manifest `reports/import_window_evidence.json` records git commit `077c510002b4b26a76deaf8413420f90c2f66335`, the G0-A1 command/config hash, package versions, scenario codes, transformer indices `[0, 1]`, and output checksums.
+OPEN: Deterministic SimBench import-window proposals reach the 95% top-672 target with base K 24/21/18 and selected K+1 windows 25/22/19 for scenarios 0/1/2. Export maxima are reported separately and stay below 1.0 p.u. in this screen; no G1 decision was made.
+NEXT: PI reviews E1.S3b PR as G1 evidence; Agent A waits for the next assigned task after review/merge.
+
