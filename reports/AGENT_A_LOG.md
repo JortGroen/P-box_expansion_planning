@@ -33,3 +33,9 @@ VERIFIED: All measured solves converged. Primary-grid median timings were 104.93
 OPEN: G1 remains pending PI review. No E1.S3, E1.S4, or E3 work was started.
 NEXT: PI reviews `reports/BENCHMARK.md` for G1 compute-plan decisions.
 
+## 2026-07-10 15:12 - E1.S3 - done
+DID: Started fresh branch `agent-a/E1.S3-time-series-critical-weeks` from latest `origin/main` after PR #7 merge. Added `src/profiles.py` for SimBench scenario 0/1/2 full-year profile ingestion, G0 aggregate decision-transformer loading, ranked winter critical-week extraction, and diagnostic annual top-step coverage. Generated `data/critical_weeks.csv`, coverage/summary CSVs, validation plots, `reports/critical_weeks_validation.md`, and `reports/critical_weeks_evidence.json` from `reports/critical_weeks_input.json`.
+VERIFIED: Pre-change `.\scripts\task.ps1 test` passed: 23 tests. Post-change `.\scripts\task.ps1 test` passed: 27 tests. Manifest `reports/critical_weeks_evidence.json` records git commit `643d4a8f6d3775125ab966bfc56c6fa9c3bb56f9`, package versions, input hash, scenario codes, transformer indices `[0, 1]`, output checksums, and that parquet was not written because no parquet engine is installed.
+OPEN: SimBench-only diagnostic windows do not reach the 95% coverage reference: scenario 0 reaches at most 58.3%/45.8%/42.9% for top 24/96/672 annual steps, while scenarios 1 and 2 peak outside winter. E9.S3 still needs the planned full-year screen before a critical-window claim is validated. No E1.S4, E3, or lightsim2grid TimeSeriesCPP adapter work was started.
+NEXT: PI reviews the E1.S3 report and manifest for G1; Agent A waits for the next assigned task after PR review/merge.
+

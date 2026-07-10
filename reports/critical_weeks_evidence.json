@@ -1,0 +1,64 @@
+{
+  "config_hash": "dab1567e9d62e45c1d03e31b5b451b84ea02b285d90329135b39bbc4cae041ad",
+  "config_path": "reports/critical_weeks_input.json",
+  "extra": {
+    "artifact_type": "critical_week_evidence",
+    "command": ".\\.venv\\Scripts\\python.exe -m src.profiles --config reports/critical_weeks_input.json",
+    "decision_transformer_indices": [
+      0,
+      1
+    ],
+    "parquet_written": false,
+    "scenario_codes": [
+      {
+        "grid_code": "1-MV-semiurb--0-sw",
+        "scenario": 0
+      },
+      {
+        "grid_code": "1-MV-semiurb--1-sw",
+        "scenario": 1
+      },
+      {
+        "grid_code": "1-MV-semiurb--2-sw",
+        "scenario": 2
+      }
+    ],
+    "task_id": "E1.S3",
+    "timestamp_utc": "2026-07-10T13:16:15.358421Z",
+    "top_counts": [
+      24,
+      96,
+      672
+    ],
+    "winter_months": [
+      12,
+      1,
+      2
+    ]
+  },
+  "git_commit": "643d4a8f6d3775125ab966bfc56c6fa9c3bb56f9",
+  "output_checksums": {
+    "data/critical_week_coverage.csv": "5c51d9d38afde72c4d40ef55eaf3d67899a340e2b0132ccd8b45f5c4024e9532",
+    "data/critical_week_summary.csv": "2d8a4968512fc8a6859ddb2a3719919d9b4998fbe1b3f0b641be1b24836e521a",
+    "data/critical_weeks.csv": "34cf20899ebbf278eb6f9add683a73b068e170f1525c78fdcfdf8332c180e3cf",
+    "reports/critical_week_coverage.png": "706d64d21a39bb5008db723e374ad46d3165aef0c4a73872860b5ca493f0aeda",
+    "reports/critical_week_loading.png": "c1e96a681e73d0f8847c5c8e47f32ddf6800304ac7c357f20474f5314517fab7",
+    "reports/critical_weeks_validation.md": "bd005107fc35bb5c95e44478cdb6bfe8dc9481204a00392e0288214736716490"
+  },
+  "package_versions": {
+    "hypothesis": "6.156.4",
+    "lightsim2grid": "0.13.1",
+    "matplotlib": "3.11.0",
+    "numba": "0.66.0",
+    "numpy": "2.3.5",
+    "pandapower": "3.5.3",
+    "pandas": "2.3.3",
+    "pytest": "9.1.1",
+    "scipy": "1.16.3",
+    "simbench": "1.6.2"
+  },
+  "schema_version": 1,
+  "seeds": {
+    "none": "deterministic"
+  }
+}
