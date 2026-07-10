@@ -9,3 +9,9 @@ VERIFIED: `python -m pytest` passed: 14 tests green, including hand-value fuzzy 
 OPEN: No open questions. The first sandboxed pytest run failed only because the sandbox could not write test artifacts in the Agent B worktree; rerun with approved elevated test access passed.
 NEXT: Prepare PR for `E5.S1` after committing the branch.
 
+## 2026-07-09 21:09 — E5.S2 — done
+DID: Implemented pre-G3 vertex p-box propagation in `src/pbox.py` with endpoint propagation for monotone-decreasing events, Wilson binomial CIs, deterministic common-random-number sample seeds, and bound-order/nestedness validators. Added synthetic tests for hand-counted endpoint probabilities, CRN reuse across endpoints/alpha levels, deterministic repeatability, bound order, nestedness, and validation errors.
+VERIFIED: `.\scripts\task.ps1 test` passed: 20 tests green. No paper experiments or grid-specific assumptions were run.
+OPEN: G3 is still pending; this implementation is for pre-G3 synthetic/test mode and must not be used for paper results until the monotonicity gate permits vertex propagation.
+NEXT: Prepare PR for `E5.S2`.
+
