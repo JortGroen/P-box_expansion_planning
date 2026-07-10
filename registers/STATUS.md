@@ -12,7 +12,7 @@ Format: `Story | Owner | status | tasks | blocked-by | PR`
 | E1.S2 Laptop micro-benchmark | A | todo | 0/2 | E1.S1 | -- |
 | E1.S3 Time series & critical weeks | A | todo | 0/3 | G0, E1.S1 | -- |
 | E1.S4 Tier-1 evaluator | A | todo | 0/3 | G0 | -- |
-| E2.S1 Data acquisition | C | blocked | 2/3 | Q-2 | -- |
+| E2.S1 Data acquisition | C | blocked | 2/3 | Q-3 | -- |
 | E2.S2 EV model | C | todo | 0/3 | E2.S1 | -- |
 | E2.S3 HP model | C | todo | 0/3 | E2.S1 | -- |
 | E2.S4 PV model | C | todo | 0/2 | E2.S1, G0 | -- |
@@ -50,4 +50,3 @@ Format: `Story | Owner | status | tasks | blocked-by | PR`
 | E10.S3 Repro package | C | todo | 0/3 | figures/results | -- |
 | E10.S4 Red team | all | todo | 0/1 | manuscript draft | -- |
 | E10.S5 Gates G6/G7 | HUMAN | todo | 0/1 | E10.S1-E10.S4 | -- |
-

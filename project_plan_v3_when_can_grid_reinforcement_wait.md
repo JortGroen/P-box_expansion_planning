@@ -71,7 +71,7 @@ The controllability assumption is a **trapezoidal fuzzy number ρ̃_flex** for t
 |---|---|---|
 | Weather (irradiance, temperature) | aleatory | probabilistic (KNMI/DWD reanalysis-driven) |
 | Baseline household demand | aleatory | probabilistic (SimBench/NEDU profiles + diversity) |
-| EV arrival time, SoC, energy | aleatory | probabilistic (ElaadNL-derived distributions) |
+| EV charging profiles | aleatory | probabilistic profile library generated with the ElaadNL Laadprofielengenerator, frozen and checksummed per `reports/elaad_profile_generation_spec.md` |
 | Household diversity | aleatory | probabilistic |
 | Technology adoption share (EV/HP/PV/battery) | deep/scenario | scenario set (II3050 / ElaadNL outlook) |
 | Flexibility controllability ρ_flex | epistemic/possibilistic | trapezoidal fuzzy number ρ̃_flex |
@@ -153,7 +153,7 @@ Where **pilot statistics exist**, build the possibility distribution from data v
 
 | Need | Recommended open source | Note |
 |---|---|---|
-| EV charging behaviour | **ElaadNL Open Datasets / Open Data Dashboard** (platform.elaad.io/download-data; aggregated public/workplace/home profiles 2018–2020; EVnetNL research set >1M transactions 2012–2016) | Build arrival/SoC/energy distributions |
+| EV charging behaviour | **ElaadNL Laadprofielengenerator** (dashboard https://charging.elaad.nl/; API docs https://api.charging.data.elaad.nl/docs#; project generation spec in `reports/elaad_profile_generation_spec.md`) | Build a frozen, seeded 15-minute EV profile library; bootstrap profiles per node/draw or use as calibration target |
 | Heat-pump load + COP | **When2Heat** (Open Power System Data, DOI 10.25832/when2heat; Ruhnau, Hirth & Praktiknjo 2019, *Scientific Data* 6:189, doi:10.1038/s41597-019-0199-y) — 28 European countries incl. NL, hourly; NEDU/MFFBAS Dutch profiles for baseline | Downscale hourly→15-min; temperature-driven for cold spell |
 | PV generation | **PVGIS** driven by **KNMI** (NL) or **DWD/ERA5** (SimBench-consistent) | Match weather source to grid provenance |
 | Weather | **KNMI open data** (NL); **DWD/ERA5** (SimBench) | Also feeds HP COP and demand |
@@ -187,7 +187,7 @@ Additional threats: (a) **monotonicity may fail** (rebound, reverse-PV) — nume
 
 **Stage 1 — Weeks 1–4 (foundation and the gating experiment).**
 1. Pin the environment; load the SimBench semi-urban/urban MV grid + time series; reproduce a deterministic annual power flow; extract critical winter weeks. *Go/no-go: SimBench + lightsim2grid run on the laptop.*
-2. Build the aleatory layer (EV ← ElaadNL, HP ← When2Heat, PV ← PVGIS/weather, baseline ← SimBench) and the nodal flexibility aggregator applying ρ.
+2. Build the aleatory layer (EV ← frozen ElaadNL profile-generator library, HP ← When2Heat, PV ← PVGIS/weather, baseline ← SimBench) and the nodal flexibility aggregator applying ρ.
 3. Implement net-load summation + Tier-2 AC validation harness + CRN. *Go/no-go: summation vs AC agree on transformer loading within tolerance.*
 4. **Run the monotonicity verification (dense ρ sweep).** *This is the decisive gate:* if overload probability is monotone in ρ in the demand-peak regime, adopt the vertex shortcut; if not (rebound/reverse-PV), switch that cut to interior sampling. This checkpoint sizes the entire compute plan.
 

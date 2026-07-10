@@ -1,0 +1,85 @@
+{
+  "accepted_simulated_year_values_observed": {
+    "2033": true,
+    "note": "Only one one-profile probe was executed; other years were not called in this session."
+  },
+  "api_docs_url": "https://api.charging.data.elaad.nl/docs#",
+  "api_docs_version_info": {
+    "live_api_version_header": null,
+    "local_documentation_version": "Documentatie Laadprofielengenerator, ElaadNL, 10 November 2025",
+    "outlook_basis": "Outlook Personenauto's 2024; Outlook Logistiek 2025",
+    "server_header": "uvicorn"
+  },
+  "api_url": "https://api.charging.data.elaad.nl/profile/simulate",
+  "bulk_generation_performed": false,
+  "dashboard_url": "https://charging.elaad.nl/",
+  "data_id": "D-002",
+  "output_shape": {
+    "first_datetime": "2024-12-31T23:00:00+00:00",
+    "first_demand_series_len": 1,
+    "last_datetime": "2025-12-31T22:45:00+00:00",
+    "n_cp_ids": 1,
+    "n_datetimes": 35040,
+    "n_demand_series": 35040,
+    "timezone_behavior_observed": "API returned UTC timestamps; first=2024-12-31T23:00:00+00:00; last=2025-12-31T22:45:00+00:00. Convert to Europe/Amsterdam downstream."
+  },
+  "raw_response": {
+    "path": "data/raw/elaad_profiles/d002_elaad_profile_probe_y2033_seed133001_n1.json.gz",
+    "sha256_gzip_file": "ff89ebed0bf58a8c320c1ce3485ab934bc725580ec1442bd1e580aab307fe17b",
+    "sha256_uncompressed_json": "a39bd8c31b78a8fe08cef7a5aa72d0e0a35d872f31af003c60624069c4a63047"
+  },
+  "request_json": {
+    "cp_capacity_kw": 11,
+    "location_type": "home",
+    "n_profiles": 1,
+    "profile_type": "ev",
+    "seed": 133001,
+    "simulated_year": 2033,
+    "start_datetime": "2025-01-01T00:00:00+01:00",
+    "step_size_s": 900,
+    "stop_datetime": "2026-01-01T00:00:00+01:00",
+    "timezone": "CET",
+    "vehicle_types": "car"
+  },
+  "response_config_block": {
+    "additional_capacity_profile": "zero",
+    "charging_on_holidays": true,
+    "charging_on_weekends": true,
+    "cp_base_capacity_kw": null,
+    "cp_capacity_kw": 11.0,
+    "cp_capacity_profile": "zero",
+    "cs_capacity_kw": 17.25,
+    "location_type": "home",
+    "n_profiles": 1,
+    "output": {
+      "profile": true,
+      "statistics": false
+    },
+    "pooling": "no",
+    "profile_type": "ev",
+    "seed": 133001,
+    "session_datetime_gaussian_noise_std": 1.0,
+    "simulated_year": 2033,
+    "start_datetime": "2025-01-01T00:00:00+01:00",
+    "step_size_s": "PT15M",
+    "stop_datetime": "2026-01-01T00:00:00+01:00",
+    "time_cluster": "both",
+    "timezone": "CET",
+    "vehicle_types": "car",
+    "yearly_demand_mean_kwh": null,
+    "yearly_demand_normalized_std": 0.5
+  },
+  "response_statistics_block": null,
+  "response_status_code": 200,
+  "retrieval_timestamp_utc": "2026-07-10T10:19:09.704651Z",
+  "seed_semantics_observed": {
+    "n_profiles": 1,
+    "note": "A single-profile call cannot verify same-seed reproducibility or batch seed expansion without additional calls.",
+    "request_seed": 133001,
+    "response_config_seed": 133001
+  },
+  "terms_of_use_license_evidence": {
+    "note": "EV-001 approves the route, but generated-profile redistribution/publication terms remain to be verified before bulk generation or data-availability claims.",
+    "status": "uncertain"
+  }
+}

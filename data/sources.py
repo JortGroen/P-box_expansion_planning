@@ -40,13 +40,13 @@ _SOURCE_SPECS: tuple[SourceSpec, ...] = (
     ),
     SourceSpec(
         data_id="D-002",
-        item="EV charging behavior",
-        source="ElaadNL open datasets",
-        doi_url="https://elaad.nl/delen/download",
-        license="Unclear on public download page; no reuse license found during E2.S1.T2",
-        retrieval_script="data/get_elaadnl.py",
-        raw_subdir="elaadnl",
-        notes="No download until PI confirms license/terms or replacement source.",
+        item="EV charging behavior profiles",
+        source="ElaadNL Laadprofielengenerator generated profiles",
+        doi_url="Dashboard https://charging.elaad.nl/; API docs https://api.charging.data.elaad.nl/docs#; generation spec reports/elaad_profile_generation_spec.md",
+        license="Terms of use for generated profiles still to verify before redistribution or manuscript data-availability claims",
+        retrieval_script="data/get_elaad_profiles.py",
+        raw_subdir="elaad_profiles",
+        notes="EV-001 approved profile-generator route; one-profile probe completed for simulated_year=2033; bulk generation still blocked pending terms/source sign-off.",
     ),
     SourceSpec(
         data_id="D-003",
@@ -117,7 +117,7 @@ def write_metadata(
     directory.mkdir(parents=True, exist_ok=True)
     payload: dict[str, object] = asdict(spec)
     payload["download_performed"] = False
-    payload["status"] = "metadata-only; pending PI sign-off before data use"
+    payload["status"] = "metadata-only; pending license/API verification and PI sign-off before data use"
     if extra:
         payload["extra"] = dict(sorted(extra.items()))
 

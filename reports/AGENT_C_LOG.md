@@ -30,3 +30,8 @@ DID: Merged latest `origin/main` into `agent-c/E2.S1-license-register`, re-read 
 VERIFIED: Pre-change task-wrapper test passed 21 tests; post-change task-wrapper test passed 22 tests. Added a DATA_REGISTER placeholder guard for E2.S1 rows.
 OPEN: Q-2 remains blocking for ElaadNL reuse terms and the Cicenas source URL/file plus license terms. E2.S1 is not done and no raw data was downloaded.
 NEXT: Await PI answer to Q-2, then either replace sources or record approved source terms/checksums before moving E2.S1 to review.
+## 2026-07-10 12:25 - E2.S1.T2-T3 - blocked
+DID: Merged latest `origin/main` after PR #8/EV-001, resolved conflicts by preserving the Laadprofielengenerator D-002 route from main and the improved non-EV license rows, and ran exactly one live API probe for `simulated_year=2033`, home/car, `n_profiles=1`, seed `133001`. Raw response was saved under ignored `data/raw/elaad_profiles/`; metadata/checksums were saved under `data/metadata/elaad_profiles/`.
+VERIFIED: Pre-probe task-wrapper test passed 25 tests. Probe returned HTTP 200, response config echoed `simulated_year=2033` and seed `133001`, produced 35040 UTC timestamps with one demand value per timestamp, and wrote metadata `data/metadata/elaad_profiles/d002_elaad_profile_probe_y2033_seed133001_n1_metadata.json`.
+OPEN: Generated-profile terms of use remain uncertain for redistribution/data-availability claims; bulk generation is still not allowed. Cicenas D-008 source URL/file and reuse terms remain open in Q-3, so E2.S1 is not done.
+NEXT: Await PI answer for Q-3 and terms-of-use guidance before generating any ElaadNL profile library or extracting Cicenas unit costs.
