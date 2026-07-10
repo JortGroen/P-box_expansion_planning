@@ -58,29 +58,26 @@ asset becomes a single section's transformer and aggregate loading is not used.
 
 ### 2. Overload Event E
 
-As amended by G0-A1, the primary overload event is import-direction apparent
-loading of the decision transformer. Let `S_net(t) = P_net(t) + j Q_net(t)` be
-the aggregate complex exchange through the decision transformer, with
-`P_net(t) > 0` denoting net import from the upstream grid into the MV area. The
-primary loading series is:
+As amended by G0-A1, let `S_net(t) = P_net(t) + jQ_net(t)` be the aggregate
+complex power through the decision transformer, with `P_net(t) > 0` denoting
+net import from the upstream grid into the MV area. The loading quantities are:
 
 ```text
 L_import(t) = abs(S_net(t)) / S_nom,agg   if P_net(t) > 0
             = 0                           otherwise
-```
 
-Event `E` occurs when `L_import(t)` exceeds 1.0 p.u. of nameplate for at least
-4 consecutive 15-minute steps, meaning at least 1 hour, within the critical
-window of the planning year.
-
-Direction-agnostic apparent loading `L_abs(t) = abs(S_net(t)) / S_nom,agg`
-remains the E1.S3/E9.S3 screening metric. Export-direction apparent loading is
-reported as a side metric:
-
-```text
 L_export(t) = abs(S_net(t)) / S_nom,agg   if P_net(t) < 0
             = 0                           otherwise
 ```
+
+`P_net(t) = 0` belongs to neither direction and is captured only by the
+unconditioned screening metric `abs(S_net(t)) / S_nom,agg`.
+
+Event `E` operates on `L_import`: at least 4 consecutive 15-minute steps with
+`L_import(t) > 1.0` p.u., meaning at least 1 hour, within the critical window
+of the planning year. A direction flip resets the episode counter. Every
+results table reports export-direction exceedance of `L_export` alongside
+`P(E)`.
 
 `P(E)` is the probability, over the aleatory ensemble, that the planning year
 contains at least 1 qualifying episode.
@@ -187,16 +184,14 @@ Authority: this entry amends G0 item 2, the G0 fallback-screen loading
 interpretation, and the critical-window examples in the project/actionable
 plans. Where it conflicts with earlier text, this entry wins.
 
-### 1. Event Direction
+### 2a. Event Direction And Loading Quantity
 
-Primary event `E` is defined on consumption-driven import congestion only.
-Transformer thermal loading remains an apparent-power magnitude, but the
-primary event is conditioned on net import direction:
+Let `S_net(t) = P_net(t) + jQ_net(t)` be the aggregate complex power through
+the decision transformer. Tier-1 computes this as the sum of downstream nodal
+net P and Q. `P_net(t) > 0` denotes net import from the upstream grid into the
+MV area.
 
 ```text
-S_net(t) = P_net(t) + j Q_net(t)
-P_net(t) > 0 means net import from the upstream grid into the MV area
-
 L_import(t) = abs(S_net(t)) / S_nom,agg   if P_net(t) > 0
             = 0                           otherwise
 
@@ -204,12 +199,23 @@ L_export(t) = abs(S_net(t)) / S_nom,agg   if P_net(t) < 0
             = 0                           otherwise
 ```
 
-`E` is the occurrence of `L_import(t) > 1.0` p.u. for at least 4 consecutive
-15-minute steps within the selected critical window. Direction-agnostic
-`L_abs(t) = abs(S_net(t)) / S_nom,agg` remains a screening and diagnostic
-metric. Every results table that reports primary `P(E)` must also report the
-export-direction exceedance side metric, so reverse-PV/feed-in stress is not
-hidden.
+Convention: `P_net(t) = 0` belongs to neither direction. It is captured by the
+unconditioned screening metric `abs(S_net(t)) / S_nom,agg`, which is retained
+for E1.S3/E9.S3 screens.
+
+The overload event `E` operates on `L_import`: at least 4 consecutive
+15-minute steps with `L_import(t) > 1.0` p.u. A direction flip resets the
+episode counter; this is the intended semantics for consumption congestion.
+Every results table reports the export-direction exceedance of `L_export`
+alongside `P(E)`.
+
+Thermal correctness note: `abs(S)` is the loading quantity in both directions;
+`sign(P_net)` is only the direction gate.
+
+Manuscript scope statement: this study addresses consumption-driven (`afname`)
+congestion deferral. Feed-in (`invoeding`) congestion is a distinct problem
+with a distinct flexibility instrument and is out of scope, evidenced by the
+E1.S3 screen.
 
 ### 2. Critical Windows
 
