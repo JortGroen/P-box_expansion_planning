@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "task_id": "E1.S3",
+  "description": "SimBench full-year profile ingestion and winter critical-week extraction for the primary grid.",
+  "command": ".\\.venv\\Scripts\\python.exe -m src.profiles --config reports/critical_weeks_input.json",
+  "config_path_label": "reports/critical_weeks_input.json",
+  "scenario_codes": {
+    "0": "1-MV-semiurb--0-sw",
+    "1": "1-MV-semiurb--1-sw",
+    "2": "1-MV-semiurb--2-sw"
+  },
+  "decision_transformer_indices": [0, 1],
+  "aggregate_loading_definition": "G0: abs(sum_i S_i(t)) / sum_i S_nom_i for the decision-transformer bank.",
+  "profile_start": "2016-01-01T00:00:00Z",
+  "step_minutes": 15,
+  "winter_months": [12, 1, 2],
+  "top_counts": [24, 96, 672],
+  "report_top_week_rows": 6,
+  "output_dir": "data",
+  "figure_dir": "reports",
+  "report_path": "reports/critical_weeks_validation.md",
+  "manifest_path": "reports/critical_weeks_evidence.json"
+}
