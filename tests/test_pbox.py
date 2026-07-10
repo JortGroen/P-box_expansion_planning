@@ -4,8 +4,10 @@ import pytest
 
 from src.fuzzy import TrapezoidalFuzzyNumber
 from src.pbox import (
+    ModelErrorWidening,
     PBoxAlphaResult,
     ProbabilityEstimate,
+    apply_model_error_widening,
     assert_nested,
     estimate_vertex_pbox,
 )
@@ -126,6 +128,79 @@ def test_nestedness_violation_is_reported() -> None:
 
     with pytest.raises(ValueError, match="nestedness violation"):
         assert_nested(pbox)
+
+
+def test_model_error_widening_expands_synthetic_pbox_bounds() -> None:
+    pbox = {
+        0.0: PBoxAlphaResult(
+            alpha=0.0,
+            rho_lower=0.0,
+            rho_upper=1.0,
+            lower=ProbabilityEstimate(0.30, 0.20, 0.40, 3, 10),
+            upper=ProbabilityEstimate(0.70, 0.60, 0.80, 7, 10),
+        ),
+        1.0: PBoxAlphaResult(
+            alpha=1.0,
+            rho_lower=0.25,
+            rho_upper=0.75,
+            lower=ProbabilityEstimate(0.40, 0.30, 0.50, 4, 10),
+            upper=ProbabilityEstimate(0.60, 0.50, 0.70, 6, 10),
+        ),
+    }
+
+    widened = apply_model_error_widening(
+        pbox,
+        ModelErrorWidening.from_config(
+            {
+                "lower_probability_margin": 0.05,
+                "upper_probability_margin": 0.10,
+            }
+        ),
+    )
+
+    assert widened[0.0].lower.probability == pytest.approx(0.25)
+    assert widened[0.0].lower.ci_lower == pytest.approx(0.15)
+    assert widened[0.0].upper.probability == pytest.approx(0.80)
+    assert widened[0.0].upper.ci_upper == pytest.approx(0.90)
+    assert widened[1.0].lower.probability == pytest.approx(0.35)
+    assert widened[1.0].upper.probability == pytest.approx(0.70)
+    assert pbox[0.0].lower.probability == pytest.approx(0.30)
+
+
+def test_model_error_widening_clips_to_probability_range() -> None:
+    pbox = {
+        0.0: PBoxAlphaResult(
+            alpha=0.0,
+            rho_lower=0.0,
+            rho_upper=1.0,
+            lower=ProbabilityEstimate(0.03, 0.01, 0.05, 1, 10),
+            upper=ProbabilityEstimate(0.97, 0.95, 0.99, 9, 10),
+        )
+    }
+
+    widened = apply_model_error_widening(
+        pbox,
+        ModelErrorWidening(
+            lower_probability_margin=0.10,
+            upper_probability_margin=0.10,
+        ),
+    )
+
+    assert widened[0.0].lower.probability == 0.0
+    assert widened[0.0].lower.ci_lower == 0.0
+    assert widened[0.0].upper.probability == 1.0
+    assert widened[0.0].upper.ci_upper == 1.0
+
+
+def test_model_error_widening_requires_explicit_nonnegative_config() -> None:
+    with pytest.raises(ValueError, match="missing model-error widening keys"):
+        ModelErrorWidening.from_config({"lower_probability_margin": 0.05})
+
+    with pytest.raises(ValueError, match="upper_probability_margin must be"):
+        ModelErrorWidening(
+            lower_probability_margin=0.0,
+            upper_probability_margin=-0.01,
+        )
 
 
 def _recording_calls(

@@ -87,6 +87,49 @@ class PBoxAlphaResult:
 PBoxFamily = Mapping[float, PBoxAlphaResult]
 
 
+@dataclass(frozen=True)
+class ModelErrorWidening:
+    """Additive model-error margins for p-box probability bounds.
+
+    Parameters
+    ----------
+    lower_probability_margin:
+        Non-negative probability margin subtracted from the lower bound,
+        dimensionless in [0, 1].
+    upper_probability_margin:
+        Non-negative probability margin added to the upper bound, dimensionless
+        in [0, 1].
+    """
+
+    lower_probability_margin: float
+    upper_probability_margin: float
+
+    def __post_init__(self) -> None:
+        for name, value in (
+            ("lower_probability_margin", self.lower_probability_margin),
+            ("upper_probability_margin", self.upper_probability_margin),
+        ):
+            if not 0.0 <= value <= 1.0:
+                raise ValueError(f"{name} must be in [0, 1]")
+
+    @classmethod
+    def from_config(cls, config: Mapping[str, float]) -> "ModelErrorWidening":
+        """Build widening margins from a config mapping.
+
+        The caller must supply both margins explicitly. This method deliberately
+        has no scientific default values.
+        """
+
+        required = ("lower_probability_margin", "upper_probability_margin")
+        missing = [key for key in required if key not in config]
+        if missing:
+            raise ValueError(f"missing model-error widening keys: {', '.join(missing)}")
+        return cls(
+            lower_probability_margin=float(config["lower_probability_margin"]),
+            upper_probability_margin=float(config["upper_probability_margin"]),
+        )
+
+
 def estimate_vertex_pbox(
     *,
     fuzzy_number: FuzzyNumber,
@@ -147,6 +190,37 @@ def estimate_vertex_pbox(
     return results
 
 
+def apply_model_error_widening(
+    pbox_family: PBoxFamily,
+    widening: ModelErrorWidening,
+) -> dict[float, PBoxAlphaResult]:
+    """Apply additive model-error interval widening to a p-box family.
+
+    Widening is a deterministic post-processor: for every alpha level it moves
+    ``P_lower`` down by ``lower_probability_margin`` and ``P_upper`` up by
+    ``upper_probability_margin``, clipping to the probability range [0, 1]. The
+    same margins are applied to the corresponding confidence limits.
+    """
+
+    widened: dict[float, PBoxAlphaResult] = {}
+    for alpha, result in pbox_family.items():
+        widened[alpha] = PBoxAlphaResult(
+            alpha=result.alpha,
+            rho_lower=result.rho_lower,
+            rho_upper=result.rho_upper,
+            lower=_shift_probability_estimate(
+                result.lower, -widening.lower_probability_margin
+            ),
+            upper=_shift_probability_estimate(
+                result.upper, widening.upper_probability_margin
+            ),
+        )
+
+    assert_bound_order(widened)
+    assert_nested(widened)
+    return widened
+
+
 def assert_bound_order(pbox_family: PBoxFamily) -> None:
     """Raise if any alpha result violates ``P_lower <= P_upper``."""
 
@@ -193,6 +267,23 @@ def _estimate_probability(
         successes=successes,
         sample_count=len(sample_seeds),
     )
+
+
+def _shift_probability_estimate(
+    estimate: ProbabilityEstimate,
+    probability_delta: float,
+) -> ProbabilityEstimate:
+    return ProbabilityEstimate(
+        probability=_clip_probability(estimate.probability + probability_delta),
+        ci_lower=_clip_probability(estimate.ci_lower + probability_delta),
+        ci_upper=_clip_probability(estimate.ci_upper + probability_delta),
+        successes=estimate.successes,
+        sample_count=estimate.sample_count,
+    )
+
+
+def _clip_probability(value: float) -> float:
+    return min(1.0, max(0.0, value))
 
 
 def _sample_seeds(root_seed: int, sample_count: int) -> tuple[int, ...]:

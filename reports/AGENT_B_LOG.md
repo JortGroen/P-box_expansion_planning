@@ -15,3 +15,8 @@ VERIFIED: `.\scripts\task.ps1 test` passed: 20 tests green. No paper experiments
 OPEN: G3 is still pending; this implementation is for pre-G3 synthetic/test mode and must not be used for paper results until the monotonicity gate permits vertex propagation.
 NEXT: Prepare PR for `E5.S2`.
 
+## 2026-07-10 20:35 — E5.S3 — done
+DID: Added config-driven model-error widening in `src/pbox.py` as an additive probability-margin post-processor for alpha-indexed p-box bounds. The widening requires explicit lower/upper margins from config, clips to [0, 1], preserves the original synthetic MC evidence fields, and rechecks bound order plus nestedness after widening.
+VERIFIED: `.\scripts\task.ps1 test` passed: 36 tests green, including synthetic widening expansion, clipping, and explicit-config validation tests. No paper experiments or grid-specific model-error values were introduced.
+OPEN: G3 is still pending; `src/pbox.py` remains synthetic/test-mode only for pre-G3 vertex propagation and must not be used for paper results until G3 permits it. Scientific model-error margins still require PI-approved config/register values before paper use.
+NEXT: Open the E5.S3 PR for review.
