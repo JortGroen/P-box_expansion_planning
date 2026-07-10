@@ -1,0 +1,12 @@
+{
+  "data_id": "D-008",
+  "decision": "COST-001",
+  "extraction_rule": "Every extracted number must record value, unit, exact meaning/context, thesis page, table/appendix/section label if available, source status (Stedin-confirmed, thesis-derived, or interpreted), intended project use, and PI sign-off before manuscript use.",
+  "local_raw_path": "data/raw/cicenas_2025_thesis.pdf",
+  "pdf_committed": false,
+  "pdf_sha256": "96EF9625BA0AFEE2910189A61967943BA3BCD460AE3AC080B847C4D8DD7D99C0",
+  "redistribution": "Do not commit or redistribute the PDF.",
+  "source": "Cicenas 2025 TU Delft MSc thesis with Stedin/Eneco context; PI-supplied local PDF.",
+  "status": "source-approved; extracted values pending provenance table and PI sign-off",
+  "verification_tag": "[V] Literature_review_combined.md line 133"
+}
