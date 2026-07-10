@@ -35,3 +35,9 @@ DID: Merged latest `origin/main` after PR #8/EV-001, resolved conflicts by prese
 VERIFIED: Pre-probe task-wrapper test passed 25 tests. Probe returned HTTP 200, response config echoed `simulated_year=2033` and seed `133001`, produced 35040 UTC timestamps with one demand value per timestamp, and wrote metadata `data/metadata/elaad_profiles/d002_elaad_profile_probe_y2033_seed133001_n1_metadata.json`.
 OPEN: Generated-profile terms of use remain uncertain for redistribution/data-availability claims; bulk generation is still not allowed. Cicenas D-008 source URL/file and reuse terms remain open in Q-3, so E2.S1 is not done.
 NEXT: Await PI answer for Q-3 and terms-of-use guidance before generating any ElaadNL profile library or extracting Cicenas unit costs.
+
+## 2026-07-10 13:05 - E2.S1.T2-T3 - blocked
+DID: Merged latest `origin/main` into `agent-c/E2.S1-license-register`, incorporated G0-A1 and COST-001, and resolved merge conflicts in the E2.S1 source/register files. Replaced D-002 placeholder checksum variables with the recorded one-profile probe metadata path and hashes, fixed the malformed `reports/elaad_profile_generation_spec.md` path, resolved Q-3 via COST-001, and clarified that the Elaad probe response was `demands_kw` time-major.
+VERIFIED: `.\scripts\task.ps1 test` passed 35 tests. Cleanup scan found no conflict markers, D-002 checksum placeholders, malformed `eports/...` path, or stale profile-major parser assertion.
+OPEN: D-002 generated-profile terms of use remain uncertain for redistribution/data-availability claims; bulk generation is still not allowed. Cicenas source access is resolved by COST-001, but extracted values remain unsigned until page/table provenance and PI sign-off are recorded.
+NEXT: Open/update the E2.S1 PR for review with STATUS kept blocked on D-002 terms-of-use, or await PI terms guidance before bulk Elaad generation.

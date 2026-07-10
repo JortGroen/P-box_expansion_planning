@@ -30,9 +30,9 @@ OPTIONS: A) Keep searching for the old transaction dataset - E2.S1 remains block
 RECOMMENDATION: B, because it gives accessible Dutch Outlook-based, seeded, 15-minute EV profiles now while preserving provenance and reproducibility.
 STATUS: resolved by EV-001 in `registers/DECISIONS.md`; Agent C should implement a one-profile API probe before bulk generation and keep generated-profile redistribution terms as an open verification item.
 
-## Q-3 - E2.S1 - 2026-07-10 - BLOCKING: yes
-CONTEXT: EV-001 resolves the old D-002 ElaadNL transaction-data access issue, but it does not resolve the Cicenas 2025 thesis source URL/file or reuse terms for D-008. The literature review keeps Cicenas as a verified anchor, but E2.S1 still needs source/license evidence before extraction or manuscript use.
-QUESTION: Should Agent C keep D-008 as a no-extraction proposed row until PI supplies/approves the thesis source terms, or replace the unit-cost source before E2.S1 can be sign-off-ready?
-OPTIONS: A) PI supplies or approves the Cicenas source URL/file and reuse terms - D-008 remains proposed with no extraction until approved.  B) PI replaces the unit-cost source with an alternative source that has explicit access and reuse terms - E2.S1 continues after register revision.
-RECOMMENDATION: A, because the current literature-review anchor preserves the intended Dutch/Stedin context without inventing source terms.
-STATUS: open
+## Q-3 - E2.S1 - 2026-07-10 - BLOCKING: no
+CONTEXT: Agent C escalated D-008 because the Cicenas 2025 thesis source file and reuse terms were not visible in the Agent C worktree. The PI has already supplied the thesis as a local raw PDF in the PI worktree, and the thesis professor is involved in the project.
+QUESTION: Can Agent C use the Cicenas thesis as the unit-cost source for extraction?
+OPTIONS: A) Use the PI-supplied local thesis PDF under strict traceability/no-redistribution rules.  B) Replace the unit-cost source with another openly licensed source.
+RECOMMENDATION: A, because the source is project-approved and preserves the Dutch/Stedin context, provided every extracted number is exactly traceable.
+STATUS: resolved by COST-001 in `registers/DECISIONS.md`; source access is resolved, but extracted values remain unsigned until recorded with page/table provenance and PI sign-off.

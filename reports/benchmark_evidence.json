@@ -1,0 +1,61 @@
+{
+  "config_hash": "8927eb91000c33cd06346d9038a085123cc785f26a36ce25785acb58d9361ead",
+  "config_path": "reports/benchmark_input.json",
+  "extra": {
+    "artifact_type": "benchmark_evidence",
+    "backends": [
+      {
+        "kwargs": {
+          "lightsim2grid": false
+        },
+        "name": "pandapower_native"
+      },
+      {
+        "kwargs": {
+          "lightsim2grid": true
+        },
+        "name": "lightsim2grid_runpp"
+      }
+    ],
+    "candidate_grids": [
+      {
+        "code": "1-MV-semiurb--0-sw",
+        "key": "simbench_semiurb"
+      },
+      {
+        "code": "1-MV-urban--0-sw",
+        "key": "simbench_urban"
+      },
+      {
+        "code": "create_cigre_network_mv",
+        "key": "cigre_mv"
+      }
+    ],
+    "command": "Run the E1.S2 inline benchmark script from Agent A log/session: load CANDIDATE_GRIDS, run two warmups and ten measured pandapower.runpp solves per grid/backend, and write reports/benchmark_raw.json.",
+    "repeats": 10,
+    "task_id": "E1.S2",
+    "timestamp_utc": "2026-07-09T19:30:52.738863Z",
+    "warmups": 2
+  },
+  "git_commit": "0abb7f47d3856e57449346813f9aae001ac0d839",
+  "output_checksums": {
+    "reports/BENCHMARK.md": "29edba1a3c7583bf9354967a264208523a3287668fc51fff899acebdadf36d3d",
+    "reports/benchmark_raw.json": "fbbddb9b70b2e68d4187bda650f7fb1dba58b286781eb2285817bafa1183913f"
+  },
+  "package_versions": {
+    "hypothesis": "6.156.4",
+    "lightsim2grid": "0.13.1",
+    "matplotlib": "3.11.0",
+    "numba": "0.66.0",
+    "numpy": "2.3.5",
+    "pandapower": "3.5.3",
+    "pandas": "2.3.3",
+    "pytest": "9.1.1",
+    "scipy": "1.16.3",
+    "simbench": "1.6.2"
+  },
+  "schema_version": 1,
+  "seeds": {
+    "none": "deterministic"
+  }
+}

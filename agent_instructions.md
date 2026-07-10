@@ -189,7 +189,7 @@ STATUS: open
 
 ## 11. Project-specific technical guardrails
 
-- **Overload event E** is whatever `DECISIONS.md` (G0) says — read it, apply it, never reinterpret it. Same for **P_crit** (1e-2 primary, 1e-3 sensitivity) and the **α grid** {0, 0.25, 0.5, 0.75, 1.0}.
+- **Overload event E** is whatever `DECISIONS.md` (G0 plus amendments such as G0-A1) says — read it, apply it, never reinterpret it. Same for **P_crit** (1e-2 primary, 1e-3 sensitivity) and the **α grid** {0, 0.25, 0.5, 0.75, 1.0}.
 - **Vertex shortcut** (endpoint-only propagation per α-cut) is valid **only after G3 records "monotone"**. Before G3, or in regimes G3 flags (rebound-dominated, reverse-PV), use/keep the interior-sampling path.
 - **Two-sourced p-box:** the grid-model output-error interval widening is always applied; a p-box produced without it is incomplete.
 - **CRN discipline:** draw every aleatory sample from the seed tree keyed by (sample index, α, endpoint, treatment). Endpoints, α levels, and the five benchmark treatments must share identical aleatory draws — that is the point.

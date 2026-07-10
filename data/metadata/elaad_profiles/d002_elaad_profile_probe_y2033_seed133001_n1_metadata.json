@@ -21,6 +21,7 @@
     "n_cp_ids": 1,
     "n_datetimes": 35040,
     "n_demand_series": 35040,
+    "demands_kw_orientation_observed": "time-major: len(demands_kw) equals len(datetimes), each row contains profile values",
     "timezone_behavior_observed": "API returned UTC timestamps; first=2024-12-31T23:00:00+00:00; last=2025-12-31T22:45:00+00:00. Convert to Europe/Amsterdam downstream."
   },
   "raw_response": {

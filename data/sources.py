@@ -71,12 +71,12 @@ _SOURCE_SPECS: tuple[SourceSpec, ...] = (
     SourceSpec(
         data_id="D-008",
         item="Indicative Dutch unit costs",
-        source="Cicenas 2025 TU Delft MSc thesis with Stedin/Eneco context",
-        doi_url="Source URL/file required from PI; verified literature-review anchor exists",
-        license="Unclear until thesis source URL/file and reuse terms are confirmed",
+        source="Cicenas 2025 TU Delft MSc thesis with Stedin/Eneco context; PI-supplied local PDF",
+        doi_url="Local raw source data/raw/cicenas_2025_thesis.pdf; bibliographic anchor Literature_review_combined.md line 133",
+        license="Internal/project source approved by PI; do not commit or redistribute PDF; extracted values require page/table provenance and PI sign-off",
         retrieval_script="data/get_unit_costs.py",
         raw_subdir="unit_costs",
-        notes="No extraction until PI supplies or approves the source URL/file and license terms.",
+        notes="Source access resolved by COST-001; extraction may proceed only into a traceable unit-cost table with exact thesis citation details.",
     ),
 )
 

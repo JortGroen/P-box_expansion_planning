@@ -56,11 +56,17 @@ def _profile_shape(parsed: dict[str, Any]) -> dict[str, Any]:
     datetimes = profile.get("datetimes") or []
     demands_kw = profile.get("demands_kw") or []
     first_series_len = len(demands_kw[0]) if demands_kw and isinstance(demands_kw[0], list) else None
+    orientation = (
+        "time-major: len(demands_kw) equals len(datetimes), each row contains profile values"
+        if demands_kw and len(demands_kw) == len(datetimes)
+        else "profile-major or unknown: len(demands_kw) does not equal len(datetimes)"
+    )
     return {
         "n_cp_ids": len(cp_ids),
         "n_datetimes": len(datetimes),
         "n_demand_series": len(demands_kw),
         "first_demand_series_len": first_series_len,
+        "demands_kw_orientation_observed": orientation,
         "first_datetime": datetimes[0] if datetimes else None,
         "last_datetime": datetimes[-1] if datetimes else None,
         "timezone_behavior_observed": _timezone_note(datetimes),
