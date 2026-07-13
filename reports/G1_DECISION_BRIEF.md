@@ -1,5 +1,11 @@
 # G1 Decision Brief: Foundation, Compute Budget, And Time Domain
 
+> **Amendment notice (2026-07-13):** G1-A1 in `registers/DECISIONS.md`
+> amends the model-error and G2 interpretation. Grid-model error is an
+> expert-specified output interval applied before event detection; G2 now
+> estimates a held-out-tested Tier-1 approximation envelope. See
+> `reports/G1_A1_MODEL_ERROR_AMENDMENT_PROPOSAL.md`.
+
 Date: 2026-07-10  
 Prepared for: PI G1 review  
 Decision status: approved by PI in chat on 2026-07-10; recorded in `registers/DECISIONS.md` as G0-A2 and G1

@@ -9,7 +9,8 @@ write a PI sign-off.
 | G0-A1 | 2026-07-10 | Event direction and fixed-window rejection amendment | Primary overload event is consumption-driven import congestion: apparent-power magnitude conditioned on net import direction. Direction-agnostic `abs(S)` remains the screening metric, and export-direction exceedance is reported beside primary results. Fixed winter windows are rejected; G0-A2 later assigns primary Tier-1 `P(E)` to the full planning year and retains WindowSets only for AC validation and diagnostics. | E1.S3 showed direction-agnostic annual maxima in SimBench scenarios 1/2 are summer midday export/PV peaks, while scenario 0 winter windows miss much of the annual near-peak shoulder. The study's flexibility construct is demand-reduction, so feed-in congestion needs a distinct absorption/curtailment instrument and remains out of scope. | E1.S3 PR #10; `reports/critical_weeks_validation.md`; PI amendment text in chat, 2026-07-10. | approved | PI approved in chat, 2026-07-10 |
 | G0-A2 | 2026-07-10 | Full-year primary event scope | Primary Tier-1 `P(E)` is annual: the probability that the full planning year contains at least one qualifying import-direction overload episode. WindowSet is retained only for IC-1/IC-2 AC-validation subset selection and diagnostics. | E1.S3b adaptive import windows span 19-25 weeks, or 36-48% of the year, defeating their compute purpose for the negligible-cost Tier-1 summation evaluator. Full-year Tier-1 removes window-transfer risk. | E1.S3b import-window diagnostic PR #15; `reports/import_window_diagnostic.md`; `reports/G1_DECISION_BRIEF.md`; PI approved in chat, 2026-07-10. | approved | PI approved in chat, 2026-07-10 |
 | G1 | 2026-07-10 | Foundation validated | Approved two-tier architecture: Tier-1 radial summation with G0-A1/G0-A2 semantics is the Monte Carlo inner-loop evaluator; AC power flow serves deterministic checks and validation subsets. Fixed winter windows are rejected, and primary Tier-1 runs the full planning year. No manuscript claim may say "AC infeasible"; E1.S2 establishes only that the benchmarked pandapower `runpp` path is too slow for the MC loop and that the lower-level `lightsim2grid` TimeSeriesCPP path remains untested. Before G2, Agent A must complete C1 TimeSeriesCPP/solver-engagement benchmarking and C2 transformer-headroom diagnostics; Agent A may proceed to E1.S4 with full-year import/export/screening semantics. | Tier-1 is near-exact for the decision-transformer criterion and computationally negligible. E1.S3 rejected fixed winter windows; E1.S3b showed adaptive windows are too large to justify a primary windowed probability. The high-level AC benchmark does not justify an "AC infeasible" claim. | E1.S2 benchmark; E1.S3 profile report; E1.S3b import-window diagnostic PR #15; `reports/G1_DECISION_BRIEF.md`; PI amended G1 text in chat, 2026-07-10. | approved | PI approved in chat, 2026-07-10 |
-| G2 | TBD | Tier equivalence | Pending: summation primary vs AC primary | Determines overload evaluator strategy | E3.S3 tier comparison | pending | -- |
+| G1-A1 | 2026-07-13 | Black-box model error and Tier-1 approximation | Grid-model error is an expert-specified interval on black-box model output, propagated before event detection under arbitrary unknown dependence. Tier-1 approximation error is estimated empirically at G2 and combined by interval addition where forms and units are compatible. Post-hoc probability-margin widening is rejected. | Preserves the intended imprecise-probability story, separates pandapower-to-reality uncertainty from Tier-1-to-pandapower approximation, and retains the compute benefit of Tier-1 without hiding surrogate error. | `reports/G1_A1_MODEL_ERROR_AMENDMENT_PROPOSAL.md`; PI approval in chat, 2026-07-13. | approved | PI approved in chat, 2026-07-13 |
+| G2 | TBD | Tier-1 enclosure and adequacy | Pending: empirical Tier-1 error envelope, held-out near/above-threshold enclosure test, decision impact, and evaluator verdict | Determines Tier-1 primary / corrected Tier-1 / selective AC / Tier-1 rejected | E1.S2b corrected AC budget; E1.S1b nameplate decision brief; E3.S3 manifested tier comparison | pending | -- |
 | G3 | TBD | Monotonicity verdict | Pending: vertex shortcut vs interior sampling | Critical compute shortcut | E4.S1 monotonicity report | pending | -- |
 | G4 | TBD | Elicitation sign-off | Pending: fuzzy controllability corners | Paper hinge assumption | E7.S2 worksheet | pending | -- |
 | G5 | TBD | Case selection | Pending: decision-reversal benchmark case | Money figure depends on divergent treatments | E8.S1 case sweep | pending | -- |
@@ -308,3 +309,110 @@ G0-A2 full-year event scope.
 Export exceedance is reported alongside all primary results. No Dutch
 2030/2033/2035 window or loading claims may be made before E2/E3. No vertex
 shortcut may be used before G3. Agent C remains blocked on D-002 ElaadNL terms.
+
+## G1-A1 - Black-Box Model Error And Tier-1 Approximation - 2026-07-13 - signed: PI approved in chat
+
+### Authority And Scope
+
+This entry amends G1, the G2 gate, E5.S3, and the behavioral boundary between
+IC-2 and IC-3. It supersedes any wording that applies fixed margins directly
+to an already estimated overload probability. Exact error values, units,
+absolute/relative form, symmetry, the G2 numerical adequacy criterion, and the
+exact IC schema change remain subject to later PI approval.
+
+G1's earlier description of Tier-1 as "near-exact" is a hypothesis pending the
+G2 held-out enclosure result, not an established manuscript claim.
+
+### Black-Box Grid-Model Error
+
+The project has no field measurements that validate pandapower directly
+against reality. The pandapower-to-reality discrepancy `delta_grid` is
+therefore an expert-specified interval assumption, not an empirically
+determined quantity within this project. Its numerical value, asserted domain,
+units/form, and mandatory sensitivity sweep must be recorded in a signed
+`ASSUMPTIONS.md` row before paper results use it. Any future empirical
+validation must be recorded together with its validated domain.
+
+No probability distribution is assigned to `delta_grid`. The analysis admits
+every discrepancy function within the signed envelope, including arbitrary
+unknown dependence on aleatory inputs `X`, flexibility controllability `rho`,
+and time. This is neither probabilistic independence nor one constant bias.
+
+### Tier-1 Approximation Error And Interval Composition
+
+Tier-1 is a computational approximation to pandapower. G2 shall empirically
+characterize
+
+```text
+delta_Tier1(X, rho, t) = L_PP(X, rho, t) - L_T1(X, rho, t)
+```
+
+over the operating domain used by the paper. If both discrepancies are
+symmetric additive envelopes on the same output quantity and in the same
+units, then
+
+```text
+epsilon_total = epsilon_Tier1 + epsilon_grid
+L_true in [L_T1 - epsilon_total, L_T1 + epsilon_total]
+```
+
+is the conservative interval sum under unknown dependence. If G2 supports an
+asymmetric or one-sided Tier-1 envelope, that tighter interval is retained.
+No cancellation or root-sum-of-squares combination is allowed without a later
+signed dependence model.
+
+### Event And Probability Propagation
+
+The applicable output-error interval is applied to each loading trajectory
+before the G0-A1/G0-A2 four-consecutive-step event detector. Lower and upper
+event indicators are evaluated from the lower and upper loading endpoints, and
+Monte Carlo confidence intervals are computed from those resulting event
+counts. Probability estimates or their confidence intervals are never shifted
+after estimation to represent grid-model error.
+
+The G0-A1 import/export gate is evaluated on the unwidened `P_net` sign. The
+error envelope widens loading magnitude only. The rationale is that direction
+ambiguity is confined to the zero crossing, where loading is expected to be
+event-irrelevant; G2 must check this and escalate any counterexample.
+
+The pure interval error has the same support at every alpha level and is never
+probabilized or defuzzified. Before G3, `rho` still requires the approved
+interior-sampling path. If G3 confirms monotonicity, the lower vertex combines
+the favorable `rho` endpoint with the lower loading-error endpoint and the
+upper vertex combines the adverse `rho` endpoint with the upper loading-error
+endpoint.
+
+### Revised G2 Gate
+
+G2 shall use a manifested, domain-covering AC validation design spanning
+ordinary, extreme, near-capacity, and overloaded import states; the 1.0 p.u.
+threshold neighborhood; relevant years, `rho` values, power factors, and
+consecutive-step episodes. A held-out near/above-threshold stratum must not be
+used to tune an envelope or correction.
+
+A hard enclosure acceptance test on that held-out stratum is frozen in kind.
+Its numerical strictness, including whether 100% bracketing is required, must
+be signed before the held-out result is inspected. Failure prevents an
+unqualified "Tier-1 adequate" verdict.
+
+G2 must recommend exactly one of: Tier-1 adequate; Tier-1 adequate with a
+validated correction; selective AC for predeclared threshold-straddling states
+or episodes; or Tier-1 rejected. Selective AC must preserve CRN and manifest
+discipline and record the promotion rule before execution.
+
+### Deferred Envelope Form And Interface
+
+The error-envelope form shall be decided jointly with the total-versus-firm
+`(n-1)` `S_nom,agg` convention. Additive and relative loading envelopes both
+act as threshold shifts near `L = 1.0`, but an additive p.u. envelope depends
+on the chosen nameplate denominator while a relative envelope on the physical
+loading ratio is invariant to that convention.
+
+IC-2/IC-3 must retain enough information to apply the interval before episode
+classification and to preserve the unwidened direction gate. A boolean-only
+sample callback is noncompliant. Agents A and B must propose the smallest
+compatible schema change for separate PI approval before E5.S3 implementation.
+
+PR #13 requires revision: its useful configuration and invariant-test
+structure may be retained, but probability-domain widening must be replaced by
+output-domain trajectory propagation and four-step event tests.
