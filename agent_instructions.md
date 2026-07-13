@@ -12,7 +12,7 @@ You are **one of up to three agents** on this project. Your role (A, B, or C —
 1. `registers/DECISIONS.md` — signed PI decisions (gates G0–G7 and everything else)
 2. This file (`agent_instructions.md`)
 3. `actionable_project_plan_agentic.md` — the work breakdown you execute (Epics → Stories → Tasks)
-4. `project_plan_v2.md` — scientific design rationale
+4. `project_plan_v3_when_can_grid_reinforcement_wait.md` — scientific design rationale
 5. `Literature_review_combined.md` — verified citation base
 
 **The PI (human) is the only party who can:** pass a gate, merge to `main`, sign a register entry, approve a number for the paper, change an interface contract (IC-1…IC-6), approve a dependency, or change this file. You propose; the PI decides.
@@ -86,7 +86,7 @@ If your current directory, branch, or worktree does not match your role and assi
 - A test cannot pass without changing its specification or a golden expectation.
 - A scientific value is needed that is not in `ASSUMPTIONS.md` / `DATA_REGISTER.md` (parameter, threshold, distribution, cost, citation).
 - A data source's license is unclear, or a dataset must be modified by hand.
-- Runtime exceeds the G1-approved budget by more than 2×.
+- Runtime exceeds the G1-approved or provisional validation budget by more than 2×.
 - A result contradicts a passed gate (e.g., non-monotone behavior after G3 approved the vertex shortcut).
 - You would need to edit outside your owned paths, add a dependency, or touch `main`.
 - Your role, task, or any instruction is ambiguous.
@@ -189,12 +189,12 @@ STATUS: open
 
 ## 11. Project-specific technical guardrails
 
-- **Overload event E** is whatever `DECISIONS.md` (G0 plus amendments such as G0-A1) says — read it, apply it, never reinterpret it. Same for **P_crit** (1e-2 primary, 1e-3 sensitivity) and the **α grid** {0, 0.25, 0.5, 0.75, 1.0}.
+- **Overload event E** is whatever `DECISIONS.md` (G0 plus amendments such as G0-A1 and G0-A2) says — read it, apply it, never reinterpret it. Same for **P_crit** (1e-2 primary, 1e-3 sensitivity) and the **α grid** {0, 0.25, 0.5, 0.75, 1.0}.
 - **Vertex shortcut** (endpoint-only propagation per α-cut) is valid **only after G3 records "monotone"**. Before G3, or in regimes G3 flags (rebound-dominated, reverse-PV), use/keep the interior-sampling path.
 - **Two-sourced p-box:** the grid-model output-error interval widening is always applied; a p-box produced without it is incomplete.
 - **CRN discipline:** draw every aleatory sample from the seed tree keyed by (sample index, α, endpoint, treatment). Endpoints, α levels, and the five benchmark treatments must share identical aleatory draws — that is the point.
-- **Units & conventions:** power in kW/kVA, 15-min steps, transformer loading in p.u. of `s_rated_kva`; timestamps timezone-aware; per-planning-year metrics computed over the G0-defined critical window.
-- **Performance:** respect the G1 budget from `reports/BENCHMARK.md`; > 2× ⇒ escalate before optimizing creatively (no silent approximations).
+- **Units & conventions:** power in kW/kVA, 15-min steps, transformer loading in p.u. of `s_rated_kva`; timestamps timezone-aware; primary `P(E)` is computed over the full planning year per G0-A2. WindowSets are for AC-validation subset selection and diagnostics only unless `DECISIONS.md` later changes this.
+- **Performance:** respect the G1 decision and benchmark evidence from `reports/BENCHMARK.md`; complete/consult the G1-C1 `TimeSeriesCPP` benchmark before fixing G2 AC validation budgets. Do not write or imply "AC infeasible" in manuscript-facing text; the approved finding is that the benchmarked high-level `runpp` path is too slow for the MC loop.
 - **Reporting:** every probability result is a table/figure of (P_lo, P_up, CI_lo, CI_up) per α — never a single scalar, never a defuzzified value, never a p-box collapsed "for readability."
 - **Manuscript text:** you may draft; every claim you draft must carry its manifest/register trace inline as a comment (`<!-- src: manifest experiments/e8_case2/manifest.json -->`). Unsigned claims cannot survive G6.
 
