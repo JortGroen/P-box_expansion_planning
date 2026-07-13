@@ -41,3 +41,9 @@ DID: Merged latest `origin/main` into `agent-c/E2.S1-license-register`, incorpor
 VERIFIED: `.\scripts\task.ps1 test` passed 35 tests. Cleanup scan found no conflict markers, D-002 checksum placeholders, malformed `eports/...` path, or stale profile-major parser assertion.
 OPEN: D-002 generated-profile terms of use remain uncertain for redistribution/data-availability claims; bulk generation is still not allowed. Cicenas source access is resolved by COST-001, but extracted values remain unsigned until page/table provenance and PI sign-off are recorded.
 NEXT: Open/update the E2.S1 PR for review with STATUS kept blocked on D-002 terms-of-use, or await PI terms guidance before bulk Elaad generation.
+
+## 2026-07-13 00:00 - E2.S1.T2-T3 - blocked
+DID: Merged latest `origin/main` into PR #14 branch and resolved the single conflict in `registers/STATUS.md`. Preserved main's newer G0-A2/G1 status updates and kept Agent C's E2.S1 row blocked on D-002 generated-profile terms-of-use with PR #14.
+VERIFIED: `.\scripts\task.ps1 test` passed 39 tests. Conflict-marker scan of `registers/STATUS.md` found no remaining markers.
+OPEN: D-002 generated-profile terms of use remain uncertain for redistribution/data-availability claims; no bulk Elaad generation performed.
+NEXT: Await PI terms guidance or review PR #14 as a blocked/sign-off-ready data-register update.

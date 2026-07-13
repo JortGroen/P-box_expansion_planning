@@ -6,8 +6,12 @@ import pytest
 from src.profiles import (
     aggregate_loading_from_profiles,
     annual_timestamps,
+    choose_adaptive_window_count,
+    count_overload_episodes,
     coverage_by_rank,
+    rank_annual_weeks,
     rank_winter_weeks,
+    split_import_export_loading,
 )
 
 
@@ -39,6 +43,29 @@ def test_aggregate_loading_counts_reverse_flow_direction_agnostically() -> None:
     assert list(net_q) == [3.0, 0.0]
 
 
+def test_split_import_export_loading_uses_g0_a1_direction_rules() -> None:
+    index = pd.date_range("2016-01-01T00:00:00Z", periods=3, freq="15min")
+    loading = pd.Series([0.5, 0.6, 0.7], index=index)
+    net_p = pd.Series([2.0, -1.0, 0.0], index=index)
+
+    split = split_import_export_loading(loading_pu=loading, aggregate_p_mw=net_p)
+
+    assert list(split.import_loading_pu) == [0.5, 0.0, 0.0]
+    assert list(split.export_loading_pu) == [0.0, 0.6, 0.0]
+    assert list(split.direction) == ["import", "export", "zero"]
+
+
+def test_direction_flips_reset_overload_episode_counter() -> None:
+    index = pd.date_range("2016-01-01T00:00:00Z", periods=8, freq="15min")
+    raw_loading = pd.Series([1.1, 1.1, 1.1, 1.1, 1.1, 1.1, 1.1, 1.1], index=index)
+    net_p = pd.Series([1.0, 1.0, -1.0, -1.0, 1.0, 1.0, 1.0, 1.0], index=index)
+
+    split = split_import_export_loading(loading_pu=raw_loading, aggregate_p_mw=net_p)
+
+    assert count_overload_episodes(split.import_loading_pu, min_consecutive_steps=4) == 1
+    assert count_overload_episodes(split.export_loading_pu, min_consecutive_steps=4) == 0
+
+
 def test_rank_winter_weeks_orders_by_weekly_max_loading() -> None:
     timestamps = pd.date_range("2016-01-01T00:00:00Z", periods=16, freq="D")
     loading = pd.Series(
@@ -52,6 +79,17 @@ def test_rank_winter_weeks_orders_by_weekly_max_loading() -> None:
     assert ranked.loc[0, "max_loading_pu"] == pytest.approx(1.0)
     assert ranked.loc[0, "top_timestamp"] == timestamps[1]
     assert set(ranked["steps_in_winter_months"]) == {3, 6, 7}
+
+
+def test_rank_annual_weeks_includes_non_winter_peaks() -> None:
+    timestamps = pd.date_range("2016-01-01T00:00:00Z", periods=220, freq="D")
+    values = [0.1] * len(timestamps)
+    values[200] = 1.0
+    loading = pd.Series(values, index=timestamps)
+
+    ranked = rank_annual_weeks(loading)
+
+    assert ranked.loc[0, "top_timestamp"] == timestamps[200]
 
 
 def test_coverage_by_rank_accumulates_selected_week_windows() -> None:
@@ -68,3 +106,28 @@ def test_coverage_by_rank_accumulates_selected_week_windows() -> None:
     coverage = coverage_by_rank(loading, ranked, top_counts=(4,))
 
     assert list(coverage["top_4_coverage"]) == [0.0, 1.0]
+
+
+def test_choose_adaptive_window_count_adds_margin_after_target() -> None:
+    coverage = pd.DataFrame(
+        {
+            "week_rank": [1, 2, 3],
+            "top_672_coverage": [0.5, 0.95, 1.0],
+        }
+    )
+
+    choice = choose_adaptive_window_count(
+        coverage,
+        coverage_column="top_672_coverage",
+        target=0.95,
+        margin_weeks=1,
+    )
+
+    assert choice == {
+        "base_k": 2,
+        "margin_weeks": 1,
+        "selected_k": 3,
+        "selected_coverage": 1.0,
+        "target": 0.95,
+        "target_feasible": True,
+    }
