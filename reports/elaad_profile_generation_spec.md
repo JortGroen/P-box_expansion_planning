@@ -151,7 +151,7 @@ Rules: (1) an ElaadNL seed appears exactly once across the whole project; (2) an
 ## 6. Post-processing pipeline (per batch, scripted in `data/get_elaad_profiles.py`)
 
 1. POST request → save raw JSON to `data/raw/elaad_profiles/` (gzip).
-2. Parse: assert `len(datetimes) == 35040`; assert `len(demands_kw) == n_profiles`.
+2. Parse: assert `len(datetimes) == 35040`. The 2026-07-10 one-profile API probe returned `demands_kw` time-major (`len(demands_kw) == len(datetimes)`, each row containing one value per returned profile), not profile-major. Preserve this observation in metadata and reshape to timestamp-indexed profile columns during conversion.
 3. **Convert datetimes UTC → Europe/Amsterdam** (documented tool behaviour: output is UTC regardless of request timezone); assert the converted series starts 2025-01-01 00:00 local.
 4. Wide parquet: index = local timestamp, columns = `profile_{seed}_{i}`, values = kW, float32.
 5. Checksum (sha256) → `DATA_REGISTER.md` row and `data/metadata/elaad_profiles/` manifest: source (charging.elaad.nl API), request body, retrieval timestamp, documentation version 10 Nov 2025, Outlook basis (Personenauto's 2024 / Logistiek 2025), license note (**open item §7.5 — confirm terms of use before redistribution or manuscript data-availability claims**), status `proposed` for PI sign-off.
