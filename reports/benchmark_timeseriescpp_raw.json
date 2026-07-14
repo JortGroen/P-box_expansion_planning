@@ -1,0 +1,266 @@
+{
+  "adapter_converter_warnings": [
+    "There were some Nan in the pp_net.sgen[\"min_p_mw\"], they have been replaced by 0",
+    "There were some Nan in the pp_net.sgen[\"max_p_mw\"], they have been replaced by 0",
+    "There were some Nan in the pp_net.sgen[\"min_q_mvar\"], they have been replaced by 0",
+    "There were some Nan in the pp_net.sgen[\"max_q_mvar\"], they have been replaced by 0",
+    "LightSim has not found any generators tagged as \"slack bus\" in the pandapower network.I will attempt to add some from the ext_grid."
+  ],
+  "config": {
+    "command": ".\\.venv\\Scripts\\python.exe -m src.evaluator_ac_benchmark --config reports/benchmark_timeseriescpp_input.json",
+    "description": "TimeSeriesCPP AC benchmark for the selected SimBench primary grid.",
+    "evidence_output_path": "reports/benchmark_timeseriescpp_evidence.json",
+    "grid_code": "1-MV-semiurb--0-sw",
+    "grid_key": "simbench_semiurb",
+    "max_iter": 20,
+    "raw_output_path": "reports/benchmark_timeseriescpp_raw.json",
+    "repeats": 5,
+    "report_output_path": "reports/BENCHMARK_TIMESERIESCPP.md",
+    "schema_version": 1,
+    "task_id": "E1.S2b",
+    "time_steps": 672,
+    "timing_method": "time.perf_counter wall-clock timings plus TimeSeriesCPP internal solver/preprocessing/current-flow timers",
+    "tolerance": 1e-08,
+    "warmup_policy": "one complete adapter construction and small TimeSeriesCPP solve before measured repetitions; one high-level runpp warm-up per backend before measured repetitions",
+    "warmups": 1
+  },
+  "hardware_runtime": {
+    "cpu_count": 12,
+    "platform": "Windows-11-10.0.26200-SP0",
+    "processor": "Intel64 Family 6 Model 186 Stepping 3, GenuineIntel",
+    "python": "3.12.7"
+  },
+  "pandapower_runpp": {
+    "pandapower_lightsim2grid": {
+      "converged_all": true,
+      "elapsed": {
+        "max_s": 0.1257064000237733,
+        "mean_s": 0.07987182002980261,
+        "median_s": 0.10382340010255575,
+        "min_s": 0.028155499952845275
+      },
+      "options_lightsim2grid_all_true": true,
+      "repeats": [
+        {
+          "converged": true,
+          "elapsed_s": 0.10554250003769994,
+          "pandapower_option_lightsim2grid": true,
+          "requested_lightsim2grid": true,
+          "warnings": []
+        },
+        {
+          "converged": true,
+          "elapsed_s": 0.1257064000237733,
+          "pandapower_option_lightsim2grid": true,
+          "requested_lightsim2grid": true,
+          "warnings": []
+        },
+        {
+          "converged": true,
+          "elapsed_s": 0.036131300032138824,
+          "pandapower_option_lightsim2grid": true,
+          "requested_lightsim2grid": true,
+          "warnings": []
+        },
+        {
+          "converged": true,
+          "elapsed_s": 0.028155499952845275,
+          "pandapower_option_lightsim2grid": true,
+          "requested_lightsim2grid": true,
+          "warnings": []
+        },
+        {
+          "converged": true,
+          "elapsed_s": 0.10382340010255575,
+          "pandapower_option_lightsim2grid": true,
+          "requested_lightsim2grid": true,
+          "warnings": []
+        }
+      ],
+      "warnings": []
+    },
+    "pandapower_native": {
+      "converged_all": true,
+      "elapsed": {
+        "max_s": 0.10891880001872778,
+        "mean_s": 0.0729958400130272,
+        "median_s": 0.08582949999254197,
+        "min_s": 0.03032580006401986
+      },
+      "options_lightsim2grid_all_true": false,
+      "repeats": [
+        {
+          "converged": true,
+          "elapsed_s": 0.08901799994055182,
+          "pandapower_option_lightsim2grid": false,
+          "requested_lightsim2grid": false,
+          "warnings": []
+        },
+        {
+          "converged": true,
+          "elapsed_s": 0.08582949999254197,
+          "pandapower_option_lightsim2grid": false,
+          "requested_lightsim2grid": false,
+          "warnings": []
+        },
+        {
+          "converged": true,
+          "elapsed_s": 0.03032580006401986,
+          "pandapower_option_lightsim2grid": false,
+          "requested_lightsim2grid": false,
+          "warnings": []
+        },
+        {
+          "converged": true,
+          "elapsed_s": 0.05088710004929453,
+          "pandapower_option_lightsim2grid": false,
+          "requested_lightsim2grid": false,
+          "warnings": []
+        },
+        {
+          "converged": true,
+          "elapsed_s": 0.10891880001872778,
+          "pandapower_option_lightsim2grid": false,
+          "requested_lightsim2grid": false,
+          "warnings": []
+        }
+      ],
+      "warnings": []
+    }
+  },
+  "schema_version": 1,
+  "task_id": "E1.S2b",
+  "timeseriescpp": {
+    "compute_vs_wall": {
+      "max_s": 0.14476870000362396,
+      "mean_s": 0.11099652000702917,
+      "median_s": 0.12540669995360076,
+      "min_s": 0.0756054000230506
+    },
+    "conversion_setup": {
+      "max_s": 5.985058900085278,
+      "mean_s": 5.342083319998347,
+      "median_s": 5.282799900043756,
+      "min_s": 4.856544699985534
+    },
+    "current_flow_result_extraction": {
+      "max_s": 0.0052665999392047524,
+      "mean_s": 0.004107879986986518,
+      "median_s": 0.004369599977508187,
+      "min_s": 0.002483599935658276
+    },
+    "input_shapes": {
+      "branch_flows": [
+        672,
+        123
+      ],
+      "gen_p": [
+        672,
+        1
+      ],
+      "load_p": [
+        672,
+        115
+      ],
+      "load_q": [
+        672,
+        115
+      ],
+      "sgen_p": [
+        672,
+        121
+      ],
+      "vinit": [
+        115
+      ],
+      "voltages": [
+        672,
+        115
+      ]
+    },
+    "input_update": {
+      "max_s": 0.0016804999904707074,
+      "mean_s": 0.0009468800155445934,
+      "median_s": 0.0008594000246375799,
+      "min_s": 0.0005862000398337841
+    },
+    "internal_current_flow": {
+      "max_s": 0.0052152,
+      "mean_s": 0.0040764,
+      "median_s": 0.004342,
+      "min_s": 0.0024728
+    },
+    "internal_preprocessing": {
+      "max_s": 0.0039482,
+      "mean_s": 0.00216254,
+      "median_s": 0.0017551,
+      "min_s": 0.0014286
+    },
+    "internal_solver": {
+      "max_s": 0.13932350000000018,
+      "mean_s": 0.10604416000000003,
+      "median_s": 0.1199949,
+      "min_s": 0.07226289999999999
+    },
+    "power_flow_result_extraction": {
+      "max_s": 0.004511400009505451,
+      "mean_s": 0.003182200016453862,
+      "median_s": 0.003082699957303703,
+      "min_s": 0.0019890000112354755
+    },
+    "repeats": 5,
+    "solved_counts": [
+      672,
+      672,
+      672,
+      672,
+      672
+    ],
+    "time_steps": 672,
+    "voltage_result_extraction": {
+      "max_s": 2.889998722821474e-05,
+      "mean_s": 2.3299967870116235e-05,
+      "median_s": 2.319994382560253e-05,
+      "min_s": 1.8900027498602867e-05
+    },
+    "warmups": 1
+  },
+  "timestamp_utc": "2026-07-14T11:14:37.881805Z",
+  "topology_materialization": {
+    "bus_count_after": 115,
+    "bus_count_before": 117,
+    "disabled_lines": [
+      113,
+      114,
+      115,
+      116,
+      117,
+      118,
+      119,
+      120
+    ],
+    "dropped_switches": 246,
+    "fused_bus_switches": [
+      0,
+      5
+    ],
+    "in_service_line_count_after": 113,
+    "line_count_before": 121,
+    "open_line_switches": [
+      233,
+      235,
+      237,
+      239,
+      241,
+      243,
+      245,
+      247
+    ],
+    "sgen_limit_columns_cast": [
+      "min_p_mw",
+      "max_p_mw",
+      "min_q_mvar",
+      "max_q_mvar"
+    ]
+  }
+}
