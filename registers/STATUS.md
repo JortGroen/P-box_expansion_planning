@@ -11,7 +11,7 @@ Format: `Story | Owner | status | tasks | blocked-by | PR`
 | E1.S1 Grid loading | A | done | 3/3 | -- | #2 |
 | E1.S2 Laptop micro-benchmark | A | done | 2/2 | -- | #7 |
 | E1.S2b TimeSeriesCPP AC benchmark | A | todo | 0/3 | -- | -- |
-| E1.S1b Transformer headroom diagnostic | A | todo | 0/4 | -- | -- |
+| E1.S1b Transformer headroom diagnostic | A | review | 4/4 | -- | -- |
 | E1.S3b G0-A1 import-window diagnostic | A | done | 4/4 | -- | #15 |
 | E1.S4 Tier-1 evaluator | A | todo | 0/6 | -- | -- |
 | E2.S1 Data acquisition | C | blocked | 2/3 | D-002 generated-profile terms-of-use | #14 |

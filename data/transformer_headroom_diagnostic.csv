@@ -1,0 +1,2 @@
+scenario,grid_code,transformer_indices,unit_count,unit_nameplate_mva,total_nameplate_mva,firm_n_minus_1_nameplate_mva,peak_import_mva,peak_import_timestamp,peak_import_loading_total_pu,peak_import_loading_firm_pu,multiplier_to_0_95_total,multiplier_to_0_95_firm,g0_total_nameplate_fallback_triggered,firm_capacity_fallback_triggered,firm_classifies_differently
+0,1-MV-semiurb--0-sw,"[0, 1]",2,"[40.0, 40.0]",80.0,40.0,12.731587385572695,2016-01-27T17:45:00+00:00,0.1591448423196587,0.3182896846393174,5.969404890243491,2.9847024451217457,False,False,False
