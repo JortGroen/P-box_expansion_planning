@@ -53,3 +53,10 @@ DID: Created fresh branch `agent-c/E2.S2-ev-model` from current `origin/main` af
 VERIFIED: `.\scripts\task.ps1 test` passed 41 tests. `data/get_elaad_profiles.py --write-library-plan` wrote `data/metadata/elaad_profiles/d002_elaad_profile_library_plan.json` without API calls or generated profile data.
 OPEN: E2.S2 still needs the first implementation step; generated profile redistribution remains a documented limitation, not an internal-use blocker.
 NEXT: Review the E2.S2 library plan, then run the first explicitly approved profile-generation batch into ignored data paths.
+
+## 2026-07-14 00:00 - E2.S1/E2.S2 - in-progress
+DID: Merged latest `origin/main` into PR #18 branch, preserved EV-002 and the metadata-only ElaadNL library plan, added the EV-002 Methods traceability block, and revised D-002 Methods language to match the approved internal-use/non-redistribution boundary and one-profile probe evidence.
+VERIFIED: `.\scripts\task.ps1 test` passed 45 tests, including `tests/test_methods_registry.py`. No API calls, bulk generation, raw profile commits, or generated-profile redistribution performed.
+OPEN: E2.S2 remains in progress; generated-profile redistribution remains an unresolved limitation, not an internal-use blocker under EV-002.
+NEXT: After PI review/merge of PR #18, run the first explicitly approved small ElaadNL generation batch into ignored data paths and update manifests/checksums before sampler integration.
+
