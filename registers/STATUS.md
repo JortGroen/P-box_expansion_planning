@@ -13,7 +13,7 @@ Format: `Story | Owner | status | tasks | blocked-by | PR`
 | E1.S2b TimeSeriesCPP AC benchmark | A | done | 3/3 | -- | #23 |
 | E1.S1b Transformer headroom diagnostic | A | done | 4/4 | -- | #19 |
 | E1.S3b G0-A1 import-window diagnostic | A | done | 4/4 | -- | #15 |
-| E1.S4 Tier-1 evaluator | A | todo | 0/6 | -- | -- |
+| E1.S4 Tier-1 evaluator | A | review | 6/6 | -- | pending |
 | E2.S1 Data acquisition | C | done | 3/3 | -- | #14, #18 follow-up |
 | E2.S2 EV model | C | in-progress | 0/3 | -- | -- |
 | E2.S3 HP model | C | todo | 0/3 | E2.S1 | -- |
