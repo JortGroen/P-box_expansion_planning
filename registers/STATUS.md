@@ -28,7 +28,7 @@ Format: `Story | Owner | status | tasks | blocked-by | PR`
 | E4.S2 Fallback stub | B | todo | 0/1 | E5 invariant skeleton | -- |
 | E5.S1 Fuzzy number class | B | done | 2/2 | -- | #1 |
 | E5.S2 Vertex propagation | B | done | 3/3 | pre-G3 test mode | #6 |
-| E5.S3 Output-domain model-error propagation | B | todo | 0/3 | T2-T3: PI-approved IC schema, signed A-013, G2 envelope | #13 revise |
+| E5.S3 Output-domain model-error propagation | B | blocked | 1/3 | T2-T3: Q-4 PI-approved IC schema, signed A-013, G2 envelope | -- |
 | E5.S4 Independent cross-check | B | todo | 0/2 | E5.S1-E5.S3 | -- |
 | E6.S1 alpha_star | B | todo | 0/1 | E5.S2 | -- |
 | E6.S2 rho_star and membership | B | todo | 0/3 | E6.S1, G3 | -- |
