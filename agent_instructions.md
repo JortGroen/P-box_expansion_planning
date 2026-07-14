@@ -68,9 +68,10 @@ If your current directory, branch, or worktree does not match your role and assi
 
 ### 3.2 During the session
 - One task at a time; scope = exactly the task's deliverable, nothing more. New ideas go to `BACKLOG.md`, not into code.
-- Math modules: tests first (or alongside). `make test` before every commit. A red test you cannot fix without changing the spec ⇒ escalate (§4); never bend the test.
+- Math modules: tests first (or alongside). `.\scripts\task.ps1 test` before every commit. A red test you cannot fix without changing the spec ⇒ escalate (§4); never bend the test.
 - All randomness through `src/rng.py`'s seed tree — never a bare `np.random` call.
 - No magic numbers in code: scientific constants and parameters live in `configs/*.yaml` with units in key names (`p_crit`, `s_rated_kva`, `step_min: 15`).
+- A PR that adds or changes an entry in `DECISIONS.md`, `ASSUMPTIONS.md`, or `DATA_REGISTER.md` must add or update its same-ID block in `paper/methods_decisions_and_assumptions.md`. Write one standalone manuscript paragraph explaining and defending the choice, scope, and limitations. Use an explicit status label so proposed, not-invoked, superseded, and pending items cannot be mistaken for approved claims.
 
 ### 3.3 End of session (mandatory, even mid-task)
 1. Log entry (template §10): what was done, what was **verified** (test/manifest evidence), open questions, next step.
@@ -148,14 +149,25 @@ If your current directory, branch, or worktree does not match your role and assi
 
 ## 9. Git & PR protocol
 
-- Branch naming: `agent-<a|b|c>/E#.S#-<slug>`. Commits small, messages prefixed with the task ID (`E5.S2.T1: ...`).
+- Branch naming: `agent-<a|b|c>/E#.S#-<slug>`.
+- Keep commits small and cohesive. Use `<task ID>: <imperative outcome>` for the subject, for example `E5.S2: Preserve common random numbers across alpha cuts`. Keep the complete subject concise (preferably at most 72 characters), specific, and understandable without reading the diff. Avoid vague subjects such as `update files`, `fix work`, `done`, or agent/session narration. Add a short body when the reason, scientific constraint, or compatibility consequence is not obvious from the subject.
 - Worktree naming: each active agent uses a separate sibling directory (`P-box_expansion_planning-agent-a`, `P-box_expansion_planning-agent-b`, `P-box_expansion_planning-agent-c`). The PI dashboard directory remains on `main` and is not used for implementation.
 - Do not use `git switch` to move one shared directory between agents or tasks. If the branch/task changes, ask the PI to create or retarget a worktree.
-- **PR body must contain** the story ID, a link to the deliverable, and this checklist, all boxes ticked truthfully:
-  - [ ] `make test` green locally
+- Write the PR for a professional human reviewer who has not followed the agent session. The title uses `<story ID>: <human-readable outcome>` and describes the delivered result, not merely the activity performed. Do not paste raw agent narration, terminal history, or a chronological diary.
+- **PR body must use these sections**, omitting only a section that genuinely does not apply:
+  - `## Summary`: two to four concise bullets describing the purpose and user/scientific outcome.
+  - `## Changes`: the important implementation, data, register, or interface changes, grouped logically rather than file by file.
+  - `## Validation`: exact commands run and their results, including test counts and relevant invariant or manifest checks.
+  - `## Evidence`: links to reports, manifests, generated tables/figures, and the governing decision or question.
+  - `## Risks and decisions`: reviewer decisions required, unresolved limitations, compatibility effects, or `None`.
+  - `## Checklist`: the checklist below, with every box marked truthfully.
+- Keep PR prose direct and readable. Explain why a change exists and what a reviewer should verify; avoid inflated claims, repetitive detail, internal chain-of-thought, or unexplained task jargon.
+- **PR checklist:**
+  - [ ] `.\scripts\task.ps1 test` green locally
   - [ ] Invariant suite green (if math touched)
   - [ ] Manifest(s) attached for every produced result
   - [ ] Registers updated (`ASSUMPTIONS`/`DATA_REGISTER` rows `proposed` where needed)
+  - [ ] Methods paragraph registry updated for every changed decision, assumption, or data/protocol choice
   - [ ] No interface-contract or schema change (or: gate approval linked)
   - [ ] Log + STATUS updated
 - You never merge, never rebase `main`, never force-push a shared branch, never commit directly to `main`.

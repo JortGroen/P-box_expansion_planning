@@ -1,6 +1,9 @@
 # ASSUMPTIONS.md
 
-Assumptions proposed by agents remain unsigned until the PI signs them.
+Assumptions proposed by agents remain unsigned until the PI signs them. Every
+row must have a same-ID standalone paragraph block in
+`paper/methods_decisions_and_assumptions.md`, with its proposed, approved,
+superseded, or not-invoked status stated explicitly.
 
 | ID | Date | Statement | Rationale | Source/evidence | Owner | Status | PI sign-off |
 |---|---|---|---|---|---|---|---|

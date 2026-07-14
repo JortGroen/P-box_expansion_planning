@@ -22,6 +22,8 @@ Bootstrap rules:
 - Scientific values, dependency changes, interface changes, gate decisions, and manuscript numbers require PI approval.
 - Every experimental result must be produced through the runner and have a manifest.
 - Every new logic change needs tests.
+- Every new or changed decision, assumption, or data/protocol choice must add or update the same-ID standalone manuscript paragraph in `paper/methods_decisions_and_assumptions.md`. Preserve the register status in the prose; never write a proposed item as settled.
+- Write commit messages and PR titles/descriptions for human reviewers: concise, professional, specific about the outcome, and formatted according to the Git and PR protocol in `agent_instructions.md`. Do not submit raw agent narration or vague "update/fix work" summaries.
 - Per G1-A1, model-error intervals are applied to loading trajectories before event detection; never widen probabilities after estimation or sample an interval error as if it were independent randomness.
 - Report alpha-indexed lower/upper bounds only; never report a defuzzified probability as the answer.
 

@@ -1,7 +1,9 @@
 # DECISIONS.md
 
 Signed PI decisions live here. Agents may append proposed rows, but they never
-write a PI sign-off.
+write a PI sign-off. Every row must have a same-ID standalone paragraph block
+in `paper/methods_decisions_and_assumptions.md`; pending gates use an explicit
+placeholder until the PI records a decision.
 
 | ID | Date | Gate/topic | Decision | Rationale | Evidence | Status | PI sign-off |
 |---|---|---|---|---|---|---|---|

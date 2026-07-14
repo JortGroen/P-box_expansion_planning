@@ -4,14 +4,17 @@ import pandas as pd
 import pytest
 
 from src.profiles import (
+    ScenarioProfile,
     aggregate_loading_from_profiles,
     annual_timestamps,
     choose_adaptive_window_count,
     count_overload_episodes,
+    firm_nameplate_after_largest_unit_outage,
     coverage_by_rank,
     rank_annual_weeks,
     rank_winter_weeks,
     split_import_export_loading,
+    transformer_headroom_diagnostic,
 )
 
 
@@ -131,3 +134,40 @@ def test_choose_adaptive_window_count_adds_margin_after_target() -> None:
         "target": 0.95,
         "target_feasible": True,
     }
+
+
+def test_firm_nameplate_after_largest_unit_outage_uses_remaining_capacity() -> None:
+    assert firm_nameplate_after_largest_unit_outage([40.0, 40.0]) == 40.0
+    assert firm_nameplate_after_largest_unit_outage([25.0, 40.0, 63.0]) == 65.0
+
+
+def test_transformer_headroom_diagnostic_compares_total_and_firm_denominators() -> None:
+    index = pd.date_range("2016-01-01T00:00:00Z", periods=4, freq="15min")
+    profile = ScenarioProfile(
+        scenario=0,
+        grid_code="toy",
+        loading_pu=pd.Series([0.2, 0.3, 0.1, 0.25], index=index),
+        timestamps=index,
+        aggregate_p_mw=pd.Series([1.0, 1.0, -1.0, 1.0], index=index),
+        aggregate_q_mvar=pd.Series([0.0, 0.0, 0.0, 0.0], index=index),
+        rating_mva=80.0,
+    )
+
+    diagnostic = transformer_headroom_diagnostic(
+        profile,
+        nameplate_mva=[40.0, 40.0],
+        transformer_indices=[0, 1],
+        busbar_parallel_status="closed test bank",
+        fallback_threshold_pu=0.5,
+        target_loading_pu=0.95,
+    )
+
+    assert diagnostic.peak_import_timestamp == index[1]
+    assert diagnostic.peak_import_mva == pytest.approx(24.0)
+    assert diagnostic.peak_import_loading_total_pu == pytest.approx(0.3)
+    assert diagnostic.peak_import_loading_firm_pu == pytest.approx(0.6)
+    assert diagnostic.multiplier_to_095_total == pytest.approx(0.95 / 0.3)
+    assert diagnostic.multiplier_to_095_firm == pytest.approx(0.95 / 0.6)
+    assert diagnostic.g0_fallback_total_triggered is False
+    assert diagnostic.firm_capacity_fallback_triggered is True
+    assert diagnostic.firm_classifies_differently is True
