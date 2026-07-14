@@ -25,6 +25,8 @@ Bootstrap rules:
 - Every new or changed decision, assumption, or data/protocol choice must add or update the same-ID standalone manuscript paragraph in `paper/methods_decisions_and_assumptions.md`. Preserve the register status in the prose; never write a proposed item as settled.
 - Write commit messages and PR titles/descriptions for human reviewers: concise, professional, specific about the outcome, and formatted according to the Git and PR protocol in `agent_instructions.md`. Do not submit raw agent narration or vague "update/fix work" summaries.
 - Per G1-A1, model-error intervals are applied to loading trajectories before event detection; never widen probabilities after estimation or sample an interval error as if it were independent randomness.
+- Per G1-A2, compose relative grid error with additive Tier-1 endpoints as `(1-e_grid)*max(0,L_T1-e_minus)` and `(1+e_grid)*(L_T1+e_plus)`. A-013 numerical values remain proposed; never call 5% empirical or expert-signed.
+- Do not assume the withdrawn 16-104 MVA applicability range. E3.S2b freezes the future operating domain and reports raw MVA under both total and firm capacity conventions before probabilistic results are inspected.
 - Report alpha-indexed lower/upper bounds only; never report a defuzzified probability as the answer.
 
 Worktree layout:

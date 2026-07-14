@@ -10,9 +10,10 @@ placeholder until the PI records a decision.
 | G0 | 2026-07-09 | Scope freeze | Approved: see detailed G0 entry below. | Required before gated scope-specific work; freezes overload event, P_crit handling, grid/fallback choice, weather scope, and primary alpha grid. | E0 registers; E1.S1 grid inventory PR #2; G0 scope-freeze text approved by PI. | approved | PI approved in chat, 2026-07-09 |
 | G0-A1 | 2026-07-10 | Event direction and fixed-window rejection amendment | Primary overload event is consumption-driven import congestion: apparent-power magnitude conditioned on net import direction. Direction-agnostic `abs(S)` remains the screening metric, and export-direction exceedance is reported beside primary results. Fixed winter windows are rejected; G0-A2 later assigns primary Tier-1 `P(E)` to the full planning year and retains WindowSets only for AC validation and diagnostics. | E1.S3 showed direction-agnostic annual maxima in SimBench scenarios 1/2 are summer midday export/PV peaks, while scenario 0 winter windows miss much of the annual near-peak shoulder. The study's flexibility construct is demand-reduction, so feed-in congestion needs a distinct absorption/curtailment instrument and remains out of scope. | E1.S3 PR #10; `reports/critical_weeks_validation.md`; PI amendment text in chat, 2026-07-10. | approved | PI approved in chat, 2026-07-10 |
 | G0-A2 | 2026-07-10 | Full-year primary event scope | Primary Tier-1 `P(E)` is annual: the probability that the full planning year contains at least one qualifying import-direction overload episode. WindowSet is retained only for IC-1/IC-2 AC-validation subset selection and diagnostics. | E1.S3b adaptive import windows span 19-25 weeks, or 36-48% of the year, defeating their compute purpose for the negligible-cost Tier-1 summation evaluator. Full-year Tier-1 removes window-transfer risk. | E1.S3b import-window diagnostic PR #15; `reports/import_window_diagnostic.md`; `reports/G1_DECISION_BRIEF.md`; PI approved in chat, 2026-07-10. | approved | PI approved in chat, 2026-07-10 |
-| G1 | 2026-07-10 | Foundation validated | Approved two-tier architecture: Tier-1 radial summation with G0-A1/G0-A2 semantics is the Monte Carlo inner-loop evaluator; AC power flow serves deterministic checks and validation subsets. Fixed winter windows are rejected, and primary Tier-1 runs the full planning year. No manuscript claim may say "AC infeasible"; E1.S2 establishes only that the benchmarked pandapower `runpp` path is too slow for the MC loop and that the lower-level `lightsim2grid` TimeSeriesCPP path remains untested. Before G2, Agent A must complete C1 TimeSeriesCPP/solver-engagement benchmarking and C2 transformer-headroom diagnostics; Agent A may proceed to E1.S4 with full-year import/export/screening semantics. | Tier-1 is near-exact for the decision-transformer criterion and computationally negligible. E1.S3 rejected fixed winter windows; E1.S3b showed adaptive windows are too large to justify a primary windowed probability. The high-level AC benchmark does not justify an "AC infeasible" claim. | E1.S2 benchmark; E1.S3 profile report; E1.S3b import-window diagnostic PR #15; `reports/G1_DECISION_BRIEF.md`; PI amended G1 text in chat, 2026-07-10. | approved | PI approved in chat, 2026-07-10 |
-| G1-A1 | 2026-07-13 | Black-box model error and Tier-1 approximation | Grid-model error is an expert-specified interval on black-box model output, propagated before event detection under arbitrary unknown dependence. Tier-1 approximation error is estimated empirically at G2 and combined by interval addition where forms and units are compatible. Post-hoc probability-margin widening is rejected. | Preserves the intended imprecise-probability story, separates pandapower-to-reality uncertainty from Tier-1-to-pandapower approximation, and retains the compute benefit of Tier-1 without hiding surrogate error. | `reports/G1_A1_MODEL_ERROR_AMENDMENT_PROPOSAL.md`; PI approval in chat, 2026-07-13. | approved | PI approved in chat, 2026-07-13 |
-| G2 | TBD | Tier-1 enclosure and adequacy | Pending: empirical Tier-1 error envelope, held-out near/above-threshold enclosure test, decision impact, and evaluator verdict | Determines Tier-1 primary / corrected Tier-1 / selective AC / Tier-1 rejected | E1.S2b corrected AC budget; E1.S1b nameplate decision brief; E3.S3 manifested tier comparison | pending | -- |
+| G1 | 2026-07-10 | Foundation validated | Approved two-tier architecture: Tier-1 radial summation with G0-A1/G0-A2 semantics is the Monte Carlo inner-loop evaluator; AC power flow serves deterministic checks and validation subsets. Fixed winter windows are rejected, and primary Tier-1 runs the full planning year. No manuscript claim may say "AC infeasible". E1.S2 established that repeated high-level `runpp` is too slow for the MC loop; E1.S2b subsequently established a fast lower-level TimeSeriesCPP path for deterministic AC batches while deferring complete adapter numerical validation to G2. C1 TimeSeriesCPP benchmarking and C2 transformer-headroom diagnostics are complete; Agent A may proceed to E1.S4. | Tier-1 is computationally negligible for the decision-transformer criterion, but its accuracy remains a G2 hypothesis. E1.S3 rejected fixed winter windows; E1.S3b showed adaptive windows are too large to justify a primary windowed probability. E1.S2b makes substantial AC validation practical without supporting an "AC infeasible" or "full AC MC" claim. | E1.S2 benchmark; E1.S2b PR #23 and `reports/BENCHMARK_TIMESERIESCPP.md`; E1.S1b PR #19; E1.S3b import-window diagnostic PR #15; `reports/G1_DECISION_BRIEF.md`; PI amended G1 text in chat, 2026-07-10. | approved | PI approved in chat, 2026-07-10 |
+| G1-A1 | 2026-07-13 | Black-box model error and Tier-1 approximation | Grid-model error is an unprobabilized interval on black-box model output, propagated before event detection under arbitrary unknown dependence. Tier-1 approximation error is estimated empirically at G2. Post-hoc probability-margin widening is rejected. G1-A2 supersedes the provisional error-composition and domain wording. | Preserves the intended imprecise-probability story, separates physical-system/model discrepancy from Tier-1-to-pandapower approximation, and retains the compute benefit of Tier-1 without hiding surrogate error. | `reports/G1_A1_MODEL_ERROR_AMENDMENT_PROPOSAL.md`; PI approval in chat, 2026-07-13. | approved | PI approved in chat, 2026-07-13 |
+| G1-A2 | 2026-07-14 | Grid-error and capacity-screen protocol | Use a symmetric relative `epsilon_grid` envelope with arbitrary unknown dependence and compose it exactly with the additive G2 Tier-1 envelope before event detection. Reject the fixed 16-104 MVA applicability claim. Derive and freeze the asserted future operating domain from one predeclared manifested E3.S2b screen before probabilistic-result inspection. Keep total 80 MVA and firm 40 MVA capacity conventions open until that screen reports raw MVA and both ratios; selecting firm capacity requires actual one-transformer-out AC validation. | The 104 MVA value was only 1.3 times the current 80 MVA denominator, not a validated boundary. Relative grid error survives a later capacity-convention choice. A single governed future-layer screen can expose whether the total or firm convention yields no congestion, decision-sensitive congestion, or irrecoverable congestion without silently tuning the network after seeing p-box results. | `reports/G1_A2_GRID_ERROR_AND_CAPACITY_PROTOCOL.md`; E1.S1b headroom evidence; PI approval in chat, 2026-07-14. | approved | PI approved in chat, 2026-07-14 |
+| G2 | TBD | Tier-1 enclosure and adequacy | Pending: empirical Tier-1 error envelope, held-out near/above-threshold enclosure test, decision impact, and evaluator verdict | Determines Tier-1 primary / corrected Tier-1 / selective AC / Tier-1 rejected | E1.S2b corrected AC budget; E1.S1b headroom brief; E3.S2b frozen future domain/capacity screen; E3.S3 manifested tier comparison | pending | -- |
 | G3 | TBD | Monotonicity verdict | Pending: vertex shortcut vs interior sampling | Critical compute shortcut | E4.S1 monotonicity report | pending | -- |
 | G4 | TBD | Elicitation sign-off | Pending: fuzzy controllability corners | Paper hinge assumption | E7.S2 worksheet | pending | -- |
 | G5 | TBD | Case selection | Pending: decision-reversal benchmark case | Money figure depends on divergent treatments | E8.S1 case sweep | pending | -- |
@@ -319,18 +320,20 @@ shortcut may be used before G3. Agent C remains blocked on D-002 ElaadNL terms.
 
 This entry amends G1, the G2 gate, E5.S3, and the behavioral boundary between
 IC-2 and IC-3. It supersedes any wording that applies fixed margins directly
-to an already estimated overload probability. Exact error values, units,
-absolute/relative form, symmetry, the G2 numerical adequacy criterion, and the
-exact IC schema change remain subject to later PI approval.
+to an already estimated overload probability. At G1-A1, exact error values,
+units, form, symmetry, the G2 numerical adequacy criterion, and the exact IC
+schema change remained deferred; G1-A2 subsequently freezes relative symmetric
+grid-error form while retaining the other stated dependencies.
 
 G1's earlier description of Tier-1 as "near-exact" is a hypothesis pending the
 G2 held-out enclosure result, not an established manuscript claim.
 
 ### Black-Box Grid-Model Error
 
-The project has no field measurements that validate pandapower directly
-against reality. The pandapower-to-reality discrepancy `delta_grid` is
-therefore an expert-specified interval assumption, not an empirically
+The project has no field measurements that validate the DSO planning model
+directly against physical loading. The grid-model discrepancy `delta_grid` is
+therefore an author-specified interval assumption unless later evidence or a
+human sign-off supplies stronger provenance; it is not an empirically
 determined quantity within this project. Its numerical value, asserted domain,
 units/form, and mandatory sensitivity sweep must be recorded in a signed
 `ASSUMPTIONS.md` row before paper results use it. Any future empirical
@@ -350,19 +353,12 @@ characterize
 delta_Tier1(X, rho, t) = L_PP(X, rho, t) - L_T1(X, rho, t)
 ```
 
-over the operating domain used by the paper. If both discrepancies are
-symmetric additive envelopes on the same output quantity and in the same
-units, then
-
-```text
-epsilon_total = epsilon_Tier1 + epsilon_grid
-L_true in [L_T1 - epsilon_total, L_T1 + epsilon_total]
-```
-
-is the conservative interval sum under unknown dependence. If G2 supports an
-asymmetric or one-sided Tier-1 envelope, that tighter interval is retained.
-No cancellation or root-sum-of-squares combination is allowed without a later
-signed dependence model.
+over the operating domain used by the paper. G1-A2 later froze
+`epsilon_grid` as relative and the Tier-1 enclosure as additive, so a simple
+sum of their numerical values is not the current composition. Use the exact
+G1-A2 endpoint formulas. If G2 supports asymmetric or one-sided Tier-1
+endpoints, that tighter form is retained. No cancellation or root-sum-of-
+squares combination is allowed without a later signed dependence model.
 
 ### Event And Probability Propagation
 
@@ -403,13 +399,12 @@ validated correction; selective AC for predeclared threshold-straddling states
 or episodes; or Tier-1 rejected. Selective AC must preserve CRN and manifest
 discipline and record the promotion rule before execution.
 
-### Deferred Envelope Form And Interface
+### Envelope Form And Interface, As Amended By G1-A2
 
-The error-envelope form shall be decided jointly with the total-versus-firm
-`(n-1)` `S_nom,agg` convention. Additive and relative loading envelopes both
-act as threshold shifts near `L = 1.0`, but an additive p.u. envelope depends
-on the chosen nameplate denominator while a relative envelope on the physical
-loading ratio is invariant to that convention.
+G1-A2 selects a relative symmetric grid-error envelope because it is invariant
+to the total-versus-firm `(n-1)` `S_nom,agg` convention. The additive Tier-1
+endpoints established at G2 remain expressed in the selected loading-p.u.
+convention and use the exact mixed composition in G1-A2.
 
 IC-2/IC-3 must retain enough information to apply the interval before episode
 classification and to preserve the unwidened direction gate. A boolean-only
@@ -419,3 +414,77 @@ compatible schema change for separate PI approval before E5.S3 implementation.
 PR #13 requires revision: its useful configuration and invariant-test
 structure may be retained, but probability-domain widening must be replaced by
 output-domain trajectory propagation and four-step event tests.
+
+## G1-A2 - Grid-Error And Capacity-Screen Protocol - 2026-07-14 - signed: PI approved in chat
+
+### Authority And Scope
+
+This entry amends G1-A1, A-013, G2, E3.S3, and E5.S3. It freezes the error
+form, dependence treatment, composition rule, direction-gate order, and the
+process for defining the operating domain and choosing the capacity
+convention. It does not sign a numerical value for `epsilon_grid`; the draft
+5% reference and 2%/10% sensitivities remain proposed pending evidence review
+and a later PI sign-off of A-013.
+
+### Grid-Error Form And Dependence
+
+`epsilon_grid` is a symmetric relative envelope on the physical loading that
+would be obtained at the DSO model boundary. Within this project it is an
+author-specified scenario assumption, not an empirically measured bound,
+confidence interval, or completed expert elicitation. No distribution is
+assigned to it. Its dependence on inputs, controllability, time, and Tier-1
+error is arbitrary within the envelope; independent sampling, root-sum-of-
+squares combination, and a constant-bias interpretation are prohibited.
+
+### Exact Composition
+
+Let `L_T1(t)` be nonnegative Tier-1 loading. Let the G2 additive Tier-1
+enclosure be `epsilon_Tier1_minus` and `epsilon_Tier1_plus`, expressed in the
+same loading-p.u. convention as `L_T1`. For `0 <= epsilon_grid < 1`, define
+
+```text
+L_PP_lower(t) = max(0, L_T1(t) - epsilon_Tier1_minus)
+L_PP_upper(t) =        L_T1(t) + epsilon_Tier1_plus
+
+L_lower(t) = (1 - epsilon_grid) * L_PP_lower(t)
+L_upper(t) = (1 + epsilon_grid) * L_PP_upper(t)
+```
+
+If G2 accepts a symmetric Tier-1 envelope, both Tier-1 endpoints equal
+`epsilon_Tier1`. The lower and upper trajectories are passed through the
+four-consecutive-step event detector. The import/export gate is evaluated on
+the unwidened `P_net` sign before loading is widened. Event probabilities and
+Monte Carlo confidence intervals are computed from the endpoint event counts;
+probabilities are never widened afterwards.
+
+### Operating Domain
+
+The earlier illustrative `16-104 MVA` or `0.2-1.3 p.u.` applicability range is
+rejected. In particular, 104 MVA was only `1.3 * 80 MVA`; no measurement,
+simulation result, or primary source established it as a validity boundary.
+
+After EV, heat-pump, PV, adoption, and net-load layers are integrated, E3.S2b
+shall run one versioned and manifested deterministic screening experiment over
+the predeclared 2030/2033/2035 cases and flexibility endpoints. Before any
+probabilistic result is inspected, its input ranges and resulting physical-MVA
+span shall define and freeze the asserted operating domain used by A-013 and
+the G2 validation design. Later samples outside that domain are flagged and
+escalated; they are not silently extrapolated, clipped, or used to refit the
+domain.
+
+### Total Versus Firm Capacity
+
+For the present two-unit bank, the candidate denominators remain total
+nameplate `80 MVA` and firm `(n-1)` nameplate `40 MVA`. E3.S2b shall report raw
+transformer MVA and loading under both conventions for every screened case.
+The PI shall then select the convention using planning meaning, Dutch-practice
+evidence where available, and whether flexibility can materially change the
+decision. A convention shall not be selected solely because it manufactures
+an interesting congestion case. If neither convention supports a usable case,
+the existing G0 fallback/escalation route applies and any load or network
+adjustment must be explicit, sourced, and signed before use.
+
+Dividing normal two-transformer flow by 40 MVA is a headroom diagnostic only.
+If firm capacity becomes the primary criterion, E3.S3 must model and validate
+the actual one-transformer-out topology with AC power flow; G0/A-005/A-013 and
+the G2 domain must then be amended to cover that operating state.

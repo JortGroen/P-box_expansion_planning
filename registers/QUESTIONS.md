@@ -36,3 +36,10 @@ QUESTION: Can Agent C use the Cicenas thesis as the unit-cost source for extract
 OPTIONS: A) Use the PI-supplied local thesis PDF under strict traceability/no-redistribution rules.  B) Replace the unit-cost source with another openly licensed source.
 RECOMMENDATION: A, because the source is project-approved and preserves the Dutch/Stedin context, provided every extracted number is exactly traceable.
 STATUS: resolved by COST-001 in `registers/DECISIONS.md`; source access is resolved, but extracted values remain unsigned until recorded with page/table provenance and PI sign-off.
+
+## Q-4 - E9.S5a/A-013 - 2026-07-14 - BLOCKING: no
+CONTEXT: A symmetric relative grid-error form is approved, but the candidate 5% reference and 2%/10% sensitivities are not empirically established for an uncalibrated DSO planning model. A detailed measurement-informed feeder study reports approximately 5% agreement under stronger conditions, while model-quality literature gives no universal transferable percentage.
+QUESTION: Does primary evidence support a numerical A-013 envelope under a sufficiently comparable DSO model boundary, or must 5% remain an author-specified sensitivity scenario?
+OPTIONS: A) Sign a sourced value only after E9.S5a documents a comparable quantity, conditioning, measurements, domain, and enclosure meaning.  B) Retain 5% with 2%/10% as explicitly author-specified scenarios and state that no empirical enclosure was available.
+RECOMMENDATION: A if comparable evidence is found; otherwise B is more defensible than converting a mechanism inventory into a false empirical claim.
+STATUS: open; does not block model/data integration, but blocks numerical A-013 sign-off and manuscript claims that 5% is scientifically established.
