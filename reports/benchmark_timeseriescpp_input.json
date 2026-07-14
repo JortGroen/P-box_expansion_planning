@@ -6,6 +6,12 @@
   "grid_key": "simbench_semiurb",
   "grid_code": "1-MV-semiurb--0-sw",
   "time_steps": 672,
+  "equivalence_load_multipliers": [
+    0.8,
+    1.0,
+    1.2,
+    1.5
+  ],
   "warmups": 1,
   "repeats": 5,
   "max_iter": 20,

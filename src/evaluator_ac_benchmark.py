@@ -31,6 +31,7 @@ class TopologyMaterialization:
     open_line_switches: tuple[int, ...]
     disabled_lines: tuple[int, ...]
     fused_bus_switches: tuple[int, ...]
+    fused_bus_pairs: tuple[tuple[int, int], ...]
     dropped_switches: int
     sgen_limit_columns_cast: tuple[str, ...]
     bus_count_before: int
@@ -78,10 +79,16 @@ def materialize_topology_for_lightsim(net: Any) -> tuple[Any, TopologyMaterializ
     open_line_switches: tuple[int, ...] = ()
     disabled_lines: tuple[int, ...] = ()
     fused_bus_switches: tuple[int, ...] = ()
+    fused_bus_pairs: tuple[tuple[int, int], ...] = ()
     dropped_switches = 0
 
     if hasattr(converted, "switch") and len(converted.switch):
         switch_table = converted.switch.copy()
+        open_trafo_mask = (switch_table["et"] == "t") & (~switch_table["closed"].astype(bool))
+        if open_trafo_mask.any():
+            open_switches = tuple(int(idx) for idx in switch_table.index[open_trafo_mask])
+            raise ValueError(f"Unsupported open transformer switches before LightSim conversion: {open_switches}")
+
         open_line_mask = (switch_table["et"] == "l") & (~switch_table["closed"].astype(bool))
         open_line_switches = tuple(int(idx) for idx in switch_table.index[open_line_mask])
         disabled_lines = tuple(int(line) for line in switch_table.loc[open_line_mask, "element"])
@@ -90,6 +97,9 @@ def materialize_topology_for_lightsim(net: Any) -> tuple[Any, TopologyMaterializ
 
         bus_switch_mask = (switch_table["et"] == "b") & (switch_table["closed"].astype(bool))
         fused_bus_switches = tuple(int(idx) for idx in switch_table.index[bus_switch_mask])
+        fused_bus_pairs = tuple(
+            (int(switch["bus"]), int(switch["element"])) for _, switch in switch_table.loc[bus_switch_mask].iterrows()
+        )
         for _, switch in switch_table.loc[bus_switch_mask].iterrows():
             ppt.fuse_buses(
                 converted,
@@ -113,6 +123,7 @@ def materialize_topology_for_lightsim(net: Any) -> tuple[Any, TopologyMaterializ
         open_line_switches=open_line_switches,
         disabled_lines=disabled_lines,
         fused_bus_switches=fused_bus_switches,
+        fused_bus_pairs=fused_bus_pairs,
         dropped_switches=dropped_switches,
         sgen_limit_columns_cast=tuple(cast_columns),
         bus_count_before=bus_count_before,
@@ -121,6 +132,108 @@ def materialize_topology_for_lightsim(net: Any) -> tuple[Any, TopologyMaterializ
         in_service_line_count_after=int(converted.line["in_service"].sum()) if "in_service" in converted.line else int(len(converted.line)),
     )
     return converted, materialization
+
+
+def run_materialization_equivalence(
+    net: Any,
+    *,
+    load_multipliers: Sequence[float],
+    transformer_indices: Sequence[int] = (0, 1),
+) -> dict[str, Any]:
+    """Compare original switch-table semantics with the materialized network."""
+
+    rows: list[dict[str, Any]] = []
+    for multiplier in load_multipliers:
+        original = copy.deepcopy(net)
+        materialized_input = copy.deepcopy(net)
+        _scale_loads(original, multiplier)
+        _scale_loads(materialized_input, multiplier)
+
+        materialized, materialization = materialize_topology_for_lightsim(materialized_input)
+        _run_equivalence_power_flow(original)
+        _run_equivalence_power_flow(materialized)
+
+        original_loading = _decision_transformer_loading(original, transformer_indices)
+        materialized_loading = _decision_transformer_loading(materialized, transformer_indices)
+        rows.append(
+            {
+                "load_multiplier": float(multiplier),
+                "original": original_loading,
+                "materialized": materialized_loading,
+                "delta": {
+                    "p_mw": materialized_loading["p_mw"] - original_loading["p_mw"],
+                    "q_mvar": materialized_loading["q_mvar"] - original_loading["q_mvar"],
+                    "s_mva": materialized_loading["s_mva"] - original_loading["s_mva"],
+                    "loading_pu": materialized_loading["loading_pu"] - original_loading["loading_pu"],
+                    "max_bus_vm_pu": _max_bus_voltage_deviation(original, materialized, materialization),
+                },
+            }
+        )
+
+    max_abs_delta = {
+        "p_mw": max(abs(row["delta"]["p_mw"]) for row in rows),
+        "q_mvar": max(abs(row["delta"]["q_mvar"]) for row in rows),
+        "s_mva": max(abs(row["delta"]["s_mva"]) for row in rows),
+        "loading_pu": max(abs(row["delta"]["loading_pu"]) for row in rows),
+        "max_bus_vm_pu": max(abs(row["delta"]["max_bus_vm_pu"]) for row in rows),
+    }
+    return {
+        "load_multipliers": [float(value) for value in load_multipliers],
+        "transformer_indices": [int(index) for index in transformer_indices],
+        "rows": rows,
+        "max_abs_delta": max_abs_delta,
+        "open_transformer_switch_check": "passed: no open transformer switches were present before dropping the switch table",
+        "one_end_open_line_note": (
+            "Open line switches are represented by setting the corresponding whole line out of service. "
+            "If pandapower retains any charging contribution from a one-end-open line under the original switch-table model, "
+            "that contribution is removed in the materialized network; the numerical effect is captured by the Q, loading, "
+            "and voltage deltas above."
+        ),
+    }
+
+
+def _scale_loads(net: Any, multiplier: float) -> None:
+    net.load.loc[:, "p_mw"] = net.load["p_mw"].astype(float) * float(multiplier)
+    net.load.loc[:, "q_mvar"] = net.load["q_mvar"].astype(float) * float(multiplier)
+
+
+def _run_equivalence_power_flow(net: Any) -> None:
+    import pandapower as pp
+
+    pp.runpp(net, algorithm="nr", calculate_voltage_angles=True, init="auto")
+    if not bool(net.converged):
+        raise RuntimeError("Equivalence power flow did not converge")
+
+
+def _decision_transformer_loading(net: Any, transformer_indices: Sequence[int]) -> dict[str, float]:
+    indices = list(transformer_indices)
+    p_mw = float(net.res_trafo.loc[indices, "p_hv_mw"].sum())
+    q_mvar = float(net.res_trafo.loc[indices, "q_hv_mvar"].sum())
+    s_mva = float(np.hypot(p_mw, q_mvar))
+    nameplate_mva = float(net.trafo.loc[indices, "sn_mva"].sum())
+    return {
+        "p_mw": p_mw,
+        "q_mvar": q_mvar,
+        "s_mva": s_mva,
+        "nameplate_mva": nameplate_mva,
+        "loading_pu": s_mva / nameplate_mva,
+    }
+
+
+def _max_bus_voltage_deviation(original: Any, materialized: Any, materialization: TopologyMaterialization) -> float:
+    bus_map = {int(bus): int(bus) for bus in original.bus.index}
+    for keep_bus, dropped_bus in materialization.fused_bus_pairs:
+        bus_map[int(dropped_bus)] = int(keep_bus)
+
+    deviations: list[float] = []
+    for original_bus, materialized_bus in bus_map.items():
+        if original_bus in original.res_bus.index and materialized_bus in materialized.res_bus.index:
+            deviations.append(
+                abs(float(original.res_bus.loc[original_bus, "vm_pu"]) - float(materialized.res_bus.loc[materialized_bus, "vm_pu"]))
+            )
+    if not deviations:
+        raise ValueError("No common buses available for voltage comparison")
+    return max(deviations)
 
 
 def build_timeseries_adapter(net: Any) -> TimeSeriesAdapter:
@@ -226,6 +339,7 @@ def run_benchmark(config_path: str | Path) -> dict[str, Any]:
     steps = int(config["time_steps"])
     max_iter = int(config["max_iter"])
     tol = float(config["tolerance"])
+    equivalence_load_multipliers = tuple(float(value) for value in config.get("equivalence_load_multipliers", [1.0]))
 
     for _ in range(warmups):
         adapter = build_timeseries_adapter(load_candidate_grid(grid_key))
@@ -305,6 +419,10 @@ def run_benchmark(config_path: str | Path) -> dict[str, Any]:
         "hardware_runtime": _hardware_runtime(),
         "topology_materialization": _dataclass_dict(materialization),
         "adapter_converter_warnings": list(converter_warnings),
+        "materialization_equivalence": run_materialization_equivalence(
+            load_candidate_grid(grid_key),
+            load_multipliers=equivalence_load_multipliers,
+        ),
         "timeseriescpp": {
             "time_steps": steps,
             "warmups": warmups,
@@ -445,6 +563,33 @@ def render_report(raw: dict[str, Any], evidence_path: Path) -> str:
         f"- Input shapes: `{tscpp['input_shapes']}`",
         f"- Converter warnings recorded in raw output: `{raw['adapter_converter_warnings']}`",
         "",
+        "## Materialization Equivalence",
+        "",
+        (
+            "The original pandapower network with its switch table was compared with the "
+            "materialized LightSim-compatible network at the baseline state and perturbed "
+            "load states. The check compares aggregate decision-transformer P, Q, apparent "
+            "power, loading, and maximum bus voltage magnitude deviation after mapping fused "
+            "bus-bus switch pairs back to the retained bus."
+        ),
+        "",
+        "| Load multiplier | Abs delta P MW | Abs delta Q Mvar | Abs delta S MVA | Abs delta loading p.u. | Max abs delta V p.u. |",
+        "| ---: | ---: | ---: | ---: | ---: | ---: |",
+        *[
+            (
+                f"| {row['load_multiplier']:.3f} | {abs(row['delta']['p_mw']):.6g} | "
+                f"{abs(row['delta']['q_mvar']):.6g} | {abs(row['delta']['s_mva']):.6g} | "
+                f"{abs(row['delta']['loading_pu']):.6g} | {abs(row['delta']['max_bus_vm_pu']):.6g} |"
+            )
+            for row in raw["materialization_equivalence"]["rows"]
+        ],
+        "",
+        f"- Open transformer switch check: {raw['materialization_equivalence']['open_transformer_switch_check']}.",
+        (
+            "- One-end-open line charging note: "
+            f"{raw['materialization_equivalence']['one_end_open_line_note']}"
+        ),
+        "",
         "## Corrected G2 AC Budget",
         "",
         (
@@ -482,6 +627,7 @@ def _dataclass_dict(value: TopologyMaterialization) -> dict[str, Any]:
         "open_line_switches": list(value.open_line_switches),
         "disabled_lines": list(value.disabled_lines),
         "fused_bus_switches": list(value.fused_bus_switches),
+        "fused_bus_pairs": [list(pair) for pair in value.fused_bus_pairs],
         "dropped_switches": value.dropped_switches,
         "sgen_limit_columns_cast": list(value.sgen_limit_columns_cast),
         "bus_count_before": value.bus_count_before,
