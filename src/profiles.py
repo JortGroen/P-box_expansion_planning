@@ -87,6 +87,59 @@ class DirectionalLoading:
     direction: pd.Series
 
 
+@dataclass(frozen=True)
+class TransformerHeadroom:
+    """E1.S1b transformer headroom diagnostic values.
+
+    Parameters
+    ----------
+    transformer_indices:
+        Pandapower ``net.trafo`` indices used for the G0 decision transformer.
+    nameplate_mva:
+        Per-unit nameplate ratings in MVA.
+    total_nameplate_mva:
+        Sum of all selected unit ratings in MVA.
+    firm_nameplate_mva:
+        Remaining aggregate nameplate after the outage convention is applied.
+    outage_convention:
+        Text description of the firm-capacity convention.
+    peak_import_mva:
+        Full-year maximum import-direction apparent power in MVA.
+    peak_import_timestamp:
+        Timestamp of the full-year maximum import-direction apparent power.
+    peak_import_loading_total_pu:
+        Peak import loading divided by total aggregate nameplate.
+    peak_import_loading_firm_pu:
+        Peak import loading divided by firm aggregate nameplate.
+    multiplier_to_095_total:
+        Linear load multiplier needed to reach 0.95 p.u. on total nameplate.
+    multiplier_to_095_firm:
+        Linear load multiplier needed to reach 0.95 p.u. on firm nameplate.
+    g0_fallback_total_triggered:
+        Whether the signed G0 scenario-0 baseline fallback criterion is met
+        under its current total-nameplate convention.
+    firm_classifies_differently:
+        Whether firm capacity would change the same scenario-0 fallback
+        classification.
+    """
+
+    transformer_indices: tuple[int, ...]
+    nameplate_mva: tuple[float, ...]
+    total_nameplate_mva: float
+    firm_nameplate_mva: float
+    outage_convention: str
+    busbar_parallel_status: str
+    peak_import_mva: float
+    peak_import_timestamp: pd.Timestamp
+    peak_import_loading_total_pu: float
+    peak_import_loading_firm_pu: float
+    multiplier_to_095_total: float
+    multiplier_to_095_firm: float
+    g0_fallback_total_triggered: bool
+    firm_capacity_fallback_triggered: bool
+    firm_classifies_differently: bool
+
+
 def annual_timestamps(
     n_steps: int,
     *,
@@ -450,6 +503,116 @@ def choose_adaptive_window_count(
     }
 
 
+def firm_nameplate_after_largest_unit_outage(nameplate_mva: Sequence[float]) -> float:
+    """Return firm ``(n-1)`` nameplate after the largest unit is outaged.
+
+    Parameters
+    ----------
+    nameplate_mva:
+        Per-transformer nameplate ratings in MVA.
+    """
+
+    if len(nameplate_mva) < 2:
+        raise ValueError("firm (n-1) nameplate requires at least two transformer units")
+    ratings = [float(value) for value in nameplate_mva]
+    if any(value <= 0 for value in ratings):
+        raise ValueError("all transformer nameplate ratings must be positive")
+    return float(sum(ratings) - max(ratings))
+
+
+def multiplier_to_loading_target(
+    *,
+    current_loading_pu: float,
+    target_loading_pu: float,
+) -> float:
+    """Return the linear multiplier needed to reach a loading target."""
+
+    if current_loading_pu <= 0:
+        raise ValueError("current_loading_pu must be positive")
+    if target_loading_pu <= 0:
+        raise ValueError("target_loading_pu must be positive")
+    return float(target_loading_pu / current_loading_pu)
+
+
+def transformer_headroom_diagnostic(
+    profile: ScenarioProfile,
+    *,
+    nameplate_mva: Sequence[float],
+    transformer_indices: Sequence[int],
+    busbar_parallel_status: str,
+    fallback_threshold_pu: float = 0.85,
+    target_loading_pu: float = 0.95,
+) -> TransformerHeadroom:
+    """Compute E1.S1b total-versus-firm transformer headroom values.
+
+    Parameters
+    ----------
+    profile:
+        Scenario profile carrying full-year aggregate P/Q and total-nameplate
+        loading.
+    nameplate_mva:
+        Per-unit decision-transformer nameplate ratings in MVA.
+    transformer_indices:
+        Pandapower ``net.trafo`` indices corresponding to ``nameplate_mva``.
+    busbar_parallel_status:
+        Auditable text describing the busbar/tie arrangement.
+    fallback_threshold_pu:
+        G0 scenario-0 baseline fallback threshold in p.u.
+    target_loading_pu:
+        Diagnostic loading target in p.u. for multiplier calculations.
+    """
+
+    if fallback_threshold_pu <= 0:
+        raise ValueError("fallback_threshold_pu must be positive")
+    ratings = tuple(float(value) for value in nameplate_mva)
+    total_nameplate = float(sum(ratings))
+    if total_nameplate <= 0:
+        raise ValueError("total nameplate must be positive")
+    if abs(total_nameplate - profile.rating_mva) > 1e-9:
+        raise ValueError("profile rating_mva does not match transformer nameplate sum")
+
+    split = split_import_export_loading(
+        loading_pu=profile.loading_pu,
+        aggregate_p_mw=profile.aggregate_p_mw,
+    )
+    peak_timestamp = pd.Timestamp(split.import_loading_pu.idxmax())
+    peak_loading_total = float(split.import_loading_pu.loc[peak_timestamp])
+    if peak_loading_total <= 0:
+        raise ValueError("profile has no positive import-loading steps")
+    peak_import_mva = float(peak_loading_total * total_nameplate)
+
+    firm_nameplate = firm_nameplate_after_largest_unit_outage(ratings)
+    peak_loading_firm = float(peak_import_mva / firm_nameplate)
+    total_triggered = bool(peak_loading_total > fallback_threshold_pu)
+    firm_triggered = bool(peak_loading_firm > fallback_threshold_pu)
+    return TransformerHeadroom(
+        transformer_indices=tuple(int(index) for index in transformer_indices),
+        nameplate_mva=ratings,
+        total_nameplate_mva=total_nameplate,
+        firm_nameplate_mva=firm_nameplate,
+        outage_convention=(
+            "firm (n-1) is computed as total selected decision-transformer "
+            "nameplate minus the single largest in-service unit nameplate"
+        ),
+        busbar_parallel_status=busbar_parallel_status,
+        peak_import_mva=peak_import_mva,
+        peak_import_timestamp=peak_timestamp,
+        peak_import_loading_total_pu=peak_loading_total,
+        peak_import_loading_firm_pu=peak_loading_firm,
+        multiplier_to_095_total=multiplier_to_loading_target(
+            current_loading_pu=peak_loading_total,
+            target_loading_pu=target_loading_pu,
+        ),
+        multiplier_to_095_firm=multiplier_to_loading_target(
+            current_loading_pu=peak_loading_firm,
+            target_loading_pu=target_loading_pu,
+        ),
+        g0_fallback_total_triggered=total_triggered,
+        firm_capacity_fallback_triggered=firm_triggered,
+        firm_classifies_differently=total_triggered != firm_triggered,
+    )
+
+
 def build_critical_week_tables(
     profiles: Sequence[ScenarioProfile],
     *,
@@ -760,6 +923,96 @@ def write_import_window_outputs(config_path: str | Path) -> dict[str, object]:
     return manifest
 
 
+def write_transformer_headroom_outputs(config_path: str | Path) -> dict[str, object]:
+    """Run the E1.S1b transformer-headroom diagnostic from JSON config."""
+
+    import simbench as sb
+
+    config_file = Path(config_path)
+    config = json.loads(config_file.read_text(encoding="utf-8"))
+    output_dir = Path(config["output_dir"])
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    scenario = int(config["scenario"])
+    grid_code = str(config["grid_code"])
+    transformer_indices = tuple(int(value) for value in config["decision_transformer_indices"])
+    busbar_switch_indices = tuple(int(value) for value in config["busbar_switch_indices"])
+    transformer_switch_indices = tuple(int(value) for value in config["transformer_switch_indices"])
+    fallback_threshold_pu = float(config["fallback_threshold_pu"])
+    target_loading_pu = float(config["target_loading_pu"])
+
+    net = sb.get_simbench_net(grid_code)
+    trafo_detail = net.trafo.loc[list(transformer_indices)].copy()
+    nameplates = tuple(float(value) for value in trafo_detail["sn_mva"])
+    switch_detail = net.switch.loc[list(busbar_switch_indices + transformer_switch_indices)].copy()
+    busbar_switches_closed = bool(net.switch.loc[list(busbar_switch_indices), "closed"].all())
+    transformer_switches_closed = bool(net.switch.loc[list(transformer_switch_indices), "closed"].all())
+    equal_taps = bool(trafo_detail["tap_pos"].nunique(dropna=False) == 1)
+    in_service = bool(trafo_detail["in_service"].all())
+    busbar_parallel_status = (
+        f"Closed busbar-parallel transformer bank: busbar/tie switches "
+        f"{list(busbar_switch_indices)} closed={busbar_switches_closed}; associated "
+        f"transformer circuit-breaker switches {list(transformer_switch_indices)} "
+        f"closed={transformer_switches_closed}; equal tap positions={equal_taps}; "
+        f"selected transformer units in service={in_service}."
+    )
+
+    profile = load_simbench_scenario_profile(
+        scenario,
+        grid_code=grid_code,
+        decision_transformer_indices=transformer_indices,
+        profile_start=config.get("profile_start", DEFAULT_PROFILE_START),
+        step_minutes=int(config.get("step_minutes", DEFAULT_STEP_MINUTES)),
+    )
+    diagnostic = transformer_headroom_diagnostic(
+        profile,
+        nameplate_mva=nameplates,
+        transformer_indices=transformer_indices,
+        busbar_parallel_status=busbar_parallel_status,
+        fallback_threshold_pu=fallback_threshold_pu,
+        target_loading_pu=target_loading_pu,
+    )
+
+    diagnostic_csv = output_dir / "transformer_headroom_diagnostic.csv"
+    diagnostic_table = pd.DataFrame([_headroom_row(diagnostic, config=config)])
+    diagnostic_table.to_csv(diagnostic_csv, index=False)
+
+    report_path = Path(config["report_path"])
+    report_path.write_text(
+        transformer_headroom_report(
+            config=config,
+            diagnostic=diagnostic,
+            trafo_detail=trafo_detail,
+            switch_detail=switch_detail,
+        ),
+        encoding="utf-8",
+    )
+
+    output_paths = [diagnostic_csv, report_path]
+    manifest = build_manifest(
+        config_path=config_file,
+        seeds={"none": "deterministic"},
+        output_paths=output_paths,
+        extra={
+            "artifact_type": "transformer_headroom_evidence",
+            "task_id": "E1.S1b",
+            "timestamp_utc": datetime.now(UTC).isoformat().replace("+00:00", "Z"),
+            "command": config["command"],
+            "scenario": scenario,
+            "grid_code": grid_code,
+            "decision_transformer_indices": list(transformer_indices),
+            "busbar_switch_indices": list(busbar_switch_indices),
+            "transformer_switch_indices": list(transformer_switch_indices),
+            "fallback_threshold_pu": fallback_threshold_pu,
+            "target_loading_pu": target_loading_pu,
+            "outage_convention": diagnostic.outage_convention,
+        },
+    )
+    manifest_path = Path(config["manifest_path"])
+    manifest_path.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    return manifest
+
+
 def critical_week_report(
     *,
     config: Mapping[str, Any],
@@ -915,6 +1168,137 @@ def import_window_report(
     )
 
 
+def transformer_headroom_report(
+    *,
+    config: Mapping[str, Any],
+    diagnostic: TransformerHeadroom,
+    trafo_detail: pd.DataFrame,
+    switch_detail: pd.DataFrame,
+) -> str:
+    """Render the E1.S1b transformer-headroom diagnostic as Markdown."""
+
+    summary = pd.DataFrame([_headroom_row(diagnostic, config=config)])
+    trafo_rows = trafo_detail.reset_index(names="trafo_index")[
+        ["trafo_index", "name", "hv_bus", "lv_bus", "sn_mva", "parallel", "tap_pos", "in_service"]
+    ]
+    switch_rows = switch_detail.reset_index(names="switch_index")[
+        ["switch_index", "bus", "element", "et", "closed", "type", "name"]
+    ]
+    firm_warning = (
+        "WARNING: firm capacity would change the G0 scenario-0 fallback classification "
+        "for the same case. This requires PI attention before denominator-dependent "
+        "model-error envelopes are frozen."
+        if diagnostic.firm_classifies_differently
+        else "Firm capacity does not change the scenario-0 baseline fallback classification "
+        "in this diagnostic, although it doubles the reported loading ratio for the two "
+        "identical units."
+    )
+    recommendation = (
+        "Recommendation: keep the current total-nameplate convention for continuity with "
+        "G0 unless the PI wants the study to represent firm `(n-1)` planning headroom. "
+        "If firm capacity is selected later, update the denominator convention explicitly "
+        "before freezing additive p.u. model-error envelopes."
+    )
+    return "\n".join(
+        [
+            "# E1.S1b Transformer Headroom Diagnostic",
+            "",
+            "Status: complete for E1.S1b review. This memo is the G1-C2 prerequisite",
+            "for the PI's total-versus-firm nameplate decision; it does not sign or",
+            "change G0, G1, or any denominator convention.",
+            "",
+            "## Scope",
+            "",
+            "This diagnostic uses SimBench scenario 0 full-year 15-minute profiles for",
+            f"`{config['grid_code']}` only. It reports deterministic headroom for the",
+            "existing baseline profiles and a linear multiplier to 0.95 p.u. under two",
+            "denominator conventions. The multiplier is a routing diagnostic only, not",
+            "a Dutch 2035 loading result, forecast, planning threshold, or scientific",
+            "claim; the E2/E3 technology layer does not yet exist.",
+            "",
+            "## Evidence",
+            "",
+            f"- Input config: `{config['config_path_label']}`",
+            f"- Manifest: `{config['manifest_path']}`",
+            "- Numeric table: `data/transformer_headroom_diagnostic.csv`",
+            "- Prior inventory reference: `reports/grid_inventory.md`",
+            "- G1-A1 denominator/envelope reference:",
+            "  `reports/G1_A1_MODEL_ERROR_AMENDMENT_PROPOSAL.md`",
+            "",
+            "## Decision Transformer And Parallel Operation",
+            "",
+            f"- Pandapower element table/indexes: `net.trafo` {list(diagnostic.transformer_indices)}",
+            f"- Unit count: {len(diagnostic.nameplate_mva)}",
+            f"- Per-unit nameplate MVA: {list(diagnostic.nameplate_mva)}",
+            f"- Busbar/tie status: {diagnostic.busbar_parallel_status}",
+            "",
+            _markdown_table(trafo_rows),
+            "",
+            _markdown_table(switch_rows),
+            "",
+            "## Total Versus Firm Headroom",
+            "",
+            _markdown_table(summary),
+            "",
+            "Firm convention used here: "
+            f"{diagnostic.outage_convention}. With two equal 40 MVA units, this leaves",
+            "one 40 MVA unit available.",
+            "",
+            "The existing G0 fallback criterion for scenario-0 baseline loading is",
+            f"`L_base > {float(config['fallback_threshold_pu']):.2f}` under the currently",
+            "signed total-nameplate definition. Under that signed definition, the",
+            f"criterion is triggered: `{str(diagnostic.g0_fallback_total_triggered).lower()}`.",
+            "",
+            firm_warning,
+            "",
+            "## Implications For Model-Error Envelopes",
+            "",
+            "- Additive p.u. envelopes depend on the selected nameplate denominator. A",
+            "  fixed MVA discrepancy divided by total nameplate is not the same p.u.",
+            "  value when divided by firm capacity.",
+            "- Relative envelopes on the physical loading ratio are invariant to the",
+            "  total-versus-firm nameplate convention.",
+            "- G1-A1 therefore requires the denominator decision and the model-error",
+            "  envelope form to be made together before G2/E5.S3 paper-use results.",
+            "",
+            "## Recommendation",
+            "",
+            recommendation,
+            "",
+            "PI decision required: choose whether future overload denominators remain",
+            "the signed G0 total aggregate nameplate or move to a firm `(n-1)` capacity",
+            "definition, and align the additive-versus-relative model-error envelope",
+            "decision with that choice.",
+            "",
+        ]
+    )
+
+
+def _headroom_row(
+    diagnostic: TransformerHeadroom,
+    *,
+    config: Mapping[str, Any],
+) -> dict[str, object]:
+    return {
+        "scenario": int(config["scenario"]),
+        "grid_code": config["grid_code"],
+        "transformer_indices": list(diagnostic.transformer_indices),
+        "unit_count": len(diagnostic.nameplate_mva),
+        "unit_nameplate_mva": list(diagnostic.nameplate_mva),
+        "total_nameplate_mva": diagnostic.total_nameplate_mva,
+        "firm_n_minus_1_nameplate_mva": diagnostic.firm_nameplate_mva,
+        "peak_import_mva": diagnostic.peak_import_mva,
+        "peak_import_timestamp": diagnostic.peak_import_timestamp.isoformat(),
+        "peak_import_loading_total_pu": diagnostic.peak_import_loading_total_pu,
+        "peak_import_loading_firm_pu": diagnostic.peak_import_loading_firm_pu,
+        "multiplier_to_0_95_total": diagnostic.multiplier_to_095_total,
+        "multiplier_to_0_95_firm": diagnostic.multiplier_to_095_firm,
+        "g0_total_nameplate_fallback_triggered": diagnostic.g0_fallback_total_triggered,
+        "firm_capacity_fallback_triggered": diagnostic.firm_capacity_fallback_triggered,
+        "firm_classifies_differently": diagnostic.firm_classifies_differently,
+    }
+
+
 def _validation_finding(
     *,
     coverage: pd.DataFrame,
@@ -970,6 +1354,8 @@ def _markdown_table(frame: pd.DataFrame) -> str:
 
 
 def _format_markdown_value(value: object) -> str:
+    if isinstance(value, (list, tuple)):
+        return str(list(value))
     if pd.isna(value):
         return "n/a"
     if isinstance(value, float):
@@ -1059,7 +1445,9 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--config", default="reports/critical_weeks_input.json")
     args = parser.parse_args(argv)
     config = json.loads(Path(args.config).read_text(encoding="utf-8"))
-    if config.get("task_id") == "E1.S3b":
+    if config.get("task_id") == "E1.S1b":
+        write_transformer_headroom_outputs(args.config)
+    elif config.get("task_id") == "E1.S3b":
         write_import_window_outputs(args.config)
     else:
         write_critical_week_outputs(args.config)

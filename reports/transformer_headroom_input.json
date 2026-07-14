@@ -1,0 +1,17 @@
+{
+  "task_id": "E1.S1b",
+  "config_path_label": "reports/transformer_headroom_input.json",
+  "command": ".\\.venv\\Scripts\\python.exe -m src.profiles --config reports/transformer_headroom_input.json",
+  "scenario": 0,
+  "grid_code": "1-MV-semiurb--0-sw",
+  "decision_transformer_indices": [0, 1],
+  "busbar_switch_indices": [0, 5],
+  "transformer_switch_indices": [1, 2, 3, 4],
+  "profile_start": "2016-01-01T00:00:00Z",
+  "step_minutes": 15,
+  "fallback_threshold_pu": 0.85,
+  "target_loading_pu": 0.95,
+  "output_dir": "data",
+  "report_path": "reports/transformer_headroom_diagnostic.md",
+  "manifest_path": "reports/transformer_headroom_evidence.json"
+}
