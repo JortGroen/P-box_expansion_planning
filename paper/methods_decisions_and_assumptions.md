@@ -126,17 +126,39 @@ whether Tier-1 remains admissible.
 <!-- methods-id: G1-A1 -->
 ### G1-A1 - Model-Output Error Propagation
 
-**Status: Approved framework; numerical envelopes remain proposed.** Grid-
-model discrepancy is represented as an interval on transformer-loading output,
-not as a margin added to an already estimated overload probability. The lower
-and upper loading trajectories are classified by the same four-step event
-detector, and binomial confidence intervals are computed from the resulting
-event counts. No probability distribution or independence assumption is
-assigned to the discrepancy; its dependence on inputs, controllability, and
-time may be arbitrary within the stated envelope. Tier-1-to-AC approximation
-error is estimated separately at G2 and combined only on compatible quantities
-and units. This construction preserves the physical episode semantics and
+**Status: Approved framework; amended by G1-A2.** Grid-model discrepancy is
+represented as an interval on transformer-loading output, not as a margin added
+to an already estimated overload probability. Lower and upper loading
+trajectories are classified by the same four-step event detector, and binomial
+confidence intervals are computed from the resulting event counts. No
+probability distribution or independence assumption is assigned to the
+discrepancy; its dependence on inputs, controllability, and time may be
+arbitrary within the stated envelope. Tier-1-to-AC approximation error is
+estimated separately at G2. G1-A2 supplies the exact mixed relative/additive
+composition. This construction preserves the physical episode semantics and
 prevents numerical approximation error from being hidden inside the p-box.
+
+<!-- methods-id: G1-A2 -->
+### G1-A2 - Grid-Error and Capacity-Screen Protocol
+
+**Status: Approved protocol; the numerical A-013 values remain proposed.** The
+grid-model discrepancy is represented by a symmetric relative loading envelope
+and the Tier-1-to-pandapower discrepancy by the additive lower and upper
+envelopes established at G2. Their conservative endpoint composition is
+`L_lower=(1-epsilon_grid)*max(0,L_T1-epsilon_Tier1_minus)` and
+`L_upper=(1+epsilon_grid)*(L_T1+epsilon_Tier1_plus)`. This interval admits
+arbitrary dependence between both discrepancies and the simulation inputs; it
+is therefore propagated as endpoint loading trajectories before the overload-
+episode detector, not sampled as independent noise. Direction is gated using
+the unwidened active-power sign. No fixed 104 MVA validity ceiling is assumed:
+one predeclared manifested screen of the integrated EV, heat-pump, PV,
+adoption, and net-load layers defines the future operating domain before
+probabilistic results are inspected, after which out-of-domain states are
+escalated. That screen reports raw MVA and both the 80 MVA total and 40 MVA firm
+ratios. The capacity convention is selected for its planning interpretation
+and decision usefulness rather than simply to create congestion. If firm
+capacity is selected, a one-transformer-out AC case is required because a
+normal-operation flow divided by 40 MVA is only a headroom diagnostic.
 
 <!-- methods-id: G2 -->
 ### G2 - Tier-1 Enclosure and Adequacy
@@ -362,15 +384,21 @@ remains visible.
 assumes a planning model populated with mostly correct topology and asset data,
 transformer-level measurements or forecasts, and forecast or allocated lower-
 level injections; it does not assume dense measurements, model calibration, or
-distribution state estimation. A candidate symmetric relative interval places
-physical loading within `(1 +/- epsilon_grid)` times modeled loading. A 5%
-reference value with 2% and 10% sensitivities is draft manuscript wording, not
-an empirical bound or confidence interval. Input uncertainties represented
+distribution state estimation. A symmetric relative interval places physical
+loading within `(1 +/- epsilon_grid)` times modeled loading. The candidate 5%
+reference and 2%/10% sensitivities are author-specified scenarios, not an
+empirical bound, confidence interval, expert consensus, or value currently
+established by literature. No mechanism-by-mechanism percentage inventory is
+used to manufacture that value. A targeted evidence review must instead record
+each source's measurement boundary, model conditioning, operating domain, and
+comparability before the PI signs a number. Input uncertainties represented
 elsewhere are excluded, matched solver-to-solver numerical differences are an
-implementation check, and the interval is applied before episode detection
-with arbitrary dependence on inputs and time. The transformer measurement
-boundary, mechanism ownership, human review, and final values must be signed
-before this paragraph becomes manuscript authority.
+implementation check, and arbitrary unknown dependence is admitted. The
+applicability domain is frozen from the manifested integrated future-layer
+screen before probabilistic results are inspected; out-of-domain states are
+reported rather than silently extrapolated. Until A-013 is signed, Methods and
+results may describe the protocol and sensitivity scenarios but may not call
+5% a scientifically established grid-model error.
 
 ## Data and Evidence Choices
 

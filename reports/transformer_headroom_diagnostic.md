@@ -21,6 +21,8 @@ claim; the E2/E3 technology layer does not yet exist.
 - Prior inventory reference: `reports/grid_inventory.md`
 - G1-A1 denominator/envelope reference:
   `reports/G1_A1_MODEL_ERROR_AMENDMENT_PROPOSAL.md`
+- G1-A2 capacity-screen protocol:
+  `reports/G1_A2_GRID_ERROR_AND_CAPACITY_PROTOCOL.md`
 
 ## Decision Transformer And Parallel Operation
 
@@ -64,16 +66,18 @@ Firm capacity does not change the scenario-0 baseline fallback classification in
 - Additive p.u. envelopes depend on the selected nameplate denominator. A
   fixed MVA discrepancy divided by total nameplate is not the same p.u.
   value when divided by firm capacity.
-- Relative envelopes on the physical loading ratio are invariant to the
-  total-versus-firm nameplate convention.
-- G1-A1 therefore requires the denominator decision and the model-error
-  envelope form to be made together before G2/E5.S3 paper-use results.
+- G1-A2 selects a relative grid-error envelope, which is invariant to the
+  total-versus-firm denominator. The additive Tier-1 envelope remains tied to
+  the selected loading convention and is estimated over the G2 domain.
 
 ## Recommendation
 
-Recommendation: keep the current total-nameplate convention for continuity with G0 unless the PI wants the study to represent firm `(n-1)` planning headroom. If firm capacity is selected later, update the denominator convention explicitly before freezing additive p.u. model-error envelopes.
+Recommendation: defer the denominator decision until the integrated EV, heat-
+pump, PV, adoption, and flexibility layers are available. E3.S2b will run one
+predeclared manifested screen, report raw MVA and both 80 MVA total and 40 MVA
+firm ratios, and freeze the future operating domain before p-box inspection.
 
-PI decision required: choose whether future overload denominators remain
-the signed G0 total aggregate nameplate or move to a firm `(n-1)` capacity
-definition, and align the additive-versus-relative model-error envelope
-decision with that choice.
+The 40 MVA ratio in this memo divides normal two-unit flow by firm nameplate
+and is only a headroom diagnostic. If firm `(n-1)` becomes the primary
+criterion, E3.S3 must validate an actual one-transformer-out AC topology and
+the applicable G0/assumption/domain entries must be amended before paper use.

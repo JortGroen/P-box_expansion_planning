@@ -114,6 +114,16 @@ The project as planned is publishable; the following adjustments are aimed at mo
 
 **11.6 Venue.** The decision-framework framing fits *Applied Energy* (which published Zeng et al., Yao et al., Spiliotis et al., and Klyapovskiy et al. — the paper's natural conversation) as first choice; *IEEE Transactions on Power Systems* or *Sustainable Energy, Grids and Networks* / *IJEPES* if the framing tilts methodological; *Reliability Engineering & System Safety* only if reframed toward the reliability-engineering community (different related-work emphasis). Given recommendation 11.1, Applied Energy is the coherent target.
 
+**11.7 Capacity-practice anchor and limitation.** Unterluggauer et al. (2023)
+report that Radius applies a 66% low-voltage transformer loading limit for N-1
+security and that one modeled baseline grid exceeded that limit with less than
+1% occurrence. This is useful as a concrete Danish operational anchor, but the
+network level, jurisdiction, and statistic matter: it is neither a Dutch
+planning rule nor a direct empirical justification for `P_crit = 0.01`. The
+project must report it as contextual evidence and keep the total-versus-firm
+capacity convention as a separate PI decision informed by the integrated
+future-layer screen.
+
 ## 12. References (alphabetical, with verification status)
 
 - Ahmadigorji, M., Amjady, N., & Dehghan, S. (2018). A robust model for multiyear distribution network reinforcement planning based on information-gap decision theory. *IEEE Transactions on Power Systems*, 33(2). doi:10.1109/TPWRS.2017.2732447 [V — full text read; add final page range from IEEE Xplore]
@@ -177,6 +187,7 @@ The project as planned is publishable; the following adjustments are aimed at mo
 - Steinbrink, C., & Lehnhoff, S. (2016). Quantifying probabilistic uncertainty in smart grid co-simulation. IEEE conference paper (OFFIS). [V — full text read (rasterized; garbled text layer); confirm exact proceedings title on IEEE Xplore]
 - Su, C.-L. (2005). Probabilistic load-flow computation using point estimate method. *IEEE Transactions on Power Systems*, 20(4), 1843–1851. [HC]
 - Tavares, B., & Soares, F. J. (2020). An innovative approach for distribution network reinforcement planning: Using DER flexibility to minimize investment under uncertainty. *Electric Power Systems Research*, 183, 106272. doi:10.1016/j.epsr.2020.106272 [V — full text read in this project]
+- Unterluggauer, T., Hipólito, F., Rich, J., Marinelli, M., & Andersen, P. B. (2023). Impact of cost-based smart electric vehicle charging on urban low voltage power distribution networks. *Sustainable Energy, Grids and Networks*, 35, 101085. doi:10.1016/j.segan.2023.101085 [V — publisher manuscript read; Radius 66% N-1 limit and the single-grid `<1%` occurrence passage verified; use only as a Danish LV operational anchor]
 - Velloso, A., Pozo, D., & Street, A. (2020). Distributionally robust transmission expansion planning: A multi-scale uncertainty approach. *IEEE Transactions on Power Systems*. doi:10.1109/TPWRS.2020.2979118 [V — full text read (accepted version); add volume/pages from IEEE Xplore]
 - Yao, H., Qin, W., Jing, X., Zhu, Z., Wang, K., Han, X., & Wang, P. (2022). Possibilistic evaluation of photovoltaic hosting capacity on distribution networks under uncertain environment. *Applied Energy*, 324, 119681. [V — full text read; all details confirmed]
 - Yao, H., Qin, W., Jing, X., Zhu, Z., Wang, K., & Han, X. (2026). Possibilistic approach for photovoltaic hosting capacity evaluation on distribution networks considering both exogenous and endogenous uncertainties. *CSEE Journal of Power and Energy Systems*, 12(1), 271–. doi:10.17775/CSEEJPES.2022.01320 [V — full text read; add final page from the journal]

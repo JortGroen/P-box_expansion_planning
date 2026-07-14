@@ -1,10 +1,12 @@
 # G1 Decision Brief: Foundation, Compute Budget, And Time Domain
 
-> **Amendment notice (2026-07-13):** G1-A1 in `registers/DECISIONS.md`
-> amends the model-error and G2 interpretation. Grid-model error is an
-> expert-specified output interval applied before event detection; G2 now
-> estimates a held-out-tested Tier-1 approximation envelope. See
-> `reports/G1_A1_MODEL_ERROR_AMENDMENT_PROPOSAL.md`.
+> **Amendment notice (2026-07-14):** G1-A1 and G1-A2 in
+> `registers/DECISIONS.md` amend the model-error and G2 interpretation.
+> Grid-model error is an author-specified symmetric relative scenario applied
+> before event detection under unknown dependence; its numerical A-013 value
+> remains proposed. G2 estimates held-out-tested additive Tier-1 endpoints,
+> and E3.S2b freezes the future domain and informs the total-versus-firm
+> capacity choice. See `reports/G1_A2_GRID_ERROR_AND_CAPACITY_PROTOCOL.md`.
 
 Date: 2026-07-10  
 Prepared for: PI G1 review  
@@ -244,16 +246,13 @@ Interpretation:
   aggregate loading"; firm N-1 capacity may better match planning/security
   headroom for a parallel transformer bank.
 
-Required follow-up before E3/G5 confidence:
-
-Ask Agent A for a one-page transformer-headroom diagnostic:
-
-1. Transformer count and individual ratings at the decision substation.
-2. Peak import MVA under scenario 0/1/2.
-3. Loading versus aggregate nameplate and versus firm N-1 capacity.
-4. Load-growth multiplier needed for the 2035 no-flex layer to reach 0.95 p.u.
-   under both denominator conventions.
-5. Whether this triggers G0 fallback/escalation.
+E1.S1b subsequently completed the requested headroom diagnostic in
+`reports/transformer_headroom_diagnostic.md`. It establishes the two 40 MVA
+units and the low SimBench-only baseline loading, but cannot choose the future
+capacity convention because the Dutch EV, heat-pump, PV, and adoption layers
+do not yet exist. G1-A2 therefore replaces the old follow-up with E3.S2b: one
+manifested integrated future-layer screen reporting raw MVA and both capacity
+ratios before p-box inspection.
 
 ## 8. What G1 Approved
 
@@ -276,16 +275,15 @@ Guardrails:
 - Fixed winter windows as the primary time structure.
 - Adaptive windows as the primary Tier-1 Monte Carlo domain.
 - Any final Dutch 2030/2033/2035 case suitability claim before the technology
-  layer and headroom diagnostic exist.
+  layers and E3.S2b screen exist.
 - Any use of the vertex shortcut for paper results before G3.
 
 ## 9. Immediate Next Steps
 
-1. Merge Agent A PR #15 as evidence if it is still open.
-2. Merge the G0-A2/G1 decision update so all agents see the signed gate state.
-3. Assign Agent A two short follow-ups before G2:
-   - solver-engagement / TimeSeriesCPP benchmark;
-   - transformer-headroom diagnostic.
-4. Then assign Agent A to E1.S4 with full-year and WindowSet support.
-5. Keep Agent C blocked on D-002 generated-profile terms before bulk EV profile
-   generation.
+1. Complete E1.S2b solver-engagement/TimeSeriesCPP benchmarking.
+2. Complete E1.S4 and the E2/E3 technology and net-load layers.
+3. Run E3.S2b once under its predeclared manifest; then sign the capacity
+   convention and asserted domain.
+4. Complete E9.S5a and sign or explicitly retain the proposed A-013 numerical
+   scenarios.
+5. Run the G2 held-out Tier-1 enclosure over the frozen domain.

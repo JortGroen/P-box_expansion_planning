@@ -1,22 +1,32 @@
 # G1-A1 - Amendment: Black-Box Model Error and Tier-1 Approximation
 
+> **Superseded in part (2026-07-14):** G1-A2 replaces the earlier expert-
+> provenance wording, fixed applicability-domain examples, and simple additive
+> composition when `epsilon_grid` is relative and Tier-1 error is
+> additive. The approved current protocol is
+> `reports/G1_A2_GRID_ERROR_AND_CAPACITY_PROTOCOL.md`. This file is retained as
+> the historical G1-A1 rationale.
+
 **Date:** 2026-07-13
 
 **Status:** approved by the PI in chat and mirrored into `registers/DECISIONS.md`
 
 **Amends:** G1 compute architecture, G2 tier-equivalence gate, E5.S3 model-error widening, and the IC-2/IC-3 behavioral boundary
 
-**Does not yet freeze:** the numerical values, units, symmetry, or absolute/relative form of either error envelope
+**G1-A2 status:** symmetry and relative form for `epsilon_grid` are now frozen;
+its numerical values remain proposed. G2 still determines the additive Tier-1
+endpoints.
 
 ## 1. Reason for the Amendment
 
 The scientific story originally introduced an interval `+-epsilon_grid` for
 the output error of the pandapower grid model, which is treated as a black box.
-This project has no field measurements that empirically validate pandapower
-against reality. `epsilon_grid` is therefore expert-specified and must be
-carried as a signed `ASSUMPTIONS.md` row with a mandatory sensitivity sweep and
-an explicit statement of the domain over which it is asserted. Any future
-empirical validation must be recorded together with its validated domain.
+This project has no field measurements that empirically validate the DSO model
+against physical loading. `epsilon_grid` is therefore author-specified unless
+later evidence or human review supplies a stronger provenance. It must be
+carried in `ASSUMPTIONS.md` with a mandatory sensitivity sweep and an explicit
+asserted domain. Any future empirical validation must be recorded together
+with its validated domain.
 Tier-1 radial summation was introduced later as a fast approximation to
 pandapower for the Monte Carlo inner loop; `epsilon_Tier1`, unlike
 `epsilon_grid`, can be determined empirically within this project.
@@ -28,7 +38,7 @@ four-consecutive-step overload event is classified. Its effect on event
 probability is then obtained through the Monte Carlo ensemble and may be highly
 nonlinear near the 1.0 p.u. threshold.
 
-## 2. Proposed Black-Box Error Model
+## 2. Black-Box Error Model, As Amended by G1-A2
 
 Let:
 
@@ -40,11 +50,10 @@ Let:
 - `L_PP(X, rho, t)` denote the corresponding pandapower output; and
 - `L_T1(X, rho, t)` denote the Tier-1 output.
 
-The expert-specified grid-model discrepancy is
+The symmetric relative grid-model envelope is
 
 ```text
-delta_grid(X, rho, t) = L_true(X, rho, t) - L_PP(X, rho, t)
-delta_grid(X, rho, t) in [-epsilon_grid, +epsilon_grid]
+(1 - epsilon_grid) * L_PP <= L_true <= (1 + epsilon_grid) * L_PP
 ```
 
 The Tier-1 approximation discrepancy is
@@ -59,28 +68,22 @@ neither error is sampled independently for each Monte Carlo realization.
 Because their dependence on `X`, `rho`, time, and each other is unknown, the
 analysis admits every discrepancy function that remains inside its applicable
 envelope. For `epsilon_grid`, that envelope and its asserted domain come from
-the signed assumption; for `epsilon_Tier1`, they come from the G2 validation.
+A-013 once signed; for `epsilon_Tier1`, they come from the G2 validation.
 This is arbitrary or unknown dependence, not an assumption of probabilistic
 independence and not an assumption of one constant bias.
 
-Viewed from Tier-1,
+G1-A2 composes the relative grid envelope with additive Tier-1 endpoints as
 
 ```text
-L_true = L_T1 + delta_Tier1 + delta_grid
-```
-
-For symmetric additive envelopes on the same physical quantity and in the same
-units, interval addition gives
-
-```text
-epsilon_total = epsilon_Tier1 + epsilon_grid
-L_true in [L_T1 - epsilon_total, L_T1 + epsilon_total]
+L_PP_lower = max(0, L_T1 - epsilon_Tier1_minus)
+L_PP_upper = L_T1 + epsilon_Tier1_plus
+L_true_lower = (1 - epsilon_grid) * L_PP_lower
+L_true_upper = (1 + epsilon_grid) * L_PP_upper
 ```
 
 This is conservative under unknown dependence because it allows both errors to
-attain their worst-case signs together. If G2 establishes an asymmetric or
-one-sided Tier-1 discrepancy, the interval sum shall retain that tighter form
-instead of forcing symmetry.
+attain their adverse endpoints together. If G2 establishes an asymmetric or
+one-sided Tier-1 discrepancy, its separate endpoints are retained.
 
 ## 3. Proposed Event and Probability Propagation
 
@@ -169,8 +172,9 @@ G2 shall report:
 1. the observed symmetric maximum-absolute envelope or justified asymmetric
    envelope for `delta_Tier1`;
 2. residual behavior versus loading level, power factor, year, and `rho`;
-3. the effect of adding `epsilon_Tier1` to `epsilon_grid` on the overload
-   probability bounds and downstream decision categories; and
+3. the effect of composing the G2 Tier-1 endpoints with `epsilon_grid` per
+   G1-A2 on the overload probability bounds and downstream decision
+   categories; and
 4. one of the following PI recommendations:
 
    - **Tier-1 adequate:** the approximation envelope is small enough to use
@@ -206,7 +210,8 @@ the relevant operating domain, not raw runtime. The Tier-1 result shall be
 described as an empirical validation envelope. Questions about formal
 confidence or global guarantees belong in the limitations discussion unless a
 later PI decision strengthens the protocol. `epsilon_grid` remains an
-expert-specified assumption unless future field validation is added.
+author-specified assumption unless future field validation or a signed human
+elicitation is added.
 
 ## 6. Consequences for E5.S3 and the Interfaces
 
@@ -267,11 +272,12 @@ headline uncertainty source.
 > **G1-A1 - Black-box model-error and Tier-1 approximation amendment -
 > 2026-07-13 - signed: PI approved in chat**
 >
-> `epsilon_grid` is an expert-specified interval on the black-box model output,
-> not an additive margin on overload probability. It is carried as a signed
-> `ASSUMPTIONS.md` row with a mandatory sensitivity sweep and explicit asserted
-> domain; any future empirical validation is recorded with its validated
-> domain. The interval is propagated on the loading series before the
+> `epsilon_grid` is an author-specified interval on the black-box model output,
+> not an additive margin on overload probability. It is carried in
+> `ASSUMPTIONS.md` with a mandatory sensitivity sweep and explicit asserted
+> domain; the numerical row remains proposed until PI sign-off. Any future
+> empirical validation is recorded with its validated domain. The interval is
+> propagated on the loading series before the
 > G0-A1/G0-A2 event detector. No probability distribution or independence
 > assumption is assigned to the discrepancy; all dependence on aleatory inputs,
 > flexibility controllability, and time that is consistent with the interval is
@@ -281,15 +287,13 @@ headline uncertainty source.
 > estimate its empirical output-error envelope on a manifested, domain-covering
 > AC validation subset. A hard enclosure test on a held-out near/above-threshold
 > stratum is required, with its numerical strictness signed before inspection.
-> For compatible additive envelopes, the output interval used from Tier-1 is
-> the interval sum of the Tier-1-to-pandapower and pandapower-to-reality
-> discrepancies. E5.S3 shall recompute lower and upper event indicators from
-> the corresponding loading endpoints; post-hoc probability-margin widening is
-> rejected.
+> G1-A2 composes the relative symmetric grid envelope with the additive G2
+> Tier-1 endpoints using the exact formulas in the current protocol. E5.S3
+> shall recompute lower and upper event indicators from the corresponding
+> loading endpoints; post-hoc probability-margin widening is rejected.
 >
 > The G0-A1 import/export direction gate uses the unwidened `P_net` sign; the
-> interval widens loading magnitude only. The units, absolute/relative form,
-> symmetry, numerical values, G2 adequacy criterion, and exact IC-2/IC-3 schema
-> change remain subject to later PI approval. The envelope form shall be decided
-> jointly with total-versus-firm `S_nom,agg`, explicitly considering that a
-> relative envelope is invariant to the nameplate convention.
+> interval widens loading magnitude only. G1-A2 freezes relative symmetric
+> grid-error form and the future-domain protocol. Numerical values, the G2
+> adequacy criterion, the capacity convention, and the exact IC-2/IC-3 schema
+> remain subject to later PI approval.
