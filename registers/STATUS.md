@@ -10,24 +10,25 @@ Format: `Story | Owner | status | tasks | blocked-by | PR`
 | E0.S4 Agent working agreement | C | done | 1/1 | -- | -- |
 | E1.S1 Grid loading | A | done | 3/3 | -- | #2 |
 | E1.S2 Laptop micro-benchmark | A | done | 2/2 | -- | #7 |
-| E1.S3 Time series & critical weeks | A | done | 3/3 | -- | #10 |
-| E1.S3b G0-A1 import-window diagnostic | A | todo | 0/4 | G0-A1, E1.S3 | -- |
-| E1.S4 Tier-1 evaluator | A | todo | 0/3 | G0 | -- |
-| E2.S1 Data acquisition | C | in-progress | 1/3 | -- | -- |
+| E1.S2b TimeSeriesCPP AC benchmark | A | todo | 0/3 | -- | -- |
+| E1.S1b Transformer headroom diagnostic | A | todo | 0/4 | -- | -- |
+| E1.S3b G0-A1 import-window diagnostic | A | done | 4/4 | -- | #15 |
+| E1.S4 Tier-1 evaluator | A | todo | 0/6 | -- | -- |
+| E2.S1 Data acquisition | C | blocked | 2/3 | D-002 generated-profile terms-of-use | #14 |
 | E2.S2 EV model | C | todo | 0/3 | E2.S1 | -- |
 | E2.S3 HP model | C | todo | 0/3 | E2.S1 | -- |
 | E2.S4 PV model | C | todo | 0/2 | E2.S1, G0 | -- |
 | E2.S5 Baseline & diversity | C | todo | 0/1 | E1.S3 | -- |
 | E2.S6 Adoption scenarios | C | todo | 0/2 | E2.S1 | -- |
 | E3.S1 Flexibility aggregator | A | todo | 0/3 | E2 models | -- |
-| E3.S2 IC-1 NetLoadProvider | A | todo | 0/3 | G1, E3.S1 | -- |
-| E3.S3 Tier-2 AC harness | A | todo | 0/2 | E1.S1, G1 | -- |
-| E3.S4 CRN harness | A | todo | 0/2 | G1 | -- |
+| E3.S2 IC-1 NetLoadProvider | A | todo | 0/3 | E3.S1 | -- |
+| E3.S3 Tier-2 AC harness and Tier-1 enclosure | A | todo | 0/5 | E1.S1, E1.S2b, E1.S4 | -- |
+| E3.S4 CRN harness | A | todo | 0/2 | -- | -- |
 | E4.S1 Dense rho sweep | B | todo | 0/3 | E3.S2, E3.S4 | -- |
 | E4.S2 Fallback stub | B | todo | 0/1 | E5 invariant skeleton | -- |
 | E5.S1 Fuzzy number class | B | done | 2/2 | -- | #1 |
 | E5.S2 Vertex propagation | B | done | 3/3 | pre-G3 test mode | #6 |
-| E5.S3 Model-error widening | B | review | 1/1 | E5.S2; pre-G3 synthetic/test mode only | #13 |
+| E5.S3 Output-domain model-error propagation | B | todo | 0/3 | T2-T3: PI-approved IC schema, signed A-013, G2 envelope | #13 revise |
 | E5.S4 Independent cross-check | B | todo | 0/2 | E5.S1-E5.S3 | -- |
 | E6.S1 alpha_star | B | todo | 0/1 | E5.S2 | -- |
 | E6.S2 rho_star and membership | B | todo | 0/3 | E6.S1, G3 | -- |
@@ -46,9 +47,9 @@ Format: `Story | Owner | status | tasks | blocked-by | PR`
 | E9.S2 CIGRE cross-check | C | todo | 0/1 | E8 pipeline | -- |
 | E9.S3 Full-year screen | C | todo | 0/1 | E1.S3, E3.S3 | -- |
 | E9.S4 Convergence | C | todo | 0/1 | E8 pipeline | -- |
+| E9.S5 Grid-model error sensitivity | C | todo | 0/1 | signed A-013, E5.S3, E8 pipeline | -- |
 | E10.S1 Figure factory | C | todo | 0/1 | manifests | -- |
 | E10.S2 Manuscript | all | todo | 0/4 | G6 inputs | -- |
 | E10.S3 Repro package | C | todo | 0/3 | figures/results | -- |
 | E10.S4 Red team | all | todo | 0/1 | manuscript draft | -- |
 | E10.S5 Gates G6/G7 | HUMAN | todo | 0/1 | E10.S1-E10.S4 | -- |
-

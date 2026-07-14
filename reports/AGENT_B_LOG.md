@@ -20,3 +20,9 @@ DID: Added config-driven model-error widening in `src/pbox.py` as an additive pr
 VERIFIED: `.\scripts\task.ps1 test` passed: 36 tests green, including synthetic widening expansion, clipping, and explicit-config validation tests. No paper experiments or grid-specific model-error values were introduced.
 OPEN: G3 is still pending; `src/pbox.py` remains synthetic/test-mode only for pre-G3 vertex propagation and must not be used for paper results until G3 permits it. Scientific model-error margins still require PI-approved config/register values before paper use.
 NEXT: Open the E5.S3 PR for review.
+
+## 2026-07-14 10:07 — E5.S3 — in-progress
+DID: Merged current `origin/main` into the E5.S3 PR branch and resolved the `registers/STATUS.md` conflict by preserving main's revised E5.S3 status: output-domain model-error propagation, `#13 revise`, with T2-T3 blocked on PI-approved IC schema, signed A-013, and the G2 envelope.
+VERIFIED: `.\scripts\task.ps1 test` passed after the merge: 42 tests green. `registers/STATUS.md` conflict resolved with main's revised E5.S3 row preserved.
+OPEN: PR #13 still needs the scientific-policy revision implied by main's status before it can be considered complete. G3 remains pending; no paper-result use.
+NEXT: Commit the merge resolution and push PR #13.

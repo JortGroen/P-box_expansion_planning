@@ -20,3 +20,30 @@ DID: Started E2.S1 under signed G0. Added metadata-first retrieval script entryp
 VERIFIED: Pre-implementation `.\scripts\task.ps1 test` passed 14 tests; post-change `.\scripts\task.ps1 test` passed 17 tests.
 OPEN: URL/license checks, checksums, and PI sign-off remain open for E2.S1 T2-T3.
 NEXT: Continue E2.S1 T2 license/URL verification, then record checksums and update DATA_REGISTER rows.
+## 2026-07-09 00:40 - E2.S1.T2-T3 - blocked
+DID: Created fresh branch `agent-c/E2.S1-license-register` from `origin/main`, re-read the required instructions/registers, and continued only E2.S1 T2-T3. Updated `DATA_REGISTER.md` with verified URLs/licenses where clear, explicit no-download rationales where no file was downloaded, and `proposed-blocked` rows where source/license/access terms remain unclear.
+VERIFIED: Pre-change `.\scripts\task.ps1 test` passed 21 tests; post-change `.\scripts\task.ps1 test` passed 21 tests. Source checks found clear provenance for SimBench, When2Heat, PVGIS, EUR-Lex, and Mueller/Jansen, but unresolved license/access/source questions for ElaadNL, KNMI, IEC 60076-7, and Cicenas.
+OPEN: Q-2 blocks E2.S1 completion and any use/download/extraction for unclear-license or access-limited rows.
+NEXT: Wait for PI answer to Q-2, then either revise sources or record approved terms/checksums before preparing E2.S1 for sign-off.
+## 2026-07-09 01:20 - E2.S1.T2-T3 - blocked
+DID: Merged latest `origin/main` into `agent-c/E2.S1-license-register`, re-read the required instructions/registers, and continued only E2.S1 T2-T3. Resolved the KNMI license row to CC-BY-4.0 for the 10-minute in-situ dataset, clarified IEC 60076-7 as citation-only/no-download, and kept ElaadNL/Cicenas as explicit no-download rows pending PI approval.
+VERIFIED: Pre-change task-wrapper test passed 21 tests; post-change task-wrapper test passed 22 tests. Added a DATA_REGISTER placeholder guard for E2.S1 rows.
+OPEN: Q-2 remains blocking for ElaadNL reuse terms and the Cicenas source URL/file plus license terms. E2.S1 is not done and no raw data was downloaded.
+NEXT: Await PI answer to Q-2, then either replace sources or record approved source terms/checksums before moving E2.S1 to review.
+## 2026-07-10 12:25 - E2.S1.T2-T3 - blocked
+DID: Merged latest `origin/main` after PR #8/EV-001, resolved conflicts by preserving the Laadprofielengenerator D-002 route from main and the improved non-EV license rows, and ran exactly one live API probe for `simulated_year=2033`, home/car, `n_profiles=1`, seed `133001`. Raw response was saved under ignored `data/raw/elaad_profiles/`; metadata/checksums were saved under `data/metadata/elaad_profiles/`.
+VERIFIED: Pre-probe task-wrapper test passed 25 tests. Probe returned HTTP 200, response config echoed `simulated_year=2033` and seed `133001`, produced 35040 UTC timestamps with one demand value per timestamp, and wrote metadata `data/metadata/elaad_profiles/d002_elaad_profile_probe_y2033_seed133001_n1_metadata.json`.
+OPEN: Generated-profile terms of use remain uncertain for redistribution/data-availability claims; bulk generation is still not allowed. Cicenas D-008 source URL/file and reuse terms remain open in Q-3, so E2.S1 is not done.
+NEXT: Await PI answer for Q-3 and terms-of-use guidance before generating any ElaadNL profile library or extracting Cicenas unit costs.
+
+## 2026-07-10 13:05 - E2.S1.T2-T3 - blocked
+DID: Merged latest `origin/main` into `agent-c/E2.S1-license-register`, incorporated G0-A1 and COST-001, and resolved merge conflicts in the E2.S1 source/register files. Replaced D-002 placeholder checksum variables with the recorded one-profile probe metadata path and hashes, fixed the malformed `reports/elaad_profile_generation_spec.md` path, resolved Q-3 via COST-001, and clarified that the Elaad probe response was `demands_kw` time-major.
+VERIFIED: `.\scripts\task.ps1 test` passed 35 tests. Cleanup scan found no conflict markers, D-002 checksum placeholders, malformed `eports/...` path, or stale profile-major parser assertion.
+OPEN: D-002 generated-profile terms of use remain uncertain for redistribution/data-availability claims; bulk generation is still not allowed. Cicenas source access is resolved by COST-001, but extracted values remain unsigned until page/table provenance and PI sign-off are recorded.
+NEXT: Open/update the E2.S1 PR for review with STATUS kept blocked on D-002 terms-of-use, or await PI terms guidance before bulk Elaad generation.
+
+## 2026-07-13 00:00 - E2.S1.T2-T3 - blocked
+DID: Merged latest `origin/main` into PR #14 branch and resolved the single conflict in `registers/STATUS.md`. Preserved main's newer G0-A2/G1 status updates and kept Agent C's E2.S1 row blocked on D-002 generated-profile terms-of-use with PR #14.
+VERIFIED: `.\scripts\task.ps1 test` passed 39 tests. Conflict-marker scan of `registers/STATUS.md` found no remaining markers.
+OPEN: D-002 generated-profile terms of use remain uncertain for redistribution/data-availability claims; no bulk Elaad generation performed.
+NEXT: Await PI terms guidance or review PR #14 as a blocked/sign-off-ready data-register update.

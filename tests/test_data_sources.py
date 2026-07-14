@@ -5,6 +5,7 @@ from pathlib import Path
 import subprocess
 import sys
 
+from data.get_elaad_profiles import build_probe_request
 from data.sources import source_specs, write_metadata
 
 
@@ -44,12 +45,31 @@ def test_data_register_references_e2_s1_retrieval_scripts() -> None:
         assert f"`{spec.retrieval_script}`" in register
 
 
+def test_data_register_has_no_e2_s1_placeholders() -> None:
+    register = Path("registers/DATA_REGISTER.md").read_text(encoding="utf-8")
+
+    for placeholder in ("TBD", "to check", "URL to verify", "DOI/URL to verify"):
+        assert placeholder not in register
+
+
 def test_elaad_source_uses_profile_generator_route() -> None:
     d002 = next(spec for spec in source_specs() if spec.data_id == "D-002")
 
     assert "Laadprofielengenerator" in d002.source
     assert d002.retrieval_script == "data/get_elaad_profiles.py"
     assert "elaad_profile_generation_spec.md" in d002.doi_url
+
+
+def test_elaad_one_profile_probe_request_is_narrow() -> None:
+    request = build_probe_request()
+
+    assert request["simulated_year"] == 2033
+    assert request["n_profiles"] == 1
+    assert request["profile_type"] == "ev"
+    assert request["location_type"] == "home"
+    assert request["vehicle_types"] == "car"
+    assert request["step_size_s"] == 900
+    assert request["seed"] == 133001
 
 
 def test_data_entrypoints_run_directly() -> None:

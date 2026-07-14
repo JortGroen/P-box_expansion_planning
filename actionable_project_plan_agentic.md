@@ -73,9 +73,9 @@ If an agent finds itself in the wrong worktree or on the wrong branch prefix, it
 
 | Gate | When | Question you decide | Inputs required from agents | Outcomes |
 |---|---|---|---|---|
-| **G0 Scope freeze** | end W1 | Approved in `registers/DECISIONS.md`: decision-transformer event E, P_crit primary/sensitivity protocol, grid/fallback rule, KNMI weather ensemble, and primary alpha grid; amended by G0-A1 for import-direction event scope and adaptive critical windows | E0 registers initialized; grid inventory report (E1.S1); G0 assumption rows A-005--A-008; E1.S3 reverse-PV screen evidence for G0-A1 | frozen; changes require a new signed decision |
-| **G1 Foundation validated** | end W2 | Is the compute plan real? Approve N budget and adaptive import-window time structure | Laptop micro-benchmark (E1.S2); profile/window validation (E1.S3, E1.S3b) | proceed / shrink grid / adjust N / revise K |
-| **G2 Tier equivalence** | W3–4 | Is summation ≈ AC for transformer loading (tolerance you set, e.g. ≤2%)? | Tier comparison report (E3.S3) | summation primary / AC primary |
+| **G0 Scope freeze** | end W1 | Approved in `registers/DECISIONS.md`: decision-transformer event E, P_crit primary/sensitivity protocol, grid/fallback rule, KNMI weather ensemble, and primary alpha grid; amended by G0-A1 for import-direction semantics and by G0-A2 for full-year primary event scope | E0 registers initialized; grid inventory report (E1.S1); G0 assumption rows A-005--A-008; E1.S3 reverse-PV screen evidence; E1.S3b import-window diagnostic | frozen; changes require a new signed decision |
+| **G1 Foundation validated** | end W2 | Approved in `registers/DECISIONS.md`: Tier-1 full-year radial summation is the MC inner-loop evaluator; AC is deterministic/validation only; fixed winter windows rejected; WindowSets retained only for AC validation/diagnostics; no manuscript claim may say "AC infeasible". G1-A1 further requires output-domain model-error propagation and an empirical Tier-1 enclosure at G2. | Laptop micro-benchmark (E1.S2); profile/window validation (E1.S3, E1.S3b); G1 brief; G1-A1 amendment | proceed with E1.S4; complete C1 TimeSeriesCPP benchmark and C2 transformer-headroom memo before G2; revise E5.S3 |
+| **G2 Tier-1 enclosure and adequacy** | W3–4 | Does a predeclared Tier-1 error envelope enclose held-out near/above-threshold pandapower states, and does the resulting composite output interval preserve a useful decision? | Corrected AC budget (E1.S2b); total/firm nameplate brief (E1.S1b); manifested domain-covering tier comparison and held-out enclosure test (E3.S3) | Tier-1 primary / corrected Tier-1 / selective AC / Tier-1 rejected |
 | **G3 Monotonicity verdict** | W4 | Is P(E\|ρ) monotone in the demand-peak regime? | Monotonicity report + regime split (E4.S1) | vertex shortcut / interior-sampling fallback / restrict scope to demand-driven regime |
 | **G4 Elicitation sign-off** | W7 | The trapezoid corners of ρ̃_flex (the paper's hinge) | Elicitation worksheet + candidate trapezoids (E7.S2) | sign corners into DECISIONS.md |
 | **G5 Case selection** | W7–8 | Which case for the decision-reversal benchmark (must sit near the P_crit boundary so treatments genuinely diverge) | Case-sweep candidates (E8.S1) | pick case / demand harder case |
@@ -89,13 +89,15 @@ If an agent finds itself in the wrong worktree or on the wrong branch prefix, it
 These contracts are what let agents work independently. Each has a schema doc + contract tests in `src/contracts/`.
 
 **IC-1 NetLoadProvider** (A provides → B, C consume)
-`get_net_load(scenario: str, year: int, window: TimeWindow, rho: float, seed: int) -> ndarray[nodes, timesteps]` (kW, 15-min). Deterministic in `seed` (CRN guarantee). Includes flexibility activation at controllability ρ and configurable rebound.
+`get_net_load(scenario: str, year: int, time_domain: FullYear | WindowSet, rho: float, seed: int) -> ndarray[nodes, timesteps]` (kW, 15-min). `FullYear` is the primary Tier-1 Monte Carlo domain per G0-A2. `WindowSet` is allowed only for AC-validation subset selection and diagnostics. Deterministic in `seed` (CRN guarantee). Includes flexibility activation at controllability ρ and configurable rebound.
 
 **IC-2 OverloadEvaluator** (A provides → B consumes)
-`evaluate(net_load) -> {import_loading_series: ndarray, export_loading_series: ndarray, screening_loading_series: ndarray, overload: bool}` per the G0/G0-A1 event definition. Tier-1 = radial summation; same semantic signature for the Tier-2 AC implementation (drop-in swap).
+`evaluate(net_load, time_domain: FullYear | WindowSet = FullYear) -> {import_loading_series: ndarray, export_loading_series: ndarray, screening_loading_series: ndarray, overload: bool}` per the G0/G0-A1/G0-A2 event definition. `overload` is the full-year primary event by default: at least 4 consecutive 15-minute import-direction steps above 1.0 p.u., with a direction flip resetting the counter. Tier-1 = radial summation; same semantic signature for the Tier-2 AC implementation (drop-in swap). WindowSet evaluation is diagnostic/validation only.
+
+G1-A1 behavioral amendment: IC-2 must preserve the unwidened `P_net` direction gate and enough trajectory/mask information for an output-error interval to be applied before episode classification. A boolean-only sample callback is noncompliant. The exact schema change is frozen only after Agents A/B propose it and the PI approves it.
 
 **IC-3 PBoxEstimator** (B provides → C consumes)
-`estimate(provider, evaluator, alpha_grid, fuzzy_number, N, seed) -> {alpha: (P_lo, P_up, CI_lo, CI_up)}` with model-error interval widening applied.
+`estimate(provider, evaluator, alpha_grid, fuzzy_number, N, seed) -> {alpha: (P_lo, P_up, CI_lo, CI_up)}` with the G1-A1 output-error interval applied to loading trajectories before event detection. Event counts from the lower/upper loading endpoints produce the probability estimates and MC CIs. Post-hoc probability-margin widening is forbidden. Exact schema changes remain PI-gated.
 
 **IC-4 DecisionMetrics** (B provides → C consumes)
 `decide(pbox_family, P_crit, fuzzy_number, econ: EconParams) -> {alpha_star, rho_star, mu_rho_star, horizon: {year: alpha_min}, VoI, decision: str}`.
@@ -123,9 +125,11 @@ Every paper figure/table is generated by `make figures` from manifests only — 
 |---|---|---|---|
 | **E1.S1 Grid loading** | T1 load SimBench `1-MV-semiurb--0-sw` + `1-MV-urban--0-sw` + CIGRE MV; T2 inventory (buses, trafos, lines, ratings); T3 deterministic `runpp` baseline | `src/grid_loader.py` + `reports/grid_inventory.md` | Baselines converge; inventory feeds G0 |
 | **E1.S2 Laptop micro-benchmark** | T1 time native pandapower vs lightsim2grid single-solve + TimeSerie on the chosen grids; T2 derive feasible N budget table (N × T × K × 2) | `reports/BENCHMARK.md` | Measured ms/solve on *your* laptop; budget table → G1 |
+| **E1.S2b TimeSeriesCPP AC benchmark** | G1-C1: T1 build/diagnose the lower-level `lightsim2grid.timeSerie.TimeSeriesCPP` adapter or document why it cannot be used; T2 confirm whether the `runpp` lightsim2grid flag actually engages; T3 report corrected AC validation budget | `reports/BENCHMARK_TIMESERIESCPP.md` | Clear verdict on solver engagement and feasible AC validation solve count before G2; no "AC infeasible" manuscript wording |
+| **E1.S1b Transformer headroom diagnostic** | G1-C2: T1 report decision-substation transformer count and ratings; T2 compute peak import MVA versus total aggregate nameplate and firm `(n-1)` nameplate; T3 compute 2035 no-flex load multiplier needed to reach 0.95 p.u. under both denominator conventions; T4 flag G0 item-4 fallback/escalation and any firm-capacity redefinition option | `reports/transformer_headroom_diagnostic.md` | One-page memo gives PI enough information to decide whether the primary case is suitable or needs the G0 fallback/escalation path |
 | **E1.S3 Time series & critical weeks** | T1 ingest SimBench full-year 15-min profiles, scenarios 0/1/2; T2 fixed-winter direction-agnostic screen from the original plan; T3 validation plot windows-vs-full-year exceedances | `src/profiles.py`, `data/critical_weeks.csv`, plots | PR #10 evidence generated; fixed-winter windows did not validate and triggered G0-A1 |
-| **E1.S3b G0-A1 import-window diagnostic** | T1 add import/export split per G0-A1; T2 re-rank annual weeks by import-direction loading; T3 coverage-vs-K curve for annual top-672 import-loading steps; T4 propose adaptive top-K + 1 margin windows and report export exceedance separately | `src/profiles.py`, updated data/report/manifest | Import-window K chosen from coverage-vs-K to reach ≥95% of annual top-672 import-loading steps where feasible; export/feed-in exceedance reported separately; no G1 pass implied |
-| **E1.S4 Tier-1 evaluator** | T1 radial downstream summation of net P and Q → `S_net(t) = P_net(t) + jQ_net(t)` and `abs(S_net) / S_nom,agg`; T2 produce import-direction primary loading (`P_net > 0`), export-direction side loading (`P_net < 0`), and direction-agnostic screening loading (`P_net = 0` belongs to neither direction); T3 overload-event flag per G0-A1 with direction flips resetting the episode counter; T4 unit tests vs hand-computed toy feeder incl. import, reverse-export, and zero-crossing cases | `src/evaluator_sum.py` + tests | Matches hand calculation exactly on toy case; reverse-flow case reports export loading but does not trigger primary import event |
+| **E1.S3b G0-A1 import-window diagnostic** | T1 add import/export split per G0-A1; T2 re-rank annual weeks by import-direction loading; T3 coverage-vs-K curve for annual top-672 import-loading steps; T4 propose adaptive top-K + 1 margin WindowSets and report export exceedance separately | `src/profiles.py`, updated data/report/manifest | WindowSet diagnostics generated for AC validation/reporting; G0-A2 means they do not define primary `P(E)` |
+| **E1.S4 Tier-1 evaluator** | T1 radial downstream summation of net P and Q → `S_net(t) = P_net(t) + jQ_net(t)` and `abs(S_net) / S_nom,agg`; T2 produce full-year import-direction primary loading (`P_net > 0`), export-direction side loading (`P_net < 0`), and direction-agnostic screening loading (`P_net = 0` belongs to neither direction); T3 overload-event flag per G0-A1/G0-A2 over the full planning year, with direction flips resetting the episode counter; T4 support WindowSet evaluation for validation/diagnostics only; T5 unit tests vs hand-computed toy feeder incl. import, reverse-export, and zero-crossing cases; T6 preserve unwidened direction information for G1-A1 output-envelope propagation, with exact IC-2 schema deferred to PI approval | `src/evaluator_sum.py` + tests | Matches hand calculation exactly on toy case; full-year import event semantics tested; reverse-flow case reports export loading but does not trigger primary import event; output path can apply an interval before episode detection without widening export/zero-crossing steps into import |
 
 ### E2 — Data & aleatory layer (Owner: C; Weeks 1–3)
 | Story | Tasks | Deliverable | Acceptance / Verification |
@@ -142,7 +146,7 @@ Every paper figure/table is generated by `make figures` from manifests only — 
 |---|---|---|---|
 | **E3.S1 Flexibility aggregator** | T1 flexible-fraction per node per tech; T2 apply controllability ρ during critical periods; T3 configurable rebound (none / shift-to-adjacent) | `src/flex_aggregator.py` + tests | Energy conservation test passes with rebound on |
 | **E3.S2 IC-1 NetLoadProvider** | T1 implement contract; T2 schema doc; T3 contract tests incl. CRN determinism | `src/contracts/net_load.py` | Same seed ⇒ bit-identical output; schema frozen at G1 |
-| **E3.S3 Tier-2 AC harness** | T1 pandapower+lightsim2grid time-series runner (IC-2 drop-in); T2 summation-vs-AC comparison on sampled draws | `reports/tier_comparison.md` | Transformer-loading delta quantified → G2 |
+| **E3.S3 Tier-2 AC harness and Tier-1 enclosure** | T1 pandapower+lightsim2grid time-series runner (IC-2 drop-in); T2 predeclare a domain-covering validation design and held-out near/above-threshold stratum; T3 compare Tier-1 vs pandapower residuals on matched inputs through the runner; T4 test the predeclared held-out enclosure criterion without retuning; T5 quantify decision impact and recommend Tier-1 / corrected Tier-1 / selective AC / reject | `reports/tier_comparison.md` + manifest | `epsilon_Tier1` symmetric/asymmetric envelope reported; held-out enclosure verdict is auditable; G2 receives one explicit evaluator recommendation |
 | **E3.S4 CRN harness** | T1 seed-tree design (sample × α × endpoint × treatment); T2 test identical aleatory streams across branches | `src/rng.py` + test | Proven identical streams |
 
 ### E4 — Monotonicity gate (Owner: B, support A; Week 4) — **CRITICAL PATH**
@@ -156,7 +160,7 @@ Every paper figure/table is generated by `make figures` from manifests only — 
 |---|---|---|---|
 | **E5.S1 Fuzzy number class** | T1 trapezoid/triangle/piecewise-convex + α-cut extraction; T2 tests vs hand values | `src/fuzzy.py` + tests | Exact match on hand-computed cuts |
 | **E5.S2 Vertex propagation (IC-3)** | T1 endpoint propagation per α with binomial CIs; T2 nested-cut sample reuse via CRN; T3 invariant suite (§3 T2 i–iii) | `src/pbox.py` + invariants | All invariants green at N from G1 budget |
-| **E5.S3 Model-error widening** | T1 interval widening (two-sourced p-box); config-driven | config + tests | Widening visible & correct on synthetic case |
+| **E5.S3 Output-domain model-error propagation** | T1 Agents A/B propose the smallest G1-A1-compliant IC-2/IC-3 schema change for PI approval; T2 apply signed `epsilon_grid` plus the G2 Tier-1 envelope to loading trajectories before episode detection; T3 tests for lower/upper four-step events, unwidened direction gate, alpha support, CRN, counts/CIs, and asymmetric/clipped loading cases | config + `src/pbox.py` + contract/invariant tests | Synthetic trajectories produce hand-computed event-probability bounds; no probability-margin shifting remains; signed A-013 replacement and G2 envelope required before paper use |
 | **E5.S4 Independent cross-check** | T1 analytic toy case (closed-form P(E\|ρ)) match <1%; T2 qualitative reproduction of Baudrit-style hybrid example | `reports/crosscheck.md` | **Trust certificate for the math core** (required before any paper result) |
 
 ### E6 — Decision layer (Owner: B; Weeks 6–7) — **HEADLINE**
@@ -189,8 +193,9 @@ Every paper figure/table is generated by `make figures` from manifests only — 
 |---|---|---|---|
 | **E9.S1 P_crit sensitivity** | 1e-2 vs 1e-3 reruns of decision layer | report section | Decisions stable or flips explained |
 | **E9.S2 CIGRE cross-check** | full pipeline on CIGRE MV | report section | Qualitative agreement |
-| **E9.S3 Full-year screen** | Tier-2 full-year pass per scenario; adaptive import-window coverage check; export-direction exceedance side screen | report section | Confirms G0-A1 import-window claim; export/feed-in regime reported transparently if binding |
+| **E9.S3 Full-year and WindowSet validation screen** | Tier-1 full-year screen per scenario; Tier-2 AC validation on WindowSet subsets; export-direction exceedance side screen | report section | Confirms G0-A2 full-year primary event implementation and transparently reports export/feed-in regime if binding |
 | **E9.S4 Convergence** | CI-vs-N study; confirm G1 budget adequate | plot | CIs at chosen N within target |
+| **E9.S5 Grid-model error sensitivity** | Predeclare and run the signed A-013 `epsilon_grid` alternatives through the output-domain event pipeline with shared CRN | report section + manifests | Shows whether alpha-indexed bounds or decisions change across the approved expert envelope values; no single value is presented as empirical fact |
 
 ### E10 — Paper production (Owner: all agents draft, **HUMAN approves every claim**; Weeks 9–12)
 | Story | Tasks | Deliverable | Acceptance / Verification |
@@ -208,15 +213,15 @@ Every paper figure/table is generated by `make figures` from manifests only — 
 | Week | Agent A (Simulation) | Agent B (Uncertainty/Decision) | Agent C (Data/Experiments) | Your gates |
 |---|---|---|---|---|
 | 1 | E1.S1–S2 | (reads plan; drafts invariant specs) | E0 all, E2.S1 | **G0** |
-| 2 | E1.S3b–S4 | E5.S1, E7.S1 | E2.S2–S3 | **G1** (freeze IC schemas) |
+| 2 | E1.S3b, E1.S1b, E1.S2b, E1.S4 | E5.S1, E7.S1 | E2.S2–S3 | **G1** (freeze IC schemas) |
 | 3 | E3.S1–S2 | E4 prep (sweep spec) | E2.S4–S6 | — |
-| 4 | E3.S3–S4 | **E4.S1 monotonicity** | support E4 runs | **G2, G3** |
+| 4 | E3.S3–S4 | **E4.S1 monotonicity** | support E4 runs | **G2, G3** (after G1 C1/C2 evidence) |
 | 5 | support B | E5.S2–S3 | E7.S2 data side | — |
 | 6 | perf tuning | E5.S4 cross-check, E6.S1–S2 | experiment configs | — |
 | 7 | — | E6.S3–S5, E7.S4 | E8.S1 case sweep | **G4, G5** |
 | 8 | — | supports E8 spec | E8.S2–S3 | — |
 | 9 | — | — | E8.S4, E9.S1–S2 | — |
-| 10 | — | — | E9.S3–S4 | — |
+| 10 | — | — | E9.S3–S5 | — |
 | 11 | drafts methods §§ | drafts results §§ | E10.S1, S3 | **G6** |
 | 12 | revisions | revisions | E10.S4 red team | **G7 submit** |
 
