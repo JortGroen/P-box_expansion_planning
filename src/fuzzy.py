@@ -149,7 +149,11 @@ class PiecewiseLinearFuzzyNumber:
         return AlphaCut(
             alpha=alpha,
             lower=_interpolate_x_for_mu(self.left, alpha),
-            upper=_interpolate_x_for_mu(self.right, alpha),
+            upper=_interpolate_x_for_mu(
+                self.right,
+                alpha,
+                prefer_rightmost=True,
+            ),
         )
 
     def membership(self, value: float) -> float:
@@ -202,17 +206,24 @@ def _validate_profile(points: tuple[tuple[float, float], ...], side: str) -> Non
 
 
 def _interpolate_x_for_mu(
-    points: Sequence[tuple[float, float]], alpha: float
+    points: Sequence[tuple[float, float]],
+    alpha: float,
+    *,
+    prefer_rightmost: bool = False,
 ) -> float:
-    for (x0, mu0), (x1, mu1) in zip(points, points[1:]):
+    segments = list(zip(points, points[1:]))
+    if prefer_rightmost:
+        segments.reverse()
+
+    for (x0, mu0), (x1, mu1) in segments:
         lo_mu = min(mu0, mu1)
         hi_mu = max(mu0, mu1)
         if lo_mu <= alpha <= hi_mu:
             if mu0 == mu1:
-                return x0 if alpha == mu0 else x1
+                return x1 if prefer_rightmost else x0
             fraction = (alpha - mu0) / (mu1 - mu0)
             return x0 + fraction * (x1 - x0)
-    return points[-1][0]
+    raise RuntimeError("validated profile does not span the requested alpha")
 
 
 def _interpolate_mu_for_x(
