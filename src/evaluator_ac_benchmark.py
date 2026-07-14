@@ -58,6 +58,7 @@ class TimeSeriesAdapter:
     grid_model: Any
     computer: Any
     materialization: TopologyMaterialization
+    converter_warnings: tuple[str, ...]
 
 
 def materialize_topology_for_lightsim(net: Any) -> tuple[Any, TopologyMaterialization]:
@@ -130,13 +131,16 @@ def build_timeseries_adapter(net: Any) -> TimeSeriesAdapter:
     from lightsim2grid.timeSerie import TimeSeriesCPP
 
     converted, materialization = materialize_topology_for_lightsim(net)
-    pp.runpp(converted, algorithm="nr", numba=True)
-    grid_model = init(converted, pp_orig_file="pandapower_v3")
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        pp.runpp(converted, algorithm="nr", numba=True)
+        grid_model = init(converted, pp_orig_file="pandapower_v3")
     return TimeSeriesAdapter(
         net=converted,
         grid_model=grid_model,
         computer=TimeSeriesCPP(grid_model),
         materialization=materialization,
+        converter_warnings=tuple(str(warning.message) for warning in caught),
     )
 
 
@@ -240,6 +244,7 @@ def run_benchmark(config_path: str | Path) -> dict[str, Any]:
     materialization: TopologyMaterialization | None = None
     shape_record: dict[str, Any] = {}
     solved_counts: list[int] = []
+    converter_warnings: tuple[str, ...] = ()
 
     for _ in range(repeats):
         adapter, conversion_elapsed = _timed(lambda: build_timeseries_adapter(load_candidate_grid(grid_key)))
@@ -270,6 +275,7 @@ def run_benchmark(config_path: str | Path) -> dict[str, Any]:
         internal_current_flow_times.append(float(adapter.computer.amps_computation_time()))
         solved_counts.append(int(adapter.computer.nb_solved()))
         materialization = adapter.materialization
+        converter_warnings = adapter.converter_warnings
         shape_record = {
             "gen_p": list(inputs.gen_p.shape),
             "sgen_p": list(inputs.sgen_p.shape),
@@ -298,6 +304,7 @@ def run_benchmark(config_path: str | Path) -> dict[str, Any]:
         "config": config,
         "hardware_runtime": _hardware_runtime(),
         "topology_materialization": _dataclass_dict(materialization),
+        "adapter_converter_warnings": list(converter_warnings),
         "timeseriescpp": {
             "time_steps": steps,
             "warmups": warmups,
@@ -436,6 +443,7 @@ def render_report(raw: dict[str, Any], evidence_path: Path) -> str:
         f"- Bus count: {raw['topology_materialization']['bus_count_before']} -> {raw['topology_materialization']['bus_count_after']}",
         f"- In-service lines after materialization: {raw['topology_materialization']['in_service_line_count_after']}",
         f"- Input shapes: `{tscpp['input_shapes']}`",
+        f"- Converter warnings recorded in raw output: `{raw['adapter_converter_warnings']}`",
         "",
         "## Corrected G2 AC Budget",
         "",
