@@ -1,5 +1,5 @@
 {
-  "config_hash": "5f5dd0bd6af9324bbaa85b8670dd549280d4c4c42cc1ce96230c1699281c70e0",
+  "config_hash": "03e7dd01e23716cf455c3ba275fdc632c004b42ecdef6404381d0f8afe529703",
   "config_path": "reports/benchmark_timeseriescpp_input.json",
   "extra": {
     "artifact_type": "timeseriescpp_benchmark_evidence",
@@ -13,14 +13,14 @@
     "repeats": 5,
     "task_id": "E1.S2b",
     "time_steps": 672,
-    "timestamp_utc": "2026-07-14T15:11:21.805935Z",
+    "timestamp_utc": "2026-07-14T15:33:39.361441Z",
     "timing_method": "time.perf_counter wall-clock timings plus TimeSeriesCPP internal solver/preprocessing/current-flow timers",
     "warmups": 1
   },
-  "git_commit": "f242a2bc8429ad1ff17af5974c19678514110e76",
+  "git_commit": "c6c5d8d23da63dc33f5b8116a3146d096655c980",
   "output_checksums": {
-    "reports/BENCHMARK_TIMESERIESCPP.md": "04919fc4870674fb5479c6706135621d29426b3fdd90a86ba85f66e41cca16b8",
-    "reports/benchmark_timeseriescpp_raw.json": "f35b70031f032693226d04a0fd5839f87cb81ef308ed58c9ea0d25c6ea711e87"
+    "reports/BENCHMARK_TIMESERIESCPP.md": "3da6ac6838eccb86362efe05799925c69ee57d38e6c024bcdd1218c49d1ba43f",
+    "reports/benchmark_timeseriescpp_raw.json": "7efb282a00e7186fb1dbf69427486cc7aa7cb62e3f0fa2ba444fbccd28e042b8"
   },
   "package_versions": {
     "hypothesis": "6.156.4",
