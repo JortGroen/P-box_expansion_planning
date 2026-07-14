@@ -148,11 +148,21 @@ If your current directory, branch, or worktree does not match your role and assi
 
 ## 9. Git & PR protocol
 
-- Branch naming: `agent-<a|b|c>/E#.S#-<slug>`. Commits small, messages prefixed with the task ID (`E5.S2.T1: ...`).
+- Branch naming: `agent-<a|b|c>/E#.S#-<slug>`.
+- Keep commits small and cohesive. Use `<task ID>: <imperative outcome>` for the subject, for example `E5.S2: Preserve common random numbers across alpha cuts`. Keep the complete subject concise (preferably at most 72 characters), specific, and understandable without reading the diff. Avoid vague subjects such as `update files`, `fix work`, `done`, or agent/session narration. Add a short body when the reason, scientific constraint, or compatibility consequence is not obvious from the subject.
 - Worktree naming: each active agent uses a separate sibling directory (`P-box_expansion_planning-agent-a`, `P-box_expansion_planning-agent-b`, `P-box_expansion_planning-agent-c`). The PI dashboard directory remains on `main` and is not used for implementation.
 - Do not use `git switch` to move one shared directory between agents or tasks. If the branch/task changes, ask the PI to create or retarget a worktree.
-- **PR body must contain** the story ID, a link to the deliverable, and this checklist, all boxes ticked truthfully:
-  - [ ] `make test` green locally
+- Write the PR for a professional human reviewer who has not followed the agent session. The title uses `<story ID>: <human-readable outcome>` and describes the delivered result, not merely the activity performed. Do not paste raw agent narration, terminal history, or a chronological diary.
+- **PR body must use these sections**, omitting only a section that genuinely does not apply:
+  - `## Summary`: two to four concise bullets describing the purpose and user/scientific outcome.
+  - `## Changes`: the important implementation, data, register, or interface changes, grouped logically rather than file by file.
+  - `## Validation`: exact commands run and their results, including test counts and relevant invariant or manifest checks.
+  - `## Evidence`: links to reports, manifests, generated tables/figures, and the governing decision or question.
+  - `## Risks and decisions`: reviewer decisions required, unresolved limitations, compatibility effects, or `None`.
+  - `## Checklist`: the checklist below, with every box marked truthfully.
+- Keep PR prose direct and readable. Explain why a change exists and what a reviewer should verify; avoid inflated claims, repetitive detail, internal chain-of-thought, or unexplained task jargon.
+- **PR checklist:**
+  - [ ] `.\scripts\task.ps1 test` green locally
   - [ ] Invariant suite green (if math touched)
   - [ ] Manifest(s) attached for every produced result
   - [ ] Registers updated (`ASSUMPTIONS`/`DATA_REGISTER` rows `proposed` where needed)
