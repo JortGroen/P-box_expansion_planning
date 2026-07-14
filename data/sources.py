@@ -43,10 +43,10 @@ _SOURCE_SPECS: tuple[SourceSpec, ...] = (
         item="EV charging behavior profiles",
         source="ElaadNL Laadprofielengenerator generated profiles",
         doi_url="Dashboard https://charging.elaad.nl/; API docs https://api.charging.data.elaad.nl/docs#; generation spec reports/elaad_profile_generation_spec.md",
-        license="Terms of use for generated profiles still to verify before redistribution or manuscript data-availability claims",
+        license="Internal project computation approved by EV-002; generated profiles are not claimed openly licensed or redistributable",
         retrieval_script="data/get_elaad_profiles.py",
         raw_subdir="elaad_profiles",
-        notes="EV-001 approved profile-generator route; one-profile probe completed for simulated_year=2033; bulk generation still blocked pending terms/source sign-off.",
+        notes="EV-002 allows internal use through the public API; do not commit raw responses or generated libraries; readers regenerate through the API subject to current terms.",
     ),
     SourceSpec(
         data_id="D-003",
