@@ -47,3 +47,16 @@ DID: Merged latest `origin/main` into PR #14 branch and resolved the single conf
 VERIFIED: `.\scripts\task.ps1 test` passed 39 tests. Conflict-marker scan of `registers/STATUS.md` found no remaining markers.
 OPEN: D-002 generated-profile terms of use remain uncertain for redistribution/data-availability claims; no bulk Elaad generation performed.
 NEXT: Await PI terms guidance or review PR #14 as a blocked/sign-off-ready data-register update.
+
+## 2026-07-14 00:00 - E2.S1/E2.S2 - in-progress
+DID: Created fresh branch `agent-c/E2.S2-ev-model` from current `origin/main` after PR #14 was merged. Recorded PI decision EV-002 for D-002: generated ElaadNL profiles may be used internally through the public API, but raw responses/generated libraries must remain ignored and unredistributed; readers regenerate via the API under terms at retrieval time. Updated D-002 register/source/spec language, moved E2.S1 to review, and opened E2.S2 as the active Agent C task.
+VERIFIED: `.\scripts\task.ps1 test` passed 41 tests. `data/get_elaad_profiles.py --write-library-plan` wrote `data/metadata/elaad_profiles/d002_elaad_profile_library_plan.json` without API calls or generated profile data.
+OPEN: E2.S2 still needs the first implementation step; generated profile redistribution remains a documented limitation, not an internal-use blocker.
+NEXT: Review the E2.S2 library plan, then run the first explicitly approved profile-generation batch into ignored data paths.
+
+## 2026-07-14 00:00 - E2.S1/E2.S2 - in-progress
+DID: Merged latest `origin/main` into PR #18 branch, preserved EV-002 and the metadata-only ElaadNL library plan, added the EV-002 Methods traceability block, and revised D-002 Methods language to match the approved internal-use/non-redistribution boundary and one-profile probe evidence.
+VERIFIED: `.\scripts\task.ps1 test` passed 45 tests, including `tests/test_methods_registry.py`. No API calls, bulk generation, raw profile commits, or generated-profile redistribution performed.
+OPEN: E2.S2 remains in progress; generated-profile redistribution remains an unresolved limitation, not an internal-use blocker under EV-002.
+NEXT: After PI review/merge of PR #18, run the first explicitly approved small ElaadNL generation batch into ignored data paths and update manifests/checksums before sampler integration.
+

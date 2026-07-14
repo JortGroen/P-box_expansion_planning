@@ -5,7 +5,7 @@ from pathlib import Path
 import subprocess
 import sys
 
-from data.get_elaad_profiles import build_probe_request
+from data.get_elaad_profiles import build_library_plan, build_probe_request, write_library_plan
 from data.sources import source_specs, write_metadata
 
 
@@ -70,6 +70,36 @@ def test_elaad_one_profile_probe_request_is_narrow() -> None:
     assert request["vehicle_types"] == "car"
     assert request["step_size_s"] == 900
     assert request["seed"] == 133001
+
+
+def test_elaad_library_plan_uses_native_2033_and_distinct_batch_seeds() -> None:
+    plan = build_library_plan()
+    seeds = [batch.seed for batch in plan]
+
+    assert len(seeds) == len(set(seeds))
+    assert any(
+        batch.set_id == "A"
+        and batch.simulated_year == 2033
+        and batch.location_type == "home"
+        and batch.profile_type == "ev"
+        for batch in plan
+    )
+    assert all(batch.n_profiles == 100 for batch in plan)
+
+
+def test_elaad_library_plan_metadata_is_non_redistribution_boundary() -> None:
+    metadata_dir = _case_dir("library_plan")
+    path = write_library_plan(metadata_dir)
+
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    assert payload["bulk_generation_performed"] is False
+    assert payload["policy"]["decision"] == "EV-002"
+    assert payload["policy"]["commit_generated_profiles"] is False
+    assert payload["policy"]["redistribute_generated_profiles"] is False
+    assert all(
+        batch["raw_response_path"].startswith("data/raw/elaad_profiles/")
+        for batch in payload["batches"]
+    )
 
 
 def test_data_entrypoints_run_directly() -> None:

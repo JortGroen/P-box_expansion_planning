@@ -117,11 +117,17 @@ while AC power flow is used for deterministic checks and manifested validation
 subsets. The measured high-level pandapower `runpp` path required about 105 ms
 per solve on the 117-bus primary grid, making billions of time-step solves
 impractical through that measured path; this does not establish that all AC
-implementations are infeasible. Tier-1 therefore supplies the computational
-path, but its agreement with pandapower is a G2 hypothesis rather than an
-accepted accuracy claim. A lower-level TimeSeriesCPP benchmark and a held-out
-near-threshold enclosure test determine the eventual AC-validation budget and
-whether Tier-1 remains admissible.
+implementations are infeasible. The lower-level TimeSeriesCPP diagnostic
+adapted the same primary grid by materializing open line switches as
+out-of-service lines, fusing closed bus-bus switches, and mapping the external
+grid as the LightSim slack source; the regenerated E1.S2b run measured
+0.2325 ms per repeated baseline voltage solve inside a 672-step batch, implying
+about 8.15 s for 35,040 voltage solves before scenario construction and
+selected result extraction. Tier-1 therefore supplies the Monte Carlo
+computational path, but its agreement with pandapower is a G2 hypothesis rather
+than an accepted accuracy claim. The corrected TimeSeriesCPP budget and a
+held-out near-threshold enclosure test determine the eventual AC-validation
+budget and whether Tier-1 remains admissible.
 
 <!-- methods-id: G1-A1 -->
 ### G1-A1 - Model-Output Error Propagation
@@ -228,6 +234,23 @@ one-profile probe was required before library generation to verify the native
 2033 option, timestamp orientation, response shape, and seed behavior. Profile
 generation and redistribution remain subject to the terms and provenance rules
 recorded under D-002.
+
+<!-- methods-id: EV-002 -->
+### EV-002 - ElaadNL Internal-Use and Redistribution Boundary
+
+**Status: Approved.** Generated ElaadNL profiles may be used for internal project
+computations when they are retrieved through the publicly accessible
+Laadprofielengenerator API, but the project does not commit or redistribute raw
+API responses or generated profile libraries. Reproducibility is maintained by
+committing generation and retrieval code, exact request configurations, distinct
+seed schedules, metadata, checksums, and manifests; generated files stay under
+ignored raw or processed data paths. The data-availability statement must direct
+readers to regenerate profiles through the public API under the terms applicable
+at their retrieval time, and the manuscript must not claim that generated
+profiles are openly licensed or redistributable. The unresolved redistribution
+terms remain a documented limitation and risk rather than an internal-use
+blocker. If later terms explicitly prohibit the intended research use, profile
+use stops and the issue escalates to the PI before further analysis.
 
 <!-- methods-id: COST-001 -->
 ### COST-001 - Indicative Reinforcement Costs
@@ -416,14 +439,20 @@ evidence that the selected network is a measured Dutch feeder.
 <!-- methods-id: D-002 -->
 ### D-002 - ElaadNL EV Profiles
 
-**Status: Proposed; redistribution terms unresolved on current main.** Seeded
+**Status: Internal-use approved by EV-002; redistribution unresolved.** Seeded
 15-minute EV charging profiles are requested from the ElaadNL
-Laadprofielengenerator using version-controlled request metadata. The initial
-probe verified native 2033 support, a full 35,040-step year, UTC output, and the
-time-major response layout. Generated raw responses and libraries are not
-committed while reuse and redistribution terms remain unresolved. Any library
-used in results must preserve request configuration, seeds, timestamps,
-checksums, conversion rules, and the applicable data-availability statement.
+Laadprofielengenerator using version-controlled request metadata and ignored
+raw-output paths. The one-profile probe accepted native `simulated_year = 2033`,
+returned 35,040 UTC timestamps, and exposed `demands_kw` as a time-major array
+with one value per timestamp for the single requested profile. Generated raw
+responses, converted libraries, and parquet outputs remain uncommitted and
+unredistributed; committed artifacts are limited to retrieval/generation code,
+request configurations, seed schedules, metadata, checksums, manifests, and the
+library plan. Readers must regenerate profiles through the public API under the
+terms in force at retrieval time. Because generated-profile redistribution terms
+remain unresolved, D-002 may not be described as openly licensed or
+redistributable, and any explicit future prohibition of this research use stops
+profile use pending PI escalation.
 
 <!-- methods-id: D-003 -->
 ### D-003 - Heat-Pump Profiles
@@ -487,3 +516,5 @@ page and table reference, interpretation status, and PI approval. Values are
 used as indicative planning inputs and subjected to economic sensitivity; they
 are not generalized beyond the documented Stedin/Eneco context or presented as
 current regulated prices.
+
+

@@ -10,12 +10,12 @@ Format: `Story | Owner | status | tasks | blocked-by | PR`
 | E0.S4 Agent working agreement | C | done | 1/1 | -- | -- |
 | E1.S1 Grid loading | A | done | 3/3 | -- | #2 |
 | E1.S2 Laptop micro-benchmark | A | done | 2/2 | -- | #7 |
-| E1.S2b TimeSeriesCPP AC benchmark | A | todo | 0/3 | -- | -- |
+| E1.S2b TimeSeriesCPP AC benchmark | A | review | 3/3 | -- | -- |
 | E1.S1b Transformer headroom diagnostic | A | review | 4/4 | -- | #19 |
 | E1.S3b G0-A1 import-window diagnostic | A | done | 4/4 | -- | #15 |
 | E1.S4 Tier-1 evaluator | A | todo | 0/6 | -- | -- |
-| E2.S1 Data acquisition | C | blocked | 2/3 | D-002 generated-profile terms-of-use | #14 |
-| E2.S2 EV model | C | todo | 0/3 | E2.S1 | -- |
+| E2.S1 Data acquisition | C | review | 3/3 | -- | #14, follow-up on E2.S2 branch |
+| E2.S2 EV model | C | in-progress | 0/3 | E2.S1 review | -- |
 | E2.S3 HP model | C | todo | 0/3 | E2.S1 | -- |
 | E2.S4 PV model | C | todo | 0/2 | E2.S1, G0 | -- |
 | E2.S5 Baseline & diversity | C | todo | 0/1 | E1.S3 | -- |

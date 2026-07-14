@@ -154,7 +154,7 @@ Rules: (1) an ElaadNL seed appears exactly once across the whole project; (2) an
 2. Parse: assert `len(datetimes) == 35040`. The 2026-07-10 one-profile API probe returned `demands_kw` time-major (`len(demands_kw) == len(datetimes)`, each row containing one value per returned profile), not profile-major. Preserve this observation in metadata and reshape to timestamp-indexed profile columns during conversion.
 3. **Convert datetimes UTC → Europe/Amsterdam** (documented tool behaviour: output is UTC regardless of request timezone); assert the converted series starts 2025-01-01 00:00 local.
 4. Wide parquet: index = local timestamp, columns = `profile_{seed}_{i}`, values = kW, float32.
-5. Checksum (sha256) → `DATA_REGISTER.md` row and `data/metadata/elaad_profiles/` manifest: source (charging.elaad.nl API), request body, retrieval timestamp, documentation version 10 Nov 2025, Outlook basis (Personenauto's 2024 / Logistiek 2025), license note (**open item §7.5 — confirm terms of use before redistribution or manuscript data-availability claims**), status `proposed` for PI sign-off.
+5. Checksum (sha256) → `DATA_REGISTER.md` row and `data/metadata/elaad_profiles/` manifest: source (charging.elaad.nl API), request body, retrieval timestamp, documentation version 10 Nov 2025, Outlook basis (Personenauto's 2024 / Logistiek 2025), and EV-002 non-redistribution note. Generated profiles are for internal project computation; raw responses and generated libraries are not committed or redistributed.
 6. Library summary report per set: annual-energy histogram, mean daily profile winter/summer, coincidence-factor curve, max simultaneous power vs. n.
 
 ---
@@ -165,7 +165,7 @@ Rules: (1) an ElaadNL seed appears exactly once across the whole project; (2) an
 2. **Is `work` a valid `location_type` API value?** The doc's parameter list omits it while the tables include it — irrelevant to our sets but resolve for the record.
 3. **Rate limits / max payload** — confirm 100-profiles-per-call full-year responses are accepted; tune §3.9 batch size.
 4. **Seed vs. n_profiles semantics** — confirm whether one `seed` governs the whole batch (all 100 profiles) or per-profile seeds are derivable; adjust the §5 accounting so that "distinct library members" remains guaranteed (if one seed spans 100 profiles, the seed ranges above become batch seeds and the member id is `(seed, index)` — the aggregation rules apply per member, and the same-seed warning applies per *batch*, meaning members within one batch are already mutually distinct sessions; confirm this reading with ElaadNL if ambiguous).
-5. **Terms of use / license** of generated profiles for use in a publication and for redistribution of the archived parquet library (affects the repro package: redistribute vs. regenerate-script-only).
+5. **Terms of use / license** — EV-002 approves internal project computation through the public API and requires regenerate-script-only data availability. Generated profiles must not be described as openly licensed or redistributable. If explicit terms later prohibit this research use, stop and escalate.
 6. **`statistics` field** — currently `null` in examples; check whether a populated mode exists (session-level metadata would improve Set C's calibration power).
 
 ---
@@ -177,7 +177,7 @@ Rules: (1) an ElaadNL seed appears exactly once across the whole project; (2) an
 | Generator major update ~summer 2026 changes profiles mid-project | Freeze-and-archive in Week 1–2 (§3.8); cite archived dataset + doc version |
 | API unavailable / payload limits | Dashboard fallback (100/run — Set A is 10 runs per year); batch retry idempotence |
 | Seed semantics differ from our reading | Open item §7.4 resolved before Monte Carlo integration; worst case: regenerate with corrected seed plan (cheap) |
-| Redistribution not permitted | Repro package ships the generation script + this spec + request bodies instead of the parquet files |
+| Redistribution not permitted or terms remain ambiguous | EV-002 boundary: generated files stay ignored and unredistributed; repro package ships generation code, request configurations, seed schedules, metadata, checksums, and manifests; data-availability text directs readers to regenerate via the public API subject to terms at retrieval time |
 | Home-share double-counting (§3.6) | Explicit rule + unit test in the nodal attachment code: node EV energy ≈ members' energy sum, no extra mix factor |
 
 ## 9. Acceptance checklist (spec is "done" when)
