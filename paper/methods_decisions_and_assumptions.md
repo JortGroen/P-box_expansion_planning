@@ -121,8 +121,10 @@ implementations are infeasible. The lower-level TimeSeriesCPP diagnostic
 adapted the same primary grid by materializing open line switches as
 out-of-service lines, fusing closed bus-bus switches, and mapping the external
 grid as the LightSim slack source; it measured about 0.19 ms per repeated
-baseline voltage solve inside a 672-step batch, before scenario construction
-and selected result extraction. Tier-1 therefore supplies the Monte Carlo
+grid as the LightSim slack source; the manifested E1.S2b run measured
+0.3332 ms per repeated baseline voltage solve inside a 672-step batch, implying
+about 11.68 s for 35,040 voltage solves before scenario construction and
+selected result extraction. Tier-1 therefore supplies the Monte Carlo
 computational path, but its agreement with pandapower is a G2 hypothesis rather
 than an accepted accuracy claim. The corrected TimeSeriesCPP budget and a
 held-out near-threshold enclosure test determine the eventual AC-validation

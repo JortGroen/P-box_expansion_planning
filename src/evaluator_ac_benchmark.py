@@ -22,6 +22,10 @@ from src.manifest import build_manifest, sha256_file
 
 
 SGEN_LIMIT_COLUMNS: tuple[str, ...] = ("min_p_mw", "max_p_mw", "min_q_mvar", "max_q_mvar")
+DEFAULT_MATERIALIZATION_ACCEPTANCE: dict[str, float] = {
+    "max_abs_loading_pu": 0.002,
+    "max_abs_bus_vm_pu": 0.001,
+}
 
 
 @dataclass(frozen=True)
@@ -96,6 +100,14 @@ def materialize_topology_for_lightsim(net: Any) -> tuple[Any, TopologyMaterializ
             converted.line.loc[list(disabled_lines), "in_service"] = False
 
         bus_switch_mask = (switch_table["et"] == "b") & (switch_table["closed"].astype(bool))
+        if bus_switch_mask.any() and "z_ohm" in switch_table:
+            z_values = switch_table.loc[bus_switch_mask, "z_ohm"].fillna(0.0).astype(float)
+            nonzero_z_switches = tuple(int(idx) for idx, value in z_values.items() if abs(value) > 0.0)
+            if nonzero_z_switches:
+                raise ValueError(
+                    "Unsupported closed bus-bus switches with nonzero z_ohm before LightSim conversion: "
+                    f"{nonzero_z_switches}"
+                )
         fused_bus_switches = tuple(int(idx) for idx in switch_table.index[bus_switch_mask])
         fused_bus_pairs = tuple(
             (int(switch["bus"]), int(switch["element"])) for _, switch in switch_table.loc[bus_switch_mask].iterrows()
@@ -134,14 +146,16 @@ def materialize_topology_for_lightsim(net: Any) -> tuple[Any, TopologyMaterializ
     return converted, materialization
 
 
-def run_materialization_equivalence(
+def run_materialization_discrepancy(
     net: Any,
     *,
     load_multipliers: Sequence[float],
+    acceptance: dict[str, float] | None = None,
     transformer_indices: Sequence[int] = (0, 1),
 ) -> dict[str, Any]:
-    """Compare original switch-table semantics with the materialized network."""
+    """Quantify original switch-table versus materialized-network discrepancy."""
 
+    criteria = acceptance or DEFAULT_MATERIALIZATION_ACCEPTANCE
     rows: list[dict[str, Any]] = []
     for multiplier in load_multipliers:
         original = copy.deepcopy(net)
@@ -182,7 +196,13 @@ def run_materialization_equivalence(
         "transformer_indices": [int(index) for index in transformer_indices],
         "rows": rows,
         "max_abs_delta": max_abs_delta,
+        "acceptance_criterion": dict(criteria),
+        "acceptance_passed": (
+            max_abs_delta["loading_pu"] <= float(criteria["max_abs_loading_pu"])
+            and max_abs_delta["max_bus_vm_pu"] <= float(criteria["max_abs_bus_vm_pu"])
+        ),
         "open_transformer_switch_check": "passed: no open transformer switches were present before dropping the switch table",
+        "closed_bus_bus_impedance_check": "passed: no closed bus-bus switches with nonzero z_ohm were present before fusing",
         "one_end_open_line_note": (
             "Open line switches are represented by setting the corresponding whole line out of service. "
             "If pandapower retains any charging contribution from a one-end-open line under the original switch-table model, "
@@ -200,7 +220,7 @@ def _scale_loads(net: Any, multiplier: float) -> None:
 def _run_equivalence_power_flow(net: Any) -> None:
     import pandapower as pp
 
-    pp.runpp(net, algorithm="nr", calculate_voltage_angles=True, init="auto")
+    pp.runpp(net, algorithm="nr", calculate_voltage_angles=True, init="auto", max_iteration=50)
     if not bool(net.converged):
         raise RuntimeError("Equivalence power flow did not converge")
 
@@ -340,6 +360,10 @@ def run_benchmark(config_path: str | Path) -> dict[str, Any]:
     max_iter = int(config["max_iter"])
     tol = float(config["tolerance"])
     equivalence_load_multipliers = tuple(float(value) for value in config.get("equivalence_load_multipliers", [1.0]))
+    materialization_acceptance = config.get(
+        "materialization_acceptance",
+        DEFAULT_MATERIALIZATION_ACCEPTANCE,
+    )
 
     for _ in range(warmups):
         adapter = build_timeseries_adapter(load_candidate_grid(grid_key))
@@ -419,9 +443,10 @@ def run_benchmark(config_path: str | Path) -> dict[str, Any]:
         "hardware_runtime": _hardware_runtime(),
         "topology_materialization": _dataclass_dict(materialization),
         "adapter_converter_warnings": list(converter_warnings),
-        "materialization_equivalence": run_materialization_equivalence(
+        "materialization_discrepancy": run_materialization_discrepancy(
             load_candidate_grid(grid_key),
             load_multipliers=equivalence_load_multipliers,
+            acceptance=materialization_acceptance,
         ),
         "timeseriescpp": {
             "time_steps": steps,
@@ -563,32 +588,45 @@ def render_report(raw: dict[str, Any], evidence_path: Path) -> str:
         f"- Input shapes: `{tscpp['input_shapes']}`",
         f"- Converter warnings recorded in raw output: `{raw['adapter_converter_warnings']}`",
         "",
-        "## Materialization Equivalence",
+        "## Materialization Discrepancy",
         "",
         (
-            "The original pandapower network with its switch table was compared with the "
-            "materialized LightSim-compatible network at the baseline state and perturbed "
-            "load states. The check compares aggregate decision-transformer P, Q, apparent "
-            "power, loading, and maximum bus voltage magnitude deviation after mapping fused "
-            "bus-bus switch pairs back to the retained bus."
+            "This is a pandapower-to-pandapower materialization discrepancy check, not a "
+            "TimeSeriesCPP-to-pandapower adapter validation. The original pandapower network "
+            "with its switch table was compared with the materialized LightSim-compatible "
+            "pandapower network at the baseline state, perturbed load states, and states that "
+            "bracket approximately 0.95 to 1.05 p.u. original total-nameplate loading. The "
+            "check compares aggregate decision-transformer P, Q, apparent power, loading, and "
+            "maximum bus voltage magnitude deviation after mapping fused bus-bus switch pairs "
+            "back to the retained bus."
         ),
         "",
-        "| Load multiplier | Abs delta P MW | Abs delta Q Mvar | Abs delta S MVA | Abs delta loading p.u. | Max abs delta V p.u. |",
-        "| ---: | ---: | ---: | ---: | ---: | ---: |",
+        (
+            "Declared acceptance criterion across every configured case: "
+            f"abs loading delta <= {raw['materialization_discrepancy']['acceptance_criterion']['max_abs_loading_pu']:.6g} p.u. "
+            f"and max abs bus-voltage delta <= {raw['materialization_discrepancy']['acceptance_criterion']['max_abs_bus_vm_pu']:.6g} p.u. "
+            f"Result: {'passed' if raw['materialization_discrepancy']['acceptance_passed'] else 'failed'}."
+        ),
+        "",
+        "| Load multiplier | Original loading p.u. | Materialized loading p.u. | Abs delta P MW | Abs delta Q Mvar | Abs delta S MVA | Abs delta loading p.u. | Max abs delta V p.u. |",
+        "| ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
         *[
             (
-                f"| {row['load_multiplier']:.3f} | {abs(row['delta']['p_mw']):.6g} | "
+                f"| {row['load_multiplier']:.3f} | {row['original']['loading_pu']:.6g} | "
+                f"{row['materialized']['loading_pu']:.6g} | {abs(row['delta']['p_mw']):.6g} | "
                 f"{abs(row['delta']['q_mvar']):.6g} | {abs(row['delta']['s_mva']):.6g} | "
                 f"{abs(row['delta']['loading_pu']):.6g} | {abs(row['delta']['max_bus_vm_pu']):.6g} |"
             )
-            for row in raw["materialization_equivalence"]["rows"]
+            for row in raw["materialization_discrepancy"]["rows"]
         ],
         "",
-        f"- Open transformer switch check: {raw['materialization_equivalence']['open_transformer_switch_check']}.",
+        f"- Open transformer switch check: {raw['materialization_discrepancy']['open_transformer_switch_check']}.",
+        f"- Closed bus-bus impedance check: {raw['materialization_discrepancy']['closed_bus_bus_impedance_check']}.",
         (
             "- One-end-open line charging note: "
-            f"{raw['materialization_equivalence']['one_end_open_line_note']}"
+            f"{raw['materialization_discrepancy']['one_end_open_line_note']}"
         ),
+        "- TimeSeriesCPP adapter numerical comparison is deferred to G2, where transformer-loading extraction from TimeSeriesCPP outputs and the materialization discrepancy above must be included in the Tier-1-to-AC validation envelope.",
         "",
         "## Corrected G2 AC Budget",
         "",

@@ -10,8 +10,17 @@
     0.8,
     1.0,
     1.2,
-    1.5
+    1.5,
+    2.65,
+    2.7,
+    2.75,
+    2.8,
+    2.85
   ],
+  "materialization_acceptance": {
+    "max_abs_loading_pu": 0.002,
+    "max_abs_bus_vm_pu": 0.001
+  },
   "warmups": 1,
   "repeats": 5,
   "max_iter": 20,

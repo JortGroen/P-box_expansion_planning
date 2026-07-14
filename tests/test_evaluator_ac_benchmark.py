@@ -4,10 +4,11 @@ import numpy as np
 import pytest
 
 from src.evaluator_ac_benchmark import (
+    DEFAULT_MATERIALIZATION_ACCEPTANCE,
     build_timeseries_adapter,
     make_repeated_inputs,
     materialize_topology_for_lightsim,
-    run_materialization_equivalence,
+    run_materialization_discrepancy,
 )
 from src.grid_loader import load_candidate_grid
 
@@ -44,21 +45,35 @@ def test_materialize_topology_rejects_open_transformer_switch() -> None:
         materialize_topology_for_lightsim(net)
 
 
-def test_materialization_equivalence_reports_transformer_and_voltage_deltas() -> None:
+def test_materialize_topology_rejects_impedance_bearing_closed_bus_switch() -> None:
+    net = load_candidate_grid("simbench_semiurb")
+    net.switch.loc[0, "z_ohm"] = 0.1
+
+    with pytest.raises(ValueError, match="nonzero z_ohm"):
+        materialize_topology_for_lightsim(net)
+
+
+def test_materialization_discrepancy_reports_transformer_and_voltage_deltas() -> None:
     net = load_candidate_grid("simbench_semiurb")
 
-    result = run_materialization_equivalence(net, load_multipliers=(1.0, 1.1))
+    result = run_materialization_discrepancy(
+        net,
+        load_multipliers=(0.8, 1.0, 2.65, 2.85),
+        acceptance=DEFAULT_MATERIALIZATION_ACCEPTANCE,
+    )
 
     assert result["open_transformer_switch_check"].startswith("passed")
+    assert result["closed_bus_bus_impedance_check"].startswith("passed")
     assert "one-end-open line" in result["one_end_open_line_note"]
-    assert len(result["rows"]) == 2
+    assert result["acceptance_passed"] is True
+    assert len(result["rows"]) == 4
     assert result["transformer_indices"] == [0, 1]
     for row in result["rows"]:
         assert set(row["delta"]) == {"p_mw", "q_mvar", "s_mva", "loading_pu", "max_bus_vm_pu"}
         assert row["original"]["nameplate_mva"] == pytest.approx(80.0)
         assert row["materialized"]["nameplate_mva"] == pytest.approx(80.0)
-        assert abs(row["delta"]["loading_pu"]) < 1e-3
-        assert row["delta"]["max_bus_vm_pu"] < 1e-3
+        assert abs(row["delta"]["loading_pu"]) <= DEFAULT_MATERIALIZATION_ACCEPTANCE["max_abs_loading_pu"]
+        assert row["delta"]["max_bus_vm_pu"] <= DEFAULT_MATERIALIZATION_ACCEPTANCE["max_abs_bus_vm_pu"]
 
 
 def test_timeseriescpp_inputs_match_converter_element_counts() -> None:
