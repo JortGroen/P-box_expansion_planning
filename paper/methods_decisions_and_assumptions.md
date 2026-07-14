@@ -517,4 +517,19 @@ used as indicative planning inputs and subjected to economic sensitivity; they
 are not generalized beyond the documented Stedin/Eneco context or presented as
 current regulated prices.
 
+<!-- methods-id: D-009 -->
+### D-009 - DFMP Probability-to-Possibility Transform
+
+**Status: Proposed citation/protocol row; exact worked-example verification
+pending.** The Dubois-Foulloy-Mauris-Prade probability-to-possibility
+transformation is used as the mathematical protocol for converting a finite
+probability mass function into a possibility distribution when empirical pilot
+statistics are available for elicitation. The implemented finite convention
+assigns each state possibility equal to the cumulative probability of states
+with probability no larger than its own, with tied probabilities receiving tied
+possibility grades. This preserves normalization and finite event domination
+while avoiding a project-specific fuzzy-shape choice. The source is verified in
+the literature review, but the primary paper's exact worked example is not yet
+available in the workspace; Q-5 blocks marking E7.S1 complete until that
+example can be reproduced or the PI approves a replacement acceptance source.
 
