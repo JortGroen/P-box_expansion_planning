@@ -45,3 +45,9 @@ VERIFIED: Pre-change `.\scripts\task.ps1 test` passed: 33 tests. Post-change `.\
 OPEN: Deterministic SimBench import-window proposals reach the 95% top-672 target with base K 24/21/18 and selected K+1 windows 25/22/19 for scenarios 0/1/2. Export maxima are reported separately and stay below 1.0 p.u. in this screen; no G1 decision was made.
 NEXT: PI reviews E1.S3b PR as G1 evidence; Agent A waits for the next assigned task after review/merge.
 
+## 2026-07-14 10:32 - E1.S1b - done
+DID: Started fresh branch `agent-a/E1.S1b-transformer-headroom` from latest `origin/main` after confirming the worktree was clean. Added the E1.S1b transformer-headroom diagnostic runner, version-controlled input config, numeric CSV, evidence manifest, and `reports/transformer_headroom_diagnostic.md`.
+VERIFIED: Pre-change `.\scripts\task.ps1 test` passed: 39 tests. Post-change `.\scripts\task.ps1 test` passed: 41 tests. Manifest `reports/transformer_headroom_evidence.json` records source/config commit `9269dee3e7e30c2ef13e010a22dbff2c4fb687f9`, package versions, command, transformer indices `[0, 1]`, switch indices `[0, 5, 1, 2, 3, 4]`, and checksums for the report and CSV.
+OPEN: Scenario-0 peak import is 12.731587 MVA at 2016-01-27T17:45:00+00:00. Loading is 0.159145 p.u. on total 80 MVA and 0.318290 p.u. on firm 40 MVA; both stay below the G0 baseline fallback threshold. PI still needs to decide total versus firm denominator and align additive/relative model-error envelope form.
+NEXT: PI reviews E1.S1b PR as G1-C2 evidence; Agent A does not start E1.S2b, E1.S4, E3, or IC proposal work in this session.
+
