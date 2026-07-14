@@ -117,11 +117,17 @@ while AC power flow is used for deterministic checks and manifested validation
 subsets. The measured high-level pandapower `runpp` path required about 105 ms
 per solve on the 117-bus primary grid, making billions of time-step solves
 impractical through that measured path; this does not establish that all AC
-implementations are infeasible. Tier-1 therefore supplies the computational
-path, but its agreement with pandapower is a G2 hypothesis rather than an
-accepted accuracy claim. A lower-level TimeSeriesCPP benchmark and a held-out
-near-threshold enclosure test determine the eventual AC-validation budget and
-whether Tier-1 remains admissible.
+implementations are infeasible. The lower-level TimeSeriesCPP diagnostic
+adapted the same primary grid by materializing open line switches as
+out-of-service lines, fusing closed bus-bus switches, and mapping the external
+grid as the LightSim slack source; the regenerated E1.S2b run measured
+0.2325 ms per repeated baseline voltage solve inside a 672-step batch, implying
+about 8.15 s for 35,040 voltage solves before scenario construction and
+selected result extraction. Tier-1 therefore supplies the Monte Carlo
+computational path, but its agreement with pandapower is a G2 hypothesis rather
+than an accepted accuracy claim. The corrected TimeSeriesCPP budget and a
+held-out near-threshold enclosure test determine the eventual AC-validation
+budget and whether Tier-1 remains admissible.
 
 <!-- methods-id: G1-A1 -->
 ### G1-A1 - Model-Output Error Propagation
