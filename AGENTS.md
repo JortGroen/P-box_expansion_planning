@@ -22,6 +22,7 @@ Bootstrap rules:
 - Scientific values, dependency changes, interface changes, gate decisions, and manuscript numbers require PI approval.
 - Every experimental result must be produced through the runner and have a manifest.
 - Every new logic change needs tests.
+- Per G1-A1, model-error intervals are applied to loading trajectories before event detection; never widen probabilities after estimation or sample an interval error as if it were independent randomness.
 - Report alpha-indexed lower/upper bounds only; never report a defuzzified probability as the answer.
 
 Worktree layout:
