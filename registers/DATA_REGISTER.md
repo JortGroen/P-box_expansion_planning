@@ -2,7 +2,9 @@
 
 External data, citations, and numeric anchors go here before use. Status
 `proposed` means an agent has identified the item; it is not approved for paper
-claims until the PI signs it.
+claims until the PI signs it. Every row must have a same-ID standalone methods
+paragraph in `paper/methods_decisions_and_assumptions.md` explaining why the
+source is used, how it enters the method, and its material limitations.
 
 | ID | Item | Source | DOI/URL | License | Retrieval script | Checksum | Verification tag | Status | PI sign-off |
 |---|---|---|---|---|---|---|---|---|---|

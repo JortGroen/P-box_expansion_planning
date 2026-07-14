@@ -63,9 +63,11 @@ If an agent finds itself in the wrong worktree or on the wrong branch prefix, it
 
 **T7 — Anti-fabrication.** Citations may only be drawn from the consolidated literature review's verified list (tags [V]/[V–]/[HC]) or new entries you have signed into `DATA_REGISTER.md`. An agent that cannot source a claim writes `[CITATION NEEDED — escalated]` and moves on.
 
+**T8 — Manuscript rationale travels with every choice.** Every new or changed decision, assumption, data source, or methodological protocol must add or update a same-ID standalone paragraph in `paper/methods_decisions_and_assumptions.md` in the same PR. The paragraph explains the choice, defense, scope, and limitations and carries the register status explicitly. Proposed prose never creates authority; only the signed register does. Automated coverage tests reject registered IDs without a paragraph block.
+
 **Escalation triggers (agent must stop and ask you):** interface change needed; a test cannot pass without changing the spec; unclear data license; runtime exceeds budget by >2×; results contradict a passed Gate; anything requiring a value not in the registers.
 
-**Control registers** (created in E0, live in `registers/`): `DECISIONS.md` (gate outcomes, signed), `ASSUMPTIONS.md` (id, statement, rationale, owner, status), `DATA_REGISTER.md` (item, source, DOI/URL, license, retrieval script, checksum, verification tag, PI sign-off), `RISKS.md` (§8), `STATUS.md`.
+**Control registers** (created in E0, live in `registers/`): `DECISIONS.md` (gate outcomes, signed), `ASSUMPTIONS.md` (id, statement, rationale, owner, status), `DATA_REGISTER.md` (item, source, DOI/URL, license, retrieval script, checksum, verification tag, PI sign-off), `RISKS.md` (§8), `STATUS.md`. Their manuscript-facing companion is `paper/methods_decisions_and_assumptions.md` per T8.
 
 ---
 
