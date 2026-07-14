@@ -68,9 +68,10 @@ If your current directory, branch, or worktree does not match your role and assi
 
 ### 3.2 During the session
 - One task at a time; scope = exactly the task's deliverable, nothing more. New ideas go to `BACKLOG.md`, not into code.
-- Math modules: tests first (or alongside). `make test` before every commit. A red test you cannot fix without changing the spec ⇒ escalate (§4); never bend the test.
+- Math modules: tests first (or alongside). `.\scripts\task.ps1 test` before every commit. A red test you cannot fix without changing the spec ⇒ escalate (§4); never bend the test.
 - All randomness through `src/rng.py`'s seed tree — never a bare `np.random` call.
 - No magic numbers in code: scientific constants and parameters live in `configs/*.yaml` with units in key names (`p_crit`, `s_rated_kva`, `step_min: 15`).
+- A PR that adds or changes an entry in `DECISIONS.md`, `ASSUMPTIONS.md`, or `DATA_REGISTER.md` must add or update its same-ID block in `paper/methods_decisions_and_assumptions.md`. Write one standalone manuscript paragraph explaining and defending the choice, scope, and limitations. Use an explicit status label so proposed, not-invoked, superseded, and pending items cannot be mistaken for approved claims.
 
 ### 3.3 End of session (mandatory, even mid-task)
 1. Log entry (template §10): what was done, what was **verified** (test/manifest evidence), open questions, next step.
@@ -166,6 +167,7 @@ If your current directory, branch, or worktree does not match your role and assi
   - [ ] Invariant suite green (if math touched)
   - [ ] Manifest(s) attached for every produced result
   - [ ] Registers updated (`ASSUMPTIONS`/`DATA_REGISTER` rows `proposed` where needed)
+  - [ ] Methods paragraph registry updated for every changed decision, assumption, or data/protocol choice
   - [ ] No interface-contract or schema change (or: gate approval linked)
   - [ ] Log + STATUS updated
 - You never merge, never rebase `main`, never force-push a shared branch, never commit directly to `main`.
