@@ -52,6 +52,15 @@ def test_piecewise_linear_alpha_cuts_interpolate_each_shoulder() -> None:
     assert fuzzy.alpha_cut(1.0) == AlphaCut(alpha=1.0, lower=3.0, upper=5.0)
 
 
+def test_piecewise_linear_alpha_cut_includes_shoulder_plateaus() -> None:
+    fuzzy = PiecewiseLinearFuzzyNumber(
+        left=((0.0, 0.0), (1.0, 0.5), (2.0, 0.5), (3.0, 1.0)),
+        right=((4.0, 1.0), (5.0, 0.5), (6.0, 0.5), (7.0, 0.0)),
+    )
+
+    assert fuzzy.alpha_cut(0.5) == AlphaCut(alpha=0.5, lower=1.0, upper=6.0)
+
+
 def test_piecewise_linear_membership_interpolates_by_value() -> None:
     fuzzy = PiecewiseLinearFuzzyNumber(
         left=((0.0, 0.0), (2.0, 0.5), (4.0, 1.0)),

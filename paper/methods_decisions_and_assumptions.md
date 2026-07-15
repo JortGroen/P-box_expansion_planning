@@ -129,6 +129,18 @@ than an accepted accuracy claim. The corrected TimeSeriesCPP budget and a
 held-out near-threshold enclosure test determine the eventual AC-validation
 budget and whether Tier-1 remains admissible.
 
+**Status: Approved evidence protocol; remediation pending.** Final experimental
+evidence is produced through the IC-5 ExperimentRunner from version-controlled
+configuration and is accompanied by a standard `manifest.json` containing the
+source revision, configuration hash, random seeds, software versions, and
+output checksums. Several early foundation diagnostics predated the full runner
+and instead wrote task-specific evidence JSON with substantially similar
+provenance. Those files are retained as historical gate evidence, but they are
+not treated as final manuscript evidence. Before G2 uses them as inputs, E0.S3b
+reproduces the diagnostics through ExperimentRunner, compares the results with
+the historical artifacts, and records any discrepancy rather than silently
+relabeling an old file as compliant.
+
 <!-- methods-id: G1-A1 -->
 ### G1-A1 - Model-Output Error Propagation
 
@@ -428,7 +440,7 @@ results may describe the protocol and sensitivity scenarios but may not call
 <!-- methods-id: D-001 -->
 ### D-001 - SimBench Network and Baseline Profiles
 
-**Status: Proposed data row; use governed by G0 and DEP-001.** SimBench supplies
+**Status: Approved for benchmark use by G0 and DEP-001.** SimBench supplies
 the network topology, electrical parameters, equipment ratings, and baseline
 time series needed for a fully reproducible benchmark. The package-installed
 data are referenced by version rather than copied into the repository, and
