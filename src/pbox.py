@@ -10,6 +10,7 @@ from __future__ import annotations
 import hashlib
 import math
 from dataclasses import dataclass
+from enum import Enum
 from statistics import NormalDist
 from typing import Callable, Mapping, Sequence
 
@@ -23,6 +24,13 @@ FuzzyNumber = (
     TrapezoidalFuzzyNumber | TriangularFuzzyNumber | PiecewiseLinearFuzzyNumber
 )
 SampleEvaluator = Callable[[float, int], bool]
+
+
+class VertexUseMode(str, Enum):
+    """Authorized context for endpoint-only p-box propagation."""
+
+    PRE_G3_SYNTHETIC = "pre-g3-synthetic"
+    G3_APPROVED = "g3-approved"
 
 
 @dataclass(frozen=True)
@@ -69,6 +77,7 @@ class ProbabilityEstimate:
 class PBoxAlphaResult:
     """P-box bounds for one alpha level."""
 
+    use_mode: VertexUseMode
     alpha: float
     rho_lower: float
     rho_upper: float
@@ -76,6 +85,8 @@ class PBoxAlphaResult:
     upper: ProbabilityEstimate
 
     def __post_init__(self) -> None:
+        if not isinstance(self.use_mode, VertexUseMode):
+            raise TypeError("use_mode must be a VertexUseMode")
         if self.rho_lower > self.rho_upper:
             raise ValueError("rho_lower must be <= rho_upper")
         if self.lower.probability > self.upper.probability:
@@ -94,6 +105,7 @@ def estimate_vertex_pbox(
     sample_count: int,
     root_seed: int,
     evaluator: SampleEvaluator,
+    use_mode: VertexUseMode,
     confidence_level: float = 0.95,
 ) -> dict[float, PBoxAlphaResult]:
     """Estimate alpha-indexed p-box bounds using endpoint propagation.
@@ -115,10 +127,16 @@ def estimate_vertex_pbox(
         Integer root seed for deterministic common random numbers.
     evaluator:
         Callable returning whether event E occurs for ``(rho, sample_seed)``.
+    use_mode:
+        Explicit authorization context. ``PRE_G3_SYNTHETIC`` is restricted to
+        synthetic tests and must not feed project results. ``G3_APPROVED`` may
+        be selected by experiment code only after the G3 monotonicity verdict.
     confidence_level:
         Binomial confidence level used for Wilson intervals.
     """
 
+    if not isinstance(use_mode, VertexUseMode):
+        raise TypeError("use_mode must be a VertexUseMode")
     if sample_count <= 0:
         raise ValueError("sample_count must be positive")
     if not 0.0 < confidence_level < 1.0:
@@ -135,6 +153,7 @@ def estimate_vertex_pbox(
             cut.lower, sample_seeds, evaluator, confidence_level
         )
         results[alpha] = PBoxAlphaResult(
+            use_mode=use_mode,
             alpha=alpha,
             rho_lower=cut.lower,
             rho_upper=cut.upper,

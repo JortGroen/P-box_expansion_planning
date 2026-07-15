@@ -114,6 +114,7 @@ If your current directory, branch, or worktree does not match your role and assi
 - **Python 3.12**; type hints on public functions; NumPy-style docstrings including **units** for every physical quantity.
 - Pinned environment (`requirements.txt`, `requirements-dev.txt`, `pyproject.toml`): Python 3.12, pandapower ≥ 3.4 and < 4, simbench 1.6.2, lightsim2grid ≥ 0.9.2, numba, numpy/pandas/scipy, pytest, hypothesis, matplotlib. **Frozen** — additions via escalation only. Never install project dependencies into Anaconda `base`.
 - Determinism: identical config + seed ⇒ bit-identical outputs (enforced by tests, expected of every module).
+- Non-obvious mathematical, physical, numerical, and governance logic needs a concise why-comment when a plausible simplification could change scientific behavior. Explain the invariant or guarded failure mode, not the syntax or an obvious assignment.
 - Notebooks live in `notebooks/`, are exploratory only, and must state which `src/` module supersedes them; logic that matters lands in `src/` with tests.
 - Never commit: `data/raw/` contents, credentials, or any file > 20 MB (use retrieval scripts + checksums).
 - Every experiment goes through `ExperimentRunner` (IC-5). Ad-hoc scripts that compute results outside the runner are forbidden.
