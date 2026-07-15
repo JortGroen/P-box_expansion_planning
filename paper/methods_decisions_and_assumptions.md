@@ -456,15 +456,18 @@ evidence that the selected network is a measured Dutch feeder.
 Laadprofielengenerator using version-controlled request metadata and ignored
 raw-output paths. The one-profile probe accepted native `simulated_year = 2033`,
 returned 35,040 UTC timestamps, and exposed `demands_kw` as a time-major array
-with one value per timestamp for the single requested profile. Generated raw
-responses, converted libraries, and parquet outputs remain uncommitted and
-unredistributed; committed artifacts are limited to retrieval/generation code,
-request configurations, seed schedules, metadata, checksums, manifests, and the
-library plan. Readers must regenerate profiles through the public API under the
-terms in force at retrieval time. Because generated-profile redistribution terms
-remain unresolved, D-002 may not be described as openly licensed or
-redistributable, and any explicit future prohibition of this research use stops
-profile use pending PI escalation.
+with one value per timestamp for the single requested profile. The first
+authorized Set A batch accepted `simulated_year = 2030`, seed `130001`, and
+`n_profiles = 100`; it returned 100 distinct members, still identified only as
+`(batch seed, returned profile index)` rather than independent per-profile
+seeds. Generated raw responses and converted local profile outputs remain
+uncommitted and unredistributed; committed artifacts are limited to
+retrieval/generation code, request configurations, seed schedules, metadata,
+checksums, manifests, and shape reports. Readers must regenerate profiles
+through the public API under the terms in force at retrieval time. Because
+generated-profile redistribution terms remain unresolved, D-002 may not be
+described as openly licensed or redistributable, and any explicit future
+prohibition of this research use stops profile use pending PI escalation.
 
 <!-- methods-id: D-003 -->
 ### D-003 - Heat-Pump Profiles
