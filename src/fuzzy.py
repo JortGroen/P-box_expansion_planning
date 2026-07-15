@@ -149,6 +149,8 @@ class PiecewiseLinearFuzzyNumber:
         return AlphaCut(
             alpha=alpha,
             lower=_interpolate_x_for_mu(self.left, alpha),
+            # The upper cut endpoint is max{x: mu(x) >= alpha}; using the
+            # first crossing would incorrectly truncate a constant-mu plateau.
             upper=_interpolate_x_for_mu(
                 self.right,
                 alpha,
