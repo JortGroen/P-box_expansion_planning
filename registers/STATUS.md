@@ -16,7 +16,7 @@ Format: `Story | Owner | status | tasks | blocked-by | PR`
 | E1.S3b G0-A1 import-window diagnostic | A | done | 4/4 | -- | #15 |
 | E1.S4 Tier-1 evaluator | A | review | 6/6 | -- | #25 |
 | E2.S1 Data acquisition | C | done | 3/3 | -- | #14, #18 follow-up |
-| E2.S2 EV model | C | in-progress | 4/5 | EV-004 Set A candidate M=1000 and held-out H=200 archived locally; M sufficiency, held-out adequacy use, and within-realization replacement remain blocked by E2.S6 and EV-005/E3.S2a criteria | pending |
+| E2.S2 EV model | C | in-progress | 4/5 | EV-004 Set A candidate M=1000 and held-out H=200 archived locally; M sufficiency, held-out adequacy use, and within-realization replacement remain blocked by E2.S6 and EV-005/E3.S2a criteria | #35 |
 | E2.S3 HP model | C | todo | 0/4 | E2.S1, ALEA-001 | -- |
 | E2.S4 PV model | C | todo | 0/3 | E2.S1, G0, ALEA-001 | -- |
 | E2.S5 Baseline & diversity | C | todo | 0/2 | E1.S3, ALEA-001 | -- |
