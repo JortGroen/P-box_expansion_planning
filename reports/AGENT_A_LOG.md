@@ -88,3 +88,9 @@ DID: Started fresh branch `agent-a/E3.S4-crn-harness` from latest `origin/main`.
 VERIFIED: Baseline `.\scripts\task.ps1 test` passed: 89 tests. Focused `.\.venv\Scripts\python.exe -m pytest tests\test_rng.py tests\test_pbox.py` passed: 13 tests. Final `.\scripts\task.ps1 test` passed: 95 tests in 74.15 s. `git diff --check` passed with line-ending notices only.
 OPEN: The harness implements ALEA-001 CRN plumbing only. It does not freeze IC-1/IC-2 schemas, choose event thresholds, set epsilon values, approve smart charging as a treatment, or change physical-dependence assumptions. No new methods paragraph was required because no registered decision, assumption, or data/protocol choice changed.
 NEXT: PI reviews the E3.S4 PR; downstream E3/E4/E5 work can consume `src/rng.py` for common random numbers after merge.
+
+## 2026-07-17 18:10 - E3.S4 PR #34 follow-up - review
+DID: Merged latest `origin/main` containing PR #33 into `agent-a/E3.S4-crn-harness`. Strengthened CRN provenance so component selections and shared-driver IDs belong to `AleatoryRealization` rather than individual branches, added `assert_crn_equivalent`, included root/sample seed identity in fingerprints and manifests, and validated that selected source members reference the realization's actual component stream.
+VERIFIED: Focused `.\.venv\Scripts\python.exe -m pytest tests\test_rng.py tests\test_pbox.py` passed: 16 tests. Final `.\scripts\task.ps1 test` passed: 103 tests in 82.03 s. `git diff --check` passed with line-ending notices only.
+OPEN: This follow-up tightens provenance invariants only. It does not change scientific values, gate decisions, event thresholds, IC schemas, or physical-dependence assumptions.
+NEXT: Rerun the full suite, push the PR #34 update, and wait for PI review.

@@ -26,7 +26,7 @@ Format: `Story | Owner | status | tasks | blocked-by | PR`
 | E3.S2a Integrated library adequacy | C | todo | 0/5 | E2.S2-E2.S6, E3.S2, ALEA-002, EV-005; resolve Q-5 before opening event-based held-out results | -- |
 | E3.S2b Future-layer capacity and domain screen | A | todo | 0/5 | E0.S3b, E2.S2-E2.S6, E3.S1-E3.S2a; Q-5 before threshold-based run | -- |
 | E3.S3 Tier-2 AC harness and Tier-1 enclosure | A | todo | 0/5 | E0.S3b, E1.S1, E1.S2b, E1.S4, E3.S2b; Q-5 before threshold-stratum run | -- |
-| E3.S4 CRN harness | A | review | 3/3 | ALEA-001 | -- |
+| E3.S4 CRN harness | A | review | 3/3 | ALEA-001 | #34 |
 | E4.S1 Dense rho sweep | B | todo | 0/3 | E3.S2, E3.S4, resolved Q-5 | -- |
 | E4.S2 Fallback stub | B | todo | 0/1 | E5 invariant skeleton | -- |
 | E5.S1 Fuzzy number class | B | done | 2/2 | -- | #1 |

@@ -122,17 +122,23 @@ class SeedTree:
         sample_index: int,
         *,
         component_names: Sequence[str] = (),
+        component_selections: Sequence[ComponentSelection] = (),
+        shared_driver_ids: Mapping[str, str] | None = None,
     ) -> "AleatoryRealization":
         if sample_index < 0:
             raise ValueError("sample_index must be non-negative")
+        component_set = {_require_name(component, "component") for component in component_names}
+        component_set.update(selection.component for selection in component_selections)
         streams = {
-            _require_name(component, "component"): self.component_stream(sample_index, component)
-            for component in component_names
+            component: self.component_stream(sample_index, component)
+            for component in component_set
         }
         return AleatoryRealization(
             tree=self,
             sample_index=sample_index,
             streams=dict(sorted(streams.items())),
+            component_selections=tuple(component_selections),
+            shared_driver_ids=dict(sorted((shared_driver_ids or {}).items())),
         )
 
 
@@ -143,6 +149,31 @@ class AleatoryRealization:
     tree: SeedTree
     sample_index: int
     streams: Mapping[str, ComponentStream] = field(default_factory=dict)
+    component_selections: tuple[ComponentSelection, ...] = ()
+    shared_driver_ids: Mapping[str, str] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        if self.sample_index < 0:
+            raise ValueError("sample_index must be non-negative")
+        normalized_streams = dict(self.streams)
+        for component, stream in normalized_streams.items():
+            if component != stream.component:
+                raise ValueError("stream mapping key must match stream component")
+            if stream.sample_index != self.sample_index:
+                raise ValueError("stream sample_index must match realization sample_index")
+        for selection in self.component_selections:
+            stream = normalized_streams.get(selection.component)
+            if stream is None:
+                raise ValueError(
+                    "component selection requires its component stream in the realization"
+                )
+            if selection.stream_id != stream.stream_id:
+                raise ValueError(
+                    "component selection stream_id must match the realization stream"
+                )
+        for name, value in self.shared_driver_ids.items():
+            _require_name(name, "shared_driver_id key")
+            _require_name(value, "shared_driver_id value")
 
     def stream(self, component: str) -> ComponentStream:
         component_name = _require_name(component, "component")
@@ -157,8 +188,6 @@ class AleatoryRealization:
         endpoint: str,
         treatment: str,
         component_names: Sequence[str] = (),
-        component_selections: Sequence[ComponentSelection] = (),
-        shared_driver_ids: Mapping[str, str] | None = None,
     ) -> "CRNBranch":
         branch_streams = dict(self.streams)
         for component in component_names:
@@ -169,12 +198,12 @@ class AleatoryRealization:
                 tree=self.tree,
                 sample_index=self.sample_index,
                 streams=dict(sorted(branch_streams.items())),
+                component_selections=self.component_selections,
+                shared_driver_ids=dict(sorted(self.shared_driver_ids.items())),
             ),
             alpha=alpha,
             endpoint=_require_name(endpoint, "endpoint"),
             treatment=_require_name(treatment, "treatment"),
-            component_selections=tuple(component_selections),
-            shared_driver_ids=dict(sorted((shared_driver_ids or {}).items())),
         )
 
 
@@ -186,13 +215,6 @@ class CRNBranch:
     alpha: float | str
     endpoint: str
     treatment: str
-    component_selections: tuple[ComponentSelection, ...] = ()
-    shared_driver_ids: Mapping[str, str] = field(default_factory=dict)
-
-    def __post_init__(self) -> None:
-        for name, value in self.shared_driver_ids.items():
-            _require_name(name, "shared_driver_id key")
-            _require_name(value, "shared_driver_id value")
 
     def aleatory_fingerprint(self) -> str:
         """Return a branch-invariant digest of sample, streams, and selections."""
@@ -200,10 +222,16 @@ class CRNBranch:
         return hashlib.sha256(
             _stable_json(
                 {
+                    "root_seed": self.realization.tree.root_seed,
+                    "sample_seed": self.realization.tree.sample_seed(
+                        self.realization.sample_index
+                    ),
+                    "sample_index": self.realization.sample_index,
                     "component_selections": self._selection_records(),
                     "component_streams": self._stream_records(),
-                    "sample_index": self.realization.sample_index,
-                    "shared_driver_ids": dict(sorted(self.shared_driver_ids.items())),
+                    "shared_driver_ids": dict(
+                        sorted(self.realization.shared_driver_ids.items())
+                    ),
                 }
             ).encode("utf-8")
         ).hexdigest()
@@ -220,8 +248,12 @@ class CRNBranch:
             },
             "component_selections": self._selection_records(),
             "component_streams": self._stream_records(),
+            "root_seed": self.realization.tree.root_seed,
+            "sample_seed": self.realization.tree.sample_seed(
+                self.realization.sample_index
+            ),
             "sample_index": self.realization.sample_index,
-            "shared_driver_ids": dict(sorted(self.shared_driver_ids.items())),
+            "shared_driver_ids": dict(sorted(self.realization.shared_driver_ids.items())),
         }
 
     def _stream_records(self) -> list[dict[str, int | str]]:
@@ -234,10 +266,21 @@ class CRNBranch:
         return [
             selection.manifest_record()
             for selection in sorted(
-                self.component_selections,
+                self.realization.component_selections,
                 key=lambda item: (item.component, item.stream_id, item.source_member_id),
             )
         ]
+
+
+def assert_crn_equivalent(branches: Sequence[CRNBranch]) -> None:
+    """Raise if branches do not share one complete aleatory realization."""
+
+    if not branches:
+        raise ValueError("at least one branch is required")
+    reference = branches[0].aleatory_fingerprint()
+    for branch in branches[1:]:
+        if branch.aleatory_fingerprint() != reference:
+            raise ValueError("CRN branches do not share the same aleatory realization")
 
 
 def _stable_u64(*parts: object) -> int:
