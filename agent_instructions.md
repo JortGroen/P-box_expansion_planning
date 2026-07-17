@@ -31,6 +31,7 @@ You are **one of up to three agents** on this project. Your role (A, B, or C —
 8. **One agent, one worktree.** Never share a working directory with another agent. The main repo directory stays on `main` as the PI dashboard; implementation happens only in your assigned role worktree.
 9. **Use the project `.venv`, never `base`.** Run project commands through the `.venv` in your assigned worktree. Do not install or run project dependencies from Anaconda `base`.
 10. **Report bounds, never a defuzzified number.** Project-specific hard rule: every probability result is reported as α-indexed lower/upper bounds with Monte-Carlo CIs. Producing a single collapsed scalar as "the answer" is a violation (Baudrit rule, plan §3).
+11. **No silent or restart-only long runs.** Inform the PI before launching any process expected to exceed about 15 minutes, and make it durably resumable from verified checkpoints. A long process that cannot be checkpointed requires explicit PI approval before launch.
 
 ---
 
@@ -73,7 +74,46 @@ If your current directory, branch, or worktree does not match your role and assi
 - No magic numbers in code: scientific constants and parameters live in `configs/*.yaml` with units in key names (`p_crit`, `s_rated_kva`, `step_min: 15`).
 - A PR that adds or changes an entry in `DECISIONS.md`, `ASSUMPTIONS.md`, or `DATA_REGISTER.md` must add or update its same-ID block in `paper/methods_decisions_and_assumptions.md`. Write one standalone manuscript paragraph explaining and defending the choice, scope, and limitations. Use an explicit status label so proposed, not-invoked, superseded, and pending items cannot be mistaken for approved claims.
 
-### 3.3 End of session (mandatory, even mid-task)
+### 3.3 Long-running process protocol
+
+A process includes experiments, simulations, API/profile generation, downloads,
+data transformations, figure builds, tests, and environment or dependency
+operations. Before launching one that is reasonably expected to take more than
+about 15 minutes:
+
+1. Estimate wall time from a pilot, prior benchmark, batch timing, or an
+   explicitly conservative calculation.
+2. Send the PI this notice in chat before the launch:
+
+```text
+LONG-RUN NOTICE
+Task: <plan ID and purpose>
+Process: <command or operation>
+Estimated wall time: <range>
+Resource impact: <CPU/RAM/network/battery expectations>
+Checkpoint plan: <work-unit size, frequency, and durable path>
+Resume procedure: <exact command and how completed work is skipped>
+```
+
+3. Make the process resumable before starting it. Prefer deterministic chunks
+   or batches and atomically persist a checkpoint after each natural work unit,
+   frequently enough that a crash loses no more than about 15 minutes of work
+   where technically practical. A checkpoint records the config and code
+   identity, completed chunk IDs, seeds or source-member IDs, output checksums,
+   and the next unit. Partial output must not be mistaken for complete evidence.
+4. Test interruption and resume on a small pilot when the checkpoint path is
+   new. Resuming must validate the stored identity, skip verified completed
+   units, and avoid duplicating samples, API members, or result rows.
+
+The notice is informational unless another rule requires PI approval. If the
+process cannot be checkpointed, stop and obtain explicit PI approval for a
+documented restart-only recovery plan before launch. If a process unexpectedly
+crosses 15 minutes, reach the next safe boundary, save durable state, and inform
+the PI before continuing; do not terminate it abruptly if doing so would corrupt
+outputs. In-memory progress, terminal text, and an open process do not count as
+checkpoints.
+
+### 3.4 End of session (mandatory, even mid-task)
 1. Log entry (template §10): what was done, what was **verified** (test/manifest evidence), open questions, next step.
 2. Update your line(s) in `registers/STATUS.md`.
 3. Commit and push your branch. If a story's deliverable is complete: open/update the PR with the checklist (§9).
@@ -87,6 +127,7 @@ If your current directory, branch, or worktree does not match your role and assi
 - A test cannot pass without changing its specification or a golden expectation.
 - A scientific value is needed that is not in `ASSUMPTIONS.md` / `DATA_REGISTER.md` (parameter, threshold, distribution, cost, citation).
 - A data source's license is unclear, or a dataset must be modified by hand.
+- A process expected to exceed about 15 minutes has no durable checkpoint/resume path.
 - Runtime exceeds the G1-approved or provisional validation budget by more than 2×.
 - A result contradicts a passed gate (e.g., non-monotone behavior after G3 approved the vertex shortcut).
 - You would need to edit outside your owned paths, add a dependency, or touch `main`.
