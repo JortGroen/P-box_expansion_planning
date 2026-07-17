@@ -444,25 +444,39 @@ def _write_comparison(config: Mapping[str, Any], artifacts: Mapping[str, Path], 
         return None
     rows = []
     for comparison in comparisons:
-        generated = artifacts[comparison["generated_artifact"]]
+        label = comparison["label"]
+        artifact_name = comparison["generated_artifact"]
+        if artifact_name not in artifacts:
+            raise KeyError(f"Comparison {label!r} references unknown generated artifact {artifact_name!r}")
+        generated = artifacts[artifact_name]
         historical = Path(comparison["historical_path"])
-        generated_sha = sha256_file(generated) if generated.exists() else None
-        historical_sha = sha256_file(historical) if historical.exists() else None
+        if not generated.is_file():
+            raise FileNotFoundError(f"Generated comparison file is missing for {label!r}: {generated}")
+        if not historical.is_file():
+            raise FileNotFoundError(f"Historical comparison file is missing for {label!r}: {historical}")
+        generated_sha = sha256_file(generated)
+        historical_sha = sha256_file(historical)
+        expected_difference = comparison.get("expected_difference")
+        match = generated_sha == historical_sha
+        if not match and not expected_difference:
+            raise AssertionError(
+                f"Comparison {label!r} differs without declared expected_difference: "
+                f"generated={generated} historical={historical}"
+            )
         rows.append(
             {
-                "label": comparison["label"],
+                "label": label,
                 "generated_path": generated.as_posix(),
                 "historical_path": historical.as_posix(),
                 "generated_sha256": generated_sha,
                 "historical_sha256": historical_sha,
-                "match": generated_sha == historical_sha and generated_sha is not None,
-                "expected_difference": comparison.get("expected_difference"),
+                "match": match,
+                "expected_difference": expected_difference,
             }
         )
     comparison_path = output_dir / "comparison.json"
     comparison_path.write_text(json.dumps(rows, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     return comparison_path
-
 
 def _markdown_table(rows: Sequence[Mapping[str, Any]]) -> str:
     if not rows:
@@ -516,6 +530,3 @@ def main(argv: Sequence[str] | None = None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
-
-

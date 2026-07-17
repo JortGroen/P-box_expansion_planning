@@ -1027,11 +1027,18 @@ def critical_week_report(
 
     top_rows = critical_weeks.loc[critical_weeks["week_rank"] <= int(config["report_top_week_rows"])]
     coverage_rows = coverage.loc[coverage["week_rank"] <= int(config["report_top_week_rows"])]
+    output_dir = Path(config["output_dir"])
+    figure_dir = Path(config.get("figure_dir", output_dir))
+    csv_path = output_dir / "critical_weeks.csv"
+    parquet_path = output_dir / "critical_weeks.parquet"
+    loading_plot = figure_dir / "critical_week_loading.png"
+    coverage_plot = figure_dir / "critical_week_coverage.png"
+    report_path = Path(config["report_path"])
     parquet_note = (
-        "`data/critical_weeks.parquet` was written."
+        f"`{parquet_path.as_posix()}` was written."
         if parquet_written
-        else "`data/critical_weeks.parquet` was not written because no parquet engine is installed; "
-        "`data/critical_weeks.csv` is the version-controlled table."
+        else f"`{parquet_path.as_posix()}` was not written because no parquet engine is installed; "
+        f"`{csv_path.as_posix()}` is the version-controlled table."
     )
     return "\n".join(
         [
@@ -1055,9 +1062,10 @@ def critical_week_report(
             "",
             f"- Input config: `{config['config_path_label']}`",
             f"- Manifest: `{config['manifest_path']}`",
-            f"- Critical-week table: `data/critical_weeks.csv`; {parquet_note}",
-            "- Validation plots: `reports/critical_week_loading.png` and",
-            "  `reports/critical_week_coverage.png`",
+            f"- Report: `{report_path.as_posix()}`",
+            f"- Critical-week table: `{csv_path.as_posix()}`; {parquet_note}",
+            f"- Validation plots: `{loading_plot.as_posix()}` and",
+            f"  `{coverage_plot.as_posix()}`",
             "",
             "## Extraction Rule",
             "",
@@ -1093,8 +1101,6 @@ def critical_week_report(
             "",
         ]
     )
-
-
 def import_window_report(
     *,
     config: Mapping[str, Any],
@@ -1109,6 +1115,16 @@ def import_window_report(
     top_import_rows = import_windows.loc[import_windows["week_rank"] <= report_rows]
     top_coverage_rows = coverage.loc[coverage["week_rank"] <= report_rows]
     top_count = int(config["top_count"])
+    output_dir = Path(config["output_dir"])
+    figure_dir = Path(config.get("figure_dir", output_dir))
+    report_path = Path(config["report_path"])
+    table_paths = [
+        output_dir / "import_windows.csv",
+        output_dir / "import_window_coverage.csv",
+        output_dir / "import_window_proposal.csv",
+        output_dir / "export_direction_exceedance.csv",
+    ]
+    coverage_plot = figure_dir / "import_window_coverage.png"
     return "\n".join(
         [
             "# E1.S3b G0-A1 Import-Window Diagnostic",
@@ -1133,10 +1149,9 @@ def import_window_report(
             "",
             f"- Input config: `{config['config_path_label']}`",
             f"- Manifest: `{config['manifest_path']}`",
-            "- Output tables: `data/import_windows.csv`,",
-            "  `data/import_window_coverage.csv`, `data/import_window_proposal.csv`,",
-            "  and `data/export_direction_exceedance.csv`",
-            "- Coverage plot: `reports/import_window_coverage.png`",
+            f"- Report: `{report_path.as_posix()}`",
+            "- Output tables: " + ", ".join(f"`{path.as_posix()}`" for path in table_paths),
+            f"- Coverage plot: `{coverage_plot.as_posix()}`",
             "",
             "## Adaptive Import-Window Proposal",
             "",
@@ -1168,8 +1183,6 @@ def import_window_report(
             "",
         ]
     )
-
-
 def transformer_headroom_report(
     *,
     config: Mapping[str, Any],
@@ -1186,6 +1199,9 @@ def transformer_headroom_report(
     switch_rows = switch_detail.reset_index(names="switch_index")[
         ["switch_index", "bus", "element", "et", "closed", "type", "name"]
     ]
+    output_dir = Path(config["output_dir"])
+    report_path = Path(config["report_path"])
+    table_path = output_dir / "transformer_headroom_diagnostic.csv"
     firm_warning = (
         "WARNING: firm capacity would change the G0 scenario-0 fallback classification "
         "for the same case. This requires PI attention before denominator-dependent "
@@ -1222,7 +1238,8 @@ def transformer_headroom_report(
             "",
             f"- Input config: `{config['config_path_label']}`",
             f"- Manifest: `{config['manifest_path']}`",
-            "- Numeric table: `data/transformer_headroom_diagnostic.csv`",
+            f"- Report: `{report_path.as_posix()}`",
+            f"- Numeric table: `{table_path.as_posix()}`",
             "- Prior inventory reference: `reports/grid_inventory.md`",
             "- G1-A1 denominator/envelope reference:",
             "  `reports/G1_A1_MODEL_ERROR_AMENDMENT_PROPOSAL.md`",
@@ -1258,24 +1275,15 @@ def transformer_headroom_report(
             "- Additive p.u. envelopes depend on the selected nameplate denominator. A",
             "  fixed MVA discrepancy divided by total nameplate is not the same p.u.",
             "  value when divided by firm capacity.",
-            "- Relative envelopes on the physical loading ratio are invariant to the",
-            "  total-versus-firm nameplate convention.",
-            "- G1-A1 therefore requires the denominator decision and the model-error",
-            "  envelope form to be made together before G2/E5.S3 paper-use results.",
+            "- Relative envelopes are invariant to the nameplate convention because the",
+            "  same multiplicative factor applies to either denominator.",
             "",
             "## Recommendation",
             "",
             recommendation,
             "",
-            "PI decision required: choose whether future overload denominators remain",
-            "the signed G0 total aggregate nameplate or move to a firm `(n-1)` capacity",
-            "definition, and align the additive-versus-relative model-error envelope",
-            "decision with that choice.",
-            "",
         ]
     )
-
-
 def _headroom_row(
     diagnostic: TransformerHeadroom,
     *,
