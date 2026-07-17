@@ -1,11 +1,25 @@
 from __future__ import annotations
 
+from datetime import UTC, datetime, timedelta
+import gzip
+import hashlib
 import json
 from pathlib import Path
 import subprocess
 import sys
 
-from data.get_elaad_profiles import build_library_plan, build_probe_request, write_library_plan
+import numpy as np
+import pytest
+
+import data.get_elaad_profiles as elaad
+from data.get_elaad_profiles import (
+    ProfileBatch,
+    _shape_report,
+    build_library_plan,
+    build_probe_request,
+    write_authorized_set_a_artifacts_from_raw,
+    write_library_plan,
+)
 from data.sources import source_specs, write_metadata
 
 
@@ -111,6 +125,171 @@ def test_elaad_library_plan_metadata_is_non_redistribution_boundary() -> None:
         batch["raw_response_path"].startswith("data/raw/elaad_profiles/")
         for batch in payload["batches"]
     )
+
+
+def test_elaad_shape_report_records_runtime_sizes_and_adequacy_boundary() -> None:
+    metadata = {
+        "api_runtime_s": 12.3456,
+        "api_runtime_note": "Measured around the HTTPS POST only.",
+        "observed_failed_command_wall_time_s": None,
+        "request_json": {
+            "simulated_year": 2030,
+            "seed": 140001,
+            "n_profiles": 100,
+        },
+        "response_shape_summary": {
+            "n_timesteps": 35040,
+            "n_profiles": 100,
+            "distinct_member_count": 100,
+            "first_timestamp_utc": "2024-12-31T23:00:00+00:00",
+            "first_timestamp_local": "2025-01-01T00:00:00+01:00",
+            "last_timestamp_local": "2025-12-31T23:45:00+01:00",
+            "missing_or_nonfinite_values": 0,
+            "negative_values": 0,
+            "annual_energy_kwh": {
+                "min": 1.0,
+                "median": 2.0,
+                "mean": 3.0,
+                "p95": 4.0,
+                "max": 5.0,
+            },
+            "peak_kw": {
+                "min": 1.0,
+                "median": 2.0,
+                "mean": 3.0,
+                "p95": 4.0,
+                "max": 5.0,
+            },
+        },
+        "seed_semantics_observed": {
+            "returned_indices_available_for_planned_pairing": True,
+            "smart_pair_order_verified": False,
+        },
+        "source_level_probe_verdict": {
+            "supports_remaining_candidate_and_held_out_generation": True,
+        },
+        "raw_response": {
+            "sha256_gzip_file": "raw-sha",
+            "size_bytes": 123,
+        },
+        "processed_profiles": {
+            "sha256_file": "npz-sha",
+            "size_bytes": 456,
+        },
+    }
+
+    report = _shape_report(metadata, Path("data/metadata/elaad_profiles/example_manifest.json"))
+
+    assert "API runtime seconds: 12.346" in report
+    assert "API runtime note: Measured around the HTTPS POST only." in report
+    assert "Observed failed command wall time seconds: not recorded" in report
+    assert "Supports proceeding to remaining candidate and held-out generation: True" in report
+    assert "Library adequacy proven: False" in report
+    assert "123 bytes gzip" in report
+    assert "456 bytes npz" in report
+    assert "no smart-control API call was made" in report
+    assert "Smart pair order verified: False" in report
+
+
+def test_elaad_raw_recovery_writes_manifest_without_network(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def fail_urlopen(*args, **kwargs):  # noqa: ANN002, ANN003
+        raise AssertionError("raw recovery must not make a network request")
+
+    monkeypatch.setattr(elaad.request, "urlopen", fail_urlopen)
+    monkeypatch.setattr(
+        elaad,
+        "build_library_plan",
+        lambda: (
+            ProfileBatch(
+                set_id="A",
+                purpose="test_home_van_car_cp_library",
+                partition="candidate",
+                simulated_year=2030,
+                profile_type="cp",
+                n_profiles=2,
+                vehicle_types=["van", "car"],
+                location_type="home",
+                cp_capacity_kw=11,
+                seed=140001,
+                storage_stem="A_home_vancar_cp_y2030_batchseed140001_n2",
+            ),
+        ),
+    )
+
+    start = datetime(2024, 12, 31, 23, 0, tzinfo=UTC)
+    datetimes = [
+        (start + timedelta(minutes=15 * index)).isoformat()
+        for index in range(35_040)
+    ]
+    demands = [
+        [float(1 + (index % 4)), float(2 + (index % 5))]
+        for index in range(35_040)
+    ]
+    payload = {
+        "config": {
+            "seed": 140001,
+            "n_profiles": 2,
+            "profile_type": "cp",
+        },
+        "statistics": None,
+        "profile": {
+            "cp_ids": ["cp_0", "cp_1"],
+            "datetimes": datetimes,
+            "demands_kw": demands,
+        },
+    }
+    raw_json = json.dumps(payload).encode("utf-8")
+    raw_path = tmp_path / "raw" / "A_home_vancar_cp_y2030_batchseed140001_n2.json.gz"
+    raw_path.parent.mkdir(parents=True)
+    with gzip.open(raw_path, "wb") as handle:
+        handle.write(raw_json)
+    raw_gzip_before = raw_path.read_bytes()
+    raw_mtime_ns_before = raw_path.stat().st_mtime_ns
+
+    metadata_dir = tmp_path / "metadata"
+    processed_dir = tmp_path / "processed"
+    reports_dir = tmp_path / "reports"
+    manifest_path = write_authorized_set_a_artifacts_from_raw(
+        raw_path=raw_path,
+        metadata_dir=metadata_dir,
+        processed_dir=processed_dir,
+        reports_dir=reports_dir,
+        command_wall_time_s=1.25,
+    )
+
+    assert raw_path.read_bytes() == raw_gzip_before
+    assert raw_path.stat().st_mtime_ns == raw_mtime_ns_before
+
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    processed_path = processed_dir / "A_home_vancar_cp_y2030_batchseed140001_n2.npz"
+    report_path = reports_dir / "elaad_e2_s2_ev004_home_cp_batchseed140001_shape_report.md"
+
+    assert manifest_path == metadata_dir / "A_home_vancar_cp_y2030_batchseed140001_n2_manifest.json"
+    assert processed_path.is_file()
+    assert report_path.is_file()
+    assert manifest["reconstructed_from_saved_raw_response"] is True
+    assert manifest["response_status_code"] == 200
+    assert "Inferred from successful urlopen" in manifest["response_status_code_source"]
+    assert manifest["api_runtime_s"] is None
+    assert manifest["observed_failed_command_wall_time_s"] == 1.25
+    assert manifest["seed_semantics_observed"]["distinct_returned_members"] == 2
+    assert manifest["seed_semantics_observed"]["returned_indices_available_for_planned_pairing"] is True
+    assert manifest["seed_semantics_observed"]["smart_pair_order_verified"] is False
+    assert manifest["source_level_probe_verdict"]["library_adequacy_proven"] is False
+    assert manifest["raw_response"]["sha256_uncompressed_json"] == hashlib.sha256(raw_json).hexdigest()
+    assert manifest["raw_response"]["sha256_gzip_file"] == hashlib.sha256(raw_path.read_bytes()).hexdigest()
+    assert manifest["processed_profiles"]["sha256_file"] == hashlib.sha256(processed_path.read_bytes()).hexdigest()
+
+    with np.load(processed_path, allow_pickle=False) as processed:
+        assert processed["demands_kw"].shape == (35_040, 2)
+        assert processed["member_ids"].tolist() == ["profile_140001_000", "profile_140001_001"]
+
+    report = report_path.read_text(encoding="utf-8")
+    assert "Smart pair order verified: False" in report
+    assert "no smart-control API call was made" in report
 
 
 def test_data_entrypoints_run_directly() -> None:

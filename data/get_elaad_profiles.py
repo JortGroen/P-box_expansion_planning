@@ -8,6 +8,7 @@ import hashlib
 import json
 from pathlib import Path
 import sys
+from time import perf_counter
 from typing import Any, Sequence
 from urllib import request
 
@@ -19,6 +20,7 @@ from src.ev_model import (
     batch_summary,
     distinct_member_count,
     parse_elaad_profile_response,
+    read_gzip_json,
     save_processed_batch_npz,
 )
 
@@ -189,10 +191,12 @@ def run_one_profile_probe(
         headers={"Content-Type": "application/json", "Accept": "application/json"},
         method="POST",
     )
+    start = perf_counter()
     with request.urlopen(req, timeout=timeout_s) as response:
         response_payload = response.read()
         status_code = response.status
         response_headers = dict(response.headers.items())
+    api_runtime_s = perf_counter() - start
 
     raw_dir.mkdir(parents=True, exist_ok=True)
     raw_path = raw_dir / f"{stem}.json.gz"
@@ -280,15 +284,58 @@ def run_authorized_set_a_batch(
         headers={"Content-Type": "application/json", "Accept": "application/json"},
         method="POST",
     )
+    start = perf_counter()
     with request.urlopen(req, timeout=timeout_s) as response:
         response_payload = response.read()
         status_code = response.status
         response_headers = dict(response.headers.items())
+    api_runtime_s = perf_counter() - start
 
-    raw_dir.mkdir(parents=True, exist_ok=True)
-    raw_path = raw_dir / f"{stem}.json.gz"
-    with gzip.open(raw_path, "wb") as handle:
-        handle.write(response_payload)
+    return write_authorized_set_a_artifacts_from_response(
+        response_payload=response_payload,
+        metadata_dir=metadata_dir,
+        raw_dir=raw_dir,
+        processed_dir=processed_dir,
+        reports_dir=reports_dir,
+        api_runtime_s=api_runtime_s,
+        retrieval_ts=retrieval_ts,
+        status_code=status_code,
+        response_headers=response_headers,
+        reconstructed_from_saved_raw=False,
+    )
+
+
+def write_authorized_set_a_artifacts_from_response(
+    *,
+    response_payload: bytes,
+    metadata_dir: Path,
+    raw_dir: Path | None = None,
+    raw_path: Path | None = None,
+    write_raw_response: bool = True,
+    processed_dir: Path,
+    reports_dir: Path,
+    api_runtime_s: float | None,
+    retrieval_ts: str,
+    status_code: int,
+    response_headers: dict[str, str],
+    reconstructed_from_saved_raw: bool,
+    raw_response_provenance: dict[str, Any] | None = None,
+) -> Path:
+    """Write commit-safe artifacts for the one authorized EV-004 Set A probe."""
+    batch = build_library_plan()[0]
+    stem = batch.storage_stem
+    body = build_batch_request(batch)
+    if raw_path is None:
+        if raw_dir is None:
+            raise ValueError("raw_dir is required when raw_path is not provided")
+        raw_dir.mkdir(parents=True, exist_ok=True)
+        raw_path = raw_dir / f"{stem}.json.gz"
+    if write_raw_response:
+        raw_path.parent.mkdir(parents=True, exist_ok=True)
+        with gzip.open(raw_path, "wb") as handle:
+            handle.write(response_payload)
+    elif not raw_path.is_file():
+        raise FileNotFoundError(f"Saved raw gzip does not exist: {raw_path}")
 
     parsed_batch = parse_elaad_profile_response(
         response_payload,
@@ -329,29 +376,54 @@ def run_authorized_set_a_batch(
             "stop_condition": "If explicit terms later prohibit this research use, stop and escalate.",
         },
         "request_json": body,
+        "api_runtime_s": api_runtime_s,
+        "api_runtime_note": (
+            "Measured around the HTTPS POST only."
+            if api_runtime_s is not None
+            else "Exact HTTPS runtime was not captured because the first authorized call hit a post-response manifest bug; no second API call was made."
+        ),
         "response_status_code": status_code,
+        "response_status_code_source": (
+            "HTTP response object"
+            if not reconstructed_from_saved_raw
+            else "Inferred from successful urlopen before the post-response manifest bug."
+        ),
         "response_config_block": parsed_batch.response_config,
         "response_shape_summary": summary,
         "seed_semantics_observed": {
             "batch_seed": batch.seed,
             "n_profiles": batch.n_profiles,
+            "control_mode": "uncontrolled",
             "member_identity": "Members are identified as (batch seed, returned profile index).",
+            "future_smart_pair_identity": "A future EV-006 smart counterpart would add control_mode and reuse this batch seed plus returned profile index.",
+            "smart_pair_order_verified": False,
+            "smart_pair_order_note": "This uncontrolled-only probe cannot verify that a future smart batch preserves member ordering; actual smart-pair order remains pending per reports/elaad_profile_generation_spec.md section 7.",
             "independent_seed_claim": "Not claimed; batch seed 140001 identifies the response and member indices distinguish returned profiles.",
             "distinct_returned_members": distinct_members,
+            "returned_indices_available_for_planned_pairing": distinct_members == batch.n_profiles,
         },
         "raw_response": {
             "path": raw_path.as_posix(),
+            "size_bytes": raw_path.stat().st_size,
             "sha256_uncompressed_json": _sha256_bytes(response_payload),
             "sha256_gzip_file": _sha256_bytes(raw_path.read_bytes()),
+            **({"provenance": raw_response_provenance} if raw_response_provenance is not None else {}),
         },
         "processed_profiles": {
             "path": processed_path.as_posix(),
             "format": "npz",
+            "size_bytes": processed_path.stat().st_size,
             "sha256_file": _sha256_bytes(processed_path.read_bytes()),
             "commit_status": "ignored; not committed or redistributed",
         },
+        "source_level_probe_verdict": {
+            "supports_remaining_candidate_and_held_out_generation": distinct_members == batch.n_profiles,
+            "library_adequacy_proven": False,
+            "note": "This source-level probe checks API shape and member distinctness only; EV-005 adequacy is downstream and must not be inferred from component diagnostics.",
+        },
         "bulk_generation_performed": False,
         "only_authorized_batch_generated": True,
+        "reconstructed_from_saved_raw_response": reconstructed_from_saved_raw,
     }
     metadata_path.write_text(json.dumps(metadata, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
@@ -364,6 +436,44 @@ def run_authorized_set_a_batch(
             f"Expected {batch.n_profiles} distinct returned members, got {distinct_members}; "
             f"metadata saved at {metadata_path}"
         )
+    return metadata_path
+
+
+def write_authorized_set_a_artifacts_from_raw(
+    *,
+    raw_path: Path,
+    metadata_dir: Path,
+    processed_dir: Path,
+    reports_dir: Path,
+    command_wall_time_s: float | None = None,
+) -> Path:
+    """Recover manifest/report artifacts from an ignored raw response.
+
+    This is intentionally local-only: it exists so a post-response failure can
+    be repaired without making a second ElaadNL API call and violating the
+    one-batch authorization.
+    """
+    response_payload = read_gzip_json(raw_path)
+    metadata_path = write_authorized_set_a_artifacts_from_response(
+        response_payload=response_payload,
+        metadata_dir=metadata_dir,
+        raw_path=raw_path,
+        write_raw_response=False,
+        processed_dir=processed_dir,
+        reports_dir=reports_dir,
+        api_runtime_s=None,
+        retrieval_ts=datetime.fromtimestamp(raw_path.stat().st_mtime, UTC).isoformat().replace("+00:00", "Z"),
+        status_code=200,
+        response_headers={},
+        reconstructed_from_saved_raw=True,
+    )
+    if command_wall_time_s is not None:
+        metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+        metadata["observed_failed_command_wall_time_s"] = command_wall_time_s
+        metadata_path.write_text(json.dumps(metadata, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        reports_dir.mkdir(parents=True, exist_ok=True)
+        report_path = reports_dir / "elaad_e2_s2_ev004_home_cp_batchseed140001_shape_report.md"
+        report_path.write_text(_shape_report(metadata, metadata_path), encoding="utf-8")
     return metadata_path
 
 
@@ -386,6 +496,8 @@ def _shape_report(metadata: dict[str, Any], metadata_path: Path) -> str:
         f"- Timesteps: {summary['n_timesteps']}\n"
         f"- Profiles: {summary['n_profiles']}\n"
         f"- Distinct returned members: {summary['distinct_member_count']}\n"
+        f"- Returned indices available for planned pairing: {metadata['seed_semantics_observed']['returned_indices_available_for_planned_pairing']}\n"
+        f"- Smart pair order verified: {metadata['seed_semantics_observed']['smart_pair_order_verified']}\n"
         f"- First UTC timestamp: `{summary['first_timestamp_utc']}`\n"
         f"- First local timestamp: `{summary['first_timestamp_local']}`\n"
         f"- Last local timestamp: `{summary['last_timestamp_local']}`\n"
@@ -398,12 +510,52 @@ def _shape_report(metadata: dict[str, Any], metadata_path: Path) -> str:
         f"mean {peak['mean']:.3f}, p95 {peak['p95']:.3f}, max {peak['max']:.3f}\n\n"
         "## Seed semantics\n\n"
         "Members are identified as `(batch seed, returned profile index)`. This "
-        "report does not interpret a batch seed as a range of per-member seeds.\n\n"
+        "report does not interpret a batch seed as a range of per-member seeds. "
+        "Seed 140001 is reserved by EV-006 for a future same-seed smart-control "
+        "counterpart, but no smart-control API call was made in this session. "
+        "This uncontrolled-only probe leaves smart-batch member ordering "
+        "unverified; actual pairing remains pending per section 7 of the "
+        "Elaad profile generation spec.\n\n"
+        "## Source-level verdict\n\n"
+        f"- API runtime seconds: {_format_optional_seconds(metadata['api_runtime_s'])}\n"
+        f"- API runtime note: {metadata['api_runtime_note']}\n"
+        f"- Observed failed command wall time seconds: "
+        f"{_format_optional_seconds(metadata.get('observed_failed_command_wall_time_s'))}\n"
+        f"- Supports proceeding to remaining candidate and held-out generation: "
+        f"{metadata['source_level_probe_verdict']['supports_remaining_candidate_and_held_out_generation']}\n"
+        "- Library adequacy proven: False. Adequacy is an EV-005 downstream "
+        "net-load/evaluator question, not a component-profile statistic.\n\n"
         "## Evidence\n\n"
         f"- Manifest: `{metadata_path.as_posix()}`\n"
-        f"- Raw response checksum: `{metadata['raw_response']['sha256_gzip_file']}`\n"
-        f"- Processed local checksum: `{metadata['processed_profiles']['sha256_file']}`\n"
+        f"- Raw response checksum: `{metadata['raw_response']['sha256_gzip_file']}` "
+        f"({metadata['raw_response']['size_bytes']} bytes gzip)\n"
+        f"{_raw_response_provenance_lines(metadata)}"
+        f"- Processed local checksum: `{metadata['processed_profiles']['sha256_file']}` "
+        f"({metadata['processed_profiles']['size_bytes']} bytes npz)\n"
     )
+
+
+def _raw_response_provenance_lines(metadata: dict[str, Any]) -> str:
+    provenance = metadata.get("raw_response", {}).get("provenance")
+    if not provenance:
+        return ""
+    lines = ["- Raw response provenance:"]
+    for key in (
+        "initial_saved_wrapper_sha256_gzip_file",
+        "recovery_rewritten_wrapper_sha256_gzip_file",
+        "sha256_uncompressed_json",
+        "note",
+    ):
+        value = provenance.get(key)
+        if value is not None:
+            lines.append(f"  - {key}: `{value}`")
+    return "\n".join(lines) + "\n"
+
+
+def _format_optional_seconds(value: Any) -> str:
+    if value is None:
+        return "not recorded"
+    return f"{float(value):.3f}"
 
 
 def write_library_plan(metadata_dir: Path) -> Path:
