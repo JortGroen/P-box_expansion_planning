@@ -1,0 +1,35 @@
+{
+  "command": ".\\.venv\\Scripts\\python.exe -m src.runner experiments/e1_s2b_timeseriescpp_benchmark/runner_config.json",
+  "config_path_label": "experiments/e1_s2b_timeseriescpp_benchmark/runner_config.json",
+  "description": "TimeSeriesCPP AC benchmark for the selected SimBench primary grid.",
+  "equivalence_load_multipliers": [
+    0.8,
+    1.0,
+    1.2,
+    1.5,
+    2.65,
+    2.7,
+    2.75,
+    2.8,
+    2.85
+  ],
+  "evidence_output_path": "experiments/e1_s2b_timeseriescpp_benchmark/custom_evidence.json",
+  "grid_code": "1-MV-semiurb--0-sw",
+  "grid_key": "simbench_semiurb",
+  "materialization_acceptance": {
+    "max_abs_bus_vm_pu": 0.001,
+    "max_abs_loading_pu": 0.002
+  },
+  "max_iter": 20,
+  "raw_output_path": "experiments/e1_s2b_timeseriescpp_benchmark/benchmark_timeseriescpp_raw.json",
+  "repeats": 5,
+  "report_output_path": "experiments/e1_s2b_timeseriescpp_benchmark/BENCHMARK_TIMESERIESCPP.md",
+  "schema_version": 1,
+  "task_id": "E1.S2b",
+  "time_steps": 672,
+  "timing_context_note": "Descriptive E0.S3b compliance rerun only; these fresh wall-clock timings do not replace or amend the accepted G1 decision.",
+  "timing_method": "time.perf_counter wall-clock timings plus TimeSeriesCPP internal solver/preprocessing/current-flow timers",
+  "tolerance": 1e-08,
+  "warmup_policy": "one complete adapter construction and small TimeSeriesCPP solve before measured repetitions; one high-level runpp warm-up per backend before measured repetitions",
+  "warmups": 1
+}

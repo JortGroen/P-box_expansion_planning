@@ -1,0 +1,36 @@
+{
+  "config_hash": "789958cb4dd396e513e5bdbc53cce3d99b59026da268df90e82aa3bde130dda6",
+  "config_path": "experiments/e1_s1_grid_inventory/runner_config.json",
+  "extra": {
+    "adapter": "e1.s1.grid_inventory",
+    "adapter_version": "v1",
+    "artifact_type": "experiment_runner_manifest",
+    "diagnostic_threshold_pu": "not_applicable",
+    "historical_task": "E1.S1",
+    "task_id": "E1.S1",
+    "timestamp_utc": "2026-07-17T13:09:29.640035Z"
+  },
+  "git_commit": "97f4fb6cfee247fdea42a12004b3c9fbbf7f9f3d",
+  "output_checksums": {
+    "experiments/e1_s1_grid_inventory/comparison.json": "c2c162d57e399443cb72784ee4a8a13e5d8fcfff88ba11dc33ef4badfb76f923",
+    "experiments/e1_s1_grid_inventory/custom_evidence.json": "8a3c716790f8b4fd136cff79c367dcea507a5bec17dc90e43c851f5d9d41d327",
+    "experiments/e1_s1_grid_inventory/grid_inventory.md": "4a33410aae3c3f85d58069bbe65a1d40439edbf488f318b6086ad94a9f5395d9",
+    "experiments/e1_s1_grid_inventory/grid_inventory_rows.json": "040e5bc42ac307cc528f5cf7e742594d6c07a72c6ad3c3ba40538e6084191d5d"
+  },
+  "package_versions": {
+    "hypothesis": "6.156.4",
+    "lightsim2grid": "0.13.1",
+    "matplotlib": "3.11.0",
+    "numba": "0.66.0",
+    "numpy": "2.3.5",
+    "pandapower": "3.5.3",
+    "pandas": "2.3.3",
+    "pytest": "9.1.1",
+    "scipy": "1.16.3",
+    "simbench": "1.6.2"
+  },
+  "schema_version": 1,
+  "seeds": {
+    "none": "deterministic"
+  }
+}

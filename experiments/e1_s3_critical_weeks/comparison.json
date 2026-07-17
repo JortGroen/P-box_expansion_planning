@@ -1,0 +1,47 @@
+[
+  {
+    "expected_difference": null,
+    "generated_path": "experiments/e1_s3_critical_weeks/data/critical_weeks.csv",
+    "generated_sha256": "34cf20899ebbf278eb6f9add683a73b068e170f1525c78fdcfdf8332c180e3cf",
+    "historical_path": "data/critical_weeks.csv",
+    "historical_sha256": "34cf20899ebbf278eb6f9add683a73b068e170f1525c78fdcfdf8332c180e3cf",
+    "label": "critical weeks table",
+    "match": true
+  },
+  {
+    "expected_difference": null,
+    "generated_path": "experiments/e1_s3_critical_weeks/data/critical_week_coverage.csv",
+    "generated_sha256": "5c51d9d38afde72c4d40ef55eaf3d67899a340e2b0132ccd8b45f5c4024e9532",
+    "historical_path": "data/critical_week_coverage.csv",
+    "historical_sha256": "5c51d9d38afde72c4d40ef55eaf3d67899a340e2b0132ccd8b45f5c4024e9532",
+    "label": "coverage table",
+    "match": true
+  },
+  {
+    "expected_difference": null,
+    "generated_path": "experiments/e1_s3_critical_weeks/data/critical_week_summary.csv",
+    "generated_sha256": "2d8a4968512fc8a6859ddb2a3719919d9b4998fbe1b3f0b641be1b24836e521a",
+    "historical_path": "data/critical_week_summary.csv",
+    "historical_sha256": "2d8a4968512fc8a6859ddb2a3719919d9b4998fbe1b3f0b641be1b24836e521a",
+    "label": "summary table",
+    "match": true
+  },
+  {
+    "expected_difference": "runner output paths and manifest references differ from the retained historical report",
+    "generated_path": "experiments/e1_s3_critical_weeks/reports/critical_weeks_validation.md",
+    "generated_sha256": "925bba42b8039f06bfd17c0f6deecfc9ffdfb1028048e9121d885e5d356bded4",
+    "historical_path": "reports/critical_weeks_validation.md",
+    "historical_sha256": "bd005107fc35bb5c95e44478cdb6bfe8dc9481204a00392e0288214736716490",
+    "label": "report",
+    "match": false
+  },
+  {
+    "expected_difference": "fresh runner reproduction records a new config path, timestamp, commit, and output paths",
+    "generated_path": "experiments/e1_s3_critical_weeks/custom_evidence.json",
+    "generated_sha256": "aea8d3282ecda673480c2cca273eddd415f49a44113533a73babb958aee83686",
+    "historical_path": "reports/critical_weeks_evidence.json",
+    "historical_sha256": "36571a0c8adf06c527f15003381745d1f880cb082b4c6950968ae4f25e6e6d56",
+    "label": "custom evidence",
+    "match": false
+  }
+]

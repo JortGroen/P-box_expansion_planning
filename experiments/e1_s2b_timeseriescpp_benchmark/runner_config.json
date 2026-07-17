@@ -1,0 +1,76 @@
+{
+  "schema_version": 1,
+  "task_id": "E1.S2b",
+  "adapter": "e1.s2b.timeseriescpp_benchmark",
+  "adapter_version": "v1",
+  "output_dir": "experiments/e1_s2b_timeseriescpp_benchmark",
+  "seeds": {
+    "none": "deterministic"
+  },
+  "command": ".\\.venv\\Scripts\\python.exe -m src.runner experiments/e1_s2b_timeseriescpp_benchmark/runner_config.json",
+  "historical_input_path": "reports/benchmark_timeseriescpp_input.json",
+  "historical_threshold_pu": "not_applicable",
+  "diagnostic_config": {
+    "schema_version": 1,
+    "task_id": "E1.S2b",
+    "description": "TimeSeriesCPP AC benchmark for the selected SimBench primary grid.",
+    "grid_key": "simbench_semiurb",
+    "grid_code": "1-MV-semiurb--0-sw",
+    "time_steps": 672,
+    "equivalence_load_multipliers": [
+      0.8,
+      1.0,
+      1.2,
+      1.5,
+      2.65,
+      2.7,
+      2.75,
+      2.8,
+      2.85
+    ],
+    "materialization_acceptance": {
+      "max_abs_loading_pu": 0.002,
+      "max_abs_bus_vm_pu": 0.001
+    },
+    "warmups": 1,
+    "repeats": 5,
+    "max_iter": 20,
+    "tolerance": 1E-08,
+    "timing_method": "time.perf_counter wall-clock timings plus TimeSeriesCPP internal solver/preprocessing/current-flow timers",
+    "warmup_policy": "one complete adapter construction and small TimeSeriesCPP solve before measured repetitions; one high-level runpp warm-up per backend before measured repetitions",
+    "raw_output_path": "experiments/e1_s2b_timeseriescpp_benchmark/benchmark_timeseriescpp_raw.json",
+    "report_output_path": "experiments/e1_s2b_timeseriescpp_benchmark/BENCHMARK_TIMESERIESCPP.md",
+    "evidence_output_path": "experiments/e1_s2b_timeseriescpp_benchmark/custom_evidence.json",
+    "timing_context_note": "Descriptive E0.S3b compliance rerun only; these fresh wall-clock timings do not replace or amend the accepted G1 decision."
+  },
+  "generated_artifacts": {
+    "raw": "experiments/e1_s2b_timeseriescpp_benchmark/benchmark_timeseriescpp_raw.json",
+    "report": "experiments/e1_s2b_timeseriescpp_benchmark/BENCHMARK_TIMESERIESCPP.md",
+    "custom_evidence": "experiments/e1_s2b_timeseriescpp_benchmark/custom_evidence.json"
+  },
+  "generated_output_paths": [
+    "experiments/e1_s2b_timeseriescpp_benchmark/benchmark_timeseriescpp_raw.json",
+    "experiments/e1_s2b_timeseriescpp_benchmark/BENCHMARK_TIMESERIESCPP.md",
+    "experiments/e1_s2b_timeseriescpp_benchmark/custom_evidence.json"
+  ],
+  "comparisons": [
+    {
+      "label": "raw timing",
+      "generated_artifact": "raw",
+      "historical_path": "reports/benchmark_timeseriescpp_raw.json",
+      "expected_difference": "fresh wall-clock benchmark rerun has new timestamps, hardware/runtime context, and timing measurements"
+    },
+    {
+      "label": "report",
+      "generated_artifact": "report",
+      "historical_path": "reports/BENCHMARK_TIMESERIESCPP.md",
+      "expected_difference": "runner output paths and timing values differ from the retained historical report"
+    },
+    {
+      "label": "custom evidence",
+      "generated_artifact": "custom_evidence",
+      "historical_path": "reports/benchmark_timeseriescpp_evidence.json",
+      "expected_difference": "fresh runner reproduction records a new config path, timestamp, commit, hardware context, and output paths"
+    }
+  ]
+}

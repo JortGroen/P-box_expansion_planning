@@ -1,0 +1,38 @@
+{
+  "config_hash": "eb3e9fc2bcba164b4215181991b557b79ac195f8a716cf351d0eea9f8d5acf71",
+  "config_path": "experiments/e1_s2b_timeseriescpp_benchmark/runner_config.json",
+  "extra": {
+    "adapter": "e1.s2b.timeseriescpp_benchmark",
+    "adapter_version": "v1",
+    "artifact_type": "experiment_runner_manifest",
+    "diagnostic_threshold_pu": "not_applicable",
+    "historical_task": "E1.S2b",
+    "task_id": "E1.S2b",
+    "timestamp_utc": "2026-07-17T13:20:13.420330Z",
+    "timing_rerun": true
+  },
+  "git_commit": "97f4fb6cfee247fdea42a12004b3c9fbbf7f9f3d",
+  "output_checksums": {
+    "experiments/e1_s2b_timeseriescpp_benchmark/BENCHMARK_TIMESERIESCPP.md": "e82545b0edabea28f4552755b2743c15ffb654f98cc12afb1b882676a89faff2",
+    "experiments/e1_s2b_timeseriescpp_benchmark/benchmark_timeseriescpp_raw.json": "6fe55297e6c4b6c4fc335fc7a7e16b9fc40a37b39da1124ae765bf8cc5871ddc",
+    "experiments/e1_s2b_timeseriescpp_benchmark/comparison.json": "b1c47aec8abd34461db26b9e3f6e6acfec57bedf7f2d02b248ca33b7f8ab35cb",
+    "experiments/e1_s2b_timeseriescpp_benchmark/custom_evidence.json": "045e2ca3ca579e3c9c753d4af889c642f5a423b60346c9fb2c0afe26c23a3dd6",
+    "experiments/e1_s2b_timeseriescpp_benchmark/diagnostic_config.runtime.json": "e0b8281bba346c88cc71c600e574652c7fd0c2777fcae1b650f3ed0997049e8c"
+  },
+  "package_versions": {
+    "hypothesis": "6.156.4",
+    "lightsim2grid": "0.13.1",
+    "matplotlib": "3.11.0",
+    "numba": "0.66.0",
+    "numpy": "2.3.5",
+    "pandapower": "3.5.3",
+    "pandas": "2.3.3",
+    "pytest": "9.1.1",
+    "scipy": "1.16.3",
+    "simbench": "1.6.2"
+  },
+  "schema_version": 1,
+  "seeds": {
+    "none": "deterministic"
+  }
+}

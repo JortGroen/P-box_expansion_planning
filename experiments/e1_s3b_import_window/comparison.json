@@ -1,0 +1,56 @@
+[
+  {
+    "expected_difference": null,
+    "generated_path": "experiments/e1_s3b_import_window/data/import_windows.csv",
+    "generated_sha256": "d8e0461e4c98bac5666aa885b8a1e86a62805e45cbdae520e47ee691dd9d0c75",
+    "historical_path": "data/import_windows.csv",
+    "historical_sha256": "d8e0461e4c98bac5666aa885b8a1e86a62805e45cbdae520e47ee691dd9d0c75",
+    "label": "import windows table",
+    "match": true
+  },
+  {
+    "expected_difference": null,
+    "generated_path": "experiments/e1_s3b_import_window/data/import_window_coverage.csv",
+    "generated_sha256": "aaabd1863f075c50fad56fd3142a54c6fd35bd434f7515d7f95e9d415334b323",
+    "historical_path": "data/import_window_coverage.csv",
+    "historical_sha256": "aaabd1863f075c50fad56fd3142a54c6fd35bd434f7515d7f95e9d415334b323",
+    "label": "coverage table",
+    "match": true
+  },
+  {
+    "expected_difference": null,
+    "generated_path": "experiments/e1_s3b_import_window/data/import_window_proposal.csv",
+    "generated_sha256": "fda96e1636bacf8311ffff2f11a6dd8b57d2197af72a1793ab5b4c22badf2bfb",
+    "historical_path": "data/import_window_proposal.csv",
+    "historical_sha256": "fda96e1636bacf8311ffff2f11a6dd8b57d2197af72a1793ab5b4c22badf2bfb",
+    "label": "proposal table",
+    "match": true
+  },
+  {
+    "expected_difference": null,
+    "generated_path": "experiments/e1_s3b_import_window/data/export_direction_exceedance.csv",
+    "generated_sha256": "ead265f0a22ffbe54c6cfb5508484f0a26f187cccad809ebf25887e53ac8e8d7",
+    "historical_path": "data/export_direction_exceedance.csv",
+    "historical_sha256": "ead265f0a22ffbe54c6cfb5508484f0a26f187cccad809ebf25887e53ac8e8d7",
+    "label": "export exceedance table",
+    "match": true
+  },
+  {
+    "expected_difference": "runner output paths and manifest references differ from the retained historical report",
+    "generated_path": "experiments/e1_s3b_import_window/reports/import_window_diagnostic.md",
+    "generated_sha256": "484c5701bebfd86bc7045e69534f5f03e0076b4b1a1c14bc90be1e1c8e9a2c1e",
+    "historical_path": "reports/import_window_diagnostic.md",
+    "historical_sha256": "12a3c729e54336a572ff9a27fadb4ca2b3d811cf46da00f2b11ab196b4fdc9e5",
+    "label": "report",
+    "match": false
+  },
+  {
+    "expected_difference": "fresh runner reproduction records a new config path, timestamp, commit, and output paths while preserving threshold_pu=1.0",
+    "generated_path": "experiments/e1_s3b_import_window/custom_evidence.json",
+    "generated_sha256": "dcf4ff42a4a1e89398a34474ff1a52b4f45c673ccbd654464da1fbcf746504e2",
+    "historical_path": "reports/import_window_evidence.json",
+    "historical_sha256": "7633fc2797cc105866c2ebd48da16fb0b9e79fa3582b13a70cdec92c9c2329d5",
+    "label": "custom evidence",
+    "match": false
+  }
+]

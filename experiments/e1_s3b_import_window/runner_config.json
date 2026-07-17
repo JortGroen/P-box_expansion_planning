@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "task_id": "E1.S3b",
+  "adapter": "e1.s3b.import_window",
+  "adapter_version": "v1",
+  "output_dir": "experiments/e1_s3b_import_window",
+  "seeds": {"none": "deterministic"},
+  "command": ".\\.venv\\Scripts\\python.exe -m src.runner experiments/e1_s3b_import_window/runner_config.json",
+  "historical_input_path": "reports/import_window_input.json",
+  "historical_threshold_pu": 1.0,
+  "diagnostic_config": {
+    "schema_version": 1,
+    "task_id": "E1.S3b",
+    "description": "G0-A1 import/export split and adaptive import-window diagnostic.",
+    "scenario_codes": {"0": "1-MV-semiurb--0-sw", "1": "1-MV-semiurb--1-sw", "2": "1-MV-semiurb--2-sw"},
+    "decision_transformer_indices": [0, 1],
+    "direction_rule": "G0-A1: P_net > 0 import, P_net < 0 export, P_net = 0 neither; abs(S_net) remains the loading magnitude.",
+    "profile_start": "2016-01-01T00:00:00Z",
+    "step_minutes": 15,
+    "top_count": 672,
+    "coverage_target": 0.95,
+    "margin_weeks": 1,
+    "threshold_pu": 1.0,
+    "min_consecutive_steps": 4,
+    "report_top_week_rows": 10,
+    "output_dir": "experiments/e1_s3b_import_window/data",
+    "figure_dir": "experiments/e1_s3b_import_window/reports",
+    "report_path": "experiments/e1_s3b_import_window/reports/import_window_diagnostic.md",
+    "manifest_path": "experiments/e1_s3b_import_window/custom_evidence.json"
+  },
+  "generated_artifacts": {
+    "windows": "experiments/e1_s3b_import_window/data/import_windows.csv",
+    "coverage": "experiments/e1_s3b_import_window/data/import_window_coverage.csv",
+    "proposal": "experiments/e1_s3b_import_window/data/import_window_proposal.csv",
+    "export": "experiments/e1_s3b_import_window/data/export_direction_exceedance.csv",
+    "report": "experiments/e1_s3b_import_window/reports/import_window_diagnostic.md",
+    "custom_evidence": "experiments/e1_s3b_import_window/custom_evidence.json"
+  },
+  "generated_output_paths": [
+    "experiments/e1_s3b_import_window/data/import_windows.csv",
+    "experiments/e1_s3b_import_window/data/import_window_coverage.csv",
+    "experiments/e1_s3b_import_window/data/import_window_proposal.csv",
+    "experiments/e1_s3b_import_window/data/export_direction_exceedance.csv",
+    "experiments/e1_s3b_import_window/reports/import_window_coverage.png",
+    "experiments/e1_s3b_import_window/reports/import_window_diagnostic.md",
+    "experiments/e1_s3b_import_window/custom_evidence.json"
+  ],
+  "comparisons": [
+    {"label": "import windows table", "generated_artifact": "windows", "historical_path": "data/import_windows.csv"},
+    {"label": "coverage table", "generated_artifact": "coverage", "historical_path": "data/import_window_coverage.csv"},
+    {"label": "proposal table", "generated_artifact": "proposal", "historical_path": "data/import_window_proposal.csv"},
+    {"label": "export exceedance table", "generated_artifact": "export", "historical_path": "data/export_direction_exceedance.csv"},
+    {"label": "report", "generated_artifact": "report", "historical_path": "reports/import_window_diagnostic.md", "expected_difference": "runner output paths and manifest references differ from the retained historical report"},
+    {"label": "custom evidence", "generated_artifact": "custom_evidence", "historical_path": "reports/import_window_evidence.json", "expected_difference": "fresh runner reproduction records a new config path, timestamp, commit, and output paths while preserving threshold_pu=1.0"}
+  ]
+}

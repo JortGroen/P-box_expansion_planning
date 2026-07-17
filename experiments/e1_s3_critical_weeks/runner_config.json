@@ -1,0 +1,51 @@
+{
+  "schema_version": 1,
+  "task_id": "E1.S3",
+  "adapter": "e1.s3.critical_weeks",
+  "adapter_version": "v1",
+  "output_dir": "experiments/e1_s3_critical_weeks",
+  "seeds": {"none": "deterministic"},
+  "command": ".\\.venv\\Scripts\\python.exe -m src.runner experiments/e1_s3_critical_weeks/runner_config.json",
+  "historical_input_path": "reports/critical_weeks_input.json",
+  "historical_threshold_pu": "not_applicable",
+  "diagnostic_config": {
+    "schema_version": 1,
+    "task_id": "E1.S3",
+    "description": "SimBench full-year profile ingestion and winter critical-week extraction for the primary grid.",
+    "scenario_codes": {"0": "1-MV-semiurb--0-sw", "1": "1-MV-semiurb--1-sw", "2": "1-MV-semiurb--2-sw"},
+    "decision_transformer_indices": [0, 1],
+    "aggregate_loading_definition": "G0: abs(sum_i S_i(t)) / sum_i S_nom_i for the decision-transformer bank.",
+    "profile_start": "2016-01-01T00:00:00Z",
+    "step_minutes": 15,
+    "winter_months": [12, 1, 2],
+    "top_counts": [24, 96, 672],
+    "report_top_week_rows": 6,
+    "output_dir": "experiments/e1_s3_critical_weeks/data",
+    "figure_dir": "experiments/e1_s3_critical_weeks/reports",
+    "report_path": "experiments/e1_s3_critical_weeks/reports/critical_weeks_validation.md",
+    "manifest_path": "experiments/e1_s3_critical_weeks/custom_evidence.json"
+  },
+  "generated_artifacts": {
+    "critical_weeks": "experiments/e1_s3_critical_weeks/data/critical_weeks.csv",
+    "coverage": "experiments/e1_s3_critical_weeks/data/critical_week_coverage.csv",
+    "summary": "experiments/e1_s3_critical_weeks/data/critical_week_summary.csv",
+    "report": "experiments/e1_s3_critical_weeks/reports/critical_weeks_validation.md",
+    "custom_evidence": "experiments/e1_s3_critical_weeks/custom_evidence.json"
+  },
+  "generated_output_paths": [
+    "experiments/e1_s3_critical_weeks/data/critical_weeks.csv",
+    "experiments/e1_s3_critical_weeks/data/critical_week_coverage.csv",
+    "experiments/e1_s3_critical_weeks/data/critical_week_summary.csv",
+    "experiments/e1_s3_critical_weeks/reports/critical_week_loading.png",
+    "experiments/e1_s3_critical_weeks/reports/critical_week_coverage.png",
+    "experiments/e1_s3_critical_weeks/reports/critical_weeks_validation.md",
+    "experiments/e1_s3_critical_weeks/custom_evidence.json"
+  ],
+  "comparisons": [
+    {"label": "critical weeks table", "generated_artifact": "critical_weeks", "historical_path": "data/critical_weeks.csv"},
+    {"label": "coverage table", "generated_artifact": "coverage", "historical_path": "data/critical_week_coverage.csv"},
+    {"label": "summary table", "generated_artifact": "summary", "historical_path": "data/critical_week_summary.csv"},
+    {"label": "report", "generated_artifact": "report", "historical_path": "reports/critical_weeks_validation.md", "expected_difference": "runner output paths and manifest references differ from the retained historical report"},
+    {"label": "custom evidence", "generated_artifact": "custom_evidence", "historical_path": "reports/critical_weeks_evidence.json", "expected_difference": "fresh runner reproduction records a new config path, timestamp, commit, and output paths"}
+  ]
+}

@@ -1,0 +1,4 @@
+scenario,grid_code,steps,rating_mva,annual_max_loading_pu,annual_max_timestamp,annual_top_step_is_winter,winter_week_count,top_winter_week_start,top_winter_week_max_loading_pu
+0,1-MV-semiurb--0-sw,35136,80.0,0.1591448423196587,2016-01-27 17:45:00+00:00,True,15,2016-01-25 00:00:00+00:00,0.1591448423196587
+1,1-MV-semiurb--1-sw,35136,80.0,0.44042736542483835,2016-07-25 11:30:00+00:00,False,15,2015-12-28 00:00:00+00:00,0.35907650550642367
+2,1-MV-semiurb--2-sw,35136,80.0,0.5335111909759307,2016-07-25 11:30:00+00:00,False,15,2016-02-08 00:00:00+00:00,0.4309393746098917

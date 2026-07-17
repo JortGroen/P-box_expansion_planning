@@ -439,6 +439,7 @@ def run_benchmark(config_path: str | Path) -> dict[str, Any]:
         "schema_version": 1,
         "task_id": config["task_id"],
         "timestamp_utc": datetime.now(UTC).isoformat().replace("+00:00", "Z"),
+        "config_path": Path(config_path).as_posix(),
         "config": config,
         "hardware_runtime": _hardware_runtime(),
         "topology_materialization": _dataclass_dict(materialization),
@@ -522,6 +523,10 @@ def render_report(raw: dict[str, Any], evidence_path: Path) -> str:
     per_step_compute_ms = compute_ms / steps
     yearly_solver_s = per_step_solver_ms * 35040 / 1000.0
     yearly_compute_s = per_step_compute_ms * 35040 / 1000.0
+    timing_context = raw["config"].get("timing_context_note")
+    timing_context_lines = (["", f"Timing context: {timing_context}"] if timing_context else [])
+    report_path = Path(raw["config"]["report_output_path"])
+    standard_manifest_path = report_path.parent / "manifest.json"
     lines = [
         "# E1.S2b TimeSeriesCPP AC Benchmark",
         "",
@@ -543,14 +548,17 @@ def render_report(raw: dict[str, Any], evidence_path: Path) -> str:
             f"on the order of one full-year deterministic trajectory in {yearly_compute_s:.2f} s "
             f"for voltage solves alone, before scenario construction and selected result extraction."
         ),
+        *timing_context_lines,
         "",
         "This does not change G1 or G2. It refines the compute-path evidence: the earlier high-level `pandapower.runpp` path is unsuitable for the Monte Carlo inner loop, but the lower-level C++ time-series solve can host deterministic AC validation subsets.",
         "",
         "## Evidence",
         "",
-        f"- Config: `reports/benchmark_timeseriescpp_input.json`",
-        f"- Raw numeric output: `reports/benchmark_timeseriescpp_raw.json`",
-        f"- Evidence manifest: `{evidence_path.as_posix()}`",
+        f"- Config: `{raw['config_path']}`",
+        f"- Raw numeric output: `{raw['config']['raw_output_path']}`",
+        f"- Report: `{raw['config']['report_output_path']}`",
+        f"- Standard claim-source manifest: `{standard_manifest_path.as_posix()}`",
+        f"- Retained/custom evidence: `{evidence_path.as_posix()}`",
         f"- Timestamp: `{raw['timestamp_utc']}`",
         "",
         "## Timing Summary",

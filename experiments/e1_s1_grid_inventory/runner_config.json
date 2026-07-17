@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "task_id": "E1.S1",
+  "adapter": "e1.s1.grid_inventory",
+  "adapter_version": "v1",
+  "output_dir": "experiments/e1_s1_grid_inventory",
+  "seeds": {"none": "deterministic"},
+  "command": ".\\.venv\\Scripts\\python.exe -m src.runner experiments/e1_s1_grid_inventory/runner_config.json",
+  "historical_input_path": "reports/grid_inventory_input.json",
+  "historical_threshold_pu": "not_applicable",
+  "candidate_grid_keys": ["simbench_semiurb", "simbench_urban", "cigre_mv"],
+  "comparisons": [
+    {"label": "report", "generated_artifact": "report", "historical_path": "reports/grid_inventory.md", "expected_difference": "runner-normalized report path/content differs from the historical narrative report; numeric inventory rows are reproduced in grid_inventory_rows.json"},
+    {"label": "custom evidence", "generated_artifact": "custom_evidence", "historical_path": "reports/grid_inventory_evidence.json", "expected_difference": "fresh runner reproduction records a new config path, timestamp, commit, and output paths"}
+  ]
+}

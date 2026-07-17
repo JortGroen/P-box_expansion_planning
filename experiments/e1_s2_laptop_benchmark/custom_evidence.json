@@ -1,0 +1,33 @@
+{
+  "config_hash": "af38d181ee1837e73edb618230522d70a8ead97d7f697132dff69a7bca1e526f",
+  "config_path": "experiments/e1_s2_laptop_benchmark/runner_config.json",
+  "extra": {
+    "artifact_type": "laptop_benchmark_custom_reproduction",
+    "command": ".\\.venv\\Scripts\\python.exe -m src.runner experiments/e1_s2_laptop_benchmark/runner_config.json",
+    "repeats": 10,
+    "task_id": "E1.S2",
+    "timestamp_utc": "2026-07-17T13:09:29.719041Z",
+    "warmups": 2
+  },
+  "git_commit": "97f4fb6cfee247fdea42a12004b3c9fbbf7f9f3d",
+  "output_checksums": {
+    "experiments/e1_s2_laptop_benchmark/BENCHMARK.md": "bb9f80337f629010549dbd7fe3a667900a44d8686c64621374d5272401c3cfdc",
+    "experiments/e1_s2_laptop_benchmark/benchmark_raw.json": "2824ebe3eb5e81dd464456cd42d219fb0cca866f0074dcea08d19ccf5f9633bf"
+  },
+  "package_versions": {
+    "hypothesis": "6.156.4",
+    "lightsim2grid": "0.13.1",
+    "matplotlib": "3.11.0",
+    "numba": "0.66.0",
+    "numpy": "2.3.5",
+    "pandapower": "3.5.3",
+    "pandas": "2.3.3",
+    "pytest": "9.1.1",
+    "scipy": "1.16.3",
+    "simbench": "1.6.2"
+  },
+  "schema_version": 1,
+  "seeds": {
+    "none": "deterministic"
+  }
+}

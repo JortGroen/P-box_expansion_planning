@@ -1,0 +1,41 @@
+{
+  "config_hash": "e0b8281bba346c88cc71c600e574652c7fd0c2777fcae1b650f3ed0997049e8c",
+  "config_path": "experiments/e1_s2b_timeseriescpp_benchmark/diagnostic_config.runtime.json",
+  "extra": {
+    "artifact_type": "timeseriescpp_benchmark_evidence",
+    "command": ".\\.venv\\Scripts\\python.exe -m src.runner experiments/e1_s2b_timeseriescpp_benchmark/runner_config.json",
+    "hardware_runtime": {
+      "cpu_count": 12,
+      "platform": "Windows-11-10.0.26200-SP0",
+      "processor": "Intel64 Family 6 Model 186 Stepping 3, GenuineIntel",
+      "python": "3.12.7"
+    },
+    "repeats": 5,
+    "task_id": "E1.S2b",
+    "time_steps": 672,
+    "timestamp_utc": "2026-07-17T13:20:01.276383Z",
+    "timing_method": "time.perf_counter wall-clock timings plus TimeSeriesCPP internal solver/preprocessing/current-flow timers",
+    "warmups": 1
+  },
+  "git_commit": "97f4fb6cfee247fdea42a12004b3c9fbbf7f9f3d",
+  "output_checksums": {
+    "experiments/e1_s2b_timeseriescpp_benchmark/BENCHMARK_TIMESERIESCPP.md": "e82545b0edabea28f4552755b2743c15ffb654f98cc12afb1b882676a89faff2",
+    "experiments/e1_s2b_timeseriescpp_benchmark/benchmark_timeseriescpp_raw.json": "6fe55297e6c4b6c4fc335fc7a7e16b9fc40a37b39da1124ae765bf8cc5871ddc"
+  },
+  "package_versions": {
+    "hypothesis": "6.156.4",
+    "lightsim2grid": "0.13.1",
+    "matplotlib": "3.11.0",
+    "numba": "0.66.0",
+    "numpy": "2.3.5",
+    "pandapower": "3.5.3",
+    "pandas": "2.3.3",
+    "pytest": "9.1.1",
+    "scipy": "1.16.3",
+    "simbench": "1.6.2"
+  },
+  "schema_version": 1,
+  "seeds": {
+    "none": "deterministic"
+  }
+}

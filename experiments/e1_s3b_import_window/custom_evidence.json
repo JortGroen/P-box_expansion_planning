@@ -1,0 +1,58 @@
+{
+  "config_hash": "17da9d15652a5a7826ba2ed9d64103ff79d5c4df8ebb1016e49523f4133dd8a2",
+  "config_path": "experiments/e1_s3b_import_window/diagnostic_config.runtime.json",
+  "extra": {
+    "artifact_type": "import_window_evidence",
+    "command": ".\\.venv\\Scripts\\python.exe -m src.runner experiments/e1_s3b_import_window/runner_config.json",
+    "coverage_target": 0.95,
+    "decision_transformer_indices": [
+      0,
+      1
+    ],
+    "margin_weeks": 1,
+    "min_consecutive_steps": 4,
+    "scenario_codes": [
+      {
+        "grid_code": "1-MV-semiurb--0-sw",
+        "scenario": 0
+      },
+      {
+        "grid_code": "1-MV-semiurb--1-sw",
+        "scenario": 1
+      },
+      {
+        "grid_code": "1-MV-semiurb--2-sw",
+        "scenario": 2
+      }
+    ],
+    "task_id": "E1.S3b",
+    "threshold_pu": 1.0,
+    "timestamp_utc": "2026-07-17T13:17:10.765347Z",
+    "top_count": 672
+  },
+  "git_commit": "97f4fb6cfee247fdea42a12004b3c9fbbf7f9f3d",
+  "output_checksums": {
+    "experiments/e1_s3b_import_window/data/export_direction_exceedance.csv": "ead265f0a22ffbe54c6cfb5508484f0a26f187cccad809ebf25887e53ac8e8d7",
+    "experiments/e1_s3b_import_window/data/import_window_coverage.csv": "aaabd1863f075c50fad56fd3142a54c6fd35bd434f7515d7f95e9d415334b323",
+    "experiments/e1_s3b_import_window/data/import_window_proposal.csv": "fda96e1636bacf8311ffff2f11a6dd8b57d2197af72a1793ab5b4c22badf2bfb",
+    "experiments/e1_s3b_import_window/data/import_windows.csv": "d8e0461e4c98bac5666aa885b8a1e86a62805e45cbdae520e47ee691dd9d0c75",
+    "experiments/e1_s3b_import_window/reports/import_window_coverage.png": "208a7d170f2f5f1d63e7e8879b762cd729d7c2fe0a9fbd0d49b46a354bd2b83a",
+    "experiments/e1_s3b_import_window/reports/import_window_diagnostic.md": "484c5701bebfd86bc7045e69534f5f03e0076b4b1a1c14bc90be1e1c8e9a2c1e"
+  },
+  "package_versions": {
+    "hypothesis": "6.156.4",
+    "lightsim2grid": "0.13.1",
+    "matplotlib": "3.11.0",
+    "numba": "0.66.0",
+    "numpy": "2.3.5",
+    "pandapower": "3.5.3",
+    "pandas": "2.3.3",
+    "pytest": "9.1.1",
+    "scipy": "1.16.3",
+    "simbench": "1.6.2"
+  },
+  "schema_version": 1,
+  "seeds": {
+    "none": "deterministic"
+  }
+}

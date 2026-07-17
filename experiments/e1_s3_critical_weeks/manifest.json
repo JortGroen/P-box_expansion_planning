@@ -1,0 +1,42 @@
+{
+  "config_hash": "7a7a2712d67c20c9627a5bafe0d226020c4fa11ccc23898d10dc63e1cca884df",
+  "config_path": "experiments/e1_s3_critical_weeks/runner_config.json",
+  "extra": {
+    "adapter": "e1.s3.critical_weeks",
+    "adapter_version": "v1",
+    "artifact_type": "experiment_runner_manifest",
+    "diagnostic_threshold_pu": "not_applicable",
+    "historical_task": "E1.S3",
+    "historical_threshold_preserved": true,
+    "task_id": "E1.S3",
+    "timestamp_utc": "2026-07-17T13:16:42.305931Z"
+  },
+  "git_commit": "97f4fb6cfee247fdea42a12004b3c9fbbf7f9f3d",
+  "output_checksums": {
+    "experiments/e1_s3_critical_weeks/comparison.json": "7bd8733649336c16a686063db456f9a882ddc6c73cfadf0c31241ea898f1cc8b",
+    "experiments/e1_s3_critical_weeks/custom_evidence.json": "aea8d3282ecda673480c2cca273eddd415f49a44113533a73babb958aee83686",
+    "experiments/e1_s3_critical_weeks/data/critical_week_coverage.csv": "5c51d9d38afde72c4d40ef55eaf3d67899a340e2b0132ccd8b45f5c4024e9532",
+    "experiments/e1_s3_critical_weeks/data/critical_week_summary.csv": "2d8a4968512fc8a6859ddb2a3719919d9b4998fbe1b3f0b641be1b24836e521a",
+    "experiments/e1_s3_critical_weeks/data/critical_weeks.csv": "34cf20899ebbf278eb6f9add683a73b068e170f1525c78fdcfdf8332c180e3cf",
+    "experiments/e1_s3_critical_weeks/diagnostic_config.runtime.json": "556727ab55b974917bf677cf282ad04b6f55bd751b80194b9fff0370ac585f4f",
+    "experiments/e1_s3_critical_weeks/reports/critical_week_coverage.png": "706d64d21a39bb5008db723e374ad46d3165aef0c4a73872860b5ca493f0aeda",
+    "experiments/e1_s3_critical_weeks/reports/critical_week_loading.png": "c1e96a681e73d0f8847c5c8e47f32ddf6800304ac7c357f20474f5314517fab7",
+    "experiments/e1_s3_critical_weeks/reports/critical_weeks_validation.md": "925bba42b8039f06bfd17c0f6deecfc9ffdfb1028048e9121d885e5d356bded4"
+  },
+  "package_versions": {
+    "hypothesis": "6.156.4",
+    "lightsim2grid": "0.13.1",
+    "matplotlib": "3.11.0",
+    "numba": "0.66.0",
+    "numpy": "2.3.5",
+    "pandapower": "3.5.3",
+    "pandas": "2.3.3",
+    "pytest": "9.1.1",
+    "scipy": "1.16.3",
+    "simbench": "1.6.2"
+  },
+  "schema_version": 1,
+  "seeds": {
+    "none": "deterministic"
+  }
+}

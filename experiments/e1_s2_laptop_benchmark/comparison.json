@@ -1,0 +1,29 @@
+[
+  {
+    "expected_difference": "fresh wall-clock benchmark rerun has new timestamps and timing measurements",
+    "generated_path": "experiments/e1_s2_laptop_benchmark/benchmark_raw.json",
+    "generated_sha256": "2824ebe3eb5e81dd464456cd42d219fb0cca866f0074dcea08d19ccf5f9633bf",
+    "historical_path": "reports/benchmark_raw.json",
+    "historical_sha256": "fbbddb9b70b2e68d4187bda650f7fb1dba58b286781eb2285817bafa1183913f",
+    "label": "raw timing",
+    "match": false
+  },
+  {
+    "expected_difference": "runner report is normalized and timing values are a fresh rerun",
+    "generated_path": "experiments/e1_s2_laptop_benchmark/BENCHMARK.md",
+    "generated_sha256": "bb9f80337f629010549dbd7fe3a667900a44d8686c64621374d5272401c3cfdc",
+    "historical_path": "reports/BENCHMARK.md",
+    "historical_sha256": "29edba1a3c7583bf9354967a264208523a3287668fc51fff899acebdadf36d3d",
+    "label": "report",
+    "match": false
+  },
+  {
+    "expected_difference": "fresh runner reproduction records a new config path, timestamp, commit, and output paths",
+    "generated_path": "experiments/e1_s2_laptop_benchmark/custom_evidence.json",
+    "generated_sha256": "44a78426c59bc7d9bf592f30b47e8534a75dd2749ea85d59c19abd709acb614e",
+    "historical_path": "reports/benchmark_evidence.json",
+    "historical_sha256": "97c56e222c7019fc2e421603169bb480f4b6e97273c2cee9df7c437bf461593d",
+    "label": "custom evidence",
+    "match": false
+  }
+]
