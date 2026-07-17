@@ -1,6 +1,6 @@
 """Tier-1 radial summation evaluator for IC-2.
 
-The evaluator implements the approved G0/G0-A1/G0-A2 event semantics for the
+The evaluator implements the approved G0/G0-A1/G0-A2/G0-A3 event semantics for the
 fast Monte Carlo inner loop. It preserves the unwidened active-power direction
 gate so later model-error envelopes can widen loading trajectories before
 episode detection without turning export or zero-flow steps into import events.
@@ -16,7 +16,9 @@ import numpy as np
 
 TimeDomain = Literal["full_year", "window_set"]
 
-DEFAULT_THRESHOLD_PU = 1.0
+# G0-A3 makes 1.1 the executable default but gates scientific use on Q-5;
+# keeping it centralized prevents callers from silently retaining 1.0.
+DEFAULT_THRESHOLD_PU = 1.1
 DEFAULT_MIN_CONSECUTIVE_STEPS = 4
 
 
@@ -109,7 +111,7 @@ def evaluate_tier1(
         Optional timestep positions to evaluate. Required when
         ``time_domain="window_set"`` and forbidden for ``"full_year"``.
     threshold_pu:
-        Strict overload threshold in p.u.; G0 uses ``> 1.0``.
+        Strict overload threshold in p.u.; G0-A3 provisionally uses ``> 1.1``.
     min_consecutive_steps:
         Minimum consecutive 15-minute import exceedance steps; G0 uses four.
     """

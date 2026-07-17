@@ -16,17 +16,18 @@ Format: `Story | Owner | status | tasks | blocked-by | PR`
 | E1.S3b G0-A1 import-window diagnostic | A | done | 4/4 | -- | #15 |
 | E1.S4 Tier-1 evaluator | A | review | 6/6 | -- | #25 |
 | E2.S1 Data acquisition | C | done | 3/3 | -- | #14, #18 follow-up |
-| E2.S2 EV model | C | in-progress | 2/3 | Remaining profile-library generation is PI-limited after first authorized Set A batch | #27 |
-| E2.S3 HP model | C | todo | 0/3 | E2.S1 | -- |
-| E2.S4 PV model | C | todo | 0/2 | E2.S1, G0 | -- |
-| E2.S5 Baseline & diversity | C | todo | 0/1 | E1.S3 | -- |
-| E2.S6 Adoption scenarios | C | todo | 0/2 | E2.S1 | -- |
+| E2.S2 EV model | C | in-progress | 2/5 | EV-004 supersedes the old request plan; run the new home-CP multi-profile probe before EV-005 candidate/held-out generation; replacement semantics await E2.S6 | #27 |
+| E2.S3 HP model | C | todo | 0/4 | E2.S1, ALEA-001 | -- |
+| E2.S4 PV model | C | todo | 0/3 | E2.S1, G0, ALEA-001 | -- |
+| E2.S5 Baseline & diversity | C | todo | 0/2 | E1.S3, ALEA-001 | -- |
+| E2.S6 Adoption scenarios | C | todo | 0/3 | E2.S1, EV-004 | -- |
 | E3.S1 Flexibility aggregator | A | todo | 0/3 | E2 models | -- |
-| E3.S2 IC-1 NetLoadProvider | A | todo | 0/3 | E3.S1 | -- |
-| E3.S2b Future-layer capacity and domain screen | A | todo | 0/5 | E0.S3b, E2.S2-E2.S6, E3.S1-E3.S2 | -- |
-| E3.S3 Tier-2 AC harness and Tier-1 enclosure | A | todo | 0/5 | E0.S3b, E1.S1, E1.S2b, E1.S4, E3.S2b | -- |
-| E3.S4 CRN harness | A | todo | 0/2 | -- | -- |
-| E4.S1 Dense rho sweep | B | todo | 0/3 | E3.S2, E3.S4 | -- |
+| E3.S2 IC-1 NetLoadProvider | A | todo | 0/4 | E3.S1, ALEA-001 | -- |
+| E3.S2a Integrated library adequacy | C | todo | 0/5 | E2.S2-E2.S6, E3.S2, ALEA-002, EV-005; resolve Q-5 before opening event-based held-out results | -- |
+| E3.S2b Future-layer capacity and domain screen | A | todo | 0/5 | E0.S3b, E2.S2-E2.S6, E3.S1-E3.S2a; Q-5 before threshold-based run | -- |
+| E3.S3 Tier-2 AC harness and Tier-1 enclosure | A | todo | 0/5 | E0.S3b, E1.S1, E1.S2b, E1.S4, E3.S2b; Q-5 before threshold-stratum run | -- |
+| E3.S4 CRN harness | A | todo | 0/3 | ALEA-001 | -- |
+| E4.S1 Dense rho sweep | B | todo | 0/3 | E3.S2, E3.S4, resolved Q-5 | -- |
 | E4.S2 Fallback stub | B | todo | 0/1 | E5 invariant skeleton | -- |
 | E5.S1 Fuzzy number class | B | done | 2/2 | -- | #1 |
 | E5.S2 Vertex propagation scaffold | B | done | 3/3 | G3 before scientific use | #6 |

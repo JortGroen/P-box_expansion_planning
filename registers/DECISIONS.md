@@ -10,9 +10,12 @@ placeholder until the PI records a decision.
 | G0 | 2026-07-09 | Scope freeze | Approved: see detailed G0 entry below. | Required before gated scope-specific work; freezes overload event, P_crit handling, grid/fallback choice, weather scope, and primary alpha grid. | E0 registers; E1.S1 grid inventory PR #2; G0 scope-freeze text approved by PI. | approved | PI approved in chat, 2026-07-09 |
 | G0-A1 | 2026-07-10 | Event direction and fixed-window rejection amendment | Primary overload event is consumption-driven import congestion: apparent-power magnitude conditioned on net import direction. Direction-agnostic `abs(S)` remains the screening metric, and export-direction exceedance is reported beside primary results. Fixed winter windows are rejected; G0-A2 later assigns primary Tier-1 `P(E)` to the full planning year and retains WindowSets only for AC validation and diagnostics. | E1.S3 showed direction-agnostic annual maxima in SimBench scenarios 1/2 are summer midday export/PV peaks, while scenario 0 winter windows miss much of the annual near-peak shoulder. The study's flexibility construct is demand-reduction, so feed-in congestion needs a distinct absorption/curtailment instrument and remains out of scope. | E1.S3 PR #10; `reports/critical_weeks_validation.md`; PI amendment text in chat, 2026-07-10. | approved | PI approved in chat, 2026-07-10 |
 | G0-A2 | 2026-07-10 | Full-year primary event scope | Primary Tier-1 `P(E)` is annual: the probability that the full planning year contains at least one qualifying import-direction overload episode. WindowSet is retained only for IC-1/IC-2 AC-validation subset selection and diagnostics. | E1.S3b adaptive import windows span 19-25 weeks, or 36-48% of the year, defeating their compute purpose for the negligible-cost Tier-1 summation evaluator. Full-year Tier-1 removes window-transfer risk. | E1.S3b import-window diagnostic PR #15; `reports/import_window_diagnostic.md`; `reports/G1_DECISION_BRIEF.md`; PI approved in chat, 2026-07-10. | approved | PI approved in chat, 2026-07-10 |
+| G0-A3 | 2026-07-16 | Provisional overload threshold | Use the strict working event `L_import > 1.1 p.u.` for at least four consecutive 15-minute steps. The same 1.1 threshold applies to the single-step sensitivity and export-side exceedance diagnostic. This numerical threshold is provisional: Q-5 must be reviewed and explicitly resolved by the PI before the first integrated event-based scientific analysis or any manuscript result. | Allows the implementation to proceed with the PI-selected 110% one-hour rule while preventing an unverified source or ambiguous hourly interpretation from becoming a settled Dutch DSO claim. Historical evidence generated at 1.0 p.u. remains labeled with its executed threshold and is not relabeled. | PI direction in chat, 2026-07-16; source and exact interpretation pending Q-5. | approved working rule; mandatory pre-analysis review | PI directed in chat, 2026-07-16 |
 | G1 | 2026-07-10 | Foundation validated | Approved two-tier architecture: Tier-1 radial summation with G0-A1/G0-A2 semantics is the Monte Carlo inner-loop evaluator; AC power flow serves deterministic checks and validation subsets. Fixed winter windows are rejected, and primary Tier-1 runs the full planning year. No manuscript claim may say "AC infeasible". E1.S2 established that repeated high-level `runpp` is too slow for the MC loop; E1.S2b subsequently established a fast lower-level TimeSeriesCPP path for deterministic AC batches while deferring complete adapter numerical validation to G2. C1 TimeSeriesCPP benchmarking and C2 transformer-headroom diagnostics are complete; Agent A may proceed to E1.S4. | Tier-1 is computationally negligible for the decision-transformer criterion, but its accuracy remains a G2 hypothesis. E1.S3 rejected fixed winter windows; E1.S3b showed adaptive windows are too large to justify a primary windowed probability. E1.S2b makes substantial AC validation practical without supporting an "AC infeasible" or "full AC MC" claim. | E1.S2 benchmark; E1.S2b PR #23 and `reports/BENCHMARK_TIMESERIESCPP.md`; E1.S1b PR #19; E1.S3b import-window diagnostic PR #15; `reports/G1_DECISION_BRIEF.md`; PI amended G1 text in chat, 2026-07-10. | approved | PI approved in chat, 2026-07-10 |
 | G1-A1 | 2026-07-13 | Black-box model error and Tier-1 approximation | Grid-model error is an unprobabilized interval on black-box model output, propagated before event detection under arbitrary unknown dependence. Tier-1 approximation error is estimated empirically at G2. Post-hoc probability-margin widening is rejected. G1-A2 supersedes the provisional error-composition and domain wording. | Preserves the intended imprecise-probability story, separates physical-system/model discrepancy from Tier-1-to-pandapower approximation, and retains the compute benefit of Tier-1 without hiding surrogate error. | `reports/G1_A1_MODEL_ERROR_AMENDMENT_PROPOSAL.md`; PI approval in chat, 2026-07-13. | approved | PI approved in chat, 2026-07-13 |
 | G1-A2 | 2026-07-14 | Grid-error and capacity-screen protocol | Use a symmetric relative `epsilon_grid` envelope with arbitrary unknown dependence and compose it exactly with the additive G2 Tier-1 envelope before event detection. Reject the fixed 16-104 MVA applicability claim. Derive and freeze the asserted future operating domain from one predeclared manifested E3.S2b screen before probabilistic-result inspection. Keep total 80 MVA and firm 40 MVA capacity conventions open until that screen reports raw MVA and both ratios; selecting firm capacity requires actual one-transformer-out AC validation. | The 104 MVA value was only 1.3 times the current 80 MVA denominator, not a validated boundary. Relative grid error survives a later capacity-convention choice. A single governed future-layer screen can expose whether the total or firm convention yields no congestion, decision-sensitive congestion, or irrecoverable congestion without silently tuning the network after seeing p-box results. | `reports/G1_A2_GRID_ERROR_AND_CAPACITY_PROTOCOL.md`; E1.S1b headroom evidence; PI approval in chat, 2026-07-14. | approved | PI approved in chat, 2026-07-14 |
+| ALEA-001 | 2026-07-15 | Joint aleatory dependency protocol | Preserve known dependence through one canonical calendar, complete source trajectories, and one paired multivariate weather member per Monte Carlo realization. HP and PV consume the same aligned weather member; EV and baseline retain complete temporal paths and common weekday/season alignment. Copulas, latent factors, or multivariate block bootstrap are escalation paths only if validation shows the primary conditional construction is inadequate. | Keeps physically understood temperature/irradiance, calendar, serial, and common-driver dependence without inventing an unsupported full joint distribution. It also separates physical dependence from CRN reuse and from the arbitrary-unknown-dependence treatment of model error. | `reports/JOINT_ALEATORY_SAMPLING_PROTOCOL.md`; PI approval in chat, 2026-07-15. | approved | PI approved in chat, 2026-07-15 |
+| ALEA-002 | 2026-07-15 | Downstream-only congestion evaluation | Component-level profile statistics are data-quality diagnostics only. Congestion and profile-library adequacy are evaluated after baseline, EV, HP, PV, adoption, and flexibility have been aligned and aggregated into net load and passed through the transformer evaluator. An EV-only sustained-load statistic and the ElaadNL UI p95 curve are not congestion measures. A p95 downstream result may be used provisionally for workflow and convergence checks while the PI reviews published congestion definitions; this does not amend the G0 `P_crit` decision. | Prevents an arbitrary component proxy from determining a system-level reinforcement conclusion and tests finite-library adequacy against the quantity the study ultimately uses. | `reports/JOINT_ALEATORY_SAMPLING_PROTOCOL.md`; PI approval in chat, 2026-07-15. | approved | PI approved in chat, 2026-07-15 |
 | G2 | TBD | Tier-1 enclosure and adequacy | Pending: empirical Tier-1 error envelope, held-out near/above-threshold enclosure test, decision impact, and evaluator verdict | Determines Tier-1 primary / corrected Tier-1 / selective AC / Tier-1 rejected | E1.S2b corrected AC budget; E1.S1b headroom brief; E3.S2b frozen future domain/capacity screen; E3.S3 manifested tier comparison | pending | -- |
 | G3 | TBD | Monotonicity verdict | Pending: vertex shortcut vs interior sampling | Critical compute shortcut | E4.S1 monotonicity report | pending | -- |
 | G4 | TBD | Elicitation sign-off | Pending: fuzzy controllability corners | Paper hinge assumption | E7.S2 worksheet | pending | -- |
@@ -22,6 +25,10 @@ placeholder until the PI records a decision.
 | DEP-001 | 2026-07-09 | Dependency pin update | Use `simbench==1.6.2` and `pandapower>=3.4,<4` in the `.venv` requirements. | Upstream SimBench 1.6.2 declares `pandapower>=3.4.0`; avoids the older `simbench==1.6.1` / `pandapower==3.5.3` top-level `compare_arrays` import break. | PI review of upstream `simbench` `pyproject.toml`; `.venv` metadata check; `.\scripts\task.ps1 test`; direct import check for `pandapower`, `simbench`, and `lightsim2grid`. | approved | PI approved in chat, 2026-07-09 |
 | EV-001 | 2026-07-10 | D-002 EV charging data source | Use the ElaadNL Laadprofielengenerator generated-profile route in `reports/elaad_profile_generation_spec.md` for D-002 instead of the unavailable historical ElaadNL/EVnetNL transaction dataset. First implementation step is a one-profile API probe; bulk profile-library generation waits until API semantics and terms-of-use notes are recorded. | The current ElaadNL download page exposes a Charging Energy Hubs neighbourhood opportunity workbook, not session/profile behavior data. The generator provides accessible, seeded, 15-minute Dutch Outlook-based EV charging profiles suitable for a frozen profile library or calibration target. | PI-provided profile-generation spec; local inspection of `data_CEH_kansrijkheid_2026Q1.xlsx`; ElaadNL dashboard/API URLs in D-002. | approved | PI approved in chat, 2026-07-10 |
 | EV-002 | 2026-07-14 | D-002 generated ElaadNL profile use and redistribution boundary | Generated ElaadNL profiles may be used for internal project computations through the publicly accessible Laadprofielengenerator API. Do not commit or redistribute raw API responses or generated profile libraries; keep generated files under ignored `data/raw/` or ignored processed-data paths. Commit only retrieval/generation code, request configurations, distinct seed schedules, metadata, checksums, and manifests. The data-availability statement must direct readers to regenerate profiles through the public API subject to terms applicable at retrieval time. Do not claim generated profiles are openly licensed or redistributable. Record unresolved redistribution terms as a limitation/risk, but they no longer block internal project use. If explicit terms later prohibit this research use, stop and escalate. | Resolves the D-002 terms blocker while preserving a conservative redistribution boundary and reproducibility through code/config/metadata rather than committed generated data. | PI decision in chat, 2026-07-14; D-002 one-profile probe metadata; `reports/elaad_profile_generation_spec.md`. | approved | PI approved in chat, 2026-07-14 |
+| EV-003 | 2026-07-15 | Primary EV aleatory representation | Use direct empirical bootstrapping from the frozen, checksummed ElaadNL annual profile library as the primary EV aleatory model. Retain complete annual members and record the selected member IDs and seed metadata in manifests. The fallback calibrated stochastic sampler is not primary, but remains an escalation path if seed semantics, available library size, or held-out downstream adequacy make direct bootstrapping invalid. The exact within-realization replacement rule remains pending until the same-seed warning and adoption cohort sizes are resolved. | Uses the accessible Dutch generator output without introducing an additional fitted behavioral model, while keeping finite-library uncertainty visible and testable under ALEA-002. | EV-001; EV-002; ALEA-001; ALEA-002; `reports/elaad_profile_generation_spec.md`; PI approval in chat, 2026-07-15. | approved | PI approved in chat, 2026-07-15 |
+| EV-004 | 2026-07-16 | Fixed residential charge-point distribution | Represent the residential EV layer by one frozen distribution of complete annual, uncontrolled ElaadNL `cp` profiles for `location_type = home`, `cp_capacity_kw = 11`, and `simulated_year = 2030`. Reuse this behavior distribution in the 2030, 2033, and 2035 planning layers; scenario growth changes the externally sourced number and nodal allocation of home charge points, not the profile-generator year. The sampling unit is one physical home charge point, and ElaadNL's native home charge-point car/van mix is retained without reweighting. Conditional on the common ALEA-001 calendar and scenario, home charge points are modeled as exchangeable independent draws from this distribution. Public charging remains a separate profile class and is not fixed by this decision. | Fixing the generator year prevents its internal vehicle-count, charge-point-count, and efficiency forecasts from being varied at the same time as the project's external adoption layer. A charge-point sampling unit also matches the physical quantity counted by the adoption scenario and lets one fixed behavior distribution be reused transparently across planning layers. | ElaadNL `Documentatie Laadprofielengenerator`, 10 November 2025, pp. 5-13; ALEA-001; EV-003; PI approval in chat, 2026-07-16. | approved | PI approved in chat, 2026-07-16 |
+| EV-005 | 2026-07-16 | Finite profile-library uncertainty | Treat the frozen library as a finite random sample from an unknown ElaadNL generator distribution. Keep finite-library uncertainty from `M` distinct from conditional Monte Carlo estimation uncertainty from `N`: use independent distinct-seed API batches, nested candidate libraries, disjoint held-out batches, and downstream transformer-result comparisons under CRN. An initial candidate of `M = 1000` home charge-point profiles may be generated in batches, but it is not declared sufficient a priori; extend it if the predeclared downstream adequacy test fails. The numerical adequacy tolerance and the within-realization replacement rule remain pending until E2.S6 supplies the charge-point cohort range and E3.S2a predeclares a decision-relevant criterion. | Increasing `N` can estimate the result under a fixed empirical library very precisely without correcting an unrepresentative library. Independent held-out generation and nested-library stability expose that separate error source while avoiding an unsupported universal formula linking `M`, `K`, and `N`. | `reports/EV_FINITE_LIBRARY_UNCERTAINTY_PROTOCOL.md`; ALEA-002; EV-003; E2.S6; E3.S2a; PI approval in chat, 2026-07-16. | approved | PI approved in chat, 2026-07-16 |
+| EV-006 | 2026-07-17 | Matched ElaadNL smart-charging seed protocol | When an ElaadNL smart-charging profile is generated as a counterfactual to an uncontrolled profile, reuse the exact uncontrolled batch seed and pair members by returned profile index. Identify each potential-outcome pair by `(batch_seed, returned_profile_index, control_mode)`. Same-seed uncontrolled and controlled outputs represent the same underlying annual demand and charging sessions under different control; compare or substitute them as a pair, but never sum or resample them as independent physical charge points. Seeds remain distinct between unrelated stochastic source batches, including candidate and held-out libraries. Set D therefore matches uncontrolled Set A batch `140001` instead of using an independent seed. This decision fixes pairing semantics only: it does not approve smart charging as the primary flexibility model or approve its base-capacity, ramp-speed, pooling, or controllability mapping. | ElaadNL explicitly states that a common seed preserves annual mileage, energy demand, and sessions and is useful for studying smart-control impacts, while warning that same-seed profiles must not be added because their sessions are duplicated. Matched treatment/control runs remove behavioral sampling noise from the comparison without violating the independence required when profiles represent different chargers. | ElaadNL `Documentatie Laadprofielengenerator`, 10 November 2025, pp. 6-7 and 14; `reports/elaad_profile_generation_spec.md`; PI instruction in chat, 2026-07-17. | approved seed protocol; smart-control role and parameters pending | PI directed correction in chat, 2026-07-17 |
 | COST-001 | 2026-07-10 | D-008 Cicenas thesis unit-cost source | Use the PI-supplied local Cicenas 2025 thesis PDF as the D-008 source for unit-cost extraction. The PDF must not be committed or redistributed. Every extracted number must record value, unit, exact meaning/context, thesis page, table/appendix/section label if available, source status (Stedin-confirmed, thesis-derived, or interpreted), intended project use, and PI sign-off before manuscript use. | The professor of the thesis is involved in the project, and the PI confirmed that thesis-derived unit costs are acceptable if every number is exactly traceable and cited wherever used. | Local raw file `data/raw/cicenas_2025_thesis.pdf`, sha256 `96EF9625BA0AFEE2910189A61967943BA3BCD460AE3AC080B847C4D8DD7D99C0`; literature-review anchor line 133. | approved | PI approved in chat, 2026-07-10 |
 
 ## G0 - Scope Freeze - 2026-07-09 - signed: PI approved in chat
@@ -30,8 +37,10 @@ Authority: this entry supersedes all illustrative examples of the overload
 event, P_crit handling, and grid choice in the project plan and the actionable
 plan. G0-A1 amends the event direction rules below. G0-A2 amends the primary
 event time domain to the full planning year and demotes WindowSet to AC
-validation and diagnostics. Changes to any item below require a new signed
-entry.
+validation and diagnostics. G0-A3 supersedes the numerical `1.0 p.u.` event
+threshold below with a provisional `1.1 p.u.` working threshold and imposes a
+mandatory PI review before integrated event analysis. Changes to any item below
+require a new signed entry.
 
 ### 1. Decision Asset And Terminology
 
@@ -65,6 +74,10 @@ If the station has an open tie or separate MV sections, escalate: the decision
 asset becomes a single section's transformer and aggregate loading is not used.
 
 ### 2. Overload Event E
+
+Historical G0 wording is retained below for traceability. G0-A3 supersedes its
+numerical `1.0 p.u.` threshold for future work; historical runs keep the
+threshold recorded in their manifests.
 
 As amended by G0-A1, let `S_net(t) = P_net(t) + jQ_net(t)` be the aggregate
 complex power through the decision transformer, with `P_net(t) > 0` denoting
@@ -193,6 +206,8 @@ plans. G0-A2 supersedes the adaptive critical-window language for the primary
 Tier-1 probability metric. Where this entry conflicts with earlier text, and
 G0-A2 does not further amend it, this entry wins.
 
+G0-A3 later supersedes only the numerical overload threshold in this entry.
+
 ### 2a. Event Direction And Loading Quantity
 
 Let `S_net(t) = P_net(t) + jQ_net(t)` be the aggregate complex power through
@@ -253,6 +268,8 @@ Authority: this entry amends G0 item 2 and supersedes the G0-A1 adaptive
 critical-window language for the primary probability metric. Where it conflicts
 with earlier project-plan or actionable-plan text, this entry wins.
 
+G0-A3 later supersedes only the numerical overload threshold in this entry.
+
 Primary `P(E)` is annual: the probability that the full planning year contains
 at least one qualifying import-direction overload episode, defined as at least
 4 consecutive 15-minute steps with `L_import(t) > 1.0` p.u. A direction flip
@@ -266,6 +283,46 @@ Rationale: E1.S3b adaptive import windows span 19-25 weeks, or 36-48% of the
 year. At that size, they defeat their compute purpose for the vectorized
 Tier-1 summation evaluator and introduce avoidable window-transfer risk.
 Full-year Tier-1 removes that approximation layer.
+
+## G0-A3 - Provisional 1.1 P.U. Overload Threshold - 2026-07-16 - signed: PI directed in chat
+
+### Authority And Working Event
+
+This entry supersedes the numerical `1.0 p.u.` threshold in G0, G0-A1, and
+G0-A2 for future implementation and analysis. It does not alter the import
+direction gate, apparent-power loading quantity, direction-flip reset,
+four-step persistence rule, full-year probability domain, or `P_crit`.
+
+The working event is:
+
+```text
+E = the planning year contains at least 4 consecutive 15-minute steps
+    with L_import(t) > 1.1 p.u.
+```
+
+The inequality is strict: a value exactly equal to `1.1 p.u.` does not qualify.
+The single-step E9 sensitivity and export-side exceedance diagnostic use the
+same working `1.1 p.u.` threshold unless a later signed decision states
+otherwise.
+
+### Mandatory Pre-Analysis Review
+
+The value is PI-selected but provisional because its supporting source and
+precise time-aggregation semantics have not yet been verified. Q-5 must be
+explicitly resolved before E3.S2a opens held-out event results, E3.S2b or E3.S3
+runs a threshold-based integrated screen, E4 estimates `P(E)`, or any manuscript
+result uses this event. The review must establish:
+
+- the exact source and its asset, jurisdiction, and capacity convention;
+- whether "one hour" means four consecutive 15-minute exceedances or an hourly
+  average;
+- whether loading from `1.0` through `1.1 p.u.` needs a separate cumulative-
+  exposure criterion; and
+- whether `1.1 p.u.` is retained as primary, demoted to sensitivity, or replaced.
+
+Historical evidence generated with a manifested `1.0 p.u.` threshold remains
+valid for its stated diagnostic purpose and must not be relabeled as a 1.1-p.u.
+run.
 
 ## G1 - Foundation Validated - 2026-07-10 - signed: PI approved in chat
 
@@ -384,9 +441,9 @@ endpoint.
 ### Revised G2 Gate
 
 G2 shall use a manifested, domain-covering AC validation design spanning
-ordinary, extreme, near-capacity, and overloaded import states; the 1.0 p.u.
-threshold neighborhood; relevant years, `rho` values, power factors, and
-consecutive-step episodes. A held-out near/above-threshold stratum must not be
+ordinary, extreme, near-capacity, and overloaded import states; the current
+G0-A3 `1.1 p.u.` threshold neighborhood; relevant years, `rho` values, power
+factors, and consecutive-step episodes. A held-out near/above-threshold stratum must not be
 used to tune an envelope or correction.
 
 A hard enclosure acceptance test on that held-out stratum is frozen in kind.
