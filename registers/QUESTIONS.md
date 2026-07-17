@@ -43,3 +43,10 @@ QUESTION: Does primary evidence support a numerical A-013 envelope under a suffi
 OPTIONS: A) Sign a sourced value only after E9.S5a documents a comparable quantity, conditioning, measurements, domain, and enclosure meaning.  B) Retain 5% with 2%/10% as explicitly author-specified scenarios and state that no empirical enclosure was available.
 RECOMMENDATION: A if comparable evidence is found; otherwise B is more defensible than converting a mechanism inventory into a false empirical claim.
 STATUS: open; does not block model/data integration, but blocks numerical A-013 sign-off and manuscript claims that 5% is scientifically established.
+
+## Q-5 - G0-A3 - 2026-07-16 - BLOCKING: yes before integrated event analysis
+CONTEXT: The PI selected a provisional congestion event of strict import loading above 1.1 p.u. for one hour. The executable default has been changed, but the source and the meaning of "one hour" have not yet been verified, and a source may also impose a separate cumulative rule for loading between 1.0 and 1.1 p.u.
+QUESTION: Before event-based scientific analysis, should G0-A3 remain four consecutive 15-minute values above 1.1 p.u., change to an hourly-average criterion, add a cumulative 1.0-1.1 p.u. exposure rule, or revert/demote 1.1 after source review?
+OPTIONS: A) Retain strict `>1.1` for four consecutive steps as primary, with the verified source and scope recorded.  B) Amend the event and sensitivities to match the verified source and applicable Dutch transformer-planning interpretation.
+RECOMMENDATION: Verify the exact passage and prefer B if its time aggregation, asset, jurisdiction, or companion 100-110% rule differs from the current working implementation.
+STATUS: open; model/data construction and non-event diagnostics may continue, but resolve before E3.S2a held-out event results, E3.S2b/E3.S3 threshold-based integrated runs, E4 `P(E)`, or manuscript results.

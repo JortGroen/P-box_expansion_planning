@@ -158,7 +158,9 @@ class EVProfileBootstrapSampler:
     def from_npz(cls, path: Path) -> EVProfileBootstrapSampler:
         return cls(load_processed_batch_npz(path))
 
-    def sample_member_indices(self, n_members: int, *, seed: int, replace: bool = False) -> np.ndarray:
+    # EV-005 deliberately has no default: replacement changes the dependence
+    # structure within one realization and therefore requires an explicit choice.
+    def sample_member_indices(self, n_members: int, *, seed: int, replace: bool) -> np.ndarray:
         if n_members < 0:
             raise ValueError("n_members must be non-negative")
         if not replace and n_members > self.batch.n_profiles:
@@ -166,11 +168,11 @@ class EVProfileBootstrapSampler:
         rng = np.random.default_rng(seed)
         return rng.choice(self.batch.n_profiles, size=n_members, replace=replace)
 
-    def sample_profiles_kw(self, n_members: int, *, seed: int, replace: bool = False) -> np.ndarray:
+    def sample_profiles_kw(self, n_members: int, *, seed: int, replace: bool) -> np.ndarray:
         indices = self.sample_member_indices(n_members, seed=seed, replace=replace)
         return self.batch.demands_kw[:, indices]
 
-    def sample_aggregate_kw(self, n_members: int, *, seed: int, replace: bool = False) -> np.ndarray:
+    def sample_aggregate_kw(self, n_members: int, *, seed: int, replace: bool) -> np.ndarray:
         profiles = self.sample_profiles_kw(n_members, seed=seed, replace=replace)
         return profiles.sum(axis=1)
 

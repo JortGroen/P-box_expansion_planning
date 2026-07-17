@@ -60,7 +60,7 @@ def test_split_import_export_loading_uses_g0_a1_direction_rules() -> None:
 
 def test_direction_flips_reset_overload_episode_counter() -> None:
     index = pd.date_range("2016-01-01T00:00:00Z", periods=8, freq="15min")
-    raw_loading = pd.Series([1.1, 1.1, 1.1, 1.1, 1.1, 1.1, 1.1, 1.1], index=index)
+    raw_loading = pd.Series([1.2, 1.2, 1.2, 1.2, 1.2, 1.2, 1.2, 1.2], index=index)
     net_p = pd.Series([1.0, 1.0, -1.0, -1.0, 1.0, 1.0, 1.0, 1.0], index=index)
 
     split = split_import_export_loading(loading_pu=raw_loading, aggregate_p_mw=net_p)

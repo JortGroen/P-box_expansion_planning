@@ -72,18 +72,20 @@ def test_elaad_one_profile_probe_request_is_narrow() -> None:
     assert request["seed"] == 133001
 
 
-def test_elaad_library_plan_uses_native_2033_and_distinct_batch_seeds() -> None:
+def test_elaad_library_plan_uses_fixed_home_cp_distribution_and_held_out_batches() -> None:
     plan = build_library_plan()
     seeds = [batch.seed for batch in plan]
 
     assert len(seeds) == len(set(seeds))
-    assert any(
-        batch.set_id == "A"
-        and batch.simulated_year == 2033
-        and batch.location_type == "home"
-        and batch.profile_type == "ev"
-        for batch in plan
-    )
+    assert len(plan) == 12
+    assert sum(batch.partition == "candidate" for batch in plan) == 10
+    assert sum(batch.partition == "held_out" for batch in plan) == 2
+    assert all(batch.set_id == "A" for batch in plan)
+    assert all(batch.simulated_year == 2030 for batch in plan)
+    assert all(batch.location_type == "home" for batch in plan)
+    assert all(batch.profile_type == "cp" for batch in plan)
+    assert all(batch.vehicle_types == ["van", "car"] for batch in plan)
+    assert all(batch.cp_capacity_kw == 11 for batch in plan)
     assert all(batch.n_profiles == 100 for batch in plan)
 
 
@@ -94,8 +96,12 @@ def test_elaad_library_plan_metadata_is_non_redistribution_boundary() -> None:
     payload = json.loads(path.read_text(encoding="utf-8"))
     assert payload["bulk_generation_performed"] is False
     assert payload["policy"]["decision"] == "EV-002"
+    assert payload["policy"]["scientific_decisions"] == ["EV-004", "EV-005"]
     assert payload["policy"]["commit_generated_profiles"] is False
     assert payload["policy"]["redistribute_generated_profiles"] is False
+    assert sum(batch["partition"] == "candidate" for batch in payload["batches"]) == 10
+    assert sum(batch["partition"] == "held_out" for batch in payload["batches"]) == 2
+    assert all(batch["processed_path"].endswith(".npz") for batch in payload["batches"])
     assert all(
         batch["raw_response_path"].startswith("data/raw/elaad_profiles/")
         for batch in payload["batches"]

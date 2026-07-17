@@ -69,15 +69,17 @@ def test_processed_roundtrip_and_sampler_reproducibility(tmp_path: Path) -> None
     loaded = load_processed_batch_npz(path)
     sampler = EVProfileBootstrapSampler(loaded)
 
-    first = sampler.sample_member_indices(3, seed=42)
-    second = sampler.sample_member_indices(3, seed=42)
-    different = sampler.sample_member_indices(3, seed=43)
+    # EV-005 leaves replacement unresolved, so tests and production callers
+    # must state the provisional sampling rule instead of inheriting a default.
+    first = sampler.sample_member_indices(3, seed=42, replace=False)
+    second = sampler.sample_member_indices(3, seed=42, replace=False)
+    different = sampler.sample_member_indices(3, seed=43, replace=False)
 
     assert np.array_equal(first, second)
     assert not np.array_equal(first, different)
     assert len(set(first.tolist())) == 3
     assert np.array_equal(
-        sampler.sample_aggregate_kw(3, seed=42),
+        sampler.sample_aggregate_kw(3, seed=42, replace=False),
         loaded.demands_kw[:, first].sum(axis=1),
     )
 
@@ -87,7 +89,15 @@ def test_sampler_rejects_too_many_without_replacement() -> None:
     sampler = EVProfileBootstrapSampler(batch)
 
     with pytest.raises(ValueError, match="more distinct members"):
-        sampler.sample_member_indices(3, seed=1)
+        sampler.sample_member_indices(3, seed=1, replace=False)
+
+
+def test_sampler_requires_explicit_replacement_rule() -> None:
+    batch = parse_elaad_profile_response(_payload(n_profiles=2), batch_seed=130001, expected_n_profiles=2)
+    sampler = EVProfileBootstrapSampler(batch)
+
+    with pytest.raises(TypeError, match="replace"):
+        sampler.sample_member_indices(1, seed=1)
 
 
 def test_distinct_member_count_detects_duplicate_profiles() -> None:

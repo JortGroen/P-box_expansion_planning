@@ -1,5 +1,9 @@
 # G1 Decision Brief: Foundation, Compute Budget, And Time Domain
 
+> **Threshold note (2026-07-16):** this brief reports historical diagnostics
+> executed at 1.0 p.u. G0-A3 provisionally sets future analyses to strict
+> `L_import > 1.1 p.u.` and requires PI review through Q-5 before scientific use.
+
 > **Amendment notice (2026-07-14):** G1-A1 and G1-A2 in
 > `registers/DECISIONS.md` amend the model-error and G2 interpretation.
 > Grid-model error is an author-specified symmetric relative scenario applied

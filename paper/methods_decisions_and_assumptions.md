@@ -35,14 +35,15 @@ otherwise the asset must be redefined per section. The inventory identified two
 in-service 40 MVA units with closed ties and equal taps, while G2 retains a
 per-unit AC check for circulating-current or unequal-sharing effects.
 
-**Status: Approved. Overload event.** An overload event is defined as at least
-four consecutive 15-minute intervals in which import-direction apparent-power
-loading exceeds 1.0 p.u. A one-hour persistence requirement suppresses isolated
-sampling spikes and reflects that transformer loading capability is time
-dependent rather than determined by a single 15-minute excursion. The primary
-metric is the annual probability of at least one such episode over the
-aleatory ensemble. A single-step event is retained as a sensitivity so that
-the influence of the persistence convention remains visible.
+**Status: Approved historical basis; numerical threshold superseded by
+G0-A3.** G0 originally defined an overload event as at least four consecutive
+15-minute intervals in which import-direction apparent-power loading exceeds
+1.0 p.u. The one-hour persistence requirement suppresses isolated sampling
+spikes and reflects that transformer loading capability is time dependent
+rather than determined by a single 15-minute excursion. G0-A3 retains this
+structure but provisionally changes the numerical threshold to 1.1 p.u. The
+primary metric remains the annual probability of at least one qualifying
+episode, with a single-step event retained as a sensitivity.
 
 **Status: Approved. Risk threshold and sampling protocol.** The primary
 decision threshold is `P_crit = 10^-2`, evaluated with `N = 10^4` common-random-
@@ -107,6 +108,24 @@ events outside the selected weeks. Because vectorized radial summation is
 computationally negligible relative to profile generation and AC validation,
 full-year evaluation removes this avoidable approximation. Window sets remain
 useful only for selecting AC-validation states and for diagnostic plots.
+
+<!-- methods-id: G0-A3 -->
+### G0-A3 - Provisional 1.1 P.U. Overload Threshold
+
+**Status: Approved working rule; mandatory PI review before scientific
+analysis.** The executable event threshold is provisionally set to a strict
+`L_import > 1.1 p.u.` for four consecutive 15-minute intervals. This retains
+the approved import-direction, apparent-power, one-hour-persistence, and
+full-year semantics while allowing temporary loading between nameplate and
+110% not to trigger the binary event. The same threshold is used for the
+single-step sensitivity and export-side exceedance diagnostic. The project
+does not yet present 110% as a Dutch DSO standard or as a value derived from
+IEC 60076-7. Before integrated event analysis, the PI must verify the source,
+asset and capacity convention, determine whether one hour means four
+consecutive quarter-hour exceedances or an hourly average, and decide whether
+the 100-110% band requires a separate cumulative-exposure rule. Historical
+diagnostics retain their manifested 1.0-p.u. threshold and are not
+reinterpreted as evidence under this working rule.
 
 <!-- methods-id: G1 -->
 ### G1 - Two-Tier Network Evaluation
@@ -177,6 +196,49 @@ ratios. The capacity convention is selected for its planning interpretation
 and decision usefulness rather than simply to create congestion. If firm
 capacity is selected, a one-transformer-out AC case is required because a
 normal-operation flow divided by 40 MVA is only a headroom diagnostic.
+
+<!-- methods-id: ALEA-001 -->
+### ALEA-001 - Joint Aleatory Dependency Protocol
+
+**Status: Approved.** Each Monte Carlo sample is constructed as one coherent
+planning-year realization on a common timezone-aware 15-minute calendar rather
+than as independently shuffled component values. A complete historical weather
+member anchored to one KNMI calendar year is selected as a paired multivariate
+trajectory, so temperature, irradiance, seasonality, and persistence remain
+associated; any supplementary irradiance series must cover the same timestamps
+and year, and a typical-year PV reference is not sampled as the realized
+weather. The heat-pump and PV models consume that same aligned member. EV and baseline inputs retain
+complete temporal paths and are mapped deterministically to the common season
+and weekday/weekend calendar before aggregation. This conditional construction
+preserves dependencies with an identified physical or calendar driver without
+claiming an unsupported full joint probability distribution. Common random
+numbers then reuse the complete realization across alpha levels,
+controllability endpoints, model-error endpoints, and treatments, but are not
+treated as a substitute for physical dependence. Leap-year and daylight-saving
+mapping are versioned and tested after the concrete weather files are selected,
+and manifests record all weather/profile member IDs and mapping versions. If
+held-out tail or dependence diagnostics show material residual dependence that
+this construction misses, a shared latent factor, multivariate block bootstrap,
+or evidence-fitted copula is introduced only through a separately signed and
+manifested sensitivity protocol.
+
+<!-- methods-id: ALEA-002 -->
+### ALEA-002 - Downstream-Only Congestion Evaluation
+
+**Status: Approved; final congestion probability criterion remains governed by
+G0 unless amended.** Statistics calculated from an isolated EV, heat-pump, PV,
+or baseline library are used only to detect malformed data, missing diversity,
+or unstable source summaries. They are not interpreted as congestion because a
+component peak can coincide with low or opposing demand elsewhere in the
+system. For each realization, all aligned component profiles and scenario
+volumes are therefore combined into nodal net load before transformer loading
+and the approved import-direction episode detector are evaluated. Candidate
+profile-library sizes are compared through nested and held-out integrated runs,
+so adequacy is judged by stability of the downstream transformer result rather
+than by an EV-only proxy or the ElaadNL interface's pointwise daily percentile.
+A downstream p95 may be used as a provisional workflow and convergence
+diagnostic while alternative published congestion definitions are reviewed; it
+does not replace the G0 primary `P_crit` without a separately signed amendment.
 
 <!-- methods-id: G2 -->
 ### G2 - Tier-1 Enclosure and Adequacy
@@ -263,6 +325,65 @@ profiles are openly licensed or redistributable. The unresolved redistribution
 terms remain a documented limitation and risk rather than an internal-use
 blocker. If later terms explicitly prohibit the intended research use, profile
 use stops and the issue escalates to the PI before further analysis.
+
+<!-- methods-id: EV-003 -->
+### EV-003 - Direct Empirical EV-Profile Bootstrap
+
+**Status: Approved primary route; within-realization replacement rule pending.**
+The EV aleatory layer samples complete annual members directly from the frozen,
+checksummed ElaadNL profile library rather than fitting a second behavioral
+distribution to generated profiles. This retains the generator's session
+timing, duration, seasonality, and serial dependence while keeping each selected
+member traceable through its batch seed and returned profile index. Profile
+member IDs and seed metadata are stored in experiment manifests rather than
+reported as scientific parameters in the manuscript. Finite-library adequacy is
+tested against integrated transformer results under ALEA-002 and is reported
+separately from Monte Carlo sampling error. Whether members may be resampled
+with replacement inside one system realization remains unresolved until the
+generator's same-seed warning and the scenario-specific EV/charge-point cohort
+sizes are reconciled. If direct bootstrapping cannot satisfy those conditions,
+the calibrated stochastic sampler remains an explicit fallback rather than an
+unreported substitution.
+
+<!-- methods-id: EV-004 -->
+### EV-004 - Fixed Residential Charge-Point Distribution
+
+**Status: Approved.** Residential EV demand is represented by complete annual
+uncontrolled charge-point profiles generated for the ElaadNL home location at
+11 kW and a fixed prognosis year of 2030. The same behavior distribution is
+used in the 2030, 2033, and 2035 planning layers; future growth is introduced
+only through independently sourced scenario counts and nodal allocation of
+physical home charge points. This separation avoids applying ElaadNL's internal
+year-dependent forecasts for vehicle numbers, charge-point numbers, and vehicle
+efficiency on top of the project's external adoption scenarios. The generator's
+native car/van mixture for home charge-point profiles is retained and is not
+reweighted. Conditional on the common calendar and scenario, home charge points
+are treated as exchangeable independent draws from the fixed distribution,
+while each selected annual trajectory retains its internal chronology. Public
+charging is modeled as a separate class and is not governed by this decision.
+
+<!-- methods-id: EV-005 -->
+### EV-005 - Finite Profile-Library Uncertainty
+
+**Status: Approved protocol; numerical stopping tolerance and within-realization
+replacement rule pending.** The archived ElaadNL library is treated as a finite
+random sample from an unknown generator distribution rather than as the true
+distribution itself. Library size `M`, home-charge-point cohort size `K`, and
+whole-system Monte Carlo size `N` therefore have distinct roles: one realization
+uses `K` profile selections, `N` controls conditional simulation precision, and
+`M` controls the quality of the empirical source distribution. An initial
+candidate library of 1,000 profiles is generated as independent distinct-seed
+batches but is not declared sufficient by construction. Nested library sizes
+and disjoint held-out API batches are propagated through the fully integrated
+net-load and transformer workflow using common random numbers, and variation
+between those results is reported separately from the Monte Carlo confidence
+interval conditional on a fixed library. The library is extended if the
+predeclared downstream adequacy criterion fails. Resampling one library cannot
+detect behavior absent from all its members, so independent held-out generation
+is mandatory and ordinary within-library bootstrapping is only supplementary.
+The acceptance tolerance is fixed before the adequacy results are inspected and
+is tied to transformer-result or reinforcement-decision stability rather than
+to an isolated EV-profile percentile.
 
 <!-- methods-id: COST-001 -->
 ### COST-001 - Indicative Reinforcement Costs
@@ -370,34 +491,34 @@ and are not interpreted as scientific thresholds in the results.
 <!-- methods-id: A-009 -->
 ### A-009 - 2033 EV Generator Fallback
 
-**Status: Proposed row; fallback not invoked by current evidence.** A fallback
-mapping from 2033 to the 2035 EV behavior library was predeclared in case the
-ElaadNL API did not accept a native 2033
-simulation year. The one-profile probe accepted `simulated_year = 2033`, so the
-fallback is not used. Native 2033 behavior is retained, avoiding an unnecessary
-assumption that per-vehicle charging behavior is unchanged between 2033 and
-2035.
+**Status: Superseded by EV-004.** A fallback mapping from 2033 to a 2035 EV
+behavior library was predeclared in case the ElaadNL API did not accept a native
+2033 simulation year. EV-004 instead fixes one 2030 residential charge-point
+behavior distribution across all planning layers and assigns scenario growth
+to external charge-point counts, so neither native 2033 behavior nor this
+fallback is used in the primary residential model.
 
 <!-- methods-id: A-010 -->
 ### A-010 - EV Charging Power
 
-**Status: Proposed.** Home and public charging profiles use nominal connection
-powers of 11 kW and 22 kW, respectively, matching the profile-generator
-configuration selected for the primary library. These values define possible
-charging power, while coincidence, arrival, dwell time, and delivered energy
-remain profile-driven; they therefore do not imply that every vehicle charges
-at nameplate simultaneously. A 7.4 kW home sensitivity is retained to test
-whether the connection-power convention materially changes aggregate peaks.
+**Status: Superseded as a combined assumption.** EV-004 approves an 11 kW
+connection capacity for the fixed home charge-point class. This is a capacity
+ceiling rather than continuous demand; coincidence, arrivals, dwell times, and
+delivered energy remain profile-driven. The earlier 22 kW public value and 7.4
+kW home sensitivity are not approved by EV-004 and may not be treated as signed
+scientific inputs without a separate decision.
 
 <!-- methods-id: A-011 -->
 ### A-011 - Elaad Profile Scaling
 
-**Status: Proposed.** A generated home `ev` profile already represents the
-home-charging share embedded in the generator's charging mix. Nodal aggregation
-therefore multiplies it by the number of EVs with home access without applying
-a second home-share factor. Public `cp` profiles scale with public charge-point
-count. This convention prevents systematic undercounting through duplicate mix
-weights and is checked by comparing aggregated nodal energy with the sum of the
+**Status: Superseded by EV-004.** The earlier proposal used vehicle-level home
+profiles and scaled them by the number of EVs with home-charging access. The
+approved residential model instead uses one charge-point profile per physical
+home charge point and scales it by externally sourced home charge-point counts.
+No additional home-share factor or vehicle-per-charge-point multiplier is
+applied after sampling because the fixed charge-point distribution already
+contains ElaadNL's utilization and vehicle-mixture assumptions. This convention
+is checked by comparing aggregated nodal energy with the sum of the
 selected library members.
 
 <!-- methods-id: A-012 -->
@@ -456,11 +577,14 @@ evidence that the selected network is a measured Dutch feeder.
 Laadprofielengenerator using version-controlled request metadata and ignored
 raw-output paths. The one-profile probe accepted native `simulated_year = 2033`,
 returned 35,040 UTC timestamps, and exposed `demands_kw` as a time-major array
-with one value per timestamp for the single requested profile. The first
-authorized Set A batch accepted `simulated_year = 2030`, seed `130001`, and
+with one value per timestamp for the single requested profile. A historical
+vehicle-level batch accepted `simulated_year = 2030`, seed `130001`, and
 `n_profiles = 100`; it returned 100 distinct members, still identified only as
 `(batch seed, returned profile index)` rather than independent per-profile
-seeds. Generated raw responses and converted local profile outputs remain
+seeds. EV-004 supersedes that request as the primary residential model, so the
+historical batch is retained for API and shape diagnostics only; the fixed
+home-charge-point candidate and held-out libraries remain pending generation.
+Generated raw responses and converted local profile outputs remain
 uncommitted and unredistributed; committed artifacts are limited to
 retrieval/generation code, request configurations, seed schedules, metadata,
 checksums, manifests, and shape reports. Readers must regenerate profiles
@@ -486,9 +610,13 @@ additional energy.
 **Status: Proposed.** KNMI observations provide the Dutch weather ensemble,
 while PVGIS supplies the solar-generation reference used to construct PV
 profiles. Both sources are retrieved through scripts with file-level checksums
-and timezone-aware conversion. Their combination provides Dutch climatic
-coherence for temperature- and irradiance-driven technologies, while seasonal
-energy and peak timing are checked against PVGIS output before integration.
+and timezone-aware conversion. Per ALEA-001, a sampled temperature member and
+any supplementary irradiance series must cover the same historical timestamps;
+a PVGIS typical-year reference is used for calibration or validation, not as an
+independently sampled weather realization. Their combination provides Dutch
+climatic coherence for temperature- and irradiance-driven technologies, while
+seasonal energy and peak timing are checked against PVGIS output before
+integration.
 
 <!-- methods-id: D-005 -->
 ### D-005 - Flexibility Delivery Evidence

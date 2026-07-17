@@ -1,8 +1,13 @@
-# E2.S2 ElaadNL Set A shape report
+# E2.S2 ElaadNL legacy vehicle-level shape report
 
 ## Scope
 
-Single PI-authorized Set A request only: home passenger-car EV profiles, simulated_year 2030, seed 130001, n_profiles 100. Raw and processed generated profiles are ignored and not redistributed under EV-002.
+Historical PI-authorized request: home passenger-car vehicle profiles,
+`simulated_year = 2030`, seed `130001`, and `n_profiles = 100`. EV-004 later
+replaced this vehicle-level request with the fixed home charge-point class, so
+this batch is retained for API and shape diagnostics only and is not part of
+the primary residential library. Raw and processed generated profiles are
+ignored and not redistributed under EV-002.
 
 ## Request JSON
 

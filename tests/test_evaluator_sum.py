@@ -87,26 +87,31 @@ def test_zero_crossings_belong_to_neither_direction_but_screening_remains() -> N
 
 
 def test_direction_flip_resets_episode_counter() -> None:
-    nodal_p = np.array([[1_100.0, 1_100.0, -1_100.0, 1_100.0, 1_100.0, 1_100.0, 1_100.0]])
+    nodal_p = np.array([[1_200.0, 1_200.0, -1_200.0, 1_200.0, 1_200.0, 1_200.0, 1_200.0]])
     nodal_q = np.zeros_like(nodal_p)
 
     result = evaluate_tier1(nodal_p, nodal_q, s_nom_agg_kva=1_000.0)
 
-    assert result.import_loading_pu.tolist() == [1.1, 1.1, 0.0, 1.1, 1.1, 1.1, 1.1]
+    assert result.import_loading_pu.tolist() == [1.2, 1.2, 0.0, 1.2, 1.2, 1.2, 1.2]
     assert result.overload is True
     assert result.overload_episode_count == 1
     assert result.longest_import_run_steps == 4
 
 
 def test_three_qualifying_steps_do_not_trigger_but_four_do() -> None:
-    assert count_import_overload_episodes([1.01, 1.01, 1.01], min_consecutive_steps=4) == (0, 3)
-    assert count_import_overload_episodes([1.01, 1.01, 1.01, 1.01], min_consecutive_steps=4) == (1, 4)
+    assert count_import_overload_episodes([1.11, 1.11, 1.11], min_consecutive_steps=4) == (0, 3)
+    assert count_import_overload_episodes([1.11, 1.11, 1.11, 1.11], min_consecutive_steps=4) == (1, 4)
+
+
+def test_default_g0_a3_threshold_is_strictly_greater_than_1_1() -> None:
+    assert count_import_overload_episodes([1.1, 1.1, 1.1, 1.1]) == (0, 0)
+    assert count_import_overload_episodes([1.1001, 1.1001, 1.1001, 1.1001]) == (1, 4)
 
 
 def test_full_year_behavior_detects_late_import_episode() -> None:
     nodal_p = np.full((1, 35_040), 100.0)
     nodal_q = np.zeros_like(nodal_p)
-    nodal_p[0, -4:] = 1_100.0
+    nodal_p[0, -4:] = 1_200.0
 
     result = evaluate_tier1(nodal_p, nodal_q, s_nom_agg_kva=1_000.0)
 

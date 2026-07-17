@@ -26,7 +26,9 @@ DEFAULT_WINTER_MONTHS: tuple[int, ...] = (12, 1, 2)
 DEFAULT_TOP_COUNTS: tuple[int, ...] = (24, 96, 672)
 DEFAULT_IMPORT_TOP_COUNT = 672
 DEFAULT_COVERAGE_TARGET = 0.95
-DEFAULT_LOADING_THRESHOLD_PU = 1.0
+# Match the provisional G0-A3 event default; historical manifested configs can
+# still pass 1.0 explicitly and must retain their executed interpretation.
+DEFAULT_LOADING_THRESHOLD_PU = 1.1
 DEFAULT_MIN_CONSECUTIVE_STEPS = 4
 DEFAULT_PROFILE_START = "2016-01-01T00:00:00Z"
 DEFAULT_STEP_MINUTES = 15
