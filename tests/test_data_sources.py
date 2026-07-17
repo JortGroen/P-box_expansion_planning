@@ -5,7 +5,12 @@ from pathlib import Path
 import subprocess
 import sys
 
-from data.get_elaad_profiles import build_library_plan, build_probe_request, write_library_plan
+from data.get_elaad_profiles import (
+    _shape_report,
+    build_library_plan,
+    build_probe_request,
+    write_library_plan,
+)
 from data.sources import source_specs, write_metadata
 
 
@@ -111,6 +116,68 @@ def test_elaad_library_plan_metadata_is_non_redistribution_boundary() -> None:
         batch["raw_response_path"].startswith("data/raw/elaad_profiles/")
         for batch in payload["batches"]
     )
+
+
+def test_elaad_shape_report_records_runtime_sizes_and_adequacy_boundary() -> None:
+    metadata = {
+        "api_runtime_s": 12.3456,
+        "api_runtime_note": "Measured around the HTTPS POST only.",
+        "observed_failed_command_wall_time_s": None,
+        "request_json": {
+            "simulated_year": 2030,
+            "seed": 140001,
+            "n_profiles": 100,
+        },
+        "response_shape_summary": {
+            "n_timesteps": 35040,
+            "n_profiles": 100,
+            "distinct_member_count": 100,
+            "first_timestamp_utc": "2024-12-31T23:00:00+00:00",
+            "first_timestamp_local": "2025-01-01T00:00:00+01:00",
+            "last_timestamp_local": "2025-12-31T23:45:00+01:00",
+            "missing_or_nonfinite_values": 0,
+            "negative_values": 0,
+            "annual_energy_kwh": {
+                "min": 1.0,
+                "median": 2.0,
+                "mean": 3.0,
+                "p95": 4.0,
+                "max": 5.0,
+            },
+            "peak_kw": {
+                "min": 1.0,
+                "median": 2.0,
+                "mean": 3.0,
+                "p95": 4.0,
+                "max": 5.0,
+            },
+        },
+        "seed_semantics_observed": {
+            "pairable_returned_members": True,
+        },
+        "source_level_probe_verdict": {
+            "supports_remaining_candidate_and_held_out_generation": True,
+        },
+        "raw_response": {
+            "sha256_gzip_file": "raw-sha",
+            "size_bytes": 123,
+        },
+        "processed_profiles": {
+            "sha256_file": "npz-sha",
+            "size_bytes": 456,
+        },
+    }
+
+    report = _shape_report(metadata, Path("data/metadata/elaad_profiles/example_manifest.json"))
+
+    assert "API runtime seconds: 12.346" in report
+    assert "API runtime note: Measured around the HTTPS POST only." in report
+    assert "Observed failed command wall time seconds: not recorded" in report
+    assert "Supports proceeding to remaining candidate and held-out generation: True" in report
+    assert "Library adequacy proven: False" in report
+    assert "123 bytes gzip" in report
+    assert "456 bytes npz" in report
+    assert "no smart-control API call was made" in report
 
 
 def test_data_entrypoints_run_directly() -> None:

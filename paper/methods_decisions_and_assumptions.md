@@ -600,8 +600,14 @@ vehicle-level batch accepted `simulated_year = 2030`, seed `130001`, and
 `n_profiles = 100`; it returned 100 distinct members, still identified only as
 `(batch seed, returned profile index)` rather than independent per-profile
 seeds. EV-004 supersedes that request as the primary residential model, so the
-historical batch is retained for API and shape diagnostics only; the fixed
-home-charge-point candidate and held-out libraries remain pending generation.
+historical batch is retained for API and shape diagnostics only. The first
+EV-004 home charge-point probe used `simulated_year = 2030`, seed `140001`,
+native `["van", "car"]` vehicle mixing, 11 kW capacity, and 100 uncontrolled
+profiles; it returned 35,040 timestamps and 100 distinct pairable members with
+no missing, non-finite, or negative demand values. That source-level result
+supports proceeding to the remaining candidate and held-out generation, but it
+does not establish EV-005 library adequacy, which is tested only after
+downstream net-load aggregation and transformer evaluation.
 Generated raw responses and converted local profile outputs remain
 uncommitted and unredistributed; committed artifacts are limited to
 retrieval/generation code, request configurations, seed schedules, metadata,
