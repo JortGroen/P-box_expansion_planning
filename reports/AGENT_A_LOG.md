@@ -70,3 +70,9 @@ VERIFIED: Baseline `./scripts/task.ps1 test` passed: 76 tests. Focused `./.venv/
 OPEN: Q-5 remains open before integrated event-based scientific analysis or manuscript event results. No G0, G0-A3, G1, G2, IC schema, epsilon, or capacity-denominator decision was changed.
 NEXT: PI reviews the E0.S3b runner retrofit PR; E3.S2b/E3.S3 should use the standard runner manifests after merge.
 
+
+## 2026-07-17 14:23 - E0.S3b PR #31 provenance follow-up - review
+DID: On the existing `agent-a/E0.S3b-runner-retrofit` branch, tightened runner-generated evidence provenance for PR #31. Report renderers now use configured runner paths for config, manifest, data, plot, and report artifacts; reconciliation now fails on missing generated/historical comparison files and undeclared checksum mismatches; TimeSeriesCPP runner reruns carry an explicit descriptive compliance-rerun timing note and do not amend accepted G1 evidence.
+VERIFIED: Focused runner tests passed: `7 passed`; focused runner plus AC benchmark tests passed: `14 passed`. Final complete `./scripts/task.ps1 test` passed: `84 passed in 72.44s`. Complete E0.S3b runner suite was rerun from committed revision `22e9d81c19b32d5ec0bacd9de8c72a0bf806393a`; regenerated manifests/custom evidence under `experiments/e0_s3b_runner_retrofit` and `experiments/e1_*` record that commit. `git diff --check` passed.
+OPEN: Remaining comparison differences are declared expected differences for runner-normalized paths, timestamps/commits, retained historical evidence metadata, hardware/runtime context, and fresh wall-clock timing reruns. Q-5 and all gate/decision guardrails remain unchanged.
+NEXT: PI reviews the updated PR #31 evidence commit; Agent A does not start new implementation from this branch.

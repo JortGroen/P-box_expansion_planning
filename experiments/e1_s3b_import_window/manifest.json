@@ -9,19 +9,19 @@
     "historical_task": "E1.S3b",
     "historical_threshold_preserved": true,
     "task_id": "E1.S3b",
-    "timestamp_utc": "2026-07-17T10:15:06.226372Z"
+    "timestamp_utc": "2026-07-17T12:43:16.409834Z"
   },
-  "git_commit": "34c1bd26d6dc63094a2575ddf346f08cb4d06694",
+  "git_commit": "22e9d81c19b32d5ec0bacd9de8c72a0bf806393a",
   "output_checksums": {
-    "experiments/e1_s3b_import_window/comparison.json": "520b40c0157776925263e9a44e365cb1ccd3d6caca81da4e406e53093991d03e",
-    "experiments/e1_s3b_import_window/custom_evidence.json": "410aa7267e733e2193995f9b12db8c2db79ae6d1a951a7a36b73b732f41aadd6",
+    "experiments/e1_s3b_import_window/comparison.json": "be7b74ccb2f59c8cf69637b40871320fb66967afa261d2ff076b1fdf5b557a80",
+    "experiments/e1_s3b_import_window/custom_evidence.json": "d766df3c7d47b52ed05a99266303e63cb36071d7b59080c55fed15a04b9ecb36",
     "experiments/e1_s3b_import_window/data/export_direction_exceedance.csv": "ead265f0a22ffbe54c6cfb5508484f0a26f187cccad809ebf25887e53ac8e8d7",
     "experiments/e1_s3b_import_window/data/import_window_coverage.csv": "aaabd1863f075c50fad56fd3142a54c6fd35bd434f7515d7f95e9d415334b323",
     "experiments/e1_s3b_import_window/data/import_window_proposal.csv": "fda96e1636bacf8311ffff2f11a6dd8b57d2197af72a1793ab5b4c22badf2bfb",
     "experiments/e1_s3b_import_window/data/import_windows.csv": "d8e0461e4c98bac5666aa885b8a1e86a62805e45cbdae520e47ee691dd9d0c75",
     "experiments/e1_s3b_import_window/diagnostic_config.runtime.json": "17da9d15652a5a7826ba2ed9d64103ff79d5c4df8ebb1016e49523f4133dd8a2",
     "experiments/e1_s3b_import_window/reports/import_window_coverage.png": "208a7d170f2f5f1d63e7e8879b762cd729d7c2fe0a9fbd0d49b46a354bd2b83a",
-    "experiments/e1_s3b_import_window/reports/import_window_diagnostic.md": "0affdd57f8680a4c3bc075ff4041533593e4ef6daf83f82f571ff715217b103e"
+    "experiments/e1_s3b_import_window/reports/import_window_diagnostic.md": "9512256cf3ee780424df982927596a32cfef1febc8ef65d7f57ff00432175d37"
   },
   "package_versions": {
     "hypothesis": "6.156.4",

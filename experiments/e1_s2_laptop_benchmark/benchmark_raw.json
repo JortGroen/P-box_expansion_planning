@@ -72,10 +72,10 @@
       "backend": "pandapower_native",
       "converged_all": true,
       "elapsed_s": {
-        "max": 0.15550360013730824,
-        "mean": 0.11146074002608657,
-        "median": 0.10849045007489622,
-        "min": 0.08402790012769401
+        "max": 0.07994830003008246,
+        "mean": 0.055709539982490244,
+        "median": 0.05478124995715916,
+        "min": 0.03876599995419383
       },
       "grid_code": "1-MV-semiurb--0-sw",
       "grid_key": "simbench_semiurb",
@@ -85,10 +85,10 @@
       "backend": "lightsim2grid_runpp",
       "converged_all": true,
       "elapsed_s": {
-        "max": 0.1478907000273466,
-        "mean": 0.1123785600066185,
-        "median": 0.10970875003840774,
-        "min": 0.08120319992303848
+        "max": 0.13739849999547005,
+        "mean": 0.07884026998654008,
+        "median": 0.052687149960547686,
+        "min": 0.03577580000273883
       },
       "grid_code": "1-MV-semiurb--0-sw",
       "grid_key": "simbench_semiurb",
@@ -98,10 +98,10 @@
       "backend": "pandapower_native",
       "converged_all": true,
       "elapsed_s": {
-        "max": 0.1810014999937266,
-        "mean": 0.12966131002176554,
-        "median": 0.12481420009862632,
-        "min": 0.0939418999478221
+        "max": 0.20959899993613362,
+        "mean": 0.08452445000875741,
+        "median": 0.07238200004212558,
+        "min": 0.04069280019029975
       },
       "grid_code": "1-MV-urban--0-sw",
       "grid_key": "simbench_urban",
@@ -111,10 +111,10 @@
       "backend": "lightsim2grid_runpp",
       "converged_all": true,
       "elapsed_s": {
-        "max": 0.15074869990348816,
-        "mean": 0.09743704001884908,
-        "median": 0.10241145000327379,
-        "min": 0.0335270999930799
+        "max": 0.05625490006059408,
+        "mean": 0.048932960047386585,
+        "median": 0.049599200021475554,
+        "min": 0.04174300003796816
       },
       "grid_code": "1-MV-urban--0-sw",
       "grid_key": "simbench_urban",
@@ -124,10 +124,10 @@
       "backend": "pandapower_native",
       "converged_all": true,
       "elapsed_s": {
-        "max": 0.1644601000007242,
-        "mean": 0.08102914998307824,
-        "median": 0.07359849999193102,
-        "min": 0.05181340011768043
+        "max": 0.06533769983798265,
+        "mean": 0.04621380001772195,
+        "median": 0.044412850053049624,
+        "min": 0.03386480011977255
       },
       "grid_code": "create_cigre_network_mv",
       "grid_key": "cigre_mv",
@@ -137,10 +137,10 @@
       "backend": "lightsim2grid_runpp",
       "converged_all": true,
       "elapsed_s": {
-        "max": 0.1857616000343114,
-        "mean": 0.08617034999188036,
-        "median": 0.08324764994904399,
-        "min": 0.047441399889066815
+        "max": 0.08399589988403022,
+        "mean": 0.05127043002285063,
+        "median": 0.045913300011307,
+        "min": 0.03198830015026033
       },
       "grid_code": "create_cigre_network_mv",
       "grid_key": "cigre_mv",
@@ -149,5 +149,5 @@
   ],
   "schema_version": 1,
   "task_id": "E1.S2",
-  "timestamp_utc": "2026-07-17T10:05:42.111812Z"
+  "timestamp_utc": "2026-07-17T12:38:07.495637Z"
 }

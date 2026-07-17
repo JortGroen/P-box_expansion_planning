@@ -1,5 +1,5 @@
 {
-  "config_hash": "a3401cb6e4889211820c8b4a3bed878cdabe7b1b55e22fff2174f229ca9d6f7f",
+  "config_hash": "eb3e9fc2bcba164b4215181991b557b79ac195f8a716cf351d0eea9f8d5acf71",
   "config_path": "experiments/e1_s2b_timeseriescpp_benchmark/runner_config.json",
   "extra": {
     "adapter": "e1.s2b.timeseriescpp_benchmark",
@@ -8,16 +8,16 @@
     "diagnostic_threshold_pu": "not_applicable",
     "historical_task": "E1.S2b",
     "task_id": "E1.S2b",
-    "timestamp_utc": "2026-07-17T10:18:56.283998Z",
+    "timestamp_utc": "2026-07-17T12:44:56.103111Z",
     "timing_rerun": true
   },
-  "git_commit": "34c1bd26d6dc63094a2575ddf346f08cb4d06694",
+  "git_commit": "22e9d81c19b32d5ec0bacd9de8c72a0bf806393a",
   "output_checksums": {
-    "experiments/e1_s2b_timeseriescpp_benchmark/BENCHMARK_TIMESERIESCPP.md": "b7801240a0f7b38de5e65e743445bcfcecc4e4bd4a9281164f9ebd554d356f7a",
-    "experiments/e1_s2b_timeseriescpp_benchmark/benchmark_timeseriescpp_raw.json": "ea11f6bf2dfdab4ee12e663707bddc89630c24706278a3a12116edc0fe9357f8",
-    "experiments/e1_s2b_timeseriescpp_benchmark/comparison.json": "8846d4e4a6eece5dae914048d46470b4a1e7e6ddd701476987e0987ea54c60a3",
-    "experiments/e1_s2b_timeseriescpp_benchmark/custom_evidence.json": "ded11b4eea4c79f5c8cf5d20ca3e14c7680c9e074a7fa68fc1eb7a0394612055",
-    "experiments/e1_s2b_timeseriescpp_benchmark/diagnostic_config.runtime.json": "ede1b63a8c828ed8c0f97c0778a5c4661c4e6629fbe05c1d86e0312a274fec30"
+    "experiments/e1_s2b_timeseriescpp_benchmark/BENCHMARK_TIMESERIESCPP.md": "d0897e84b5443d4d0fca306cd666f9b1ec29e738cf5ed3e93c05d0291165e729",
+    "experiments/e1_s2b_timeseriescpp_benchmark/benchmark_timeseriescpp_raw.json": "d976e87497f49c53aee730dd59ff4c05eba4deea19e77252fe445760ed3acbe8",
+    "experiments/e1_s2b_timeseriescpp_benchmark/comparison.json": "280f5e5ef2a5c82dec7262887558d11c0807561ecad5f91c33b460e585fc53a6",
+    "experiments/e1_s2b_timeseriescpp_benchmark/custom_evidence.json": "9b110ae2bfede33a42ef0964adb9be8a81bfe3f7f00a1fb52988675f325d3d67",
+    "experiments/e1_s2b_timeseriescpp_benchmark/diagnostic_config.runtime.json": "e0b8281bba346c88cc71c600e574652c7fd0c2777fcae1b650f3ed0997049e8c"
   },
   "package_versions": {
     "hypothesis": "6.156.4",

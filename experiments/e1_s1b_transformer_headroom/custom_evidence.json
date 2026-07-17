@@ -18,7 +18,7 @@
     "scenario": 0,
     "target_loading_pu": 0.95,
     "task_id": "E1.S1b",
-    "timestamp_utc": "2026-07-17T10:16:56.187735Z",
+    "timestamp_utc": "2026-07-17T12:43:26.095161Z",
     "transformer_switch_indices": [
       1,
       2,
@@ -26,10 +26,10 @@
       4
     ]
   },
-  "git_commit": "34c1bd26d6dc63094a2575ddf346f08cb4d06694",
+  "git_commit": "22e9d81c19b32d5ec0bacd9de8c72a0bf806393a",
   "output_checksums": {
     "experiments/e1_s1b_transformer_headroom/data/transformer_headroom_diagnostic.csv": "74d6254cce8d8fb0f6c16bdc4f3aef8465bd8c6c2d5275151c804edee7c14eb8",
-    "experiments/e1_s1b_transformer_headroom/reports/transformer_headroom_diagnostic.md": "69b346d95a356fbe6685d3ce9e16917dbdd7fae740cb79be32ffd1e80adbca6f"
+    "experiments/e1_s1b_transformer_headroom/reports/transformer_headroom_diagnostic.md": "93ab6803ba3db425a1811a8a4c4473135d75554831cf451d0d130968edb86790"
   },
   "package_versions": {
     "hypothesis": "6.156.4",

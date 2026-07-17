@@ -24,7 +24,7 @@
       }
     ],
     "task_id": "E1.S3",
-    "timestamp_utc": "2026-07-17T10:14:26.116706Z",
+    "timestamp_utc": "2026-07-17T12:43:00.231900Z",
     "top_counts": [
       24,
       96,
@@ -36,14 +36,14 @@
       2
     ]
   },
-  "git_commit": "34c1bd26d6dc63094a2575ddf346f08cb4d06694",
+  "git_commit": "22e9d81c19b32d5ec0bacd9de8c72a0bf806393a",
   "output_checksums": {
     "experiments/e1_s3_critical_weeks/data/critical_week_coverage.csv": "5c51d9d38afde72c4d40ef55eaf3d67899a340e2b0132ccd8b45f5c4024e9532",
     "experiments/e1_s3_critical_weeks/data/critical_week_summary.csv": "2d8a4968512fc8a6859ddb2a3719919d9b4998fbe1b3f0b641be1b24836e521a",
     "experiments/e1_s3_critical_weeks/data/critical_weeks.csv": "34cf20899ebbf278eb6f9add683a73b068e170f1525c78fdcfdf8332c180e3cf",
     "experiments/e1_s3_critical_weeks/reports/critical_week_coverage.png": "706d64d21a39bb5008db723e374ad46d3165aef0c4a73872860b5ca493f0aeda",
     "experiments/e1_s3_critical_weeks/reports/critical_week_loading.png": "c1e96a681e73d0f8847c5c8e47f32ddf6800304ac7c357f20474f5314517fab7",
-    "experiments/e1_s3_critical_weeks/reports/critical_weeks_validation.md": "01f85fb9f20a3e45eef7986f600b3e74b47c8f74d8837247fd784980c5238b02"
+    "experiments/e1_s3_critical_weeks/reports/critical_weeks_validation.md": "6dda8af2c1699a063ba07ca39e03f2ec1c3f17d4c4f2504f6bf2b5faa2dec9d5"
   },
   "package_versions": {
     "hypothesis": "6.156.4",

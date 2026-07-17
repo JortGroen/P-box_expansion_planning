@@ -27,6 +27,7 @@
   "schema_version": 1,
   "task_id": "E1.S2b",
   "time_steps": 672,
+  "timing_context_note": "Descriptive E0.S3b compliance rerun only; these fresh wall-clock timings do not replace or amend the accepted G1 decision.",
   "timing_method": "time.perf_counter wall-clock timings plus TimeSeriesCPP internal solver/preprocessing/current-flow timers",
   "tolerance": 1e-08,
   "warmup_policy": "one complete adapter construction and small TimeSeriesCPP solve before measured repetitions; one high-level runpp warm-up per backend before measured repetitions",

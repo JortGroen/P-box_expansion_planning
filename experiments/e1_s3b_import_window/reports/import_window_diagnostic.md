@@ -20,10 +20,9 @@ event.
 
 - Input config: `experiments/e1_s3b_import_window/runner_config.json`
 - Manifest: `experiments/e1_s3b_import_window/custom_evidence.json`
-- Output tables: `data/import_windows.csv`,
-  `data/import_window_coverage.csv`, `data/import_window_proposal.csv`,
-  and `data/export_direction_exceedance.csv`
-- Coverage plot: `reports/import_window_coverage.png`
+- Report: `experiments/e1_s3b_import_window/reports/import_window_diagnostic.md`
+- Output tables: `experiments/e1_s3b_import_window/data/import_windows.csv`, `experiments/e1_s3b_import_window/data/import_window_coverage.csv`, `experiments/e1_s3b_import_window/data/import_window_proposal.csv`, `experiments/e1_s3b_import_window/data/export_direction_exceedance.csv`
+- Coverage plot: `experiments/e1_s3b_import_window/reports/import_window_coverage.png`
 
 ## Adaptive Import-Window Proposal
 

@@ -18,9 +18,10 @@ for this grid, so no reactive generator profile is subtracted.
 
 - Input config: `experiments/e1_s3_critical_weeks/runner_config.json`
 - Manifest: `experiments/e1_s3_critical_weeks/custom_evidence.json`
-- Critical-week table: `data/critical_weeks.csv`; `data/critical_weeks.parquet` was not written because no parquet engine is installed; `data/critical_weeks.csv` is the version-controlled table.
-- Validation plots: `reports/critical_week_loading.png` and
-  `reports/critical_week_coverage.png`
+- Report: `experiments/e1_s3_critical_weeks/reports/critical_weeks_validation.md`
+- Critical-week table: `experiments/e1_s3_critical_weeks/data/critical_weeks.csv`; `experiments/e1_s3_critical_weeks/data/critical_weeks.parquet` was not written because no parquet engine is installed; `experiments/e1_s3_critical_weeks/data/critical_weeks.csv` is the version-controlled table.
+- Validation plots: `experiments/e1_s3_critical_weeks/reports/critical_week_loading.png` and
+  `experiments/e1_s3_critical_weeks/reports/critical_week_coverage.png`
 
 ## Extraction Rule
 

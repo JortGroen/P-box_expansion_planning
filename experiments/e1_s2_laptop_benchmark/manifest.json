@@ -8,14 +8,14 @@
     "diagnostic_threshold_pu": "not_applicable",
     "historical_task": "E1.S2",
     "task_id": "E1.S2",
-    "timestamp_utc": "2026-07-17T10:12:48.381402Z"
+    "timestamp_utc": "2026-07-17T12:42:44.726919Z"
   },
-  "git_commit": "34c1bd26d6dc63094a2575ddf346f08cb4d06694",
+  "git_commit": "22e9d81c19b32d5ec0bacd9de8c72a0bf806393a",
   "output_checksums": {
-    "experiments/e1_s2_laptop_benchmark/BENCHMARK.md": "8002bff9c1f3bed7bb4823279f9cb33d282b2cb4a571ded1007cb5351f98448e",
-    "experiments/e1_s2_laptop_benchmark/benchmark_raw.json": "1f35f54b0dd1bc86497953f6da6e94548d01d85e05f480df9461a66d929f45f9",
-    "experiments/e1_s2_laptop_benchmark/comparison.json": "d82119ae11f3fdbc89f78eb4b34e4274269aebb5f92d566076ba047228c13d5e",
-    "experiments/e1_s2_laptop_benchmark/custom_evidence.json": "89d64bbbdd4acfaf9849d0a0030c0d4bbfa4a6c77c80fcdabe0223ec6b32d08b"
+    "experiments/e1_s2_laptop_benchmark/BENCHMARK.md": "43a55d2ab518a4e44e165a35f99263b1fde1fa877a1ec7a88e500070e83ff2d6",
+    "experiments/e1_s2_laptop_benchmark/benchmark_raw.json": "f1a8cd5273004918d1c59c6976d5556cd6d28b52cbd57fdccec08f10ad0c614a",
+    "experiments/e1_s2_laptop_benchmark/comparison.json": "2b7176c11be9388c28e001cc163e35082c656e44f1d27f51277286597dc2ac48",
+    "experiments/e1_s2_laptop_benchmark/custom_evidence.json": "785a613de7b764de8ee66125a19b24fe2b186e7eca6730f4c163e83e260107c9"
   },
   "package_versions": {
     "hypothesis": "6.156.4",

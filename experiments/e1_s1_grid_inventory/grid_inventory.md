@@ -9,7 +9,9 @@ threshold to relabel under G0-A3.
 ## Evidence
 
 - Runner config: `experiments/e1_s1_grid_inventory/runner_config.json`
-- Historical input: `reports/grid_inventory_input.json`
+- Manifest: `experiments/e1_s1_grid_inventory/manifest.json`
+- Data: `experiments/e1_s1_grid_inventory/grid_inventory_rows.json`
+- Report: `experiments/e1_s1_grid_inventory/grid_inventory.md`
 - Command: `.\.venv\Scripts\python.exe -m src.runner experiments/e1_s1_grid_inventory/runner_config.json`
 
 | key | role | code | buses | lines | trafos | loads | static_generators | total_load_mw | total_sgen_mw | line_length_km | trafo_s_rated_mva | baseline_converged |

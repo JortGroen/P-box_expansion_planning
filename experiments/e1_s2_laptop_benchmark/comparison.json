@@ -2,7 +2,7 @@
   {
     "expected_difference": "fresh wall-clock benchmark rerun has new timestamps and timing measurements",
     "generated_path": "experiments/e1_s2_laptop_benchmark/benchmark_raw.json",
-    "generated_sha256": "1f35f54b0dd1bc86497953f6da6e94548d01d85e05f480df9461a66d929f45f9",
+    "generated_sha256": "f1a8cd5273004918d1c59c6976d5556cd6d28b52cbd57fdccec08f10ad0c614a",
     "historical_path": "reports/benchmark_raw.json",
     "historical_sha256": "fbbddb9b70b2e68d4187bda650f7fb1dba58b286781eb2285817bafa1183913f",
     "label": "raw timing",
@@ -11,7 +11,7 @@
   {
     "expected_difference": "runner report is normalized and timing values are a fresh rerun",
     "generated_path": "experiments/e1_s2_laptop_benchmark/BENCHMARK.md",
-    "generated_sha256": "8002bff9c1f3bed7bb4823279f9cb33d282b2cb4a571ded1007cb5351f98448e",
+    "generated_sha256": "43a55d2ab518a4e44e165a35f99263b1fde1fa877a1ec7a88e500070e83ff2d6",
     "historical_path": "reports/BENCHMARK.md",
     "historical_sha256": "29edba1a3c7583bf9354967a264208523a3287668fc51fff899acebdadf36d3d",
     "label": "report",
@@ -20,7 +20,7 @@
   {
     "expected_difference": "fresh runner reproduction records a new config path, timestamp, commit, and output paths",
     "generated_path": "experiments/e1_s2_laptop_benchmark/custom_evidence.json",
-    "generated_sha256": "89d64bbbdd4acfaf9849d0a0030c0d4bbfa4a6c77c80fcdabe0223ec6b32d08b",
+    "generated_sha256": "785a613de7b764de8ee66125a19b24fe2b186e7eca6730f4c163e83e260107c9",
     "historical_path": "reports/benchmark_evidence.json",
     "historical_sha256": "97c56e222c7019fc2e421603169bb480f4b6e97273c2cee9df7c437bf461593d",
     "label": "custom evidence",

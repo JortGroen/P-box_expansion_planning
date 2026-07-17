@@ -4,33 +4,36 @@
 
 The selected SimBench primary grid can be adapted to the lower-level `lightsim2grid.timeSerie.TimeSeriesCPP` path after explicitly materializing pandapower switch topology. Open line switches are represented as out-of-service lines, closed bus-bus switches are fused, and the switch table is then dropped before conversion.
 
-For 672 repeated baseline steps, TimeSeriesCPP reports a median internal solver time of 157.821 ms total (0.2349 ms/step). The measured `compute_Vs` Python wall time is 165.658 ms total (0.2465 ms/step). This supports an AC validation budget on the order of one full-year deterministic trajectory in 8.64 s for voltage solves alone, before scenario construction and selected result extraction.
+For 672 repeated baseline steps, TimeSeriesCPP reports a median internal solver time of 110.095 ms total (0.1638 ms/step). The measured `compute_Vs` Python wall time is 114.910 ms total (0.1710 ms/step). This supports an AC validation budget on the order of one full-year deterministic trajectory in 5.99 s for voltage solves alone, before scenario construction and selected result extraction.
+
+Timing context: Descriptive E0.S3b compliance rerun only; these fresh wall-clock timings do not replace or amend the accepted G1 decision.
 
 This does not change G1 or G2. It refines the compute-path evidence: the earlier high-level `pandapower.runpp` path is unsuitable for the Monte Carlo inner loop, but the lower-level C++ time-series solve can host deterministic AC validation subsets.
 
 ## Evidence
 
-- Config: `reports/benchmark_timeseriescpp_input.json`
-- Raw numeric output: `reports/benchmark_timeseriescpp_raw.json`
+- Config: `experiments/e1_s2b_timeseriescpp_benchmark/diagnostic_config.runtime.json`
+- Raw numeric output: `experiments/e1_s2b_timeseriescpp_benchmark/benchmark_timeseriescpp_raw.json`
+- Report: `experiments/e1_s2b_timeseriescpp_benchmark/BENCHMARK_TIMESERIESCPP.md`
 - Evidence manifest: `experiments/e1_s2b_timeseriescpp_benchmark/custom_evidence.json`
-- Timestamp: `2026-07-17T10:18:49.733669Z`
+- Timestamp: `2026-07-17T12:44:49.689388Z`
 
 ## Timing Summary
 
 | Component | Median ms | Notes |
 | --- | ---: | --- |
-| Network conversion/setup | 5096.992 | load grid, materialize topology, pandapower baseline solve, LightSim conversion, TimeSeriesCPP construction |
-| Time-series input update | 1.113 | construct repeated `gen_p`, `sgen_p`, `load_p`, `load_q`, and `vinit` arrays |
-| `compute_Vs` wall time | 165.658 | TimeSeriesCPP voltage solve for 672 steps |
-| Internal solver time | 157.821 | Reported by TimeSeriesCPP |
-| Internal preprocessing time | 3.420 | Reported by TimeSeriesCPP |
-| Voltage result extraction | 0.027 | `get_voltages()` to NumPy |
-| Current-flow extraction | 5.307 | `compute_flows()` and `get_flows()` |
-| Active-power-flow extraction | 4.584 | `compute_power_flows()` and `get_power_flows()` |
+| Network conversion/setup | 4236.602 | load grid, materialize topology, pandapower baseline solve, LightSim conversion, TimeSeriesCPP construction |
+| Time-series input update | 0.977 | construct repeated `gen_p`, `sgen_p`, `load_p`, `load_q`, and `vinit` arrays |
+| `compute_Vs` wall time | 114.910 | TimeSeriesCPP voltage solve for 672 steps |
+| Internal solver time | 110.095 | Reported by TimeSeriesCPP |
+| Internal preprocessing time | 2.191 | Reported by TimeSeriesCPP |
+| Voltage result extraction | 0.024 | `get_voltages()` to NumPy |
+| Current-flow extraction | 3.517 | `compute_flows()` and `get_flows()` |
+| Active-power-flow extraction | 3.277 | `compute_power_flows()` and `get_power_flows()` |
 
 ## High-Level `runpp` Diagnosis
 
-The high-level pandapower benchmark accepted `lightsim2grid=True`: every measured run recorded `net._options['lightsim2grid'] == True`, converged, and emitted no fallback warnings. Its median wall time was 68.093 ms per solve, versus 51.272 ms for native pandapower on the same grid. Therefore the prior result should be interpreted as high-level pandapower orchestration plus LightSim-compatible Newton solve, not as the standalone numerical cost of the lower-level C++ time-series path.
+The high-level pandapower benchmark accepted `lightsim2grid=True`: every measured run recorded `net._options['lightsim2grid'] == True`, converged, and emitted no fallback warnings. Its median wall time was 57.601 ms per solve, versus 51.083 ms for native pandapower on the same grid. Therefore the prior result should be interpreted as high-level pandapower orchestration plus LightSim-compatible Newton solve, not as the standalone numerical cost of the lower-level C++ time-series path.
 
 ## Adapter Scope
 
@@ -67,7 +70,7 @@ Declared acceptance criterion across every configured case: abs loading delta <=
 
 ## Corrected G2 AC Budget
 
-Use TimeSeriesCPP, not repeated high-level `runpp`, for deterministic AC validation state batches where the materialized topology is scientifically equivalent to the pandapower switch model. A conservative planning budget should count conversion/setup once per fixed grid plus array-update and extraction costs per batch. At the measured median `compute_Vs` wall rate, 35,040 deterministic voltage solves are approximately 8.64 s before profile construction and selected result extraction; using TimeSeriesCPP's internal solver clock alone gives approximately 8.23 s. The G2 validation design should still benchmark the actual near-threshold state set and extract the required transformer loading quantity, rather than assuming voltage-only timings are the final validation cost.
+Use TimeSeriesCPP, not repeated high-level `runpp`, for deterministic AC validation state batches where the materialized topology is scientifically equivalent to the pandapower switch model. A conservative planning budget should count conversion/setup once per fixed grid plus array-update and extraction costs per batch. At the measured median `compute_Vs` wall rate, 35,040 deterministic voltage solves are approximately 5.99 s before profile construction and selected result extraction; using TimeSeriesCPP's internal solver clock alone gives approximately 5.74 s. The G2 validation design should still benchmark the actual near-threshold state set and extract the required transformer loading quantity, rather than assuming voltage-only timings are the final validation cost.
 
 ## Guardrails
 

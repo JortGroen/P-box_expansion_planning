@@ -17,7 +17,8 @@ claim; the E2/E3 technology layer does not yet exist.
 
 - Input config: `experiments/e1_s1b_transformer_headroom/runner_config.json`
 - Manifest: `experiments/e1_s1b_transformer_headroom/custom_evidence.json`
-- Numeric table: `data/transformer_headroom_diagnostic.csv`
+- Report: `experiments/e1_s1b_transformer_headroom/reports/transformer_headroom_diagnostic.md`
+- Numeric table: `experiments/e1_s1b_transformer_headroom/data/transformer_headroom_diagnostic.csv`
 - Prior inventory reference: `reports/grid_inventory.md`
 - G1-A1 denominator/envelope reference:
   `reports/G1_A1_MODEL_ERROR_AMENDMENT_PROPOSAL.md`
@@ -64,16 +65,9 @@ Firm capacity does not change the scenario-0 baseline fallback classification in
 - Additive p.u. envelopes depend on the selected nameplate denominator. A
   fixed MVA discrepancy divided by total nameplate is not the same p.u.
   value when divided by firm capacity.
-- Relative envelopes on the physical loading ratio are invariant to the
-  total-versus-firm nameplate convention.
-- G1-A1 therefore requires the denominator decision and the model-error
-  envelope form to be made together before G2/E5.S3 paper-use results.
+- Relative envelopes are invariant to the nameplate convention because the
+  same multiplicative factor applies to either denominator.
 
 ## Recommendation
 
 Recommendation: keep the current total-nameplate convention for continuity with G0 unless the PI wants the study to represent firm `(n-1)` planning headroom. If firm capacity is selected later, update the denominator convention explicitly before freezing additive p.u. model-error envelopes.
-
-PI decision required: choose whether future overload denominators remain
-the signed G0 total aggregate nameplate or move to a firm `(n-1)` capacity
-definition, and align the additive-versus-relative model-error envelope
-decision with that choice.

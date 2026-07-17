@@ -29,7 +29,7 @@
   {
     "expected_difference": "runner output paths and manifest references differ from the retained historical report",
     "generated_path": "experiments/e1_s3_critical_weeks/reports/critical_weeks_validation.md",
-    "generated_sha256": "01f85fb9f20a3e45eef7986f600b3e74b47c8f74d8837247fd784980c5238b02",
+    "generated_sha256": "6dda8af2c1699a063ba07ca39e03f2ec1c3f17d4c4f2504f6bf2b5faa2dec9d5",
     "historical_path": "reports/critical_weeks_validation.md",
     "historical_sha256": "bd005107fc35bb5c95e44478cdb6bfe8dc9481204a00392e0288214736716490",
     "label": "report",
@@ -38,7 +38,7 @@
   {
     "expected_difference": "fresh runner reproduction records a new config path, timestamp, commit, and output paths",
     "generated_path": "experiments/e1_s3_critical_weeks/custom_evidence.json",
-    "generated_sha256": "35609d24007647a50f6453b9ade47de9e89c465b873958cad292c109e88a68a8",
+    "generated_sha256": "2388a75a85d60b2aa9ded90802a1c697d9872ca27751e6a5cdd9d8984bbf0332",
     "historical_path": "reports/critical_weeks_evidence.json",
     "historical_sha256": "36571a0c8adf06c527f15003381745d1f880cb082b4c6950968ae4f25e6e6d56",
     "label": "custom evidence",

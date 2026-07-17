@@ -35,11 +35,13 @@
     "schema_version": 1,
     "task_id": "E1.S2b",
     "time_steps": 672,
+    "timing_context_note": "Descriptive E0.S3b compliance rerun only; these fresh wall-clock timings do not replace or amend the accepted G1 decision.",
     "timing_method": "time.perf_counter wall-clock timings plus TimeSeriesCPP internal solver/preprocessing/current-flow timers",
     "tolerance": 1e-08,
     "warmup_policy": "one complete adapter construction and small TimeSeriesCPP solve before measured repetitions; one high-level runpp warm-up per backend before measured repetitions",
     "warmups": 1
   },
+  "config_path": "experiments/e1_s2b_timeseriescpp_benchmark/diagnostic_config.runtime.json",
   "hardware_runtime": {
     "cpu_count": 12,
     "platform": "Windows-11-10.0.26200-SP0",
@@ -300,44 +302,44 @@
     "pandapower_lightsim2grid": {
       "converged_all": true,
       "elapsed": {
-        "max_s": 0.09112840006127954,
-        "mean_s": 0.06062060003168881,
-        "median_s": 0.0680925000924617,
-        "min_s": 0.029137699864804745
+        "max_s": 0.06021560006774962,
+        "mean_s": 0.05379719999618828,
+        "median_s": 0.05760139995254576,
+        "min_s": 0.04342909995466471
       },
       "options_lightsim2grid_all_true": true,
       "repeats": [
         {
           "converged": true,
-          "elapsed_s": 0.06865260004997253,
+          "elapsed_s": 0.059948400128632784,
           "pandapower_option_lightsim2grid": true,
           "requested_lightsim2grid": true,
           "warnings": []
         },
         {
           "converged": true,
-          "elapsed_s": 0.0680925000924617,
+          "elapsed_s": 0.05760139995254576,
           "pandapower_option_lightsim2grid": true,
           "requested_lightsim2grid": true,
           "warnings": []
         },
         {
           "converged": true,
-          "elapsed_s": 0.09112840006127954,
+          "elapsed_s": 0.04342909995466471,
           "pandapower_option_lightsim2grid": true,
           "requested_lightsim2grid": true,
           "warnings": []
         },
         {
           "converged": true,
-          "elapsed_s": 0.04609180008992553,
+          "elapsed_s": 0.06021560006774962,
           "pandapower_option_lightsim2grid": true,
           "requested_lightsim2grid": true,
           "warnings": []
         },
         {
           "converged": true,
-          "elapsed_s": 0.029137699864804745,
+          "elapsed_s": 0.04779149987734854,
           "pandapower_option_lightsim2grid": true,
           "requested_lightsim2grid": true,
           "warnings": []
@@ -348,44 +350,44 @@
     "pandapower_native": {
       "converged_all": true,
       "elapsed": {
-        "max_s": 0.10370539990253747,
-        "mean_s": 0.06371219996362924,
-        "median_s": 0.05127210007049143,
-        "min_s": 0.030020299833267927
+        "max_s": 0.08766560000367463,
+        "mean_s": 0.057321740034967664,
+        "median_s": 0.05108320014551282,
+        "min_s": 0.047086500097066164
       },
       "options_lightsim2grid_all_true": false,
       "repeats": [
         {
           "converged": true,
-          "elapsed_s": 0.03717219992540777,
+          "elapsed_s": 0.047086500097066164,
           "pandapower_option_lightsim2grid": false,
           "requested_lightsim2grid": false,
           "warnings": []
         },
         {
           "converged": true,
-          "elapsed_s": 0.05127210007049143,
+          "elapsed_s": 0.051314600044861436,
           "pandapower_option_lightsim2grid": false,
           "requested_lightsim2grid": false,
           "warnings": []
         },
         {
           "converged": true,
-          "elapsed_s": 0.09639100008644164,
+          "elapsed_s": 0.05108320014551282,
           "pandapower_option_lightsim2grid": false,
           "requested_lightsim2grid": false,
           "warnings": []
         },
         {
           "converged": true,
-          "elapsed_s": 0.10370539990253747,
+          "elapsed_s": 0.08766560000367463,
           "pandapower_option_lightsim2grid": false,
           "requested_lightsim2grid": false,
           "warnings": []
         },
         {
           "converged": true,
-          "elapsed_s": 0.030020299833267927,
+          "elapsed_s": 0.04945879988372326,
           "pandapower_option_lightsim2grid": false,
           "requested_lightsim2grid": false,
           "warnings": []
@@ -398,22 +400,22 @@
   "task_id": "E1.S2b",
   "timeseriescpp": {
     "compute_vs_wall": {
-      "max_s": 0.2046083000022918,
-      "mean_s": 0.1502596199978143,
-      "median_s": 0.16565830004401505,
-      "min_s": 0.0671594999730587
+      "max_s": 0.12767009995877743,
+      "mean_s": 0.11237729997374117,
+      "median_s": 0.1149102000053972,
+      "min_s": 0.09474229998886585
     },
     "conversion_setup": {
-      "max_s": 5.694000700023025,
-      "mean_s": 5.005020559998229,
-      "median_s": 5.096992200007662,
-      "min_s": 4.372630099998787
+      "max_s": 4.990232799900696,
+      "mean_s": 4.434052179986611,
+      "median_s": 4.236601799959317,
+      "min_s": 4.050670200027525
     },
     "current_flow_result_extraction": {
-      "max_s": 0.006212499924004078,
-      "mean_s": 0.004902039980515837,
-      "median_s": 0.0053067998960614204,
-      "min_s": 0.002292199991643429
+      "max_s": 0.006223100004717708,
+      "mean_s": 0.003874220047146082,
+      "median_s": 0.0035168000031262636,
+      "min_s": 0.0029534001369029284
     },
     "input_shapes": {
       "branch_flows": [
@@ -445,34 +447,34 @@
       ]
     },
     "input_update": {
-      "max_s": 0.0013450998812913895,
-      "mean_s": 0.0010886599775403738,
-      "median_s": 0.0011131998617202044,
-      "min_s": 0.0008264000061899424
+      "max_s": 0.0017331999260932207,
+      "mean_s": 0.0009644999168813229,
+      "median_s": 0.0009765001013875008,
+      "min_s": 0.0004941998049616814
     },
     "internal_current_flow": {
-      "max_s": 0.0061645,
-      "mean_s": 0.00486732,
-      "median_s": 0.0052602,
-      "min_s": 0.0022824
+      "max_s": 0.0061755,
+      "mean_s": 0.0038478400000000004,
+      "median_s": 0.0034933,
+      "min_s": 0.0029367
     },
     "internal_preprocessing": {
-      "max_s": 0.0037398,
-      "mean_s": 0.00304574,
-      "median_s": 0.0034198,
-      "min_s": 0.0014289
+      "max_s": 0.0024801,
+      "mean_s": 0.00213754,
+      "median_s": 0.0021909,
+      "min_s": 0.0017431
     },
     "internal_solver": {
-      "max_s": 0.19547910000000013,
-      "mean_s": 0.14331754,
-      "median_s": 0.15782129999999991,
-      "min_s": 0.06432040000000004
+      "max_s": 0.12233559999999992,
+      "mean_s": 0.10699245999999998,
+      "median_s": 0.11009540000000002,
+      "min_s": 0.09063489999999996
     },
     "power_flow_result_extraction": {
-      "max_s": 0.0066090000327676535,
-      "mean_s": 0.004545020032674074,
-      "median_s": 0.004583700094372034,
-      "min_s": 0.0018909999635070562
+      "max_s": 0.004004399990662932,
+      "mean_s": 0.0032806599978357554,
+      "median_s": 0.003277299925684929,
+      "min_s": 0.0024562000762671232
     },
     "repeats": 5,
     "solved_counts": [
@@ -484,14 +486,14 @@
     ],
     "time_steps": 672,
     "voltage_result_extraction": {
-      "max_s": 4.1800085455179214e-05,
-      "mean_s": 2.7360068634152414e-05,
-      "median_s": 2.6999972760677338e-05,
-      "min_s": 1.5099998563528061e-05
+      "max_s": 2.5700079277157784e-05,
+      "mean_s": 2.3759994655847548e-05,
+      "median_s": 2.4499837309122086e-05,
+      "min_s": 2.119992859661579e-05
     },
     "warmups": 1
   },
-  "timestamp_utc": "2026-07-17T10:18:49.733669Z",
+  "timestamp_utc": "2026-07-17T12:44:49.689388Z",
   "topology_materialization": {
     "bus_count_after": 115,
     "bus_count_before": 117,
