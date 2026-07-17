@@ -164,3 +164,6 @@ def test_render_report_includes_timing_context_note() -> None:
     report = render_report(raw, Path("experiments/example/custom_evidence.json"))
 
     assert "Timing context: Descriptive E0.S3b compliance rerun only." in report
+    assert "- Standard claim-source manifest: `experiments/example/manifest.json`" in report
+    assert "- Retained/custom evidence: `experiments/example/custom_evidence.json`" in report
+    assert "Evidence manifest" not in report

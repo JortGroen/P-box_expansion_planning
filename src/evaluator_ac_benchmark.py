@@ -525,6 +525,8 @@ def render_report(raw: dict[str, Any], evidence_path: Path) -> str:
     yearly_compute_s = per_step_compute_ms * 35040 / 1000.0
     timing_context = raw["config"].get("timing_context_note")
     timing_context_lines = (["", f"Timing context: {timing_context}"] if timing_context else [])
+    report_path = Path(raw["config"]["report_output_path"])
+    standard_manifest_path = report_path.parent / "manifest.json"
     lines = [
         "# E1.S2b TimeSeriesCPP AC Benchmark",
         "",
@@ -555,7 +557,8 @@ def render_report(raw: dict[str, Any], evidence_path: Path) -> str:
         f"- Config: `{raw['config_path']}`",
         f"- Raw numeric output: `{raw['config']['raw_output_path']}`",
         f"- Report: `{raw['config']['report_output_path']}`",
-        f"- Evidence manifest: `{evidence_path.as_posix()}`",
+        f"- Standard claim-source manifest: `{standard_manifest_path.as_posix()}`",
+        f"- Retained/custom evidence: `{evidence_path.as_posix()}`",
         f"- Timestamp: `{raw['timestamp_utc']}`",
         "",
         "## Timing Summary",

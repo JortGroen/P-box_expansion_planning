@@ -4,8 +4,13 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-from src.profiles import critical_week_report
-from src.runner import AdapterResult, ExperimentRunner, _grid_inventory_report
+from src.profiles import (
+    TransformerHeadroom,
+    critical_week_report,
+    import_window_report,
+    transformer_headroom_report,
+)
+from src.runner import AdapterResult, ExperimentRunner, _grid_inventory_report, _laptop_benchmark_report
 
 
 def test_experiment_runner_writes_manifest_and_comparison(tmp_path: Path) -> None:
@@ -197,12 +202,102 @@ def test_critical_week_report_uses_configured_artifact_paths() -> None:
     )
 
     assert "experiments/example/runner_config.json" in report
-    assert "experiments/example/custom_evidence.json" in report
+    assert "- Standard claim-source manifest: `experiments/example/manifest.json`" in report
+    assert "- Retained/custom evidence: `experiments/example/custom_evidence.json`" in report
     assert "experiments/example/reports/critical_weeks_validation.md" in report
     assert "experiments/example/data/critical_weeks.csv" in report
     assert "experiments/example/reports/critical_week_loading.png" in report
     assert "`data/critical_weeks.csv`" not in report
     assert "`reports/critical_week_loading.png`" not in report
+    assert "- Manifest:" not in report
+
+def test_import_window_report_uses_configured_artifact_paths() -> None:
+    frame = pd.DataFrame([{"scenario": 0, "week_rank": 1}])
+    config = {
+        "report_top_week_rows": 1,
+        "top_count": 672,
+        "coverage_target": 0.95,
+        "margin_weeks": 1,
+        "output_dir": "experiments/example_import/data",
+        "figure_dir": "experiments/example_import/reports",
+        "config_path_label": "experiments/example_import/runner_config.json",
+        "manifest_path": "experiments/example_import/custom_evidence.json",
+        "report_path": "experiments/example_import/reports/import_window_diagnostic.md",
+    }
+
+    report = import_window_report(
+        config=config,
+        import_windows=frame,
+        coverage=frame,
+        proposal=pd.DataFrame([{"scenario": 0, "target_feasible": True}]),
+        export=pd.DataFrame([{"scenario": 0, "max_export_loading_pu": 0.0}]),
+    )
+
+    assert "- Standard claim-source manifest: `experiments/example_import/manifest.json`" in report
+    assert "- Retained/custom evidence: `experiments/example_import/custom_evidence.json`" in report
+    assert "experiments/example_import/data/import_windows.csv" in report
+    assert "`data/import_windows.csv`" not in report
+    assert "- Manifest:" not in report
+
+
+def test_transformer_headroom_report_states_g1_a2_capacity_status() -> None:
+    diagnostic = TransformerHeadroom(
+        transformer_indices=(0, 1),
+        nameplate_mva=(40.0, 40.0),
+        total_nameplate_mva=80.0,
+        firm_nameplate_mva=40.0,
+        outage_convention="firm (n-1) test convention",
+        busbar_parallel_status="closed bus-tie test status",
+        peak_import_mva=12.0,
+        peak_import_timestamp=pd.Timestamp("2016-01-01T00:00:00Z"),
+        peak_import_loading_total_pu=0.15,
+        peak_import_loading_firm_pu=0.30,
+        multiplier_to_095_total=6.3333333333,
+        multiplier_to_095_firm=3.1666666667,
+        g0_fallback_total_triggered=False,
+        firm_capacity_fallback_triggered=False,
+        firm_classifies_differently=False,
+    )
+    trafo_detail = pd.DataFrame(
+        [
+            {
+                "name": "T0",
+                "hv_bus": 1,
+                "lv_bus": 2,
+                "sn_mva": 40.0,
+                "parallel": 1,
+                "tap_pos": 0,
+                "in_service": True,
+            }
+        ]
+    )
+    switch_detail = pd.DataFrame(
+        [{"bus": 1, "element": 2, "et": "b", "closed": True, "type": "CB", "name": "tie"}]
+    )
+    config = {
+        "scenario": 0,
+        "grid_code": "test-grid",
+        "fallback_threshold_pu": 0.85,
+        "output_dir": "experiments/example_headroom/data",
+        "config_path_label": "experiments/example_headroom/runner_config.json",
+        "manifest_path": "experiments/example_headroom/custom_evidence.json",
+        "report_path": "experiments/example_headroom/reports/transformer_headroom_diagnostic.md",
+    }
+
+    report = transformer_headroom_report(
+        config=config,
+        diagnostic=diagnostic,
+        trafo_detail=trafo_detail,
+        switch_detail=switch_detail,
+    )
+
+    assert "- Standard claim-source manifest: `experiments/example_headroom/manifest.json`" in report
+    assert "- Retained/custom evidence: `experiments/example_headroom/custom_evidence.json`" in report
+    assert "G1-A2 fixes the grid-model discrepancy as a symmetric relative" in report
+    assert "open until E3.S2b reports raw future-layer MVA" in report
+    assert "one-transformer-out topology with AC power flow" in report
+    assert "G1-A1 denominator/envelope reference" not in report
+    assert "- Manifest:" not in report
 
 def test_grid_inventory_report_uses_runner_artifact_paths() -> None:
     report = _grid_inventory_report(
@@ -216,7 +311,30 @@ def test_grid_inventory_report_uses_runner_artifact_paths() -> None:
     )
 
     assert "experiments/example_inventory/runner_config.json" in report
-    assert "experiments/example_inventory/manifest.json" in report
+    assert "- Standard claim-source manifest: `experiments/example_inventory/manifest.json`" in report
+    assert "- Retained/custom evidence: `experiments/example_inventory/custom_evidence.json`" in report
     assert "experiments/example_inventory/grid_inventory_rows.json" in report
     assert "experiments/example_inventory/grid_inventory.md" in report
     assert "reports/grid_inventory_input.json" not in report
+    assert "- Manifest:" not in report
+
+
+def test_laptop_benchmark_report_labels_standard_and_custom_evidence() -> None:
+    report = _laptop_benchmark_report(
+        {
+            "config": {"output_dir": "experiments/example_benchmark"},
+            "results": [
+                {
+                    "grid_key": "grid",
+                    "backend": "backend",
+                    "elapsed_s": {"median": 0.001},
+                    "converged_all": True,
+                }
+            ],
+        },
+        Path("experiments/example_benchmark/runner_config.json"),
+    )
+
+    assert "experiments/example_benchmark/manifest.json" in report
+    assert "experiments/example_benchmark/custom_evidence.json" in report
+    assert "- Manifest:" not in report

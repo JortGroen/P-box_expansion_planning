@@ -1028,6 +1028,9 @@ def critical_week_report(
     top_rows = critical_weeks.loc[critical_weeks["week_rank"] <= int(config["report_top_week_rows"])]
     coverage_rows = coverage.loc[coverage["week_rank"] <= int(config["report_top_week_rows"])]
     output_dir = Path(config["output_dir"])
+    experiment_dir = output_dir.parent
+    standard_manifest_path = experiment_dir / "manifest.json"
+    custom_evidence_path = Path(config["manifest_path"])
     figure_dir = Path(config.get("figure_dir", output_dir))
     csv_path = output_dir / "critical_weeks.csv"
     parquet_path = output_dir / "critical_weeks.parquet"
@@ -1061,7 +1064,8 @@ def critical_week_report(
             "## Evidence",
             "",
             f"- Input config: `{config['config_path_label']}`",
-            f"- Manifest: `{config['manifest_path']}`",
+            f"- Standard claim-source manifest: `{standard_manifest_path.as_posix()}`",
+            f"- Retained/custom evidence: `{custom_evidence_path.as_posix()}`",
             f"- Report: `{report_path.as_posix()}`",
             f"- Critical-week table: `{csv_path.as_posix()}`; {parquet_note}",
             f"- Validation plots: `{loading_plot.as_posix()}` and",
@@ -1101,6 +1105,8 @@ def critical_week_report(
             "",
         ]
     )
+
+
 def import_window_report(
     *,
     config: Mapping[str, Any],
@@ -1116,6 +1122,9 @@ def import_window_report(
     top_coverage_rows = coverage.loc[coverage["week_rank"] <= report_rows]
     top_count = int(config["top_count"])
     output_dir = Path(config["output_dir"])
+    experiment_dir = output_dir.parent
+    standard_manifest_path = experiment_dir / "manifest.json"
+    custom_evidence_path = Path(config["manifest_path"])
     figure_dir = Path(config.get("figure_dir", output_dir))
     report_path = Path(config["report_path"])
     table_paths = [
@@ -1148,7 +1157,8 @@ def import_window_report(
             "## Evidence",
             "",
             f"- Input config: `{config['config_path_label']}`",
-            f"- Manifest: `{config['manifest_path']}`",
+            f"- Standard claim-source manifest: `{standard_manifest_path.as_posix()}`",
+            f"- Retained/custom evidence: `{custom_evidence_path.as_posix()}`",
             f"- Report: `{report_path.as_posix()}`",
             "- Output tables: " + ", ".join(f"`{path.as_posix()}`" for path in table_paths),
             f"- Coverage plot: `{coverage_plot.as_posix()}`",
@@ -1183,6 +1193,8 @@ def import_window_report(
             "",
         ]
     )
+
+
 def transformer_headroom_report(
     *,
     config: Mapping[str, Any],
@@ -1200,6 +1212,9 @@ def transformer_headroom_report(
         ["switch_index", "bus", "element", "et", "closed", "type", "name"]
     ]
     output_dir = Path(config["output_dir"])
+    experiment_dir = output_dir.parent
+    standard_manifest_path = experiment_dir / "manifest.json"
+    custom_evidence_path = Path(config["manifest_path"])
     report_path = Path(config["report_path"])
     table_path = output_dir / "transformer_headroom_diagnostic.csv"
     firm_warning = (
@@ -1212,10 +1227,10 @@ def transformer_headroom_report(
         "identical units."
     )
     recommendation = (
-        "Recommendation: keep the current total-nameplate convention for continuity with "
-        "G0 unless the PI wants the study to represent firm `(n-1)` planning headroom. "
-        "If firm capacity is selected later, update the denominator convention explicitly "
-        "before freezing additive p.u. model-error envelopes."
+        "Recommendation: keep total and firm capacity conventions side by side until "
+        "E3.S2b reports raw future-layer MVA and loading under both conventions. "
+        "If the PI later selects firm capacity, E3.S3 must validate the actual "
+        "one-transformer-out topology with AC power flow before paper-use results."
     )
     return "\n".join(
         [
@@ -1237,12 +1252,13 @@ def transformer_headroom_report(
             "## Evidence",
             "",
             f"- Input config: `{config['config_path_label']}`",
-            f"- Manifest: `{config['manifest_path']}`",
+            f"- Standard claim-source manifest: `{standard_manifest_path.as_posix()}`",
+            f"- Retained/custom evidence: `{custom_evidence_path.as_posix()}`",
             f"- Report: `{report_path.as_posix()}`",
             f"- Numeric table: `{table_path.as_posix()}`",
             "- Prior inventory reference: `reports/grid_inventory.md`",
-            "- G1-A1 denominator/envelope reference:",
-            "  `reports/G1_A1_MODEL_ERROR_AMENDMENT_PROPOSAL.md`",
+            "- G1-A2 grid-error and capacity-screen reference: `registers/DECISIONS.md`",
+            "- G1-A1 background reference: `reports/G1_A1_MODEL_ERROR_AMENDMENT_PROPOSAL.md`",
             "",
             "## Decision Transformer And Parallel Operation",
             "",
@@ -1270,13 +1286,16 @@ def transformer_headroom_report(
             "",
             firm_warning,
             "",
-            "## Implications For Model-Error Envelopes",
+            "## Implications For G1-A2",
             "",
-            "- Additive p.u. envelopes depend on the selected nameplate denominator. A",
-            "  fixed MVA discrepancy divided by total nameplate is not the same p.u.",
-            "  value when divided by firm capacity.",
-            "- Relative envelopes are invariant to the nameplate convention because the",
-            "  same multiplicative factor applies to either denominator.",
+            "- G1-A2 fixes the grid-model discrepancy as a symmetric relative",
+            "  `epsilon_grid` envelope with arbitrary unknown dependence.",
+            "- That relative grid-error form is invariant to the total-versus-firm",
+            "  denominator choice.",
+            "- The total 80 MVA and firm `(n-1)` 40 MVA capacity conventions remain",
+            "  open until E3.S2b reports raw future-layer MVA and both loading ratios.",
+            "- If firm capacity is selected as primary, E3.S3 must model and validate",
+            "  the actual one-transformer-out topology with AC power flow.",
             "",
             "## Recommendation",
             "",
@@ -1284,6 +1303,8 @@ def transformer_headroom_report(
             "",
         ]
     )
+
+
 def _headroom_row(
     diagnostic: TransformerHeadroom,
     *,
