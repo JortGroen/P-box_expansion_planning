@@ -603,11 +603,15 @@ seeds. EV-004 supersedes that request as the primary residential model, so the
 historical batch is retained for API and shape diagnostics only. The first
 EV-004 home charge-point probe used `simulated_year = 2030`, seed `140001`,
 native `["van", "car"]` vehicle mixing, 11 kW capacity, and 100 uncontrolled
-profiles; it returned 35,040 timestamps and 100 distinct pairable members with
-no missing, non-finite, or negative demand values. That source-level result
-supports proceeding to the remaining candidate and held-out generation, but it
-does not establish EV-005 library adequacy, which is tested only after
-downstream net-load aggregation and transformer evaluation.
+profiles; it returned 35,040 timestamps and 100 distinct members with returned
+indices available for planned pairing, with no missing, non-finite, or
+negative demand values. Because no smart-control batch was generated, this
+uncontrolled-only probe does not verify that a future smart batch preserves
+member ordering; actual pairing remains pending per section 7 of the Elaad
+profile generation specification. The source-level result supports proceeding
+to the remaining candidate and held-out generation, but it does not establish
+EV-005 library adequacy, which is tested only after downstream net-load
+aggregation and transformer evaluation.
 Generated raw responses and converted local profile outputs remain
 uncommitted and unredistributed; committed artifacts are limited to
 retrieval/generation code, request configurations, seed schedules, metadata,

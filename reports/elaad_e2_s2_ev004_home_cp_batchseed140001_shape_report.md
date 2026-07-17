@@ -30,7 +30,8 @@ Single EV-004 Set A candidate probe only: home charge-point profiles with the na
 - Timesteps: 35040
 - Profiles: 100
 - Distinct returned members: 100
-- Pairable returned members: True
+- Returned indices available for planned pairing: True
+- Smart pair order verified: False
 - First UTC timestamp: `2024-12-31T23:00:00+00:00`
 - First local timestamp: `2025-01-01T00:00:00+01:00`
 - Last local timestamp: `2025-12-31T23:45:00+01:00`
@@ -44,7 +45,7 @@ Single EV-004 Set A candidate probe only: home charge-point profiles with the na
 
 ## Seed semantics
 
-Members are identified as `(batch seed, returned profile index)`. This report does not interpret a batch seed as a range of per-member seeds. Seed 140001 is reserved by EV-006 for a future same-seed smart-control counterpart, but no smart-control API call was made in this session.
+Members are identified as `(batch seed, returned profile index)`. This report does not interpret a batch seed as a range of per-member seeds. Seed 140001 is reserved by EV-006 for a future same-seed smart-control counterpart, but no smart-control API call was made in this session. This uncontrolled-only probe leaves smart-batch member ordering unverified; actual pairing remains pending per section 7 of the Elaad profile generation spec.
 
 ## Source-level verdict
 
@@ -57,5 +58,5 @@ Members are identified as `(batch seed, returned profile index)`. This report do
 ## Evidence
 
 - Manifest: `data/metadata/elaad_profiles/A_home_vancar_cp_y2030_batchseed140001_n100_manifest.json`
-- Raw response checksum: `723f72260517455d7981ef814012affb80c72a8b4935e11d661e77f4c6219924` (279552 bytes gzip)
+- Raw response checksum: `7ea96ed8a113fd417957107926f4548b9f937dc1bd84703faefc0281e212d3df` (279552 bytes gzip)
 - Processed local checksum: `e550931ead774e7a9c42a4ff06f221eb1d2c3337bc4f43e57e0ff00bd63a0f2c` (394116 bytes npz)

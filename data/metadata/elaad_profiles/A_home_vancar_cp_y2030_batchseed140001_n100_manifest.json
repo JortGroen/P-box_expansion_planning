@@ -36,7 +36,7 @@
   },
   "raw_response": {
     "path": "data/raw/elaad_profiles/A_home_vancar_cp_y2030_batchseed140001_n100.json.gz",
-    "sha256_gzip_file": "723f72260517455d7981ef814012affb80c72a8b4935e11d661e77f4c6219924",
+    "sha256_gzip_file": "7ea96ed8a113fd417957107926f4548b9f937dc1bd84703faefc0281e212d3df",
     "sha256_uncompressed_json": "d8dc58745311a772c171f3dee129d98b9c553833119f36e0d3a580dcb2cb7804",
     "size_bytes": 279552
   },
@@ -120,7 +120,7 @@
   },
   "response_status_code": 200,
   "response_status_code_source": "Inferred from successful urlopen before the post-response manifest bug.",
-  "retrieval_timestamp_utc": "2026-07-17T09:52:03.233106Z",
+  "retrieval_timestamp_utc": "2026-07-17T10:01:26.167328Z",
   "seed_semantics_observed": {
     "batch_seed": 140001,
     "control_mode": "uncontrolled",
@@ -129,7 +129,9 @@
     "independent_seed_claim": "Not claimed; batch seed 140001 identifies the response and member indices distinguish returned profiles.",
     "member_identity": "Members are identified as (batch seed, returned profile index).",
     "n_profiles": 100,
-    "pairable_returned_members": true
+    "returned_indices_available_for_planned_pairing": true,
+    "smart_pair_order_note": "This uncontrolled-only probe cannot verify that a future smart batch preserves member ordering; actual smart-pair order remains pending per reports/elaad_profile_generation_spec.md section 7.",
+    "smart_pair_order_verified": false
   },
   "source_level_probe_verdict": {
     "library_adequacy_proven": false,

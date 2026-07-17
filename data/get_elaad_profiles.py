@@ -386,9 +386,11 @@ def write_authorized_set_a_artifacts_from_response(
             "control_mode": "uncontrolled",
             "member_identity": "Members are identified as (batch seed, returned profile index).",
             "future_smart_pair_identity": "A future EV-006 smart counterpart would add control_mode and reuse this batch seed plus returned profile index.",
+            "smart_pair_order_verified": False,
+            "smart_pair_order_note": "This uncontrolled-only probe cannot verify that a future smart batch preserves member ordering; actual smart-pair order remains pending per reports/elaad_profile_generation_spec.md section 7.",
             "independent_seed_claim": "Not claimed; batch seed 140001 identifies the response and member indices distinguish returned profiles.",
             "distinct_returned_members": distinct_members,
-            "pairable_returned_members": distinct_members == batch.n_profiles,
+            "returned_indices_available_for_planned_pairing": distinct_members == batch.n_profiles,
         },
         "raw_response": {
             "path": raw_path.as_posix(),
@@ -483,7 +485,8 @@ def _shape_report(metadata: dict[str, Any], metadata_path: Path) -> str:
         f"- Timesteps: {summary['n_timesteps']}\n"
         f"- Profiles: {summary['n_profiles']}\n"
         f"- Distinct returned members: {summary['distinct_member_count']}\n"
-        f"- Pairable returned members: {metadata['seed_semantics_observed']['pairable_returned_members']}\n"
+        f"- Returned indices available for planned pairing: {metadata['seed_semantics_observed']['returned_indices_available_for_planned_pairing']}\n"
+        f"- Smart pair order verified: {metadata['seed_semantics_observed']['smart_pair_order_verified']}\n"
         f"- First UTC timestamp: `{summary['first_timestamp_utc']}`\n"
         f"- First local timestamp: `{summary['first_timestamp_local']}`\n"
         f"- Last local timestamp: `{summary['last_timestamp_local']}`\n"
@@ -498,7 +501,10 @@ def _shape_report(metadata: dict[str, Any], metadata_path: Path) -> str:
         "Members are identified as `(batch seed, returned profile index)`. This "
         "report does not interpret a batch seed as a range of per-member seeds. "
         "Seed 140001 is reserved by EV-006 for a future same-seed smart-control "
-        "counterpart, but no smart-control API call was made in this session.\n\n"
+        "counterpart, but no smart-control API call was made in this session. "
+        "This uncontrolled-only probe leaves smart-batch member ordering "
+        "unverified; actual pairing remains pending per section 7 of the "
+        "Elaad profile generation spec.\n\n"
         "## Source-level verdict\n\n"
         f"- API runtime seconds: {_format_optional_seconds(metadata['api_runtime_s'])}\n"
         f"- API runtime note: {metadata['api_runtime_note']}\n"
