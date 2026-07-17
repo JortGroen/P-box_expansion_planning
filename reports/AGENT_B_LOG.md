@@ -15,3 +15,9 @@ VERIFIED: `.\scripts\task.ps1 test` passed: 20 tests green. No paper experiments
 OPEN: G3 is still pending; this implementation is for pre-G3 synthetic/test mode and must not be used for paper results until the monotonicity gate permits vertex propagation.
 NEXT: Prepare PR for `E5.S2`.
 
+## 2026-07-17 16:05 — E6.S1 — done
+DID: Created `agent-b/E6.S1-alpha-star` from latest `origin/main` and implemented `alpha_star` in `src/decision.py` as the evaluated-grid infimum of alpha levels whose upper p-box probability is at or below `P_crit`. Added focused constructed-family tests for always-satisfied, first-crossing, exact-boundary, never-satisfied, and invalid-input cases.
+VERIFIED: `.\scripts\task.ps1 test` passed: 94 tests green in 75.09s. No experiments or manuscript numbers were produced.
+OPEN: No blocking questions for E6.S1. The never-satisfied case returns `math.inf`, following the mathematical `inf(empty)` convention rather than a project-specific sentinel.
+NEXT: Open the E6.S1 PR for review; do not resume E7.S1 or begin E6.S2.
+
