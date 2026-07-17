@@ -52,8 +52,9 @@ and the reduced alpha set `{0, 0.5, 1.0}`, with local alpha refinement only when
 a decision boundary lies inside an unresolved bracket. The larger sample at
 the lower probability keeps binomial relative error of similar order. The
 threshold is fixed independently of case selection; cases are made informative
-by selecting scenario and year, never by tuning `P_crit` after results are
-seen.
+by selecting a declared adoption/scenario and grid branch within the
+prospectively frozen 2035 primary year, never by tuning `P_crit` or switching
+years after results are seen.
 
 **Status: Approved. Grid and fallback.** The primary network is SimBench
 `1-MV-semiurb--0-sw`, with low-voltage demand aggregated at secondary
@@ -126,6 +127,25 @@ consecutive quarter-hour exceedances or an hourly average, and decide whether
 the 100-110% band requires a separate cumulative-exposure rule. Historical
 diagnostics retain their manifested 1.0-p.u. threshold and are not
 reinterpreted as evidence under this working rule.
+
+<!-- methods-id: G0-A4 -->
+### G0-A4 - Primary 2035 Planning Year
+
+**Status: Approved.** The complete primary probabilistic analysis and
+decision-reversal benchmark are fixed to planning year 2035 before integrated
+results are inspected. This provides a forward case-study horizon at which
+electrification growth can be represented without selecting the most
+interesting year after observing the outcome. A predeclared deterministic
+screen still evaluates 2030, 2033, and 2035 to expose the load trajectory and
+test the operating domain, while the earlier years remain supporting inputs to
+the later deferral-horizon analysis. G5 may select only a declared
+adoption/scenario and grid branch within 2035. If 2035 proves congestion-free
+or not flexibility-resolvable, the study records that result and requires a
+signed amendment rather than silently switching years or tuning inputs. The
+ElaadNL residential profile generator remains fixed at 2030 under EV-004: that
+setting supplies a reusable behavior distribution, whereas external adoption
+counts and nodal allocation supply the 2035 planning growth. Keeping those two
+years conceptually separate avoids counting forecast growth twice.
 
 <!-- methods-id: G1 -->
 ### G1 - Two-Tier Network Evaluation
@@ -268,8 +288,10 @@ membership function, disagreements, PI sign-off, and planned shape sensitivity.
 ### G5 - Decision-Reversal Case Selection
 
 **Status: Pending gate.** The final paragraph must explain the predeclared case
-sweep, selection criteria, rejected candidates, and why the selected case is
-decision-informative without tuning `P_crit` or other frozen thresholds.
+sweep within the frozen 2035 primary year, selection criteria, rejected
+candidates, and why the selected adoption/scenario and grid branch is
+decision-informative without tuning `P_crit`, changing the year, or altering
+other frozen thresholds.
 
 <!-- methods-id: G6 -->
 ### G6 - Results Freeze

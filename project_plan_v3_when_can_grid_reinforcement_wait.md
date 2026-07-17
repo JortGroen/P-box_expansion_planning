@@ -37,7 +37,7 @@
 
 ## TL;DR
 
-- **The paper's headline is now the DECISION LAYER, not the propagation.** Compute four α-indexed decision metrics — critical α\*, minimum required controllability ρ\* (framed as an EU-Directive-2019/944-Art.-32 procurement target), the 2030/2033/2035 deferral horizon, and p-box width as value-of-information — and prove their worth with a five-treatment **decision-reversal benchmark** that shows the deterministic, single-distribution, worst-case-interval and scenario-minimax methods each reach a *different and individually misleading* defer/reinforce decision, while the fuzzy/p-box method exposes which assumption each one silently makes.
+- **The paper's headline is now the DECISION LAYER, not the propagation.** Compute four α-indexed decision metrics — critical α\*, minimum required controllability ρ\* (framed as an EU-Directive-2019/944-Art.-32 procurement target), the 2030/2033/2035 deferral horizon, and p-box width as value-of-information — and prove their worth with a five-treatment **decision-reversal benchmark** in the prospectively frozen 2035 primary year. The benchmark shows the deterministic, single-distribution, worst-case-interval and scenario-minimax methods each reach a *different and individually misleading* defer/reinforce decision, while the fuzzy/p-box method exposes which assumption each one silently makes.
 - **Concrete, decisive build:** primary grid = a **SimBench MV grid (semi-urban/urban) with LV aggregated at secondary substations** via the `simbench` 1.6.2 + pandapower >=3.4,<4 stack; **drop the parameter-less Liander grid** for this paper; physics = **two-tier** (full-year net-load summation in the Monte Carlo loop + AC validation subsets). The local benchmark showed the high-level pandapower `runpp` path at ~105 ms/solve on the 117-bus primary grid and no speedup from the `lightsim2grid=True` flag; the lower-level `TimeSeriesCPP` path remains a required G1-C1 follow-up before G2. G1-A1/G1-A2 require G2 to estimate a held-out-tested additive Tier-1-to-pandapower output envelope and compose it with a symmetric relative grid-error scenario before event detection under unknown dependence, never as probability margins. Primary `P(E)` is annual and import-direction per G0-A1/G0-A2, with export/feed-in exceedance reported as a side metric; N = 1e4–1e5 with common random numbers; **P_crit ≈ 1e-2** (1e-3 sensitivity) is a frozen transparent modelling threshold. IEC 60076-7 and one Danish DSO study provide physical and operational context, but neither establishes a Dutch probability criterion.
 - **~12-week single-paper sprint** with an early monotonicity go/no-go gate and the decision layer + decision-reversal + pilot-anchored elicitation on the critical path; target **Applied Energy** (backups IJEPES, SEGAN). Report α-indexed bounds only — **never a single defuzzified number** (Baudrit et al. rule).
 
@@ -46,7 +46,7 @@
 ## Key Findings
 
 1. **The right novelty framing exists and is defensible.** P-box power flow itself is *not* new (multiple published methods exist; §Details/§10), so the contribution must be the decision layer built on top — where no prior distribution-planning study operates.
-2. **A German benchmark carrying Dutch data beats a Dutch topology with no parameters.** SimBench provides four statistically-validated MV grids with full-year 15-min time series and three future scenarios, natively in pandapower — everything the per-planning-year overload metric and 2030/33/35 horizon need. The project's own Liander-based Dutch grid (built from Liander open data) has accurate topology but no electrical parameters, so it cannot support AC load flow or a credible overload criterion without fabricated data — a reviewer-attack surface. Dutch character is injected through Dutch adoption/EV/weather data, not topology.
+2. **A German benchmark carrying Dutch data beats a Dutch topology with no parameters.** SimBench provides four statistically-validated MV grids with full-year 15-min time series and three future scenarios, natively in pandapower — everything the primary 2035 analysis and supporting 2030/33 horizon need. The project's own Liander-based Dutch grid (built from Liander open data) has accurate topology but no electrical parameters, so it cannot support AC load flow or a credible overload criterion without fabricated data — a reviewer-attack surface. Dutch character is injected through Dutch adoption/EV/weather data, not topology.
 3. **Compute is a laptop problem, not an HPC problem.** With vectorized net-load summation as the full-year Tier-1 inner loop, N = 1e4–1e5 samples per (endpoint, α, year) is feasible on a laptop; the monotonicity/vertex shortcut and common random numbers make it cheaper and more decision-stable. AC power flow is retained for deterministic checks and validation subsets, with the final validation budget pending the G1-C1 `TimeSeriesCPP` benchmark.
 4. **There is no single published Dutch numeric loading criterion.** IEC 60076-7 supplies physical context for cyclic transformer loading. A Danish Radius low-voltage study reports a 66% N-1 operational limit and, for one modeled grid, less than 1% occurrence above that limit ([Unterluggauer et al., 2023](https://doi.org/10.1016/j.segan.2023.101085)). These are context and sensitivity anchors, not a Dutch rule or a direct derivation of `P_crit = 0.01`; the frozen threshold remains an explicit modelling choice.
 5. **Every anticipated reviewer attack catalogued in §10 has a specific citable rebuttal** (Ferson & Tucker 2008; Cao et al. 2018 chance-constrained IGDT; the p-box power-flow papers; Aien et al. 2014; Baudrit et al. 2006/2007; Dubois–Foulloy–Mauris–Prade 2004), mapped one-to-one in §10 below.
@@ -60,8 +60,18 @@
 
 **G0-A3 working-threshold amendment (2026-07-16):** future implementation uses a strict import-loading threshold `L_import > 1.1 p.u.` sustained for four consecutive 15-minute steps. The 110% value is provisional and must be reviewed against its exact source and time-aggregation semantics before integrated event analysis; it is not yet claimed as a Dutch DSO standard. Historical 1.0-p.u. diagnostics retain their manifested meaning.
 
+**G0-A4 primary-year amendment (2026-07-17):** planning year 2035 is frozen prospectively for the complete primary probabilistic analysis and decision-reversal benchmark. The deterministic capacity/domain screen still covers 2030, 2033, and 2035, and the earlier years remain supporting inputs to the deferral horizon. G5 may choose only an adoption/scenario and grid branch within 2035. If 2035 is not decision-usable, the project escalates for a signed amendment rather than silently switching years or tuning inputs. This does not change the fixed ElaadNL 2030 generator year under EV-004; that behavior distribution is reused with externally specified 2035 adoption.
+
 ### 1. Use case (retained, lightly edited)
 A Dutch distribution system operator (DSO) must decide whether reinforcement of an MV/LV area can be **deferred** given uncertain demand growth (EVs, heat pumps), PV, batteries and demand-side flexibility. The conventional metric P(overload) ≤ P_crit is retained but **replaced by lower/upper probability bounds** [P_lower^α(E), P_upper^α(E)] for each α-level of a fuzzy flexibility-controllability assumption. The decision unit is one distribution transformer group or feeder — MV/LV in the motivating neighbourhood use case, instantiated in the case study at the HV/MV transformer of the SimBench MV grid. Throughout, we call this asset the **decision transformer**.
+
+The complete primary case-study analysis is fixed to 2035 before integrated
+probabilistic results are inspected. The 2030 and 2033 layers provide an
+earlier-horizon trajectory and later support calculation of the deferral
+horizon, but they cannot replace 2035 merely because their results are more
+interesting. The ElaadNL residential generator's fixed 2030 setting describes
+a reusable behavior distribution, not the planning horizon; external adoption
+counts and nodal allocation carry the 2035 growth assumption.
 
 The controllability assumption is a **trapezoidal fuzzy number ρ̃_flex** for the fraction of technically flexible demand that is *practically controllable during grid-critical periods*. Aleatory uncertainties (weather, baseline demand, EV arrival/SoC, household diversity) are probabilistic. Physical-system-versus-DSO-model discrepancy is an author-specified symmetric relative output interval unless later evidence supports a stronger provenance, while Tier-1-to-pandapower error is an empirical additive approximation envelope from G2. G1-A2 composes their endpoints without assuming independence. The resulting p-box remains **two-sourced** at the conceptual level: epistemic width from the fuzzy controllability cuts and from the composite model-output interval.
 
@@ -225,8 +235,8 @@ Additional threats: (a) **monotonicity may fail** (rebound, reverse-PV) — nume
 
 **Stage 2 — Weeks 5–9 (the paper's contribution, critical path).**
 6. α-cut p-box propagation + signed A-013 grid-error scenarios + G2 Tier-1 envelope, composed per G1-A2 and applied to loading trajectories before event detection → two-sourced p-box with MC CIs from lower/upper event counts.
-7. Compute the decision layer: **α\*, ρ\*, μ(ρ\*), deferral horizon (2030/33/35), VoI.**
-8. Implement the **five-treatment decision-reversal benchmark** on one case → the money figure.
+7. Compute the complete primary 2035 decision layer first: **α\*, ρ\*, μ(ρ\*), VoI**. Then reuse the frozen pipeline for 2030/33 and derive the deferral horizon.
+8. Implement the **five-treatment decision-reversal benchmark** on one G5-selected 2035 case → the money figure.
 9. Run the **elicitation protocol**: decompose ρ̃_flex, DFMP transform where pilot data exist, trapezoid-shape sensitivity.
 10. VoI economics: transformer capex (Stedin-confirmed: €25,000–35,000/MVA; €0.75–2.0 M per discrete transformer installation — Cicėnas 2025) vs pilot cost; finalise the decision table.
 
@@ -237,7 +247,7 @@ Additional threats: (a) **monotonicity may fail** (rebound, reverse-PV) — nume
 
 **Benchmarks/thresholds that would change these recommendations:**
 - *If monotonicity fails broadly* (Week 4) → drop the vertex shortcut, cut N or grid size, and consider narrowing to the transformer-only (summation) criterion to preserve laptop feasibility.
-- *If the decision-reversal treatments all agree* on the chosen case → re-select a case nearer the P_crit boundary (higher adoption year or weaker feeder) so the treatments genuinely diverge; a benchmark where methods agree has no money figure.
+- *If the decision-reversal treatments all agree* on the chosen case → re-select an admissible 2035 adoption/scenario or weaker-grid branch nearer the P_crit boundary. If none exists, escalate G0-A4 explicitly; do not switch the primary year silently.
 - *If ρ\* falls inside the Müller & Jansen well-supported core (≤0.65)* → lead with "defer-with-monitoring is credible"; *if ρ\* > ~0.9* → lead with "reinforce," since it exceeds the observed delivery envelope.
 - *If AC validation diverges from summation by more than a few percent on transformer loading* → the two-tier claim weakens; report AC results as primary and treat summation only as a screening pre-filter.
 

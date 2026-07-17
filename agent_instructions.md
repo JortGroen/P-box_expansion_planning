@@ -31,6 +31,7 @@ You are **one of up to three agents** on this project. Your role (A, B, or C —
 8. **One agent, one worktree.** Never share a working directory with another agent. The main repo directory stays on `main` as the PI dashboard; implementation happens only in your assigned role worktree.
 9. **Use the project `.venv`, never `base`.** Run project commands through the `.venv` in your assigned worktree. Do not install or run project dependencies from Anaconda `base`.
 10. **Report bounds, never a defuzzified number.** Project-specific hard rule: every probability result is reported as α-indexed lower/upper bounds with Monte-Carlo CIs. Producing a single collapsed scalar as "the answer" is a violation (Baudrit rule, plan §3).
+11. **No silent or restart-only long runs.** Inform the PI before launching any process expected to exceed about 15 minutes, and make it durably resumable from verified checkpoints. A long process that cannot be checkpointed requires explicit PI approval before launch.
 
 ---
 
@@ -73,7 +74,46 @@ If your current directory, branch, or worktree does not match your role and assi
 - No magic numbers in code: scientific constants and parameters live in `configs/*.yaml` with units in key names (`p_crit`, `s_rated_kva`, `step_min: 15`).
 - A PR that adds or changes an entry in `DECISIONS.md`, `ASSUMPTIONS.md`, or `DATA_REGISTER.md` must add or update its same-ID block in `paper/methods_decisions_and_assumptions.md`. Write one standalone manuscript paragraph explaining and defending the choice, scope, and limitations. Use an explicit status label so proposed, not-invoked, superseded, and pending items cannot be mistaken for approved claims.
 
-### 3.3 End of session (mandatory, even mid-task)
+### 3.3 Long-running process protocol
+
+A process includes experiments, simulations, API/profile generation, downloads,
+data transformations, figure builds, tests, and environment or dependency
+operations. Before launching one that is reasonably expected to take more than
+about 15 minutes:
+
+1. Estimate wall time from a pilot, prior benchmark, batch timing, or an
+   explicitly conservative calculation.
+2. Send the PI this notice in chat before the launch:
+
+```text
+LONG-RUN NOTICE
+Task: <plan ID and purpose>
+Process: <command or operation>
+Estimated wall time: <range>
+Resource impact: <CPU/RAM/network/battery expectations>
+Checkpoint plan: <work-unit size, frequency, and durable path>
+Resume procedure: <exact command and how completed work is skipped>
+```
+
+3. Make the process resumable before starting it. Prefer deterministic chunks
+   or batches and atomically persist a checkpoint after each natural work unit,
+   frequently enough that a crash loses no more than about 15 minutes of work
+   where technically practical. A checkpoint records the config and code
+   identity, completed chunk IDs, seeds or source-member IDs, output checksums,
+   and the next unit. Partial output must not be mistaken for complete evidence.
+4. Test interruption and resume on a small pilot when the checkpoint path is
+   new. Resuming must validate the stored identity, skip verified completed
+   units, and avoid duplicating samples, API members, or result rows.
+
+The notice is informational unless another rule requires PI approval. If the
+process cannot be checkpointed, stop and obtain explicit PI approval for a
+documented restart-only recovery plan before launch. If a process unexpectedly
+crosses 15 minutes, reach the next safe boundary, save durable state, and inform
+the PI before continuing; do not terminate it abruptly if doing so would corrupt
+outputs. In-memory progress, terminal text, and an open process do not count as
+checkpoints.
+
+### 3.4 End of session (mandatory, even mid-task)
 1. Log entry (template §10): what was done, what was **verified** (test/manifest evidence), open questions, next step.
 2. Update your line(s) in `registers/STATUS.md`.
 3. Commit and push your branch. If a story's deliverable is complete: open/update the PR with the checklist (§9).
@@ -87,6 +127,7 @@ If your current directory, branch, or worktree does not match your role and assi
 - A test cannot pass without changing its specification or a golden expectation.
 - A scientific value is needed that is not in `ASSUMPTIONS.md` / `DATA_REGISTER.md` (parameter, threshold, distribution, cost, citation).
 - A data source's license is unclear, or a dataset must be modified by hand.
+- A process expected to exceed about 15 minutes has no durable checkpoint/resume path.
 - Runtime exceeds the G1-approved or provisional validation budget by more than 2×.
 - A result contradicts a passed gate (e.g., non-monotone behavior after G3 approved the vertex shortcut).
 - You would need to edit outside your owned paths, add a dependency, or touch `main`.
@@ -203,13 +244,14 @@ STATUS: open
 
 ## 11. Project-specific technical guardrails
 
-- **Overload event E** is whatever `DECISIONS.md` (G0 plus amendments such as G0-A1, G0-A2, and G0-A3) says — read it, apply it, never reinterpret it. The executable G0-A3 working threshold is strict `L_import > 1.1 p.u.` for four consecutive 15-minute steps, but Q-5 requires PI review before integrated event-based scientific analysis or manuscript use. Same for **P_crit** (1e-2 primary, 1e-3 sensitivity) and the **α grid** {0, 0.25, 0.5, 0.75, 1.0}.
+- **Overload event E and primary year** are whatever `DECISIONS.md` (G0 plus G0-A1 through G0-A4) says — read them, apply them, never reinterpret them. The executable G0-A3 working threshold is strict `L_import > 1.1 p.u.` for four consecutive 15-minute steps, but Q-5 requires PI review before integrated event-based scientific analysis or manuscript use. G0-A4 freezes planning year 2035 for the complete primary probabilistic analysis and E8 benchmark. Same for **P_crit** (1e-2 primary, 1e-3 sensitivity) and the **α grid** {0, 0.25, 0.5, 0.75, 1.0}.
 - **Vertex shortcut** (endpoint-only propagation per α-cut) is valid **only after G3 records "monotone"**. Before G3, or in regimes G3 flags (rebound-dominated, reverse-PV), use/keep the interior-sampling path.
 - **Two-sourced p-box:** per G1-A1/G1-A2, the grid-model output-error interval is applied to loading trajectories before episode detection; lower/upper event counts then produce probabilities and MC CIs. Post-hoc probability-margin shifting is forbidden. A p-box produced without this output-domain interval is incomplete.
 - **Unknown dependence:** `epsilon_grid` is author-specified and unprobabilized unless a later human sign-off supplies a stronger provenance; admit arbitrary dependence on inputs, `rho`, time, and Tier-1 error within its envelope. Do not sample it independently or assume a constant bias. For relative symmetric grid error and additive G2 endpoints, use `L_lo=(1-e_grid)*max(0,L_T1-e_t1_minus)` and `L_up=(1+e_grid)*(L_T1+e_t1_plus)`; do not replace this mixed composition with a simple sum.
 - **Direction under widening:** evaluate the import/export gate on unwidened `P_net`; widen loading magnitude only. G2 must test the zero-crossing event-irrelevance assumption and escalate any counterexample.
 - **G2 enclosure:** the held-out near/above-threshold stratum is never used to tune an envelope/correction. Selective AC promotion rules are predeclared and preserve CRN plus manifest traceability.
 - **Domain and capacity discipline:** the fixed 16-104 MVA applicability example is withdrawn. E3.S2b must freeze the asserted future-layer domain before probabilistic-result inspection and report raw MVA under both 80 MVA total and 40 MVA firm conventions. Out-of-domain samples are escalated, not clipped or used for post-hoc refitting. A firm primary criterion requires actual one-transformer-out AC validation.
+- **Primary-year discipline:** E3.S2b screens 2030, 2033, and 2035, but 2035 is the prospectively selected primary year. G5 selects only a declared adoption/scenario and grid branch within 2035. If 2035 is congestion-free or not flexibility-resolvable, stop for a signed amendment; never switch years, thresholds, adoption inputs, or network properties after inspecting results. The EV-004 `simulated_year = 2030` library is a reusable behavior source and does not change the 2035 planning year.
 - **CRN discipline:** draw every aleatory sample from the seed tree keyed by (sample index, α, endpoint, treatment). Endpoints, α levels, and the five benchmark treatments must share identical aleatory draws — that is the point.
 - **Joint aleatory dependence (ALEA-001):** each sample is one coherent full-year realization on a common calendar. Retain complete component trajectories; select temperature and irradiance as one paired weather member; drive HP and PV from that same member; and align EV/baseline season plus weekday/weekend structure without shuffling timesteps. CRN reuse is not a physical-dependence model. If diagnostics reject this construction, stop and escalate to an evidenced latent-factor, multivariate block-bootstrap, or copula sensitivity; never add one silently.
 - **Downstream congestion only (ALEA-002):** component-level energy, shape, peak, and percentile statistics are data-quality diagnostics, not congestion measures. Aggregate all declared load and generation components into nodal net load before applying IC-2 and assessing profile-library adequacy. Do not use an EV-only proxy or the ElaadNL UI p95 to certify a library. A provisional downstream p95 does not amend G0 `P_crit`.

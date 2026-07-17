@@ -19,6 +19,8 @@ Bootstrap rules:
 - Use `scripts/task.ps1`; it selects `.venv` and sets `NUMBA_CACHE_DIR=.tmp/numba_cache` for pandapower/numba imports.
 - Use one task ID from `actionable_project_plan_agentic.md` per session.
 - Work only in your owned paths.
+- Before launching any process expected to take more than about 15 minutes, send the PI a long-run notice stating its purpose, estimated wall time and resource use, checkpoint location/frequency, and exact resume procedure. Posting the notice is mandatory even when no separate approval is required.
+- Every process expected to exceed about 15 minutes must be durably resumable. Persist completed work units, config/code identity, seeds or member IDs, checksums, and the next unit so a restart skips verified work. If checkpointing is technically impossible, stop and obtain explicit PI approval for the restart-only plan before launch. If a run unexpectedly crosses 15 minutes, checkpoint at the next safe boundary and inform the PI before continuing.
 - Scientific values, dependency changes, interface changes, gate decisions, and manuscript numbers require PI approval.
 - Every experimental result must be produced through the runner and have a manifest.
 - Every new logic change needs tests.
@@ -34,6 +36,7 @@ Bootstrap rules:
 - Per EV-005, keep finite-library uncertainty from `M` separate from conditional Monte Carlo uncertainty from `N`. Candidate and held-out API batches stay disjoint, adequacy is tested only downstream, and `M = 1000` is a candidate rather than a guaranteed sufficient size.
 - Per EV-006, unrelated ElaadNL source batches use distinct seeds, but a smart-charging counterfactual deliberately reuses its uncontrolled batch seed and returned member index. Treat the two control modes as paired potential outcomes; never aggregate or resample them as independent chargers. Smart charging remains optional until its role and parameters are separately approved.
 - Per G0-A3, the executable working event is strictly `L_import > 1.1 p.u.` for four consecutive 15-minute steps. This value is provisional: stop for PI review and resolution of Q-5 before any integrated event-based scientific analysis or manuscript result; never relabel historical 1.0-p.u. evidence.
+- Per G0-A4, the complete primary probabilistic analysis and E8 benchmark use planning year 2035. E3.S2b still screens 2030/2033/2035, but G5 cannot choose the year after inspecting results. Do not confuse the fixed 2030 ElaadNL generator year with the 2035 planning layer; if 2035 is unusable, stop and escalate rather than switching years or tuning inputs.
 - Do not assume the withdrawn 16-104 MVA applicability range. E3.S2b freezes the future operating domain and reports raw MVA under both total and firm capacity conventions before probabilistic results are inspected.
 - Report alpha-indexed lower/upper bounds only; never report a defuzzified probability as the answer.
 
