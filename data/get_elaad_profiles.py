@@ -88,14 +88,18 @@ def build_batch_request(batch: ProfileBatch) -> dict[str, Any]:
 def build_library_plan() -> tuple[ProfileBatch, ...]:
     """Return the EV-002/EV-004/EV-005 profile-library batch schedule.
 
-    The plan is metadata only: it defines request bodies and distinct batch
-    seeds. Running the API and storing generated profiles is an explicit later
-    step, and generated files remain ignored/non-redistributed.
+    The plan is metadata only: it defines request bodies and distinct
+    uncontrolled batch seeds. EV-006 may reuse one of these seeds only for its
+    labelled smart-control counterpart. Running the API and storing generated
+    profiles is an explicit later step, and generated files remain
+    ignored/non-redistributed.
     """
     batches: list[ProfileBatch] = []
 
     # Start at 140001 because 130001 already identifies the archived legacy EV
-    # probe; reusing it would make provenance and same-seed checks ambiguous.
+    # probe; reusing it for an unrelated draw would make provenance and
+    # same-seed checks ambiguous. EV-006 treatment/control pairing is the only
+    # deliberate reuse and keeps the control mode in the member identity.
     candidate_seeds = range(140001, 141001, DEFAULT_BATCH_SIZE)
     held_out_seeds = (141001, 141101)
     for partition, seeds in (
@@ -438,7 +442,13 @@ def write_library_plan(metadata_dir: Path) -> Path:
         "seed_semantics": {
             "batch_seeds_are_distinct": True,
             "candidate_and_held_out_batches_are_disjoint": True,
-            "note": "Keep member identity as (batch seed, returned profile index), and keep batches intact in held-out diagnostics until multi-profile semantics are confirmed.",
+            "smart_counterfactual_pairing": {
+                "decision": "EV-006",
+                "reuse_uncontrolled_batch_seed_and_member_index": True,
+                "may_be_aggregated_as_independent_members": False,
+                "smart_control_role_and_parameters_approved": False,
+            },
+            "note": "Keep uncontrolled member identity as (batch seed, returned profile index). A smart counterpart adds control_mode, reuses the same seed/index, and is never treated as an independent charger.",
         },
         "batches": [
             {

@@ -99,6 +99,11 @@ def test_elaad_library_plan_metadata_is_non_redistribution_boundary() -> None:
     assert payload["policy"]["scientific_decisions"] == ["EV-004", "EV-005"]
     assert payload["policy"]["commit_generated_profiles"] is False
     assert payload["policy"]["redistribute_generated_profiles"] is False
+    pairing = payload["seed_semantics"]["smart_counterfactual_pairing"]
+    assert pairing["decision"] == "EV-006"
+    assert pairing["reuse_uncontrolled_batch_seed_and_member_index"] is True
+    assert pairing["may_be_aggregated_as_independent_members"] is False
+    assert pairing["smart_control_role_and_parameters_approved"] is False
     assert sum(batch["partition"] == "candidate" for batch in payload["batches"]) == 10
     assert sum(batch["partition"] == "held_out" for batch in payload["batches"]) == 2
     assert all(batch["processed_path"].endswith(".npz") for batch in payload["batches"])

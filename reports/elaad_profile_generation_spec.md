@@ -13,7 +13,7 @@ The generator is ElaadNL's dashboard + API that produces charging profiles based
 
 1. **P1 — NL calibration/fallback target (Track 1, E2.S2 T2).** Aggregate charging shapes per location type remain available to calibrate and validate the UK-DfT-fitted stochastic sampler if the direct-library route fails its seed, cohort-size, or downstream-adequacy conditions.
 2. **P2 — Frozen NL profile library (primary per EV-003).** Because the generator is seeded, session-based, future-year-aware, and 15-min native, the frozen library serves directly as the EV aleatory layer. Complete annual members are bootstrap-resampled per Monte Carlo draw and traced by `(batch seed, returned profile index)`. The exact replacement rule inside one system realization remains open until the same-seed warning and scenario cohort sizes are resolved; the fallback sampler must not be substituted silently.
-3. **P3 — Smart-charging cross-check (optional).** One batch with the generator's own "Smart charging (17h–23h)" mode, to sanity-check the direction and magnitude of our flexibility aggregator's peak shift against ElaadNL's implementation.
+3. **P3 — Smart-charging cross-check (optional).** One same-seed matched batch with the generator's own "Smart charging (17h–23h)" mode, to isolate and sanity-check the direction and magnitude of the control effect against our flexibility aggregator.
 
 **What the generator is NOT used for:** representing our fuzzy controllability factor ρ̃_flex. All base profiles are generated **uncontrolled** ("dumb charging"); flexibility activation at controllability ρ is applied downstream by our own nodal aggregator (E3.S1). The generator's smart-charging modes appear only in the optional P3 comparison.
 
@@ -33,7 +33,7 @@ The generator is ElaadNL's dashboard + API that produces charging profiles based
 | Mixed locations | At rest areas, fast-charging city, public, and home locations, cars and vans share charge points; for CP profiles the car/van ratio is applied **automatically** and cannot be chosen |
 | Key parameters | `start_datetime`, `stop_datetime` (ISO, with timezone), `step_size_s` (900 = 15 min), `timezone` (e.g. `"CET"`), `simulated_year` (prognosis year, e.g. 2035), `profile_type`, `n_profiles`, `location_type`, `vehicle_types`, `cp_capacity_kw`, `seed` |
 | Output | JSON: `config`, `statistics` (null), `profile: {cp_ids, datetimes, demands_kw}`; **datetimes are returned in UTC** and must be converted to CET/CEST manually |
-| Seed semantics | Same seed ⇒ identical annual mileages, energy demand, and sessions ⇒ identical output. **Documented warning: profiles with the same seed must NOT be summed** — they contain the same sessions and misrepresent charging simultaneity. Use distinct seeds for anything that will be aggregated |
+| Seed semantics | Same seed preserves annual mileages, energy demand, and sessions and is explicitly useful for a smart-control comparison. **Documented warning: same-seed outputs must NOT be summed as independent chargers** because they contain the same sessions. Use distinct seeds for unrelated profiles that will be aggregated; deliberately reuse the seed only for a labelled treatment/control pair under EV-006 |
 | Model basis | Energy demand per EV from CBS annual-mileage distributions × efficiency (Outlook Logistiek 2025: truck 1.1 kWh/km, van 0.3 kWh/km, car 0.2 kWh/km); laadmix per vehicle/location (cars, Outlook Laadprofielen 2023: 55% public, 19% home, 17% work, 4.5% rest areas, 4.5% urban fast); weekly energy sampled with a seasonal distribution; sessions simulated with an SoC-dependent charging curve capped by available capacity; at public locations two charge points share one pole connection (limits simultaneous power); smart charging shifts unmet in-session demand to later moments; **V2G is not part of the generator** |
 | Versioning | Current generator based on Outlook Personenauto's (2024) + Outlook Logistiek (2025); **next major update expected around summer 2026** |
 
@@ -53,7 +53,7 @@ The generator is ElaadNL's dashboard + API that produces charging profiles based
 
 **3.6 Residential sampling unit and scaling.** The primary home member is one `cp` profile for one physical home charge point. ElaadNL automatically includes its forecast car/van mixture in home charge-point profiles, and the project does not reweight that mixture. Nodal aggregation therefore selects and sums `K_r` complete members for the externally sourced number of home charge points at node `r`; it applies no additional home-share or vehicles-per-charge-point multiplier. The earlier vehicle-level scaling proposal A-011 is superseded. Public charge points remain a separate class.
 
-**3.7 Seed governance.** Generator seeds are **batch seeds**, disjoint across all sets (table in §5). Until multi-profile semantics are verified, the stable member identity is `(batch_seed, returned_profile_index)`, and batches remain intact in held-out and leave-out diagnostics. The Monte Carlo layer never calls the API: it bootstrap-resamples archived complete members per node per draw, driven by the project seed tree (`src/rng.py`). Two-layer rule: *ElaadNL seed = which source batch exists; CRN seed = which members a realization selects.* Never issue the same ElaadNL request seed twice and later combine those responses.
+**3.7 Seed governance.** Generator seeds are **batch seeds**. Seeds are distinct between unrelated stochastic source batches, including candidate and held-out libraries. EV-006 defines one deliberate exception: a smart-charging counterfactual repeats the uncontrolled batch seed and pairs each returned member by index, because both outputs must contain the same annual demand and sessions. The pair identity is `(batch_seed, returned_profile_index, control_mode)`. A matched uncontrolled/smart pair is compared or substituted as two potential outcomes and is never summed or resampled as two independent physical charge points. Until multi-profile semantics are verified, batches remain intact in held-out and leave-out diagnostics. The Monte Carlo layer never calls the API: it bootstrap-resamples archived complete members per node per draw, driven by the project seed tree (`src/rng.py`). Two-layer rule: *ElaadNL seed = which source realization exists; control mode = which potential outcome is used; CRN seed = which members a draw selects.*
 
 **3.8 Freeze-and-archive policy (do this in Week 1–2).** The generator is a **live service** with a major update expected around summer 2026 — mid-project model drift is a real risk. Therefore: generate the approved sets promptly, convert to the implemented compressed NPZ batch format, checksum, and register; the archived files are the frozen dataset. Every batch's manifest records: full JSON request body, response `config` block, retrieval timestamp, documentation version (10 Nov 2025), and the underlying Outlook editions (Personenauto's 2024, Logistiek 2025). The paper cites the archived dataset, not the live service.
 
@@ -120,10 +120,10 @@ C is defined as candidate Set A batch `140001`. It is used only to exercise and 
 
 | Field | Value |
 |---|---|
-| Volume | 100 profiles, fixed residential class (`simulated_year = 2030`, home `cp`, 11 kW), batch seed 430001 |
+| Volume | 100 profiles matched one-to-one to uncontrolled Set A candidate batch `140001`; reuse batch seed `140001` and pair by returned profile index |
 | Mode | *Smart charging (17h–23h)*, **without pooling** |
 | Mode parameters | `base capacity` and `ramp speed` — **PI decision before generation** (proposal to react to: base 4 kW per CP during 17–23h, ramp 6 kW/h; both are placeholders, not defaults) |
-| Use | Compare peak reduction and post-23h rebound against our aggregator at an equivalent controllability setting; direction-of-effect and rebound-timing sanity check only — NOT a calibration of ρ̃_flex |
+| Use | Compare each smart profile with its same-session uncontrolled counterpart to isolate peak reduction and post-23h rebound; direction-of-effect and rebound-timing sanity check only — NOT a calibration of ρ̃_flex |
 | Storage | `D_home_vancar_cp_sc1723_y2030_*.npz` |
 
 ### Set E — Present-day baseline (OPTIONAL; cheap validation)
@@ -142,10 +142,10 @@ C is defined as candidate Set A batch `140001`. It is used only to exercise and 
 | A held-out | 2030 | batch seeds 141001, 141101 | 200 | validation only unless a failed test triggers a new candidate cycle |
 | B | pending | pending | pending | not authorized |
 | C | 2030 | subset: A batch 140001 | 100 | fallback analysis only; not held out |
-| D | 2030 | batch seed 430001 | 100 | optional analysis only, never in primary nodal load |
+| D | 2030 | batch seed 140001 reused from A | 100 matched counterparts | compare/substitute only; never aggregate with its A counterparts as independent chargers |
 | E | 2025 | batch seed 525001 | 100 | optional sensitivity only |
 
-Rules: (1) an ElaadNL request seed appears exactly once across the project; (2) every member ID includes batch seed and returned index; (3) candidate and held-out batches never overlap; (4) the CRN tree (`src/rng.py`) governs member selection and the API is never called inside the Monte Carlo loop; (5) with- versus without-replacement selection inside one realization remains pending under EV-005 and must not be inferred from this table.
+Rules: (1) unrelated stochastic batches use distinct ElaadNL seeds; (2) EV-006 smart counterfactuals deliberately repeat the corresponding uncontrolled seed and add `control_mode` to the member identity; (3) a same-seed treatment/control pair is never counted or aggregated as two physical chargers; (4) candidate and held-out batches never overlap; (5) the CRN tree (`src/rng.py`) governs member selection and the API is never called inside the Monte Carlo loop; (6) with- versus without-replacement selection inside one realization remains pending under EV-005 and must not be inferred from this table.
 
 ---
 
@@ -168,6 +168,7 @@ Rules: (1) an ElaadNL request seed appears exactly once across the project; (2) 
 4. **Seed vs. n_profiles semantics** — confirm that one seed governs a reproducible batch while returned member indices identify mutually distinct charge-point trajectories. Until confirmed, keep batch-level held-out and resampling units and do not authorize the within-realization replacement rule.
 5. **Terms of use / license** — EV-002 approves internal project computation through the public API and requires regenerate-script-only data availability. Generated profiles must not be described as openly licensed or redistributable. If explicit terms later prohibit this research use, stop and escalate.
 6. **`statistics` field** — currently `null` in examples; check whether a populated mode exists (session-level metadata would improve Set C's calibration power).
+7. **Smart-pair reproducibility** — before any Set D analysis, verify that repeating Set A batch seed `140001` with only the declared smart-control fields changed returns the same member count and pairable member order; compare annual energy and document any unmet-session energy rather than assuming exact conservation.
 
 ---
 
@@ -181,10 +182,11 @@ Rules: (1) an ElaadNL request seed appears exactly once across the project; (2) 
 | Redistribution not permitted or terms remain ambiguous | EV-002 boundary: generated files stay ignored and unredistributed; repro package ships generation code, request configurations, seed schedules, metadata, checksums, and manifests; data-availability text directs readers to regenerate via the public API subject to terms at retrieval time |
 | Residential scaling double-counting (§3.6) | Explicit rule + unit test: node EV energy equals the selected charge-point-member sum, with no extra home-share or vehicles-per-point factor |
 | Finite library omits relevant behavior | EV-005 nested, disjoint, leave-out, and untouched held-out downstream tests; extend and regenerate a new holdout if the test fails |
+| Smart and uncontrolled runs use independent sessions or are accidentally co-aggregated | EV-006 same-seed/index pairing, explicit `control_mode`, and a test that forbids treating the two potential outcomes as independent chargers |
 
 ## 9. Acceptance checklist (spec is "done" when)
 
-- [ ] Open items §7.1–.6 resolved and recorded here.
+- [ ] Open items §7.1–.7 resolved and recorded here.
 - [ ] Set A candidate and held-out batches generated, archived, checksummed, and registered; Set B remains blocked; Sets D/E remain optional.
 - [ ] Library summary reports produced; Set C calibration deltas reported in the E2.S2 fit report.
 - [x] EV-004 fixes the primary residential charge-point class and 2030 generator year.

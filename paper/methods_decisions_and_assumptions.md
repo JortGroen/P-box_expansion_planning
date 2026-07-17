@@ -385,6 +385,24 @@ The acceptance tolerance is fixed before the adequacy results are inspected and
 is tied to transformer-result or reinforcement-decision stability rather than
 to an isolated EV-profile percentile.
 
+<!-- methods-id: EV-006 -->
+### EV-006 - Matched Smart-Charging Counterfactuals
+
+**Status: Approved seed protocol; smart-control role and parameters pending.**
+When the ElaadNL smart-charging mode is evaluated, its controlled trajectory is
+generated with the same batch seed as the corresponding uncontrolled
+trajectory and is paired by returned profile index. ElaadNL documents that a
+common seed preserves the annual mileage, energy demand, and charging sessions,
+so the paired difference isolates the effect of the charging-control rule rather
+than a new draw of charging behavior. The uncontrolled and controlled members
+are alternative outcomes for one source realization and are therefore compared
+or substituted, never added or resampled as independent charge points. Distinct
+seeds remain mandatory between unrelated source batches and between candidate
+and held-out libraries. This protocol does not by itself make ElaadNL smart
+charging the primary flexibility model or determine its base capacity, ramp
+speed, pooling option, or mapping to the uncertain controllability factor; those
+choices require separate approval and monotonicity testing.
+
 <!-- methods-id: COST-001 -->
 ### COST-001 - Indicative Reinforcement Costs
 

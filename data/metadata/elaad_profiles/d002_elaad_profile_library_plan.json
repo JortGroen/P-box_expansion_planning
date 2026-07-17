@@ -437,7 +437,13 @@
   "seed_semantics": {
     "batch_seeds_are_distinct": true,
     "candidate_and_held_out_batches_are_disjoint": true,
-    "note": "Keep member identity as (batch seed, returned profile index), and keep batches intact in held-out diagnostics until multi-profile semantics are confirmed."
+    "note": "Keep uncontrolled member identity as (batch seed, returned profile index). A smart counterpart adds control_mode, reuses the same seed/index, and is never treated as an independent charger.",
+    "smart_counterfactual_pairing": {
+      "decision": "EV-006",
+      "may_be_aggregated_as_independent_members": false,
+      "reuse_uncontrolled_batch_seed_and_member_index": true,
+      "smart_control_role_and_parameters_approved": false
+    }
   },
   "status": "planned-request-metadata-only"
 }
