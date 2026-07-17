@@ -6,6 +6,7 @@ from src.fuzzy import TrapezoidalFuzzyNumber
 from src.pbox import (
     PBoxAlphaResult,
     ProbabilityEstimate,
+    VertexUseMode,
     assert_nested,
     estimate_vertex_pbox,
 )
@@ -26,6 +27,7 @@ def test_vertex_pbox_matches_hand_counted_endpoint_probabilities() -> None:
         sample_count=40,
         root_seed=7,
         evaluator=_threshold_evaluator,
+        use_mode=VertexUseMode.PRE_G3_SYNTHETIC,
     )
 
     calls = _recording_calls(fuzzy, [0.0], 40, 7)
@@ -63,6 +65,7 @@ def test_vertex_pbox_is_deterministic_for_same_root_seed() -> None:
         sample_count=50,
         root_seed=99,
         evaluator=_threshold_evaluator,
+        use_mode=VertexUseMode.PRE_G3_SYNTHETIC,
     )
     second = estimate_vertex_pbox(
         fuzzy_number=fuzzy,
@@ -70,6 +73,7 @@ def test_vertex_pbox_is_deterministic_for_same_root_seed() -> None:
         sample_count=50,
         root_seed=99,
         evaluator=_threshold_evaluator,
+        use_mode=VertexUseMode.PRE_G3_SYNTHETIC,
     )
 
     assert first == second
@@ -84,6 +88,7 @@ def test_vertex_pbox_satisfies_bound_order_and_nestedness() -> None:
         sample_count=100,
         root_seed=1,
         evaluator=_threshold_evaluator,
+        use_mode=VertexUseMode.PRE_G3_SYNTHETIC,
     )
 
     for result in pbox.values():
@@ -109,6 +114,7 @@ def test_probability_estimate_rejects_invalid_ci_order() -> None:
 def test_nestedness_violation_is_reported() -> None:
     pbox = {
         0.0: PBoxAlphaResult(
+            use_mode=VertexUseMode.PRE_G3_SYNTHETIC,
             alpha=0.0,
             rho_lower=0.0,
             rho_upper=1.0,
@@ -116,6 +122,7 @@ def test_nestedness_violation_is_reported() -> None:
             upper=ProbabilityEstimate(0.7, 0.6, 0.8, 7, 10),
         ),
         0.5: PBoxAlphaResult(
+            use_mode=VertexUseMode.PRE_G3_SYNTHETIC,
             alpha=0.5,
             rho_lower=0.25,
             rho_upper=0.75,
@@ -146,5 +153,20 @@ def _recording_calls(
         sample_count=sample_count,
         root_seed=root_seed,
         evaluator=evaluator,
+        use_mode=VertexUseMode.PRE_G3_SYNTHETIC,
     )
     return calls
+
+
+def test_vertex_pbox_rejects_implicit_string_use_mode() -> None:
+    fuzzy = TrapezoidalFuzzyNumber(0.0, 0.25, 0.75, 1.0)
+
+    with pytest.raises(TypeError, match="use_mode must be a VertexUseMode"):
+        estimate_vertex_pbox(
+            fuzzy_number=fuzzy,
+            alpha_grid=[0.0],
+            sample_count=10,
+            root_seed=1,
+            evaluator=_threshold_evaluator,
+            use_mode="g3-approved",  # type: ignore[arg-type]
+        )

@@ -56,7 +56,9 @@
 ## Details
 
 ### 0. Version history
-**G1-A2 integration (2026-07-14):** grid error uses a symmetric relative, arbitrarily dependent scenario envelope; its numerical A-013 value remains proposed. G2 empirically encloses additive Tier-1 error, and the exact mixed endpoints are propagated before event detection. A manifested integrated future-layer screen replaces the unsupported fixed 16-104 MVA domain and informs, without post-hoc tuning, the total-versus-firm capacity choice. **v3:** manuscript retitled to *“When can grid reinforcement wait? Bounding overload probability under deeply uncertain demand-side flexibility”*; new-reader orientation and glossary added at the top; Müller & Jansen caveat refreshed after full-text verification. **v2:** restructured the original plan per Section 11 ("Recommended sharpening") and the "Where the biggest gap lies" verdict of the combined literature review. The propagation chain is retained as *infrastructure*; the novelty and the argument now live in the α-indexed decision metrics, the five-treatment decision-reversal benchmark, and the pilot-anchored elicitation. All fuzzy/p-box mathematics from the original plan is preserved; only its framing and the reporting rules change.
+**ALEA-001 integration (2026-07-15):** known aleatory dependence is preserved through a common calendar, complete temporal trajectories, and one paired multivariate weather member anchored to a KNMI year and shared by HP and PV within each realization. Supplementary irradiance must cover the same timestamps; a typical-year PV reference is not sampled as realized weather. CRN reuses that coherent realization across epistemic and treatment branches. Copulas, latent factors, or multivariate block bootstrap remain evidence-triggered escalation paths. **G1-A2 integration (2026-07-14):** grid error uses a symmetric relative, arbitrarily dependent scenario envelope; its numerical A-013 value remains proposed. G2 empirically encloses additive Tier-1 error, and the exact mixed endpoints are propagated before event detection. A manifested integrated future-layer screen replaces the unsupported fixed 16-104 MVA domain and informs, without post-hoc tuning, the total-versus-firm capacity choice. **v3:** manuscript retitled to *“When can grid reinforcement wait? Bounding overload probability under deeply uncertain demand-side flexibility”*; new-reader orientation and glossary added at the top; Müller & Jansen caveat refreshed after full-text verification. **v2:** restructured the original plan per Section 11 ("Recommended sharpening") and the "Where the biggest gap lies" verdict of the combined literature review. The propagation chain is retained as *infrastructure*; the novelty and the argument now live in the α-indexed decision metrics, the five-treatment decision-reversal benchmark, and the pilot-anchored elicitation. All fuzzy/p-box mathematics from the original plan is preserved; only its framing and the reporting rules change.
+
+**G0-A3 working-threshold amendment (2026-07-16):** future implementation uses a strict import-loading threshold `L_import > 1.1 p.u.` sustained for four consecutive 15-minute steps. The 110% value is provisional and must be reviewed against its exact source and time-aggregation semantics before integrated event analysis; it is not yet claimed as a Dutch DSO standard. Historical 1.0-p.u. diagnostics retain their manifested meaning.
 
 ### 1. Use case (retained, lightly edited)
 A Dutch distribution system operator (DSO) must decide whether reinforcement of an MV/LV area can be **deferred** given uncertain demand growth (EVs, heat pumps), PV, batteries and demand-side flexibility. The conventional metric P(overload) ≤ P_crit is retained but **replaced by lower/upper probability bounds** [P_lower^α(E), P_upper^α(E)] for each α-level of a fuzzy flexibility-controllability assumption. The decision unit is one distribution transformer group or feeder — MV/LV in the motivating neighbourhood use case, instantiated in the case study at the HV/MV transformer of the SimBench MV grid. Throughout, we call this asset the **decision transformer**.
@@ -79,6 +81,33 @@ The controllability assumption is a **trapezoidal fuzzy number ρ̃_flex** for t
 | Tier-1-to-pandapower approximation error | numerical/model approximation | empirical symmetric/asymmetric output envelope from G2 held-out validation |
 
 Aleatory variables → Monte Carlo; ρ̃_flex → α-cuts; model errors → loading-trajectory endpoints before event detection. Lower/upper event counts and their MC CIs then form the p-box on P(overload). No interval error is sampled as independent randomness or applied as a post-hoc probability margin.
+
+Per ALEA-001, an aleatory draw is a coherent full-year realization rather than
+a collection of independently shuffled timesteps. All components share one
+canonical calendar; complete EV and baseline trajectories retain their serial
+structure, and HP and PV consume the same paired multivariate weather member so
+temperature and irradiance remain physically associated. Common random numbers
+reuse this realization across alpha levels and model branches. If held-out tail
+or dependence diagnostics reject this conditional construction, a documented
+latent-factor, block-bootstrap, or copula sensitivity is escalated rather than
+introduced silently.
+
+Per ALEA-002, component-level summaries remain data-quality checks. Congestion
+and finite-library adequacy are assessed only after all aligned technology and
+baseline profiles have been aggregated into nodal net load and evaluated at the
+decision transformer. A downstream p95 may support provisional convergence
+work, but it does not replace the signed G0 risk criterion.
+
+Per EV-004, the residential EV source is one fixed distribution of complete
+uncontrolled 2030 ElaadNL home charge-point profiles at 11 kW. This behavior
+distribution is reused across planning layers, while externally sourced
+physical charge-point counts and nodal allocation carry 2030/2033/2035 adoption
+growth. Per EV-005, the finite library is itself an uncertain empirical
+approximation: candidate and untouched held-out API batches are propagated
+through the integrated transformer workflow, and between-library variation is
+reported separately from the Monte Carlo confidence interval conditional on a
+fixed library. The initial `M = 1000` candidate is accepted only by that
+downstream test, not by assertion.
 
 ### 3. Mathematical core (retained, with reporting discipline added)
 For each α ∈ {0, 0.25, 0.5, 0.75, 1.0}, the α-cut of ρ̃_flex is an interval [ρ_lo^α, ρ_hi^α]. The applicable model-output interval has the same support at every α and admits arbitrary unknown dependence on aleatory inputs, ρ, and time. Propagating the joint fuzzy and output-error endpoints through the loading trajectory and then classifying the four-step event yields [P_lower^α(E), P_upper^α(E)]. Stacking cuts gives the p-box and the possibility/necessity (plausibility/belief) measures on the event "P(overload) ≤ P_crit."

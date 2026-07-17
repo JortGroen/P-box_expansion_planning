@@ -26,6 +26,7 @@ env/
 # Project data and generated outputs
 data/raw/*
 !data/raw/README.md
+data/processed/elaad_profiles/*
 results/
 experiments/bootstrap/
 experiments/**/outputs/

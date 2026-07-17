@@ -1,5 +1,9 @@
 # G1-A1 - Amendment: Black-Box Model Error and Tier-1 Approximation
 
+> **Threshold note (2026-07-16):** numerical references to the 1.0-p.u. event
+> threshold are historical. G0-A3 provisionally sets future analyses to strict
+> `L_import > 1.1 p.u.` and requires PI review through Q-5 before scientific use.
+
 > **Superseded in part (2026-07-14):** G1-A2 replaces the earlier expert-
 > provenance wording, fixed applicability-domain examples, and simple additive
 > composition when `epsilon_grid` is relative and Tier-1 error is

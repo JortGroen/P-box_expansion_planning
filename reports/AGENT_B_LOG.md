@@ -18,5 +18,11 @@ NEXT: Prepare PR for `E5.S2`.
 ## 2026-07-14 18:56 — E7.S1 — blocked
 DID: Started fresh branch `agent-b/E7.S1-dfmp-transform` from `origin/main` 494ab36. Re-read required governance/register/methods files and inspected `src/fuzzy.py` plus `src/pbox.py`. Implemented `src/dfmp.py` with a typed finite DFMP probability-to-possibility API and independent tests for normalization, event domination, ordering, ties, boundary cases, invalid input, and determinism. Added D-009 and the matching methods paragraph for the DFMP source/protocol.
 VERIFIED: Baseline before editing: `.\scripts\task.ps1 test` passed, 55 tests green. After adding DFMP code/tests and register/methods updates, final full suite passed: 67 tests green in 64.07s.
-OPEN: E7.S1 remains blocked by Q-5 because the exact primary-source worked example from Dubois-Foulloy-Mauris-Prade (2004) is not available in the workspace; no published-example acceptance claim was made.
+OPEN: E7.S1 remains blocked by Q-6 because the exact primary-source worked example from Dubois-Foulloy-Mauris-Prade (2004) is not available in the workspace; no published-example acceptance claim was made.
 NEXT: Await PI-provided or PI-approved primary worked example, then add the acceptance test and complete E7.S1.
+
+## 2026-07-17 — E7.S1 — blocked
+DID: Fetched/pruned origin and merged current `origin/main` into `agent-b/E7.S1-dfmp-transform` for draft PR #26. Resolved the `registers/QUESTIONS.md` conflict by preserving main's G0-A3 overload-threshold review as Q-5 and renaming the DFMP primary-source worked-example blocker to Q-6. Reconciled the E7.S1 references in STATUS, DATA_REGISTER, the methods paragraph, and this log without removing newer main entries from PR #29. Reviewed `src/dfmp.py` and `tests/test_dfmp.py`; added one invariant comment documenting tied-mass grade behavior. Searched the approved repository citation base for a DFMP primary-paper worked example and found only the verified citation/protocol references, not the exact worked example.
+VERIFIED: `.\scripts\task.ps1 test` passed after the merge: 88 tests green in 89.91s.
+OPEN: E7.S1 remains blocked by Q-6 because the exact Dubois-Foulloy-Mauris-Prade (2004) primary-source worked example is still unavailable and no published-example acceptance test can be claimed.
+NEXT: Await PI-provided or PI-approved primary worked example, add the acceptance test, then mark E7.S1 complete only if the implementation reproduces it exactly.

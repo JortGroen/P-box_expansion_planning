@@ -22,10 +22,18 @@ Bootstrap rules:
 - Scientific values, dependency changes, interface changes, gate decisions, and manuscript numbers require PI approval.
 - Every experimental result must be produced through the runner and have a manifest.
 - Every new logic change needs tests.
+- Add a succinct why-comment for non-obvious mathematical, physical, numerical, or governance logic where removing or simplifying it could silently change results. State the invariant or failure mode; do not narrate self-explanatory code.
 - Every new or changed decision, assumption, or data/protocol choice must add or update the same-ID standalone manuscript paragraph in `paper/methods_decisions_and_assumptions.md`. Preserve the register status in the prose; never write a proposed item as settled.
 - Write commit messages and PR titles/descriptions for human reviewers: concise, professional, specific about the outcome, and formatted according to the Git and PR protocol in `agent_instructions.md`. Do not submit raw agent narration or vague "update/fix work" summaries.
 - Per G1-A1, model-error intervals are applied to loading trajectories before event detection; never widen probabilities after estimation or sample an interval error as if it were independent randomness.
 - Per G1-A2, compose relative grid error with additive Tier-1 endpoints as `(1-e_grid)*max(0,L_T1-e_minus)` and `(1+e_grid)*(L_T1+e_plus)`. A-013 numerical values remain proposed; never call 5% empirical or expert-signed.
+- Per ALEA-001, construct each aleatory sample on one common calendar, keep complete temporal paths, and drive HP/PV from the same paired weather member. Treat copulas or latent factors as evidence-triggered escalations, not defaults.
+- Per ALEA-002, compute congestion and profile-library adequacy only after all components are aggregated into net load; component-level percentiles and the ElaadNL UI p95 are diagnostics only.
+- Per EV-003, direct bootstrap from complete frozen ElaadNL annual members is primary. Keep member IDs and seed metadata traceable; do not invent a within-realization replacement rule before the same-seed warning and cohort sizes are resolved.
+- Per EV-004, the primary residential EV source is one fixed 2030 ElaadNL home charge-point distribution at 11 kW, reused across planning layers; adoption changes physical charge-point counts and nodal allocation only. Do not regenerate residential behavior by planning year or substitute the superseded home-EV profile unit.
+- Per EV-005, keep finite-library uncertainty from `M` separate from conditional Monte Carlo uncertainty from `N`. Candidate and held-out API batches stay disjoint, adequacy is tested only downstream, and `M = 1000` is a candidate rather than a guaranteed sufficient size.
+- Per EV-006, unrelated ElaadNL source batches use distinct seeds, but a smart-charging counterfactual deliberately reuses its uncontrolled batch seed and returned member index. Treat the two control modes as paired potential outcomes; never aggregate or resample them as independent chargers. Smart charging remains optional until its role and parameters are separately approved.
+- Per G0-A3, the executable working event is strictly `L_import > 1.1 p.u.` for four consecutive 15-minute steps. This value is provisional: stop for PI review and resolution of Q-5 before any integrated event-based scientific analysis or manuscript result; never relabel historical 1.0-p.u. evidence.
 - Do not assume the withdrawn 16-104 MVA applicability range. E3.S2b freezes the future operating domain and reports raw MVA under both total and firm capacity conventions before probabilistic results are inspected.
 - Report alpha-indexed lower/upper bounds only; never report a defuzzified probability as the answer.
 

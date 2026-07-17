@@ -15,6 +15,12 @@ if __package__ in {None, ""}:
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from data.sources import write_metadata
+from src.ev_model import (
+    batch_summary,
+    distinct_member_count,
+    parse_elaad_profile_response,
+    save_processed_batch_npz,
+)
 
 API_URL = "https://api.charging.data.elaad.nl/profile/simulate"
 DOCS_URL = "https://api.charging.data.elaad.nl/docs#"
@@ -34,6 +40,7 @@ class ProfileBatch:
 
     set_id: str
     purpose: str
+    partition: str
     simulated_year: int
     profile_type: str
     n_profiles: int
@@ -79,56 +86,40 @@ def build_batch_request(batch: ProfileBatch) -> dict[str, Any]:
 
 
 def build_library_plan() -> tuple[ProfileBatch, ...]:
-    """Return the EV-002-compatible ElaadNL profile-library batch schedule.
+    """Return the EV-002/EV-004/EV-005 profile-library batch schedule.
 
-    The plan is metadata only: it defines request bodies and distinct batch
-    seeds. Running the API and storing generated profiles is an explicit later
-    step, and generated files remain ignored/non-redistributed.
+    The plan is metadata only: it defines request bodies and distinct
+    uncontrolled batch seeds. EV-006 may reuse one of these seeds only for its
+    labelled smart-control counterpart. Running the API and storing generated
+    profiles is an explicit later step, and generated files remain
+    ignored/non-redistributed.
     """
     batches: list[ProfileBatch] = []
 
-    home_year_seed_starts = {
-        2030: 130001,
-        2033: 133001,
-        2035: 135001,
-    }
-    for year, first_seed in home_year_seed_starts.items():
-        for offset in range(0, 1000, DEFAULT_BATCH_SIZE):
-            seed = first_seed + offset
+    # Start at 140001 because 130001 already identifies the archived legacy EV
+    # probe; reusing it for an unrelated draw would make provenance and
+    # same-seed checks ambiguous. EV-006 treatment/control pairing is the only
+    # deliberate reuse and keeps the control mode in the member identity.
+    candidate_seeds = range(140001, 141001, DEFAULT_BATCH_SIZE)
+    held_out_seeds = (141001, 141101)
+    for partition, seeds in (
+        ("candidate", candidate_seeds),
+        ("held_out", held_out_seeds),
+    ):
+        for seed in seeds:
             batches.append(
                 ProfileBatch(
                     set_id="A",
-                    purpose="primary_home_car_ev_library",
-                    simulated_year=year,
-                    profile_type="ev",
-                    n_profiles=DEFAULT_BATCH_SIZE,
-                    vehicle_types="car",
-                    location_type="home",
-                    cp_capacity_kw=11,
-                    seed=seed,
-                    storage_stem=f"A_home_car_ev_y{year}_seed{seed}-{seed + DEFAULT_BATCH_SIZE - 1}",
-                )
-            )
-
-    public_year_seed_starts = {
-        2030: 230001,
-        2035: 235001,
-    }
-    for year, first_seed in public_year_seed_starts.items():
-        for offset in range(0, 200, DEFAULT_BATCH_SIZE):
-            seed = first_seed + offset
-            batches.append(
-                ProfileBatch(
-                    set_id="B",
-                    purpose="public_van_car_cp_library",
-                    simulated_year=year,
+                    purpose="primary_home_van_car_cp_library",
+                    partition=partition,
+                    simulated_year=2030,
                     profile_type="cp",
                     n_profiles=DEFAULT_BATCH_SIZE,
                     vehicle_types=["van", "car"],
-                    location_type="public",
-                    cp_capacity_kw=22,
+                    location_type="home",
+                    cp_capacity_kw=11,
                     seed=seed,
-                    storage_stem=f"B_public_vancar_cp_y{year}_seed{seed}-{seed + DEFAULT_BATCH_SIZE - 1}",
+                    storage_stem=f"A_home_vancar_cp_y2030_batchseed{seed}_n{DEFAULT_BATCH_SIZE}",
                 )
             )
 
@@ -253,6 +244,168 @@ def run_one_profile_probe(
     return metadata_path
 
 
+def run_authorized_set_a_batch(
+    *,
+    metadata_dir: Path,
+    raw_dir: Path,
+    processed_dir: Path,
+    reports_dir: Path,
+    timeout_s: int,
+) -> Path:
+    """Run the first EV-004 home charge-point candidate probe batch."""
+    batch = build_library_plan()[0]
+    expected = {
+        "set_id": "A",
+        "partition": "candidate",
+        "simulated_year": 2030,
+        "profile_type": "cp",
+        "location_type": "home",
+        "vehicle_types": ["van", "car"],
+        "cp_capacity_kw": 11,
+        "seed": 140001,
+        "n_profiles": 100,
+    }
+    for key, value in expected.items():
+        if getattr(batch, key) != value:
+            raise ValueError(f"Authorized batch mismatch for {key}: {getattr(batch, key)!r}")
+
+    body = build_batch_request(batch)
+    request_payload = json.dumps(body, indent=2, sort_keys=True).encode("utf-8")
+    retrieval_ts = datetime.now(UTC).isoformat().replace("+00:00", "Z")
+    stem = batch.storage_stem
+
+    req = request.Request(
+        API_URL,
+        data=request_payload,
+        headers={"Content-Type": "application/json", "Accept": "application/json"},
+        method="POST",
+    )
+    with request.urlopen(req, timeout=timeout_s) as response:
+        response_payload = response.read()
+        status_code = response.status
+        response_headers = dict(response.headers.items())
+
+    raw_dir.mkdir(parents=True, exist_ok=True)
+    raw_path = raw_dir / f"{stem}.json.gz"
+    with gzip.open(raw_path, "wb") as handle:
+        handle.write(response_payload)
+
+    parsed_batch = parse_elaad_profile_response(
+        response_payload,
+        batch_seed=batch.seed,
+        expected_n_profiles=batch.n_profiles,
+    )
+    distinct_members = distinct_member_count(parsed_batch)
+
+    processed_dir.mkdir(parents=True, exist_ok=True)
+    processed_path = processed_dir / f"{stem}.npz"
+    save_processed_batch_npz(parsed_batch, processed_path)
+
+    summary = batch_summary(parsed_batch)
+    metadata_dir.mkdir(parents=True, exist_ok=True)
+    metadata_path = metadata_dir / f"{stem}_manifest.json"
+    metadata = {
+        "data_id": "D-002",
+        "task_id": "E2.S2",
+        "manifest_type": "elaad_profile_batch",
+        "status": "single-ev004-probe-batch-generated",
+        "retrieval_timestamp_utc": retrieval_ts,
+        "api_url": API_URL,
+        "api_docs_url": DOCS_URL,
+        "dashboard_url": DASHBOARD_URL,
+        "api_docs_version_info": {
+            "local_documentation_version": DOC_VERSION,
+            "outlook_basis": OUTLOOK_BASIS,
+            "server_header": response_headers.get("server") or response_headers.get("Server"),
+            "live_api_version_header": response_headers.get("x-api-version") or response_headers.get("X-API-Version"),
+        },
+        "policy": {
+            "decision": "EV-002",
+            "scientific_decisions": ["EV-004", "EV-005"],
+            "internal_project_computation": True,
+            "commit_generated_profiles": False,
+            "redistribute_generated_profiles": False,
+            "data_availability": "Readers regenerate through the public API subject to terms applicable at retrieval time.",
+            "stop_condition": "If explicit terms later prohibit this research use, stop and escalate.",
+        },
+        "request_json": body,
+        "response_status_code": status_code,
+        "response_config_block": parsed_batch.response_config,
+        "response_shape_summary": summary,
+        "seed_semantics_observed": {
+            "batch_seed": batch.seed,
+            "n_profiles": batch.n_profiles,
+            "member_identity": "Members are identified as (batch seed, returned profile index).",
+            "independent_seed_claim": "Not claimed; batch seed 140001 identifies the response and member indices distinguish returned profiles.",
+            "distinct_returned_members": distinct_members,
+        },
+        "raw_response": {
+            "path": raw_path.as_posix(),
+            "sha256_uncompressed_json": _sha256_bytes(response_payload),
+            "sha256_gzip_file": _sha256_bytes(raw_path.read_bytes()),
+        },
+        "processed_profiles": {
+            "path": processed_path.as_posix(),
+            "format": "npz",
+            "sha256_file": _sha256_bytes(processed_path.read_bytes()),
+            "commit_status": "ignored; not committed or redistributed",
+        },
+        "bulk_generation_performed": False,
+        "only_authorized_batch_generated": True,
+    }
+    metadata_path.write_text(json.dumps(metadata, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+    reports_dir.mkdir(parents=True, exist_ok=True)
+    report_path = reports_dir / "elaad_e2_s2_ev004_home_cp_batchseed140001_shape_report.md"
+    report_path.write_text(_shape_report(metadata, metadata_path), encoding="utf-8")
+
+    if distinct_members < batch.n_profiles:
+        raise ValueError(
+            f"Expected {batch.n_profiles} distinct returned members, got {distinct_members}; "
+            f"metadata saved at {metadata_path}"
+        )
+    return metadata_path
+
+
+def _shape_report(metadata: dict[str, Any], metadata_path: Path) -> str:
+    summary = metadata["response_shape_summary"]
+    energy = summary["annual_energy_kwh"]
+    peak = summary["peak_kw"]
+    request_body = metadata["request_json"]
+    request_json = json.dumps(metadata["request_json"], indent=2, sort_keys=True)
+    return (
+        "# E2.S2 ElaadNL Set A shape report\n\n"
+        "## Scope\n\n"
+        "Single EV-004 Set A candidate probe only: home charge-point profiles "
+        f"with the native car/van mix, simulated_year {request_body['simulated_year']}, "
+        f"batch seed {request_body['seed']}, n_profiles {request_body['n_profiles']}. Raw and processed "
+        "generated profiles are ignored and not redistributed under EV-002.\n\n"
+        "## Request JSON\n\n"
+        f"```json\n{request_json}\n```\n\n"
+        "## Shape and timezone\n\n"
+        f"- Timesteps: {summary['n_timesteps']}\n"
+        f"- Profiles: {summary['n_profiles']}\n"
+        f"- Distinct returned members: {summary['distinct_member_count']}\n"
+        f"- First UTC timestamp: `{summary['first_timestamp_utc']}`\n"
+        f"- First local timestamp: `{summary['first_timestamp_local']}`\n"
+        f"- Last local timestamp: `{summary['last_timestamp_local']}`\n"
+        f"- Missing/nonfinite values: {summary['missing_or_nonfinite_values']}\n"
+        f"- Negative values: {summary['negative_values']}\n\n"
+        "## Summary statistics\n\n"
+        f"- Annual energy kWh: min {energy['min']:.3f}, median {energy['median']:.3f}, "
+        f"mean {energy['mean']:.3f}, p95 {energy['p95']:.3f}, max {energy['max']:.3f}\n"
+        f"- Peak kW: min {peak['min']:.3f}, median {peak['median']:.3f}, "
+        f"mean {peak['mean']:.3f}, p95 {peak['p95']:.3f}, max {peak['max']:.3f}\n\n"
+        "## Seed semantics\n\n"
+        "Members are identified as `(batch seed, returned profile index)`. This "
+        "report does not interpret a batch seed as a range of per-member seeds.\n\n"
+        "## Evidence\n\n"
+        f"- Manifest: `{metadata_path.as_posix()}`\n"
+        f"- Raw response checksum: `{metadata['raw_response']['sha256_gzip_file']}`\n"
+        f"- Processed local checksum: `{metadata['processed_profiles']['sha256_file']}`\n"
+    )
+
+
 def write_library_plan(metadata_dir: Path) -> Path:
     """Write the planned ElaadNL profile-library request schedule metadata."""
     batches = build_library_plan()
@@ -279,6 +432,7 @@ def write_library_plan(metadata_dir: Path) -> Path:
         },
         "policy": {
             "decision": "EV-002",
+            "scientific_decisions": ["EV-004", "EV-005"],
             "internal_project_computation": True,
             "commit_generated_profiles": False,
             "redistribute_generated_profiles": False,
@@ -287,14 +441,21 @@ def write_library_plan(metadata_dir: Path) -> Path:
         },
         "seed_semantics": {
             "batch_seeds_are_distinct": True,
-            "note": "The one-profile probe cannot prove n_profiles batch expansion semantics; keep member identity as (batch seed, returned profile index) until batch probes confirm otherwise.",
+            "candidate_and_held_out_batches_are_disjoint": True,
+            "smart_counterfactual_pairing": {
+                "decision": "EV-006",
+                "reuse_uncontrolled_batch_seed_and_member_index": True,
+                "may_be_aggregated_as_independent_members": False,
+                "smart_control_role_and_parameters_approved": False,
+            },
+            "note": "Keep uncontrolled member identity as (batch seed, returned profile index). A smart counterpart adds control_mode, reuses the same seed/index, and is never treated as an independent charger.",
         },
         "batches": [
             {
                 **asdict(batch),
                 "request_json": build_batch_request(batch),
                 "raw_response_path": f"data/raw/elaad_profiles/{batch.storage_stem}.json.gz",
-                "processed_path": f"data/processed/elaad_profiles/{batch.storage_stem}.parquet",
+                "processed_path": f"data/processed/elaad_profiles/{batch.storage_stem}.npz",
             }
             for batch in batches
         ],
@@ -311,12 +472,20 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--raw-dir", default="data/raw/elaad_profiles")
     parser.add_argument("--probe-one-profile", action="store_true")
     parser.add_argument("--write-library-plan", action="store_true")
+    parser.add_argument("--run-ev004-home-cp-probe", action="store_true")
+    parser.add_argument("--processed-dir", default="data/processed/elaad_profiles")
+    parser.add_argument("--reports-dir", default="reports")
     parser.add_argument("--simulated-year", type=int, default=2033)
     parser.add_argument("--timeout-s", type=int, default=120)
     args = parser.parse_args(argv)
 
-    if args.probe_one_profile and args.write_library_plan:
-        parser.error("--probe-one-profile and --write-library-plan are mutually exclusive")
+    actions = [
+        args.probe_one_profile,
+        args.write_library_plan,
+        args.run_ev004_home_cp_probe,
+    ]
+    if sum(bool(item) for item in actions) > 1:
+        parser.error("ElaadNL actions are mutually exclusive")
 
     if args.probe_one_profile:
         path = run_one_profile_probe(
@@ -327,6 +496,14 @@ def main(argv: Sequence[str] | None = None) -> int:
         )
     elif args.write_library_plan:
         path = write_library_plan(Path(args.metadata_dir))
+    elif args.run_ev004_home_cp_probe:
+        path = run_authorized_set_a_batch(
+            metadata_dir=Path(args.metadata_dir),
+            raw_dir=Path(args.raw_dir),
+            processed_dir=Path(args.processed_dir),
+            reports_dir=Path(args.reports_dir),
+            timeout_s=args.timeout_s,
+        )
     else:
         path = write_metadata(
             "D-002",

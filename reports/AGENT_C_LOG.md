@@ -60,3 +60,9 @@ VERIFIED: `.\scripts\task.ps1 test` passed 45 tests, including `tests/test_metho
 OPEN: E2.S2 remains in progress; generated-profile redistribution remains an unresolved limitation, not an internal-use blocker under EV-002.
 NEXT: After PI review/merge of PR #18, run the first explicitly approved small ElaadNL generation batch into ignored data paths and update manifests/checksums before sampler integration.
 
+## 2026-07-14 19:00 - E2.S2 - in-progress
+DID: Created fresh branch `agent-c/E2.S2-ev-model-implementation` from `origin/main` at merge commit `494ab36`. Consulted the local ElaadNL documentation PDF read-only, implemented the Set A parser/converter and deterministic bootstrap sampler, then ran only the PI-authorized 2030 home/car EV request for seed `130001`, `n_profiles=100`.
+VERIFIED: Baseline `.\scripts\task.ps1 test` passed 55 tests before implementation; final `.\scripts\task.ps1 test` passed 62 tests. Focused EV/data tests passed 16 tests. The authorized batch returned HTTP 200, 35040 UTC timestamps, 100 profiles, 100 distinct members, zero missing/nonfinite/negative values, and wrote manifest `data/metadata/elaad_profiles/A_home_car_ev_y2030_seed130001-130100_manifest.json`; raw and processed generated files remain ignored. Sampler smoke test loaded the ignored processed batch and produced a deterministic 5-member aggregate.
+OPEN: Full Set A/B/E library generation remains PI-limited; seed semantics are still `(batch seed, returned profile index)`, not independent seeds `130001-130100`; generated-profile redistribution terms remain unresolved.
+NEXT: Finish tests, open the E2.S2 implementation PR, and wait for PI approval before any additional ElaadNL generation.
+

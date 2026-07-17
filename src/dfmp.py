@@ -99,6 +99,8 @@ def probability_to_possibility(
         raise ValueError("states and probabilities must have the same length")
 
     normalized = tuple(probability / total for probability in masses)
+    # Tied masses must share grades; otherwise input order would change the
+    # fuzzy shape for the same probability model.
     possibilities = tuple(
         min(
             1.0,
