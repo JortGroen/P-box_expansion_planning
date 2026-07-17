@@ -246,6 +246,8 @@ def test_elaad_raw_recovery_writes_manifest_without_network(
     raw_path.parent.mkdir(parents=True)
     with gzip.open(raw_path, "wb") as handle:
         handle.write(raw_json)
+    raw_gzip_before = raw_path.read_bytes()
+    raw_mtime_ns_before = raw_path.stat().st_mtime_ns
 
     metadata_dir = tmp_path / "metadata"
     processed_dir = tmp_path / "processed"
@@ -257,6 +259,9 @@ def test_elaad_raw_recovery_writes_manifest_without_network(
         reports_dir=reports_dir,
         command_wall_time_s=1.25,
     )
+
+    assert raw_path.read_bytes() == raw_gzip_before
+    assert raw_path.stat().st_mtime_ns == raw_mtime_ns_before
 
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     processed_path = processed_dir / "A_home_vancar_cp_y2030_batchseed140001_n2.npz"

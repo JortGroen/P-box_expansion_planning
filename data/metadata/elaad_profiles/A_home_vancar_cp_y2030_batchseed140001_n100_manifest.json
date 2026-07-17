@@ -36,7 +36,13 @@
   },
   "raw_response": {
     "path": "data/raw/elaad_profiles/A_home_vancar_cp_y2030_batchseed140001_n100.json.gz",
-    "sha256_gzip_file": "7ea96ed8a113fd417957107926f4548b9f937dc1bd84703faefc0281e212d3df",
+    "provenance": {
+      "initial_saved_wrapper_sha256_gzip_file": "723f72260517455d7981ef814012affb80c72a8b4935e11d661e77f4c6219924",
+      "note": "The initial saved gzip wrapper came from the single authorized API retrieval at retrieval_timestamp_utc. A later local recovery bug rewrote the ignored gzip wrapper without changing the uncompressed JSON; that later wrapper is recorded for audit only and is not a new retrieval.",
+      "recovery_rewritten_wrapper_sha256_gzip_file": "7ea96ed8a113fd417957107926f4548b9f937dc1bd84703faefc0281e212d3df",
+      "sha256_uncompressed_json": "d8dc58745311a772c171f3dee129d98b9c553833119f36e0d3a580dcb2cb7804"
+    },
+    "sha256_gzip_file": "723f72260517455d7981ef814012affb80c72a8b4935e11d661e77f4c6219924",
     "sha256_uncompressed_json": "d8dc58745311a772c171f3dee129d98b9c553833119f36e0d3a580dcb2cb7804",
     "size_bytes": 279552
   },
@@ -120,7 +126,7 @@
   },
   "response_status_code": 200,
   "response_status_code_source": "Inferred from successful urlopen before the post-response manifest bug.",
-  "retrieval_timestamp_utc": "2026-07-17T10:01:26.167328Z",
+  "retrieval_timestamp_utc": "2026-07-17T09:52:03.233106Z",
   "seed_semantics_observed": {
     "batch_seed": 140001,
     "control_mode": "uncontrolled",

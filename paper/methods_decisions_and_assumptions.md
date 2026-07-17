@@ -611,7 +611,14 @@ member ordering; actual pairing remains pending per section 7 of the Elaad
 profile generation specification. The source-level result supports proceeding
 to the remaining candidate and held-out generation, but it does not establish
 EV-005 library adequacy, which is tested only after downstream net-load
-aggregation and transformer evaluation.
+aggregation and transformer evaluation. The authorized retrieval timestamp is
+`2026-07-17T09:52:03.233106Z`; the initial saved gzip wrapper checksum is
+`723f72260517455d7981ef814012affb80c72a8b4935e11d661e77f4c6219924`, while a
+later local recovery bug produced wrapper checksum
+`7ea96ed8a113fd417957107926f4548b9f937dc1bd84703faefc0281e212d3df` without
+changing the uncompressed JSON checksum
+`d8dc58745311a772c171f3dee129d98b9c553833119f36e0d3a580dcb2cb7804`; the later
+wrapper is recorded for audit only and is not a new retrieval.
 Generated raw responses and converted local profile outputs remain
 uncommitted and unredistributed; committed artifacts are limited to
 retrieval/generation code, request configurations, seed schedules, metadata,

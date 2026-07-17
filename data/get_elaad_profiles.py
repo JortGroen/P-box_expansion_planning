@@ -309,7 +309,9 @@ def write_authorized_set_a_artifacts_from_response(
     *,
     response_payload: bytes,
     metadata_dir: Path,
-    raw_dir: Path,
+    raw_dir: Path | None = None,
+    raw_path: Path | None = None,
+    write_raw_response: bool = True,
     processed_dir: Path,
     reports_dir: Path,
     api_runtime_s: float | None,
@@ -317,15 +319,23 @@ def write_authorized_set_a_artifacts_from_response(
     status_code: int,
     response_headers: dict[str, str],
     reconstructed_from_saved_raw: bool,
+    raw_response_provenance: dict[str, Any] | None = None,
 ) -> Path:
     """Write commit-safe artifacts for the one authorized EV-004 Set A probe."""
     batch = build_library_plan()[0]
     stem = batch.storage_stem
     body = build_batch_request(batch)
-    raw_dir.mkdir(parents=True, exist_ok=True)
-    raw_path = raw_dir / f"{stem}.json.gz"
-    with gzip.open(raw_path, "wb") as handle:
-        handle.write(response_payload)
+    if raw_path is None:
+        if raw_dir is None:
+            raise ValueError("raw_dir is required when raw_path is not provided")
+        raw_dir.mkdir(parents=True, exist_ok=True)
+        raw_path = raw_dir / f"{stem}.json.gz"
+    if write_raw_response:
+        raw_path.parent.mkdir(parents=True, exist_ok=True)
+        with gzip.open(raw_path, "wb") as handle:
+            handle.write(response_payload)
+    elif not raw_path.is_file():
+        raise FileNotFoundError(f"Saved raw gzip does not exist: {raw_path}")
 
     parsed_batch = parse_elaad_profile_response(
         response_payload,
@@ -397,6 +407,7 @@ def write_authorized_set_a_artifacts_from_response(
             "size_bytes": raw_path.stat().st_size,
             "sha256_uncompressed_json": _sha256_bytes(response_payload),
             "sha256_gzip_file": _sha256_bytes(raw_path.read_bytes()),
+            **({"provenance": raw_response_provenance} if raw_response_provenance is not None else {}),
         },
         "processed_profiles": {
             "path": processed_path.as_posix(),
@@ -442,16 +453,16 @@ def write_authorized_set_a_artifacts_from_raw(
     be repaired without making a second ElaadNL API call and violating the
     one-batch authorization.
     """
-    retrieval_ts = datetime.fromtimestamp(raw_path.stat().st_mtime, UTC).isoformat().replace("+00:00", "Z")
     response_payload = read_gzip_json(raw_path)
     metadata_path = write_authorized_set_a_artifacts_from_response(
         response_payload=response_payload,
         metadata_dir=metadata_dir,
-        raw_dir=raw_path.parent,
+        raw_path=raw_path,
+        write_raw_response=False,
         processed_dir=processed_dir,
         reports_dir=reports_dir,
         api_runtime_s=None,
-        retrieval_ts=retrieval_ts,
+        retrieval_ts=datetime.fromtimestamp(raw_path.stat().st_mtime, UTC).isoformat().replace("+00:00", "Z"),
         status_code=200,
         response_headers={},
         reconstructed_from_saved_raw=True,
@@ -518,9 +529,27 @@ def _shape_report(metadata: dict[str, Any], metadata_path: Path) -> str:
         f"- Manifest: `{metadata_path.as_posix()}`\n"
         f"- Raw response checksum: `{metadata['raw_response']['sha256_gzip_file']}` "
         f"({metadata['raw_response']['size_bytes']} bytes gzip)\n"
+        f"{_raw_response_provenance_lines(metadata)}"
         f"- Processed local checksum: `{metadata['processed_profiles']['sha256_file']}` "
         f"({metadata['processed_profiles']['size_bytes']} bytes npz)\n"
     )
+
+
+def _raw_response_provenance_lines(metadata: dict[str, Any]) -> str:
+    provenance = metadata.get("raw_response", {}).get("provenance")
+    if not provenance:
+        return ""
+    lines = ["- Raw response provenance:"]
+    for key in (
+        "initial_saved_wrapper_sha256_gzip_file",
+        "recovery_rewritten_wrapper_sha256_gzip_file",
+        "sha256_uncompressed_json",
+        "note",
+    ):
+        value = provenance.get(key)
+        if value is not None:
+            lines.append(f"  - {key}: `{value}`")
+    return "\n".join(lines) + "\n"
 
 
 def _format_optional_seconds(value: Any) -> str:

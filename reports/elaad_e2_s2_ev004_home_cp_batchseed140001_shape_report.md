@@ -58,5 +58,10 @@ Members are identified as `(batch seed, returned profile index)`. This report do
 ## Evidence
 
 - Manifest: `data/metadata/elaad_profiles/A_home_vancar_cp_y2030_batchseed140001_n100_manifest.json`
-- Raw response checksum: `7ea96ed8a113fd417957107926f4548b9f937dc1bd84703faefc0281e212d3df` (279552 bytes gzip)
+- Raw response checksum: `723f72260517455d7981ef814012affb80c72a8b4935e11d661e77f4c6219924` (279552 bytes gzip)
+- Raw response provenance:
+  - initial_saved_wrapper_sha256_gzip_file: `723f72260517455d7981ef814012affb80c72a8b4935e11d661e77f4c6219924`
+  - recovery_rewritten_wrapper_sha256_gzip_file: `7ea96ed8a113fd417957107926f4548b9f937dc1bd84703faefc0281e212d3df`
+  - sha256_uncompressed_json: `d8dc58745311a772c171f3dee129d98b9c553833119f36e0d3a580dcb2cb7804`
+  - note: The initial saved gzip wrapper came from the single authorized API retrieval at `2026-07-17T09:52:03.233106Z`. A later local recovery bug rewrote the ignored gzip wrapper without changing the uncompressed JSON; that later wrapper is recorded for audit only and is not a new retrieval.
 - Processed local checksum: `e550931ead774e7a9c42a4ff06f221eb1d2c3337bc4f43e57e0ff00bd63a0f2c` (394116 bytes npz)
