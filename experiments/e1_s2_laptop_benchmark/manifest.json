@@ -1,0 +1,36 @@
+{
+  "config_hash": "af38d181ee1837e73edb618230522d70a8ead97d7f697132dff69a7bca1e526f",
+  "config_path": "experiments/e1_s2_laptop_benchmark/runner_config.json",
+  "extra": {
+    "adapter": "e1.s2.laptop_benchmark",
+    "adapter_version": "v1",
+    "artifact_type": "experiment_runner_manifest",
+    "diagnostic_threshold_pu": "not_applicable",
+    "historical_task": "E1.S2",
+    "task_id": "E1.S2",
+    "timestamp_utc": "2026-07-17T10:12:48.381402Z"
+  },
+  "git_commit": "34c1bd26d6dc63094a2575ddf346f08cb4d06694",
+  "output_checksums": {
+    "experiments/e1_s2_laptop_benchmark/BENCHMARK.md": "8002bff9c1f3bed7bb4823279f9cb33d282b2cb4a571ded1007cb5351f98448e",
+    "experiments/e1_s2_laptop_benchmark/benchmark_raw.json": "1f35f54b0dd1bc86497953f6da6e94548d01d85e05f480df9461a66d929f45f9",
+    "experiments/e1_s2_laptop_benchmark/comparison.json": "d82119ae11f3fdbc89f78eb4b34e4274269aebb5f92d566076ba047228c13d5e",
+    "experiments/e1_s2_laptop_benchmark/custom_evidence.json": "89d64bbbdd4acfaf9849d0a0030c0d4bbfa4a6c77c80fcdabe0223ec6b32d08b"
+  },
+  "package_versions": {
+    "hypothesis": "6.156.4",
+    "lightsim2grid": "0.13.1",
+    "matplotlib": "3.11.0",
+    "numba": "0.66.0",
+    "numpy": "2.3.5",
+    "pandapower": "3.5.3",
+    "pandas": "2.3.3",
+    "pytest": "9.1.1",
+    "scipy": "1.16.3",
+    "simbench": "1.6.2"
+  },
+  "schema_version": 1,
+  "seeds": {
+    "none": "deterministic"
+  }
+}

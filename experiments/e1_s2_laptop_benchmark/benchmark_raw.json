@@ -1,0 +1,153 @@
+{
+  "config": {
+    "adapter": "e1.s2.laptop_benchmark",
+    "adapter_version": "v1",
+    "backends": [
+      {
+        "kwargs": {
+          "lightsim2grid": false
+        },
+        "name": "pandapower_native"
+      },
+      {
+        "kwargs": {
+          "lightsim2grid": true
+        },
+        "name": "lightsim2grid_runpp"
+      }
+    ],
+    "candidate_grids": [
+      {
+        "code": "1-MV-semiurb--0-sw",
+        "key": "simbench_semiurb"
+      },
+      {
+        "code": "1-MV-urban--0-sw",
+        "key": "simbench_urban"
+      },
+      {
+        "code": "create_cigre_network_mv",
+        "key": "cigre_mv"
+      }
+    ],
+    "command": ".\\.venv\\Scripts\\python.exe -m src.runner experiments/e1_s2_laptop_benchmark/runner_config.json",
+    "comparisons": [
+      {
+        "expected_difference": "fresh wall-clock benchmark rerun has new timestamps and timing measurements",
+        "generated_artifact": "raw",
+        "historical_path": "reports/benchmark_raw.json",
+        "label": "raw timing"
+      },
+      {
+        "expected_difference": "runner report is normalized and timing values are a fresh rerun",
+        "generated_artifact": "report",
+        "historical_path": "reports/BENCHMARK.md",
+        "label": "report"
+      },
+      {
+        "expected_difference": "fresh runner reproduction records a new config path, timestamp, commit, and output paths",
+        "generated_artifact": "custom_evidence",
+        "historical_path": "reports/benchmark_evidence.json",
+        "label": "custom evidence"
+      }
+    ],
+    "historical_input_path": "reports/benchmark_input.json",
+    "historical_threshold_pu": "not_applicable",
+    "output_dir": "experiments/e1_s2_laptop_benchmark",
+    "repeats": 10,
+    "runpp_kwargs_common": {
+      "algorithm": "nr",
+      "calculate_voltage_angles": true,
+      "init": "auto"
+    },
+    "schema_version": 1,
+    "seeds": {
+      "none": "deterministic"
+    },
+    "task_id": "E1.S2",
+    "warmups": 2
+  },
+  "results": [
+    {
+      "backend": "pandapower_native",
+      "converged_all": true,
+      "elapsed_s": {
+        "max": 0.15550360013730824,
+        "mean": 0.11146074002608657,
+        "median": 0.10849045007489622,
+        "min": 0.08402790012769401
+      },
+      "grid_code": "1-MV-semiurb--0-sw",
+      "grid_key": "simbench_semiurb",
+      "warnings": []
+    },
+    {
+      "backend": "lightsim2grid_runpp",
+      "converged_all": true,
+      "elapsed_s": {
+        "max": 0.1478907000273466,
+        "mean": 0.1123785600066185,
+        "median": 0.10970875003840774,
+        "min": 0.08120319992303848
+      },
+      "grid_code": "1-MV-semiurb--0-sw",
+      "grid_key": "simbench_semiurb",
+      "warnings": []
+    },
+    {
+      "backend": "pandapower_native",
+      "converged_all": true,
+      "elapsed_s": {
+        "max": 0.1810014999937266,
+        "mean": 0.12966131002176554,
+        "median": 0.12481420009862632,
+        "min": 0.0939418999478221
+      },
+      "grid_code": "1-MV-urban--0-sw",
+      "grid_key": "simbench_urban",
+      "warnings": []
+    },
+    {
+      "backend": "lightsim2grid_runpp",
+      "converged_all": true,
+      "elapsed_s": {
+        "max": 0.15074869990348816,
+        "mean": 0.09743704001884908,
+        "median": 0.10241145000327379,
+        "min": 0.0335270999930799
+      },
+      "grid_code": "1-MV-urban--0-sw",
+      "grid_key": "simbench_urban",
+      "warnings": []
+    },
+    {
+      "backend": "pandapower_native",
+      "converged_all": true,
+      "elapsed_s": {
+        "max": 0.1644601000007242,
+        "mean": 0.08102914998307824,
+        "median": 0.07359849999193102,
+        "min": 0.05181340011768043
+      },
+      "grid_code": "create_cigre_network_mv",
+      "grid_key": "cigre_mv",
+      "warnings": []
+    },
+    {
+      "backend": "lightsim2grid_runpp",
+      "converged_all": true,
+      "elapsed_s": {
+        "max": 0.1857616000343114,
+        "mean": 0.08617034999188036,
+        "median": 0.08324764994904399,
+        "min": 0.047441399889066815
+      },
+      "grid_code": "create_cigre_network_mv",
+      "grid_key": "cigre_mv",
+      "warnings": []
+    }
+  ],
+  "schema_version": 1,
+  "task_id": "E1.S2",
+  "timestamp_utc": "2026-07-17T10:05:42.111812Z"
+}

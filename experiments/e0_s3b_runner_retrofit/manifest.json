@@ -1,0 +1,34 @@
+{
+  "config_hash": "b27402e39e8e367a0ea24026641f9e39b3e3ca2957d533ce6e2b21e05c502c2e",
+  "config_path": "experiments/e0_s3b_runner_retrofit/runner_config.json",
+  "extra": {
+    "adapter": "e0.s3b.reconciliation",
+    "adapter_version": "v1",
+    "artifact_type": "experiment_runner_manifest",
+    "child_runs": 6,
+    "historical_task": "E0.S3b",
+    "task_id": "E0.S3b",
+    "timestamp_utc": "2026-07-17T10:19:56.661188Z"
+  },
+  "git_commit": "34c1bd26d6dc63094a2575ddf346f08cb4d06694",
+  "output_checksums": {
+    "experiments/e0_s3b_runner_retrofit/runner_retrofit_summary.json": "2dc70f0ea22afef001ecf34eb337250d4680e3aea9c632da0c4b52dbbd863945",
+    "reports/E0_S3b_runner_retrofit.md": "b64ee9d409b0f7c5064225372529dfe122e4c23e702f9d313072bc3dd398bf88"
+  },
+  "package_versions": {
+    "hypothesis": "6.156.4",
+    "lightsim2grid": "0.13.1",
+    "matplotlib": "3.11.0",
+    "numba": "0.66.0",
+    "numpy": "2.3.5",
+    "pandapower": "3.5.3",
+    "pandas": "2.3.3",
+    "pytest": "9.1.1",
+    "scipy": "1.16.3",
+    "simbench": "1.6.2"
+  },
+  "schema_version": 1,
+  "seeds": {
+    "none": "deterministic"
+  }
+}

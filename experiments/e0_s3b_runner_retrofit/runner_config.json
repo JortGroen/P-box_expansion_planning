@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "task_id": "E0.S3b",
+  "adapter": "e0.s3b.reconciliation",
+  "adapter_version": "v1",
+  "output_dir": "experiments/e0_s3b_runner_retrofit",
+  "report_path": "reports/E0_S3b_runner_retrofit.md",
+  "seeds": {"none": "deterministic"},
+  "rerun_children": false,
+  "child_config_paths": [
+    "experiments/e1_s1_grid_inventory/runner_config.json",
+    "experiments/e1_s2_laptop_benchmark/runner_config.json",
+    "experiments/e1_s3_critical_weeks/runner_config.json",
+    "experiments/e1_s3b_import_window/runner_config.json",
+    "experiments/e1_s1b_transformer_headroom/runner_config.json",
+    "experiments/e1_s2b_timeseriescpp_benchmark/runner_config.json"
+  ]
+}
+

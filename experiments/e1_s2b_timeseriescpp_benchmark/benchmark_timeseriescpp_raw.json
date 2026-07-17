@@ -1,0 +1,542 @@
+{
+  "adapter_converter_warnings": [
+    "There were some Nan in the pp_net.sgen[\"min_p_mw\"], they have been replaced by 0",
+    "There were some Nan in the pp_net.sgen[\"max_p_mw\"], they have been replaced by 0",
+    "There were some Nan in the pp_net.sgen[\"min_q_mvar\"], they have been replaced by 0",
+    "There were some Nan in the pp_net.sgen[\"max_q_mvar\"], they have been replaced by 0",
+    "LightSim has not found any generators tagged as \"slack bus\" in the pandapower network.I will attempt to add some from the ext_grid."
+  ],
+  "config": {
+    "command": ".\\.venv\\Scripts\\python.exe -m src.runner experiments/e1_s2b_timeseriescpp_benchmark/runner_config.json",
+    "config_path_label": "experiments/e1_s2b_timeseriescpp_benchmark/runner_config.json",
+    "description": "TimeSeriesCPP AC benchmark for the selected SimBench primary grid.",
+    "equivalence_load_multipliers": [
+      0.8,
+      1.0,
+      1.2,
+      1.5,
+      2.65,
+      2.7,
+      2.75,
+      2.8,
+      2.85
+    ],
+    "evidence_output_path": "experiments/e1_s2b_timeseriescpp_benchmark/custom_evidence.json",
+    "grid_code": "1-MV-semiurb--0-sw",
+    "grid_key": "simbench_semiurb",
+    "materialization_acceptance": {
+      "max_abs_bus_vm_pu": 0.001,
+      "max_abs_loading_pu": 0.002
+    },
+    "max_iter": 20,
+    "raw_output_path": "experiments/e1_s2b_timeseriescpp_benchmark/benchmark_timeseriescpp_raw.json",
+    "repeats": 5,
+    "report_output_path": "experiments/e1_s2b_timeseriescpp_benchmark/BENCHMARK_TIMESERIESCPP.md",
+    "schema_version": 1,
+    "task_id": "E1.S2b",
+    "time_steps": 672,
+    "timing_method": "time.perf_counter wall-clock timings plus TimeSeriesCPP internal solver/preprocessing/current-flow timers",
+    "tolerance": 1e-08,
+    "warmup_policy": "one complete adapter construction and small TimeSeriesCPP solve before measured repetitions; one high-level runpp warm-up per backend before measured repetitions",
+    "warmups": 1
+  },
+  "hardware_runtime": {
+    "cpu_count": 12,
+    "platform": "Windows-11-10.0.26200-SP0",
+    "processor": "Intel64 Family 6 Model 186 Stepping 3, GenuineIntel",
+    "python": "3.12.7"
+  },
+  "materialization_discrepancy": {
+    "acceptance_criterion": {
+      "max_abs_bus_vm_pu": 0.001,
+      "max_abs_loading_pu": 0.002
+    },
+    "acceptance_passed": true,
+    "closed_bus_bus_impedance_check": "passed: no closed bus-bus switches with nonzero z_ohm were present before fusing",
+    "load_multipliers": [
+      0.8,
+      1.0,
+      1.2,
+      1.5,
+      2.65,
+      2.7,
+      2.75,
+      2.8,
+      2.85
+    ],
+    "max_abs_delta": {
+      "loading_pu": 0.0010221906639629186,
+      "max_bus_vm_pu": 0.00024212301766068922,
+      "p_mw": 0.003385318772188839,
+      "q_mvar": 0.0830244811966736,
+      "s_mva": 0.08177525311703349
+    },
+    "one_end_open_line_note": "Open line switches are represented by setting the corresponding whole line out of service. If pandapower retains any charging contribution from a one-end-open line under the original switch-table model, that contribution is removed in the materialized network; the numerical effect is captured by the Q, loading, and voltage deltas above.",
+    "open_transformer_switch_check": "passed: no open transformer switches were present before dropping the switch table",
+    "rows": [
+      {
+        "delta": {
+          "loading_pu": 0.0010221906639629186,
+          "max_bus_vm_pu": 0.0002391252426221513,
+          "p_mw": 0.0005660607062714096,
+          "q_mvar": 0.0830244811966736,
+          "s_mva": 0.08177525311703349
+        },
+        "load_multiplier": 0.8,
+        "materialized": {
+          "loading_pu": 0.11607474880337043,
+          "nameplate_mva": 80.0,
+          "p_mw": 1.6612501697210946,
+          "q_mvar": 9.136173742661702,
+          "s_mva": 9.285979904269634
+        },
+        "original": {
+          "loading_pu": 0.11505255813940751,
+          "nameplate_mva": 80.0,
+          "p_mw": 1.6606841090148232,
+          "q_mvar": 9.053149261465029,
+          "s_mva": 9.204204651152601
+        }
+      },
+      {
+        "delta": {
+          "loading_pu": 0.0008610418200508951,
+          "max_bus_vm_pu": 0.00023885096451892185,
+          "p_mw": 0.0007339584765695406,
+          "q_mvar": 0.08268935218988815,
+          "s_mva": 0.06888334560407294
+        },
+        "load_multiplier": 1.0,
+        "materialized": {
+          "loading_pu": 0.17943952924319315,
+          "nameplate_mva": 80.0,
+          "p_mw": 8.02906578741974,
+          "q_mvar": 11.899781022077924,
+          "s_mva": 14.355162339455452
+        },
+        "original": {
+          "loading_pu": 0.17857848742314225,
+          "nameplate_mva": 80.0,
+          "p_mw": 8.02833182894317,
+          "q_mvar": 11.817091669888036,
+          "s_mva": 14.28627899385138
+        }
+      },
+      {
+        "delta": {
+          "loading_pu": 0.0007461598010548576,
+          "max_bus_vm_pu": 0.00023864544661211795,
+          "p_mw": 0.0009170995116871694,
+          "q_mvar": 0.08239419093349909,
+          "s_mva": 0.05969278408439038
+        },
+        "load_multiplier": 1.2,
+        "materialized": {
+          "loading_pu": 0.25915511946176867,
+          "nameplate_mva": 80.0,
+          "p_mw": 14.437677774373054,
+          "q_mvar": 14.879054624542965,
+          "s_mva": 20.732409556941494
+        },
+        "original": {
+          "loading_pu": 0.2584089596607138,
+          "nameplate_mva": 80.0,
+          "p_mw": 14.436760674861366,
+          "q_mvar": 14.796660433609466,
+          "s_mva": 20.672716772857104
+        }
+      },
+      {
+        "delta": {
+          "loading_pu": 0.0006610957670541429,
+          "max_bus_vm_pu": 0.00023849225508765226,
+          "p_mw": 0.00122432439763287,
+          "q_mvar": 0.08203693333406292,
+          "s_mva": 0.05288766136433054
+        },
+        "load_multiplier": 1.5,
+        "materialized": {
+          "loading_pu": 0.3900534519932264,
+          "nameplate_mva": 80.0,
+          "p_mw": 24.13367213733998,
+          "q_mvar": 19.780614747856195,
+          "s_mva": 31.20427615945811
+        },
+        "original": {
+          "loading_pu": 0.38939235622617224,
+          "nameplate_mva": 80.0,
+          "p_mw": 24.132447812942345,
+          "q_mvar": 19.69857781452213,
+          "s_mva": 31.15138849809378
+        }
+      },
+      {
+        "delta": {
+          "loading_pu": 0.000624695998383662,
+          "max_bus_vm_pu": 0.0002408605028391131,
+          "p_mw": 0.002944379239508521,
+          "q_mvar": 0.08211761485129188,
+          "s_mva": 0.049975679870698286
+        },
+        "load_multiplier": 2.65,
+        "materialized": {
+          "loading_pu": 0.9585288121084268,
+          "nameplate_mva": 80.0,
+          "p_mw": 62.48258456427968,
+          "q_mvar": 44.453374691651774,
+          "s_mva": 76.68230496867415
+        },
+        "original": {
+          "loading_pu": 0.9579041161100431,
+          "nameplate_mva": 80.0,
+          "p_mw": 62.479640185040175,
+          "q_mvar": 44.37125707680048,
+          "s_mva": 76.63232928880345
+        }
+      },
+      {
+        "delta": {
+          "loading_pu": 0.0006273044342861578,
+          "max_bus_vm_pu": 0.00024114004384145904,
+          "p_mw": 0.0030488747306378627,
+          "q_mvar": 0.08220187881902774,
+          "s_mva": 0.050184354742896176
+        },
+        "load_multiplier": 2.7,
+        "materialized": {
+          "loading_pu": 0.9857460916063653,
+          "nameplate_mva": 80.0,
+          "p_mw": 64.20491657429372,
+          "q_mvar": 45.78841527327869,
+          "s_mva": 78.85968732850922
+        },
+        "original": {
+          "loading_pu": 0.9851187871720791,
+          "nameplate_mva": 80.0,
+          "p_mw": 64.20186769956308,
+          "q_mvar": 45.70621339445966,
+          "s_mva": 78.80950297376633
+        }
+      },
+      {
+        "delta": {
+          "loading_pu": 0.0006301583940380162,
+          "max_bus_vm_pu": 0.00024144256157121458,
+          "p_mw": 0.0031570400619784778,
+          "q_mvar": 0.08229623885179649,
+          "s_mva": 0.0504126715230484
+        },
+        "load_multiplier": 2.75,
+        "materialized": {
+          "loading_pu": 1.0132195980209564,
+          "nameplate_mva": 80.0,
+          "p_mw": 65.93310776730843,
+          "q_mvar": 47.15034045001672,
+          "s_mva": 81.05756784167652
+        },
+        "original": {
+          "loading_pu": 1.0125894396269184,
+          "nameplate_mva": 80.0,
+          "p_mw": 65.92995072724645,
+          "q_mvar": 47.068044211164924,
+          "s_mva": 81.00715517015347
+        }
+      },
+      {
+        "delta": {
+          "loading_pu": 0.0006332587650195176,
+          "max_bus_vm_pu": 0.00024176964096089826,
+          "p_mw": 0.003269104378276211,
+          "q_mvar": 0.08240134171391844,
+          "s_mva": 0.05066070120155075
+        },
+        "load_multiplier": 2.8,
+        "materialized": {
+          "loading_pu": 1.0409583867899086,
+          "nameplate_mva": 80.0,
+          "p_mw": 67.66737587072609,
+          "q_mvar": 48.53998523022714,
+          "s_mva": 83.27667094319268
+        },
+        "original": {
+          "loading_pu": 1.040325128024889,
+          "nameplate_mva": 80.0,
+          "p_mw": 67.66410676634781,
+          "q_mvar": 48.45758388851322,
+          "s_mva": 83.22601024199113
+        }
+      },
+      {
+        "delta": {
+          "loading_pu": 0.0006366079005983849,
+          "max_bus_vm_pu": 0.00024212301766068922,
+          "p_mw": 0.003385318772188839,
+          "q_mvar": 0.08251789586586966,
+          "s_mva": 0.050928632047885
+        },
+        "load_multiplier": 2.85,
+        "materialized": {
+          "loading_pu": 1.0689721603011066,
+          "nameplate_mva": 80.0,
+          "p_mw": 69.40795354054103,
+          "q_mvar": 49.958237099666704,
+          "s_mva": 85.51777282408854
+        },
+        "original": {
+          "loading_pu": 1.0683355524005083,
+          "nameplate_mva": 80.0,
+          "p_mw": 69.40456822176884,
+          "q_mvar": 49.875719203800834,
+          "s_mva": 85.46684419204065
+        }
+      }
+    ],
+    "transformer_indices": [
+      0,
+      1
+    ]
+  },
+  "pandapower_runpp": {
+    "pandapower_lightsim2grid": {
+      "converged_all": true,
+      "elapsed": {
+        "max_s": 0.09112840006127954,
+        "mean_s": 0.06062060003168881,
+        "median_s": 0.0680925000924617,
+        "min_s": 0.029137699864804745
+      },
+      "options_lightsim2grid_all_true": true,
+      "repeats": [
+        {
+          "converged": true,
+          "elapsed_s": 0.06865260004997253,
+          "pandapower_option_lightsim2grid": true,
+          "requested_lightsim2grid": true,
+          "warnings": []
+        },
+        {
+          "converged": true,
+          "elapsed_s": 0.0680925000924617,
+          "pandapower_option_lightsim2grid": true,
+          "requested_lightsim2grid": true,
+          "warnings": []
+        },
+        {
+          "converged": true,
+          "elapsed_s": 0.09112840006127954,
+          "pandapower_option_lightsim2grid": true,
+          "requested_lightsim2grid": true,
+          "warnings": []
+        },
+        {
+          "converged": true,
+          "elapsed_s": 0.04609180008992553,
+          "pandapower_option_lightsim2grid": true,
+          "requested_lightsim2grid": true,
+          "warnings": []
+        },
+        {
+          "converged": true,
+          "elapsed_s": 0.029137699864804745,
+          "pandapower_option_lightsim2grid": true,
+          "requested_lightsim2grid": true,
+          "warnings": []
+        }
+      ],
+      "warnings": []
+    },
+    "pandapower_native": {
+      "converged_all": true,
+      "elapsed": {
+        "max_s": 0.10370539990253747,
+        "mean_s": 0.06371219996362924,
+        "median_s": 0.05127210007049143,
+        "min_s": 0.030020299833267927
+      },
+      "options_lightsim2grid_all_true": false,
+      "repeats": [
+        {
+          "converged": true,
+          "elapsed_s": 0.03717219992540777,
+          "pandapower_option_lightsim2grid": false,
+          "requested_lightsim2grid": false,
+          "warnings": []
+        },
+        {
+          "converged": true,
+          "elapsed_s": 0.05127210007049143,
+          "pandapower_option_lightsim2grid": false,
+          "requested_lightsim2grid": false,
+          "warnings": []
+        },
+        {
+          "converged": true,
+          "elapsed_s": 0.09639100008644164,
+          "pandapower_option_lightsim2grid": false,
+          "requested_lightsim2grid": false,
+          "warnings": []
+        },
+        {
+          "converged": true,
+          "elapsed_s": 0.10370539990253747,
+          "pandapower_option_lightsim2grid": false,
+          "requested_lightsim2grid": false,
+          "warnings": []
+        },
+        {
+          "converged": true,
+          "elapsed_s": 0.030020299833267927,
+          "pandapower_option_lightsim2grid": false,
+          "requested_lightsim2grid": false,
+          "warnings": []
+        }
+      ],
+      "warnings": []
+    }
+  },
+  "schema_version": 1,
+  "task_id": "E1.S2b",
+  "timeseriescpp": {
+    "compute_vs_wall": {
+      "max_s": 0.2046083000022918,
+      "mean_s": 0.1502596199978143,
+      "median_s": 0.16565830004401505,
+      "min_s": 0.0671594999730587
+    },
+    "conversion_setup": {
+      "max_s": 5.694000700023025,
+      "mean_s": 5.005020559998229,
+      "median_s": 5.096992200007662,
+      "min_s": 4.372630099998787
+    },
+    "current_flow_result_extraction": {
+      "max_s": 0.006212499924004078,
+      "mean_s": 0.004902039980515837,
+      "median_s": 0.0053067998960614204,
+      "min_s": 0.002292199991643429
+    },
+    "input_shapes": {
+      "branch_flows": [
+        672,
+        123
+      ],
+      "gen_p": [
+        672,
+        1
+      ],
+      "load_p": [
+        672,
+        115
+      ],
+      "load_q": [
+        672,
+        115
+      ],
+      "sgen_p": [
+        672,
+        121
+      ],
+      "vinit": [
+        115
+      ],
+      "voltages": [
+        672,
+        115
+      ]
+    },
+    "input_update": {
+      "max_s": 0.0013450998812913895,
+      "mean_s": 0.0010886599775403738,
+      "median_s": 0.0011131998617202044,
+      "min_s": 0.0008264000061899424
+    },
+    "internal_current_flow": {
+      "max_s": 0.0061645,
+      "mean_s": 0.00486732,
+      "median_s": 0.0052602,
+      "min_s": 0.0022824
+    },
+    "internal_preprocessing": {
+      "max_s": 0.0037398,
+      "mean_s": 0.00304574,
+      "median_s": 0.0034198,
+      "min_s": 0.0014289
+    },
+    "internal_solver": {
+      "max_s": 0.19547910000000013,
+      "mean_s": 0.14331754,
+      "median_s": 0.15782129999999991,
+      "min_s": 0.06432040000000004
+    },
+    "power_flow_result_extraction": {
+      "max_s": 0.0066090000327676535,
+      "mean_s": 0.004545020032674074,
+      "median_s": 0.004583700094372034,
+      "min_s": 0.0018909999635070562
+    },
+    "repeats": 5,
+    "solved_counts": [
+      672,
+      672,
+      672,
+      672,
+      672
+    ],
+    "time_steps": 672,
+    "voltage_result_extraction": {
+      "max_s": 4.1800085455179214e-05,
+      "mean_s": 2.7360068634152414e-05,
+      "median_s": 2.6999972760677338e-05,
+      "min_s": 1.5099998563528061e-05
+    },
+    "warmups": 1
+  },
+  "timestamp_utc": "2026-07-17T10:18:49.733669Z",
+  "topology_materialization": {
+    "bus_count_after": 115,
+    "bus_count_before": 117,
+    "disabled_lines": [
+      113,
+      114,
+      115,
+      116,
+      117,
+      118,
+      119,
+      120
+    ],
+    "dropped_switches": 246,
+    "fused_bus_pairs": [
+      [
+        0,
+        1
+      ],
+      [
+        2,
+        3
+      ]
+    ],
+    "fused_bus_switches": [
+      0,
+      5
+    ],
+    "in_service_line_count_after": 113,
+    "line_count_before": 121,
+    "open_line_switches": [
+      233,
+      235,
+      237,
+      239,
+      241,
+      243,
+      245,
+      247
+    ],
+    "sgen_limit_columns_cast": [
+      "min_p_mw",
+      "max_p_mw",
+      "min_q_mvar",
+      "max_q_mvar"
+    ]
+  }
+}

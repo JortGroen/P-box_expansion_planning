@@ -1,0 +1,20 @@
+[
+  {
+    "expected_difference": "runner-normalized report path/content differs from the historical narrative report; numeric inventory rows are reproduced in grid_inventory_rows.json",
+    "generated_path": "experiments/e1_s1_grid_inventory/grid_inventory.md",
+    "generated_sha256": "8bb7d75e8fcfb6c2b68be92661bb979b031014323221fa992430ffbaff55249d",
+    "historical_path": "reports/grid_inventory.md",
+    "historical_sha256": "db609911f413bf0a30cbfc0a6d502d773b4d139277976296c3d0af28ad0ec128",
+    "label": "report",
+    "match": false
+  },
+  {
+    "expected_difference": "fresh runner reproduction records a new config path, timestamp, commit, and output paths",
+    "generated_path": "experiments/e1_s1_grid_inventory/custom_evidence.json",
+    "generated_sha256": "7a3af0efca2aa970f8fb25afe67640f4dc7ca56b60cbe7704944512869bb864f",
+    "historical_path": "reports/grid_inventory_evidence.json",
+    "historical_sha256": "18498d4352e8b7c953cbc3b3a42789fc8d8cf5118160908fbcfacc2f859a1d4a",
+    "label": "custom evidence",
+    "match": false
+  }
+]

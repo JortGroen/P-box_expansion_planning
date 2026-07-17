@@ -1,0 +1,29 @@
+[
+  {
+    "expected_difference": "fresh wall-clock benchmark rerun has new timestamps, hardware/runtime context, and timing measurements",
+    "generated_path": "experiments/e1_s2b_timeseriescpp_benchmark/benchmark_timeseriescpp_raw.json",
+    "generated_sha256": "ea11f6bf2dfdab4ee12e663707bddc89630c24706278a3a12116edc0fe9357f8",
+    "historical_path": "reports/benchmark_timeseriescpp_raw.json",
+    "historical_sha256": "7efb282a00e7186fb1dbf69427486cc7aa7cb62e3f0fa2ba444fbccd28e042b8",
+    "label": "raw timing",
+    "match": false
+  },
+  {
+    "expected_difference": "runner output paths and timing values differ from the retained historical report",
+    "generated_path": "experiments/e1_s2b_timeseriescpp_benchmark/BENCHMARK_TIMESERIESCPP.md",
+    "generated_sha256": "b7801240a0f7b38de5e65e743445bcfcecc4e4bd4a9281164f9ebd554d356f7a",
+    "historical_path": "reports/BENCHMARK_TIMESERIESCPP.md",
+    "historical_sha256": "3da6ac6838eccb86362efe05799925c69ee57d38e6c024bcdd1218c49d1ba43f",
+    "label": "report",
+    "match": false
+  },
+  {
+    "expected_difference": "fresh runner reproduction records a new config path, timestamp, commit, hardware context, and output paths",
+    "generated_path": "experiments/e1_s2b_timeseriescpp_benchmark/custom_evidence.json",
+    "generated_sha256": "ded11b4eea4c79f5c8cf5d20ca3e14c7680c9e074a7fa68fc1eb7a0394612055",
+    "historical_path": "reports/benchmark_timeseriescpp_evidence.json",
+    "historical_sha256": "2a124b10967408e25bad14f1e903d13269969650e1a94aaa8427739be317365e",
+    "label": "custom evidence",
+    "match": false
+  }
+]

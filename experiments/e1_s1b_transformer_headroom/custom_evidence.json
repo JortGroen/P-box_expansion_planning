@@ -1,0 +1,50 @@
+{
+  "config_hash": "926c4e2efa2c8e2209aa04c84ee86f197ece13632849eeab3ccd67d2d9aa5457",
+  "config_path": "experiments/e1_s1b_transformer_headroom/diagnostic_config.runtime.json",
+  "extra": {
+    "artifact_type": "transformer_headroom_evidence",
+    "busbar_switch_indices": [
+      0,
+      5
+    ],
+    "command": ".\\.venv\\Scripts\\python.exe -m src.runner experiments/e1_s1b_transformer_headroom/runner_config.json",
+    "decision_transformer_indices": [
+      0,
+      1
+    ],
+    "fallback_threshold_pu": 0.85,
+    "grid_code": "1-MV-semiurb--0-sw",
+    "outage_convention": "firm (n-1) is computed as total selected decision-transformer nameplate minus the single largest in-service unit nameplate",
+    "scenario": 0,
+    "target_loading_pu": 0.95,
+    "task_id": "E1.S1b",
+    "timestamp_utc": "2026-07-17T10:16:56.187735Z",
+    "transformer_switch_indices": [
+      1,
+      2,
+      3,
+      4
+    ]
+  },
+  "git_commit": "34c1bd26d6dc63094a2575ddf346f08cb4d06694",
+  "output_checksums": {
+    "experiments/e1_s1b_transformer_headroom/data/transformer_headroom_diagnostic.csv": "74d6254cce8d8fb0f6c16bdc4f3aef8465bd8c6c2d5275151c804edee7c14eb8",
+    "experiments/e1_s1b_transformer_headroom/reports/transformer_headroom_diagnostic.md": "69b346d95a356fbe6685d3ce9e16917dbdd7fae740cb79be32ffd1e80adbca6f"
+  },
+  "package_versions": {
+    "hypothesis": "6.156.4",
+    "lightsim2grid": "0.13.1",
+    "matplotlib": "3.11.0",
+    "numba": "0.66.0",
+    "numpy": "2.3.5",
+    "pandapower": "3.5.3",
+    "pandas": "2.3.3",
+    "pytest": "9.1.1",
+    "scipy": "1.16.3",
+    "simbench": "1.6.2"
+  },
+  "schema_version": 1,
+  "seeds": {
+    "none": "deterministic"
+  }
+}

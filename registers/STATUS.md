@@ -7,7 +7,7 @@ Format: `Story | Owner | status | tasks | blocked-by | PR`
 | E0.S1 Repo & environment | C | done | 4/4 | -- | -- |
 | E0.S2 Control registers | C | done | 2/2 | -- | -- |
 | E0.S3 Run-manifest utility | C | done | 2/2 | -- | -- |
-| E0.S3b ExperimentRunner compliance retrofit | C/A | todo | 0/4 | before G2/G6 | -- |
+| E0.S3b ExperimentRunner compliance retrofit | C/A | review | 4/4 | before G2/G6 | #31 |
 | E0.S4 Agent working agreement | C | done | 1/1 | -- | -- |
 | E1.S1 Grid loading | A | done | 3/3 | -- | #2 |
 | E1.S2 Laptop micro-benchmark | A | done | 2/2 | -- | #7 |
@@ -57,3 +57,5 @@ Format: `Story | Owner | status | tasks | blocked-by | PR`
 | E10.S3 Repro package | C | todo | 0/3 | figures/results | -- |
 | E10.S4 Red team | all | todo | 0/1 | manuscript draft | -- |
 | E10.S5 Gates G6/G7 | HUMAN | todo | 0/1 | E10.S1-E10.S4 | -- |
+
+

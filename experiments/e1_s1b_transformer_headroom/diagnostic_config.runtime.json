@@ -1,0 +1,28 @@
+{
+  "busbar_switch_indices": [
+    0,
+    5
+  ],
+  "command": ".\\.venv\\Scripts\\python.exe -m src.runner experiments/e1_s1b_transformer_headroom/runner_config.json",
+  "config_path_label": "experiments/e1_s1b_transformer_headroom/runner_config.json",
+  "decision_transformer_indices": [
+    0,
+    1
+  ],
+  "fallback_threshold_pu": 0.85,
+  "grid_code": "1-MV-semiurb--0-sw",
+  "manifest_path": "experiments/e1_s1b_transformer_headroom/custom_evidence.json",
+  "output_dir": "experiments/e1_s1b_transformer_headroom/data",
+  "profile_start": "2016-01-01T00:00:00Z",
+  "report_path": "experiments/e1_s1b_transformer_headroom/reports/transformer_headroom_diagnostic.md",
+  "scenario": 0,
+  "step_minutes": 15,
+  "target_loading_pu": 0.95,
+  "task_id": "E1.S1b",
+  "transformer_switch_indices": [
+    1,
+    2,
+    3,
+    4
+  ]
+}

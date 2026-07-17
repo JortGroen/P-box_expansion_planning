@@ -1,0 +1,29 @@
+[
+  {
+    "expected_difference": null,
+    "generated_path": "experiments/e1_s1b_transformer_headroom/data/transformer_headroom_diagnostic.csv",
+    "generated_sha256": "74d6254cce8d8fb0f6c16bdc4f3aef8465bd8c6c2d5275151c804edee7c14eb8",
+    "historical_path": "data/transformer_headroom_diagnostic.csv",
+    "historical_sha256": "74d6254cce8d8fb0f6c16bdc4f3aef8465bd8c6c2d5275151c804edee7c14eb8",
+    "label": "numeric table",
+    "match": true
+  },
+  {
+    "expected_difference": "runner output paths and manifest references differ from the retained historical report",
+    "generated_path": "experiments/e1_s1b_transformer_headroom/reports/transformer_headroom_diagnostic.md",
+    "generated_sha256": "69b346d95a356fbe6685d3ce9e16917dbdd7fae740cb79be32ffd1e80adbca6f",
+    "historical_path": "reports/transformer_headroom_diagnostic.md",
+    "historical_sha256": "bb9a73d3ed61b8d16d01495a0a9aa6362047fab23b2cef2fc0190b995be07d25",
+    "label": "report",
+    "match": false
+  },
+  {
+    "expected_difference": "fresh runner reproduction records a new config path, timestamp, commit, and output paths",
+    "generated_path": "experiments/e1_s1b_transformer_headroom/custom_evidence.json",
+    "generated_sha256": "cc0350c36d2aaefd789f97857f6d62a071e69482f731615815821f2fe8b88086",
+    "historical_path": "reports/transformer_headroom_evidence.json",
+    "historical_sha256": "e68dc9331b709e583e6502744a242e3004f7e6b273ab9e3aa18c3814a54118ae",
+    "label": "custom evidence",
+    "match": false
+  }
+]

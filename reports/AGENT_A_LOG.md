@@ -63,3 +63,10 @@ VERIFIED: Pre-change `.\scripts\task.ps1 test` passed: 55 tests. Focused `.\.ven
 OPEN: E1.S4 is ready for PI review. The evaluator does not choose total versus firm capacity, set epsilon values, estimate epsilon_Tier1, or freeze IC-2 schema changes.
 NEXT: PI reviews the E1.S4 PR; Agent A does not start E3 or IC-2/IC-3 schema work in this session.
 
+
+## 2026-07-17 12:20 - E0.S3b - review
+DID: Started fresh branch `agent-a/E0.S3b-runner-retrofit` from latest `origin/main` after PR #29 governance updates. Replaced the E0 smoke-only runner with an adapter-based ExperimentRunner and added versioned runner configs for E1.S1, E1.S2, E1.S3, E1.S3b, E1.S1b, and E1.S2b. Regenerated standard manifests under `experiments/e1_*/manifest.json`, retained historical custom evidence, and wrote `reports/E0_S3b_runner_retrofit.md` plus `experiments/e0_s3b_runner_retrofit/runner_retrofit_summary.json` to compare runner outputs against retained evidence.
+VERIFIED: Baseline `./scripts/task.ps1 test` passed: 76 tests. Focused `./.venv/Scripts/python.exe -m pytest tests/test_runner.py` passed: 3 tests. Final `./scripts/task.ps1 test` passed: 79 tests. Runner reproductions completed for all six migrated diagnostics; deterministic tables match for E1.S3, E1.S3b, and E1.S1b where configured, while report/evidence/timing differences are documented as path, timestamp, manifest, hardware, or fresh wall-clock rerun differences. E1.S3b preserves its historical executed `threshold_pu = 1.0` and is not relabeled as G0-A3 `1.1 p.u.`.
+OPEN: Q-5 remains open before integrated event-based scientific analysis or manuscript event results. No G0, G0-A3, G1, G2, IC schema, epsilon, or capacity-denominator decision was changed.
+NEXT: PI reviews the E0.S3b runner retrofit PR; E3.S2b/E3.S3 should use the standard runner manifests after merge.
+

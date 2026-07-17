@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "task_id": "E1.S1b",
+  "adapter": "e1.s1b.transformer_headroom",
+  "adapter_version": "v1",
+  "output_dir": "experiments/e1_s1b_transformer_headroom",
+  "seeds": {"none": "deterministic"},
+  "command": ".\\.venv\\Scripts\\python.exe -m src.runner experiments/e1_s1b_transformer_headroom/runner_config.json",
+  "historical_input_path": "reports/transformer_headroom_input.json",
+  "historical_threshold_pu": "not_applicable",
+  "diagnostic_config": {
+    "task_id": "E1.S1b",
+    "scenario": 0,
+    "grid_code": "1-MV-semiurb--0-sw",
+    "decision_transformer_indices": [0, 1],
+    "busbar_switch_indices": [0, 5],
+    "transformer_switch_indices": [1, 2, 3, 4],
+    "profile_start": "2016-01-01T00:00:00Z",
+    "step_minutes": 15,
+    "fallback_threshold_pu": 0.85,
+    "target_loading_pu": 0.95,
+    "output_dir": "experiments/e1_s1b_transformer_headroom/data",
+    "report_path": "experiments/e1_s1b_transformer_headroom/reports/transformer_headroom_diagnostic.md",
+    "manifest_path": "experiments/e1_s1b_transformer_headroom/custom_evidence.json"
+  },
+  "generated_artifacts": {
+    "csv": "experiments/e1_s1b_transformer_headroom/data/transformer_headroom_diagnostic.csv",
+    "report": "experiments/e1_s1b_transformer_headroom/reports/transformer_headroom_diagnostic.md",
+    "custom_evidence": "experiments/e1_s1b_transformer_headroom/custom_evidence.json"
+  },
+  "generated_output_paths": [
+    "experiments/e1_s1b_transformer_headroom/data/transformer_headroom_diagnostic.csv",
+    "experiments/e1_s1b_transformer_headroom/reports/transformer_headroom_diagnostic.md",
+    "experiments/e1_s1b_transformer_headroom/custom_evidence.json"
+  ],
+  "comparisons": [
+    {"label": "numeric table", "generated_artifact": "csv", "historical_path": "data/transformer_headroom_diagnostic.csv"},
+    {"label": "report", "generated_artifact": "report", "historical_path": "reports/transformer_headroom_diagnostic.md", "expected_difference": "runner output paths and manifest references differ from the retained historical report"},
+    {"label": "custom evidence", "generated_artifact": "custom_evidence", "historical_path": "reports/transformer_headroom_evidence.json", "expected_difference": "fresh runner reproduction records a new config path, timestamp, commit, and output paths"}
+  ]
+}

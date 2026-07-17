@@ -1,0 +1,4 @@
+scenario,grid_code,export_max_loading_pu,export_max_timestamp,export_steps_above_threshold,export_episodes,import_steps_above_threshold,import_episodes,import_steps,export_steps,zero_direction_steps
+0,1-MV-semiurb--0-sw,0.13501271082514282,2016-05-29 12:45:00+00:00,0,0,0,0,23333,11803,0
+1,1-MV-semiurb--1-sw,0.44042736542483835,2016-07-25 11:30:00+00:00,0,0,0,0,12398,22738,0
+2,1-MV-semiurb--2-sw,0.5335111909759307,2016-07-25 11:30:00+00:00,0,0,0,0,11105,24031,0

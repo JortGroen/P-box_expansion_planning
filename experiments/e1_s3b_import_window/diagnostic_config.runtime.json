@@ -1,0 +1,29 @@
+{
+  "command": ".\\.venv\\Scripts\\python.exe -m src.runner experiments/e1_s3b_import_window/runner_config.json",
+  "config_path_label": "experiments/e1_s3b_import_window/runner_config.json",
+  "coverage_target": 0.95,
+  "decision_transformer_indices": [
+    0,
+    1
+  ],
+  "description": "G0-A1 import/export split and adaptive import-window diagnostic.",
+  "direction_rule": "G0-A1: P_net > 0 import, P_net < 0 export, P_net = 0 neither; abs(S_net) remains the loading magnitude.",
+  "figure_dir": "experiments/e1_s3b_import_window/reports",
+  "manifest_path": "experiments/e1_s3b_import_window/custom_evidence.json",
+  "margin_weeks": 1,
+  "min_consecutive_steps": 4,
+  "output_dir": "experiments/e1_s3b_import_window/data",
+  "profile_start": "2016-01-01T00:00:00Z",
+  "report_path": "experiments/e1_s3b_import_window/reports/import_window_diagnostic.md",
+  "report_top_week_rows": 10,
+  "scenario_codes": {
+    "0": "1-MV-semiurb--0-sw",
+    "1": "1-MV-semiurb--1-sw",
+    "2": "1-MV-semiurb--2-sw"
+  },
+  "schema_version": 1,
+  "step_minutes": 15,
+  "task_id": "E1.S3b",
+  "threshold_pu": 1.0,
+  "top_count": 672
+}

@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "task_id": "E1.S2",
+  "adapter": "e1.s2.laptop_benchmark",
+  "adapter_version": "v1",
+  "output_dir": "experiments/e1_s2_laptop_benchmark",
+  "seeds": {"none": "deterministic"},
+  "command": ".\\.venv\\Scripts\\python.exe -m src.runner experiments/e1_s2_laptop_benchmark/runner_config.json",
+  "historical_input_path": "reports/benchmark_input.json",
+  "historical_threshold_pu": "not_applicable",
+  "warmups": 2,
+  "repeats": 10,
+  "runpp_kwargs_common": {"algorithm": "nr", "calculate_voltage_angles": true, "init": "auto"},
+  "backends": [
+    {"name": "pandapower_native", "kwargs": {"lightsim2grid": false}},
+    {"name": "lightsim2grid_runpp", "kwargs": {"lightsim2grid": true}}
+  ],
+  "candidate_grids": [
+    {"key": "simbench_semiurb", "code": "1-MV-semiurb--0-sw"},
+    {"key": "simbench_urban", "code": "1-MV-urban--0-sw"},
+    {"key": "cigre_mv", "code": "create_cigre_network_mv"}
+  ],
+  "comparisons": [
+    {"label": "raw timing", "generated_artifact": "raw", "historical_path": "reports/benchmark_raw.json", "expected_difference": "fresh wall-clock benchmark rerun has new timestamps and timing measurements"},
+    {"label": "report", "generated_artifact": "report", "historical_path": "reports/BENCHMARK.md", "expected_difference": "runner report is normalized and timing values are a fresh rerun"},
+    {"label": "custom evidence", "generated_artifact": "custom_evidence", "historical_path": "reports/benchmark_evidence.json", "expected_difference": "fresh runner reproduction records a new config path, timestamp, commit, and output paths"}
+  ]
+}
