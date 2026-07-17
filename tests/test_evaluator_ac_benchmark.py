@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 import numpy as np
 import pytest
 
@@ -9,6 +11,7 @@ from src.evaluator_ac_benchmark import (
     make_repeated_inputs,
     materialize_topology_for_lightsim,
     run_materialization_discrepancy,
+    render_report,
 )
 from src.grid_loader import load_candidate_grid
 
@@ -106,3 +109,58 @@ def test_timeseriescpp_solves_small_batch() -> None:
     assert solved == 1
     assert adapter.computer.nb_solved() == 2
     assert np.asarray(adapter.computer.get_voltages()).shape == (2, len(adapter.net.bus))
+
+def test_render_report_includes_timing_context_note() -> None:
+    raw = {
+        "timestamp_utc": "2026-07-17T00:00:00Z",
+        "config_path": "experiments/example/diagnostic_config.runtime.json",
+        "config": {
+            "raw_output_path": "experiments/example/raw.json",
+            "report_output_path": "experiments/example/report.md",
+            "timing_context_note": "Descriptive E0.S3b compliance rerun only.",
+        },
+        "timeseriescpp": {
+            "time_steps": 2,
+            "internal_solver": {"median_s": 0.002},
+            "compute_vs_wall": {"median_s": 0.004},
+            "conversion_setup": {"median_s": 0.1},
+            "input_update": {"median_s": 0.001},
+            "internal_preprocessing": {"median_s": 0.001},
+            "voltage_result_extraction": {"median_s": 0.001},
+            "current_flow_result_extraction": {"median_s": 0.001},
+            "power_flow_result_extraction": {"median_s": 0.001},
+            "input_shapes": {},
+        },
+        "pandapower_runpp": {
+            "pandapower_lightsim2grid": {"elapsed": {"median_s": 0.01}},
+            "pandapower_native": {"elapsed": {"median_s": 0.02}},
+        },
+        "topology_materialization": {
+            "open_line_switches": [],
+            "disabled_lines": [],
+            "fused_bus_switches": [],
+            "bus_count_before": 1,
+            "bus_count_after": 1,
+            "in_service_line_count_after": 0,
+        },
+        "adapter_converter_warnings": [],
+        "materialization_discrepancy": {
+            "acceptance_criterion": {"max_abs_loading_pu": 0.002, "max_abs_bus_vm_pu": 0.001},
+            "acceptance_passed": True,
+            "rows": [
+                {
+                    "load_multiplier": 1.0,
+                    "original": {"loading_pu": 0.1},
+                    "materialized": {"loading_pu": 0.1},
+                    "delta": {"p_mw": 0.0, "q_mvar": 0.0, "s_mva": 0.0, "loading_pu": 0.0, "max_bus_vm_pu": 0.0},
+                }
+            ],
+            "open_transformer_switch_check": "passed",
+            "closed_bus_bus_impedance_check": "passed",
+            "one_end_open_line_note": "No one-end-open line difference.",
+        },
+    }
+
+    report = render_report(raw, Path("experiments/example/custom_evidence.json"))
+
+    assert "Timing context: Descriptive E0.S3b compliance rerun only." in report

@@ -523,6 +523,8 @@ def render_report(raw: dict[str, Any], evidence_path: Path) -> str:
     per_step_compute_ms = compute_ms / steps
     yearly_solver_s = per_step_solver_ms * 35040 / 1000.0
     yearly_compute_s = per_step_compute_ms * 35040 / 1000.0
+    timing_context = raw["config"].get("timing_context_note")
+    timing_context_lines = (["", f"Timing context: {timing_context}"] if timing_context else [])
     lines = [
         "# E1.S2b TimeSeriesCPP AC Benchmark",
         "",
@@ -544,6 +546,7 @@ def render_report(raw: dict[str, Any], evidence_path: Path) -> str:
             f"on the order of one full-year deterministic trajectory in {yearly_compute_s:.2f} s "
             f"for voltage solves alone, before scenario construction and selected result extraction."
         ),
+        *timing_context_lines,
         "",
         "This does not change G1 or G2. It refines the compute-path evidence: the earlier high-level `pandapower.runpp` path is unsuitable for the Monte Carlo inner loop, but the lower-level C++ time-series solve can host deterministic AC validation subsets.",
         "",
