@@ -5,7 +5,7 @@ import pandas as pd
 import pytest
 
 from src.profiles import critical_week_report
-from src.runner import AdapterResult, ExperimentRunner
+from src.runner import AdapterResult, ExperimentRunner, _grid_inventory_report
 
 
 def test_experiment_runner_writes_manifest_and_comparison(tmp_path: Path) -> None:
@@ -203,3 +203,20 @@ def test_critical_week_report_uses_configured_artifact_paths() -> None:
     assert "experiments/example/reports/critical_week_loading.png" in report
     assert "`data/critical_weeks.csv`" not in report
     assert "`reports/critical_week_loading.png`" not in report
+
+def test_grid_inventory_report_uses_runner_artifact_paths() -> None:
+    report = _grid_inventory_report(
+        {
+            "output_dir": "experiments/example_inventory",
+            "command": ".\\.venv\\Scripts\\python.exe -m src.runner experiments/example_inventory/runner_config.json",
+            "historical_input_path": "reports/grid_inventory_input.json",
+        },
+        [],
+        Path("experiments/example_inventory/runner_config.json"),
+    )
+
+    assert "experiments/example_inventory/runner_config.json" in report
+    assert "experiments/example_inventory/manifest.json" in report
+    assert "experiments/example_inventory/grid_inventory_rows.json" in report
+    assert "experiments/example_inventory/grid_inventory.md" in report
+    assert "reports/grid_inventory_input.json" not in report
