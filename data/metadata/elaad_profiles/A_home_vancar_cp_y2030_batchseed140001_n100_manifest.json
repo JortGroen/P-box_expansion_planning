@@ -38,11 +38,11 @@
     "path": "data/raw/elaad_profiles/A_home_vancar_cp_y2030_batchseed140001_n100.json.gz",
     "provenance": {
       "initial_saved_wrapper_sha256_gzip_file": "723f72260517455d7981ef814012affb80c72a8b4935e11d661e77f4c6219924",
-      "note": "The initial saved gzip wrapper came from the single authorized API retrieval at retrieval_timestamp_utc. A later local recovery bug rewrote the ignored gzip wrapper without changing the uncompressed JSON; that later wrapper is recorded for audit only and is not a new retrieval.",
+      "note": "The initial saved gzip wrapper came from the single authorized API retrieval at retrieval_timestamp_utc. A later local recovery bug rewrote the ignored gzip wrapper without changing the uncompressed JSON; the rewritten wrapper is the current local raw file, is recorded for audit, and is not a new retrieval.",
       "recovery_rewritten_wrapper_sha256_gzip_file": "7ea96ed8a113fd417957107926f4548b9f937dc1bd84703faefc0281e212d3df",
       "sha256_uncompressed_json": "d8dc58745311a772c171f3dee129d98b9c553833119f36e0d3a580dcb2cb7804"
     },
-    "sha256_gzip_file": "723f72260517455d7981ef814012affb80c72a8b4935e11d661e77f4c6219924",
+    "sha256_gzip_file": "7ea96ed8a113fd417957107926f4548b9f937dc1bd84703faefc0281e212d3df",
     "sha256_uncompressed_json": "d8dc58745311a772c171f3dee129d98b9c553833119f36e0d3a580dcb2cb7804",
     "size_bytes": 279552
   },
