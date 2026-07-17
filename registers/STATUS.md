@@ -57,5 +57,3 @@ Format: `Story | Owner | status | tasks | blocked-by | PR`
 | E10.S3 Repro package | C | todo | 0/3 | figures/results | -- |
 | E10.S4 Red team | all | todo | 0/1 | manuscript draft | -- |
 | E10.S5 Gates G6/G7 | HUMAN | todo | 0/1 | E10.S1-E10.S4 | -- |
-
-
