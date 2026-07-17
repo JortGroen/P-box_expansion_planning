@@ -146,7 +146,7 @@
       "manifest_path": "data/metadata/elaad_profiles/A_home_vancar_cp_y2030_batchseed141001_n100_manifest.json",
       "n_profiles": 100,
       "n_timesteps": 35040,
-      "partition": "held_out",
+      "partition": "quarantined_precriterion_diagnostic",
       "processed_path": "data/processed/elaad_profiles/A_home_vancar_cp_y2030_batchseed141001_n100.npz",
       "processed_sha256_file": "d258eb3fee8539a5b8cf903932c09ccdd97d8948131233756a0cb6a18ea2abf4",
       "raw_path": "data/raw/elaad_profiles/A_home_vancar_cp_y2030_batchseed141001_n100.json.gz",
@@ -160,13 +160,41 @@
       "manifest_path": "data/metadata/elaad_profiles/A_home_vancar_cp_y2030_batchseed141101_n100_manifest.json",
       "n_profiles": 100,
       "n_timesteps": 35040,
-      "partition": "held_out",
+      "partition": "quarantined_precriterion_diagnostic",
       "processed_path": "data/processed/elaad_profiles/A_home_vancar_cp_y2030_batchseed141101_n100.npz",
       "processed_sha256_file": "81cb968212ea633504f05b0cc8cd081f1813f3395b7170e23d8eaa2f3137c856",
       "raw_path": "data/raw/elaad_profiles/A_home_vancar_cp_y2030_batchseed141101_n100.json.gz",
       "raw_sha256_gzip_file": "08e0e7febb99aa3aa61c008cb62dcf1212fb4ff9e7d0dc4c4a8bb945a96f497c",
       "raw_sha256_uncompressed_json": "23a9e3c63d6bed792647656704b98ec06edc90b44e24dd518b4a7e5b2101a73b",
       "seed": 141101,
+      "smart_pair_order_verified": false
+    },
+    {
+      "distinct_member_count": 100,
+      "manifest_path": "data/metadata/elaad_profiles/A_home_vancar_cp_y2030_batchseed141201_n100_manifest.json",
+      "n_profiles": 100,
+      "n_timesteps": 35040,
+      "partition": "held_out",
+      "processed_path": "data/processed/elaad_profiles/A_home_vancar_cp_y2030_batchseed141201_n100.npz",
+      "processed_sha256_file": "7342bb2f358bd7826081f6fa83697fd968493ffba38c3be6c64fe945772e1008",
+      "raw_path": "data/raw/elaad_profiles/A_home_vancar_cp_y2030_batchseed141201_n100.json.gz",
+      "raw_sha256_gzip_file": "3ce70109142725626d968937a22b3d5d1627dd455e5563f5f73e5d55eddda5a3",
+      "raw_sha256_uncompressed_json": "476cc4c2a2f2c7a58ea50174efbc321135ed9fca26fe154103c73e070658fe1d",
+      "seed": 141201,
+      "smart_pair_order_verified": false
+    },
+    {
+      "distinct_member_count": 100,
+      "manifest_path": "data/metadata/elaad_profiles/A_home_vancar_cp_y2030_batchseed141301_n100_manifest.json",
+      "n_profiles": 100,
+      "n_timesteps": 35040,
+      "partition": "held_out",
+      "processed_path": "data/processed/elaad_profiles/A_home_vancar_cp_y2030_batchseed141301_n100.npz",
+      "processed_sha256_file": "443dbad9dcb04391788be470f1489b0363048852d9a9333815abca73fc12ce13",
+      "raw_path": "data/raw/elaad_profiles/A_home_vancar_cp_y2030_batchseed141301_n100.json.gz",
+      "raw_sha256_gzip_file": "5eb6e39079b828bcd1af586a8ff3f5c11ae8f9ae11899fd515d65878738b1555",
+      "raw_sha256_uncompressed_json": "7661816ea127b46a0e31bd8f854902fec28829a387249c862ab675379b509663",
+      "seed": 141301,
       "smart_pair_order_verified": false
     }
   ],
@@ -177,13 +205,13 @@
     "retry_idempotence": "Retries reuse the identical request_json for a batch seed and cannot register a duplicate batch.",
     "unit": "one 100-profile API batch"
   },
-  "command_wall_time_s": 0.035498299868777394,
-  "created_timestamp_utc": "2026-07-17T14:50:56.966755Z",
+  "command_wall_time_s": 0.058706500101834536,
+  "created_timestamp_utc": "2026-07-17T16:33:39.500547Z",
   "data_id": "D-002",
   "held_out_member_count": 200,
   "held_out_seeds": [
-    141001,
-    141101
+    141201,
+    141301
   ],
   "held_out_unopened_for_adequacy": true,
   "library_adequacy_proven": false,
@@ -200,7 +228,12 @@
     "redistribute_generated_profiles": false,
     "smart_profiles_generated": false
   },
-  "status": "candidate-and-held-out-batches-archived-locally",
-  "summed_recorded_api_runtime_s": 199.80500050005503,
+  "quarantined_diagnostic_member_count": 200,
+  "quarantined_diagnostic_seeds": [
+    141001,
+    141101
+  ],
+  "status": "candidate-quarantined-and-fresh-held-out-batches-archived-locally",
+  "summed_recorded_api_runtime_s": 239.67311129975133,
   "task_id": "E2.S2"
 }

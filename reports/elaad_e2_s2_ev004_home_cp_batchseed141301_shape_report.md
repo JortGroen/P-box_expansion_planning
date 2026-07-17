@@ -2,7 +2,7 @@
 
 ## Scope
 
-EV-004 Set A `candidate` batch: home charge-point profiles with the native car/van mix, simulated_year 2030, batch seed 140901, n_profiles 100. Raw and processed generated profiles are ignored and not redistributed under EV-002.
+EV-004 Set A `held_out` batch: home charge-point profiles with the native car/van mix, simulated_year 2030, batch seed 141301, n_profiles 100. Raw and processed generated profiles are ignored and not redistributed under EV-002.
 
 ## Request JSON
 
@@ -12,7 +12,7 @@ EV-004 Set A `candidate` batch: home charge-point profiles with the native car/v
   "location_type": "home",
   "n_profiles": 100,
   "profile_type": "cp",
-  "seed": 140901,
+  "seed": 141301,
   "simulated_year": 2030,
   "start_datetime": "2025-01-01T00:00:00+01:00",
   "step_size_s": 900,
@@ -40,8 +40,7 @@ EV-004 Set A `candidate` batch: home charge-point profiles with the native car/v
 
 ## Summary statistics
 
-- Annual energy kWh: min 1201.400, median 2022.975, mean 2035.050, p95 2515.267, max 2790.399
-- Peak kW: min 11.000, median 11.000, mean 11.000, p95 11.000, max 11.000
+Behavioral annual-energy, peak, and percentile summaries are intentionally omitted for fresh held-out batches until E3.S2a freezes the adequacy criterion.
 
 ## Seed semantics
 
@@ -49,7 +48,7 @@ Members are identified as `(batch seed, returned profile index)`. This report do
 
 ## Source-level verdict
 
-- API runtime seconds: 17.523
+- API runtime seconds: 18.829
 - API runtime note: Measured around the HTTPS POST only.
 - Observed failed command wall time seconds: not recorded
 - Supports proceeding to remaining candidate and held-out generation: True
@@ -57,6 +56,6 @@ Members are identified as `(batch seed, returned profile index)`. This report do
 
 ## Evidence
 
-- Manifest: `data/metadata/elaad_profiles/A_home_vancar_cp_y2030_batchseed140901_n100_manifest.json`
-- Raw response checksum: `e2b6153301528ee705b94baca10d3fce8e7d872b0326bbf1203ad736deffb955` (279033 bytes gzip)
-- Processed local checksum: `f355f90d31628af38850069ffec4413513f949d0b30c363e3204e14a7d99a231` (394145 bytes npz)
+- Manifest: `data/metadata/elaad_profiles/A_home_vancar_cp_y2030_batchseed141301_n100_manifest.json`
+- Raw response checksum: `5eb6e39079b828bcd1af586a8ff3f5c11ae8f9ae11899fd515d65878738b1555` (279693 bytes gzip)
+- Processed local checksum: `443dbad9dcb04391788be470f1489b0363048852d9a9333815abca73fc12ce13` (394142 bytes npz)

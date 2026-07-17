@@ -2,7 +2,7 @@
 
 ## Scope
 
-Single EV-004 Set A candidate probe only: home charge-point profiles with the native car/van mix, simulated_year 2030, batch seed 140501, n_profiles 100. Raw and processed generated profiles are ignored and not redistributed under EV-002.
+EV-004 Set A `candidate` batch: home charge-point profiles with the native car/van mix, simulated_year 2030, batch seed 140501, n_profiles 100. Raw and processed generated profiles are ignored and not redistributed under EV-002.
 
 ## Request JSON
 

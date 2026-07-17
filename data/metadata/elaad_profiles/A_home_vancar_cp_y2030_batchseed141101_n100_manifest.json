@@ -10,15 +10,15 @@
   "api_runtime_s": 17.947086100000888,
   "api_url": "https://api.charging.data.elaad.nl/profile/simulate",
   "authorized_generation_scope": "EV-004 Set A home charge-point batch; no public or smart-control profiles.",
-  "bulk_generation_performed": false,
+  "bulk_generation_performed": true,
   "dashboard_url": "https://charging.elaad.nl/",
   "data_id": "D-002",
   "held_out_policy": {
     "adequacy_use_allowed": false,
-    "note": "Held-out batches are archived and source-validated only; they remain unopened for adequacy analysis until E3.S2a freezes the downstream criterion.",
-    "partition": "held_out"
+    "note": "Quarantined precriterion diagnostic batch retained transparently but excluded from candidate membership and held-out adequacy certification.",
+    "partition": "quarantined_precriterion_diagnostic"
   },
-  "library_partition": "held_out",
+  "library_partition": "quarantined_precriterion_diagnostic",
   "manifest_type": "elaad_profile_batch",
   "only_authorized_batch_generated": false,
   "policy": {
@@ -39,6 +39,12 @@
     "path": "data/processed/elaad_profiles/A_home_vancar_cp_y2030_batchseed141101_n100.npz",
     "sha256_file": "81cb968212ea633504f05b0cc8cd081f1813f3395b7170e23d8eaa2f3137c856",
     "size_bytes": 394500
+  },
+  "quarantine": {
+    "decision": "EV-005 follow-up",
+    "not_general_redo_rule": true,
+    "reason": "PI-approved low-cost conservative replacement after source-level summaries were viewed before E3.S2a criterion freeze.",
+    "replacement_required_consultation_note": "Materially expensive repetition or evidence invalidation still requires PI consultation before repeating work."
   },
   "raw_response": {
     "path": "data/raw/elaad_profiles/A_home_vancar_cp_y2030_batchseed141101_n100.json.gz",
@@ -144,7 +150,7 @@
     "note": "This source-level probe checks API shape and member distinctness only; EV-005 adequacy is downstream and must not be inferred from component diagnostics.",
     "supports_remaining_candidate_and_held_out_generation": true
   },
-  "status": "ev004-set-a-library-batch-generated",
+  "status": "ev004-set-a-quarantined_precriterion_diagnostic-batch-retained",
   "storage_stem": "A_home_vancar_cp_y2030_batchseed141101_n100",
   "task_id": "E2.S2"
 }

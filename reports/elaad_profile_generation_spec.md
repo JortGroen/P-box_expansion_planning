@@ -57,7 +57,7 @@ The generator is ElaadNL's dashboard + API that produces charging profiles based
 
 **3.8 Freeze-and-archive policy (do this in Week 1–2).** The generator is a **live service** with a major update expected around summer 2026 — mid-project model drift is a real risk. Therefore: generate the approved sets promptly, convert to the implemented compressed NPZ batch format, checksum, and register; the archived files are the frozen dataset. Every batch's manifest records: full JSON request body, response `config` block, retrieval timestamp, documentation version (10 Nov 2025), and the underlying Outlook editions (Personenauto's 2024, Logistiek 2025). The paper cites the archived dataset, not the live service.
 
-**3.9 Batch sizing and finite-library design.** API limit is 500 profiles/batch, but a full-year 15-min response for 500 profiles is a very large JSON payload; use **100 profiles per call** so batch-level diagnostics and retries remain manageable. Set A grows in complete batches toward an initial candidate `M = 1000`, followed by `H = 200` untouched held-out profiles per EV-005. `M = 1000` is not accepted a priori. Retry a failed request idempotently with the same body, but never register the retry as a new batch.
+**3.9 Batch sizing and finite-library design.** API limit is 500 profiles/batch, but a full-year 15-min response for 500 profiles is a very large JSON payload; use **100 profiles per call** so batch-level diagnostics and retries remain manageable. Set A grows in complete batches toward an initial candidate `M = 1000`, followed by `H = 200` untouched held-out profiles per EV-005. Per EV-005A, seeds `141001` and `141101` are retained only as quarantined precriterion diagnostics and fresh held-out seeds are `141201` and `141301`. `M = 1000` is not accepted a priori. Retry a failed request idempotently with the same body, but never register the retry as a new batch.
 
 ---
 
@@ -71,10 +71,11 @@ The core library: charge-point-level, uncontrolled home charging, one complete y
 
 | Field | Value |
 |---|---|
-| Volume | Initial candidate **M = 1,000** plus held-out **H = 200** (12 API calls × 100); sufficiency decided only by EV-005/E3.S2a |
+| Volume | Initial candidate **M = 1,000**, quarantined diagnostic **Q = 200**, and fresh held-out **H = 200** (14 API calls × 100 including the quarantined diagnostics); sufficiency decided only by EV-005/E3.S2a |
 | Generator year | 2030 only; reused for the 2030, 2033, and 2035 planning layers |
 | Candidate batch seeds | 140001, 140101, ..., 140901; the 13xxxx range is retained as legacy provenance |
-| Held-out batch seeds | 141001 and 141101; unopened until the E3.S2a design is frozen |
+| Quarantined diagnostic seeds | 141001 and 141101; retained transparently but not candidate members and not held-out adequacy evidence |
+| Fresh held-out batch seeds | 141201 and 141301; unopened for adequacy analysis until the E3.S2a design is frozen |
 | Storage | `data/processed/elaad_profiles/A_home_vancar_cp_y2030_*.npz` |
 
 API body (first candidate batch; repeat with the listed batch seeds):
@@ -97,7 +98,7 @@ API body (first candidate batch; repeat with the listed batch seeds):
 
 Dashboard alternative: charging.elaad.nl → profile type *charge point*, location *thuis (home)*, native car/van selection, year 2030, 100 profiles, 11 kW, seed as above, no smart charging, download, repeat per batch.
 
-**Source checks:** 35,040 steps × 100 series per batch; all demands ≥ 0; returned profiles are not identical; annual-energy and seasonal-shape summaries are recorded as diagnostics without hard-coded acceptance values. Scientific adequacy is decided only downstream under EV-005. The already retrieved `A_home_car_ev_y2030` probe remains a diagnostic artifact and is not part of this primary `cp` library.
+**Source checks:** 35,040 steps × 100 series per batch; all demands ≥ 0; returned profiles are not identical. Candidate and quarantined diagnostic batches may retain annual-energy and seasonal-shape summaries as diagnostics without hard-coded acceptance values. Fresh held-out batches commit only request/provenance, checksums, structural validation, calendar/shape integrity, finite/nonnegative checks, and distinct-member count until E3.S2a freezes its criterion. Scientific adequacy is decided only downstream under EV-005. EV-005A's low-cost replacement does not create a blanket requirement to redo materially expensive work without PI consultation. The already retrieved `A_home_car_ev_y2030` probe remains a diagnostic artifact and is not part of this primary `cp` library.
 
 ### Set B — Public CP library (BLOCKED pending separate PI decision)
 
@@ -139,7 +140,8 @@ C is defined as candidate Set A batch `140001`. It is used only to exercise and 
 | Set | Year | Seed range | Count | May be aggregated with |
 |---|---|---|---|---|
 | A candidate | 2030 | batch seeds 140001–140901 in steps of 100 | 1000 | primary residential library after EV-005 acceptance |
-| A held-out | 2030 | batch seeds 141001, 141101 | 200 | validation only unless a failed test triggers a new candidate cycle |
+| A quarantined diagnostic | 2030 | batch seeds 141001, 141101 | 200 | diagnostic history only; excluded from candidate membership and held-out adequacy certification |
+| A held-out | 2030 | batch seeds 141201, 141301 | 200 | validation only after E3.S2a freezes the criterion unless a failed test triggers a new candidate cycle |
 | B | pending | pending | pending | not authorized |
 | C | 2030 | subset: A batch 140001 | 100 | fallback analysis only; not held out |
 | D | 2030 | batch seed 140001 reused from A | 100 matched counterparts | compare/substitute only; never aggregate with its A counterparts as independent chargers |

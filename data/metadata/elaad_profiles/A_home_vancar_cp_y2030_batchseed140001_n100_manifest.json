@@ -12,6 +12,12 @@
   "bulk_generation_performed": false,
   "dashboard_url": "https://charging.elaad.nl/",
   "data_id": "D-002",
+  "held_out_policy": {
+    "adequacy_use_allowed": true,
+    "note": "Candidate batch available for downstream candidate-library construction; adequacy is not inferred here.",
+    "partition": "candidate"
+  },
+  "library_partition": "candidate",
   "manifest_type": "elaad_profile_batch",
   "observed_failed_command_wall_time_s": 25.8344,
   "only_authorized_batch_generated": true,
@@ -144,6 +150,6 @@
     "note": "This source-level probe checks API shape and member distinctness only; EV-005 adequacy is downstream and must not be inferred from component diagnostics.",
     "supports_remaining_candidate_and_held_out_generation": true
   },
-  "status": "single-ev004-probe-batch-generated",
+  "status": "ev004-set-a-candidate-batch-retained",
   "task_id": "E2.S2"
 }

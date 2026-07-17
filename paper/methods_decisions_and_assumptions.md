@@ -396,10 +396,11 @@ uses `K` profile selections, `N` controls conditional simulation precision, and
 `M` controls the quality of the empirical source distribution. An initial
 candidate library of 1,000 profiles is generated as independent distinct-seed
 batches but is not declared sufficient by construction. The local Set A archive
-contains candidate seeds `140001` through `140901` and disjoint held-out seeds
-`141001` and `141101`; the held-out profiles are generated and checksummed but
-remain isolated from adequacy analysis until E3.S2a freezes the downstream
-criterion. Nested library sizes and disjoint held-out API batches are
+contains candidate seeds `140001` through `140901`, quarantined diagnostic seeds
+`141001` and `141101`, and fresh disjoint held-out seeds `141201` and `141301`;
+the fresh held-out profiles are generated and checksummed but remain isolated
+from adequacy analysis until E3.S2a freezes the downstream criterion. Nested
+library sizes and disjoint held-out API batches are
 propagated through the fully integrated net-load and transformer workflow using
 common random numbers, and variation between those results is reported
 separately from the Monte Carlo confidence interval conditional on a fixed
@@ -410,6 +411,22 @@ within-library bootstrapping is only supplementary.
 The acceptance tolerance is fixed before the adequacy results are inspected and
 is tied to transformer-result or reinforcement-decision stability rather than
 to an isolated EV-profile percentile.
+
+<!-- methods-id: EV-005A -->
+### EV-005A - Low-Cost Held-Out Replacement
+
+**Status: Approved narrow follow-up.** The precriterion summaries viewed for
+seeds `141001` and `141101` do not make those batches scientifically invalid,
+but they are conservatively reclassified as
+`quarantined_precriterion_diagnostic` and may not certify held-out adequacy.
+Because replacement required only two additional API calls, fresh disjoint
+held-out seeds `141201` and `141301` were generated under the same EV-004
+request. Their committed metadata is limited to request/provenance, checksums,
+calendar and shape integrity, finite/nonnegative checks, and distinct-member
+counts until E3.S2a freezes its adequacy criterion. This remediation is not a
+blanket automatic-redo rule: materially expensive repetition, discarded
+evidence, or substantial extra computation still requires PI consultation
+before invalidating or repeating work.
 
 <!-- methods-id: EV-006 -->
 ### EV-006 - Matched Smart-Charging Counterfactuals
@@ -635,12 +652,15 @@ negative demand values. Because no smart-control batch was generated, this
 uncontrolled-only probe does not verify that a future smart batch preserves
 member ordering; actual pairing remains pending per section 7 of the Elaad
 profile generation specification. The full EV-004 Set A local archive then
-generated candidate seeds `140101` through `140901` and held-out seeds
-`141001` and `141101` using the same fixed home charge-point request. Together
+generated candidate seeds `140101` through `140901`, quarantined diagnostic
+seeds `141001` and `141101`, and fresh held-out seeds `141201` and `141301`
+using the same fixed home charge-point request. Together
 with the previously recovered seed `140001`, the candidate archive contains
-1,000 distinct members and the held-out archive contains 200 distinct members.
-The held-out batches were generated, source-validated, checksummed, and
-archived only; they have not been opened for adequacy analysis. Set A
+1,000 distinct members, the quarantined diagnostic archive contains 200
+members, and the fresh held-out archive contains 200 distinct members.
+The fresh held-out batches were generated, source-validated, checksummed, and
+archived only; behavioral summaries are not committed for them and they have
+not been opened for adequacy analysis. Set A
 generation does not establish EV-005 library adequacy, which is tested only
 after downstream net-load aggregation and transformer evaluation. The
 authorized retrieval timestamp for seed `140001` is

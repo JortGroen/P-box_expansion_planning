@@ -103,9 +103,11 @@ def build_library_plan() -> tuple[ProfileBatch, ...]:
     # same-seed checks ambiguous. EV-006 treatment/control pairing is the only
     # deliberate reuse and keeps the control mode in the member identity.
     candidate_seeds = range(140001, 141001, DEFAULT_BATCH_SIZE)
-    held_out_seeds = (141001, 141101)
+    quarantined_seeds = (141001, 141101)
+    held_out_seeds = (141201, 141301)
     for partition, seeds in (
         ("candidate", candidate_seeds),
+        ("quarantined_precriterion_diagnostic", quarantined_seeds),
         ("held_out", held_out_seeds),
     ):
         for seed in seeds:
@@ -137,6 +139,31 @@ def _parse_json(payload: bytes) -> dict[str, Any]:
     if not isinstance(parsed, dict):
         raise ValueError("Expected API response JSON object")
     return parsed
+
+
+def _validate_response_config_matches_request(config: dict[str, Any], request_body: dict[str, Any]) -> None:
+    """Reject saved responses whose echoed request identity does not match."""
+    expected = {
+        "start_datetime": request_body["start_datetime"],
+        "stop_datetime": request_body["stop_datetime"],
+        "step_size_s": "PT15M",
+        "timezone": request_body["timezone"],
+        "simulated_year": request_body["simulated_year"],
+        "profile_type": request_body["profile_type"],
+        "n_profiles": request_body["n_profiles"],
+        "vehicle_types": request_body["vehicle_types"],
+        "location_type": request_body["location_type"],
+        "cp_capacity_kw": float(request_body["cp_capacity_kw"]),
+        "seed": request_body["seed"],
+    }
+    for key, value in expected.items():
+        actual = config.get(key)
+        if key == "cp_capacity_kw" and actual is not None:
+            actual = float(actual)
+        if actual != value:
+            raise ValueError(
+                f"ElaadNL response config mismatch for {key}: expected {value!r}, got {actual!r}"
+            )
 
 
 def _profile_shape(parsed: dict[str, Any]) -> dict[str, Any]:
@@ -345,6 +372,7 @@ def write_authorized_set_a_artifacts_from_response(
         batch_seed=batch.seed,
         expected_n_profiles=batch.n_profiles,
     )
+    _validate_response_config_matches_request(parsed_batch.response_config, body)
     distinct_members = distinct_member_count(parsed_batch)
 
     processed_dir.mkdir(parents=True, exist_ok=True)
@@ -352,6 +380,11 @@ def write_authorized_set_a_artifacts_from_response(
     save_processed_batch_npz(parsed_batch, processed_path)
 
     summary = batch_summary(parsed_batch)
+    if batch.partition == "held_out":
+        # Fresh held-out batches stay source-integrity-only until E3.S2a freezes
+        # its adequacy criterion; behavior summaries would leak evidence early.
+        summary.pop("annual_energy_kwh", None)
+        summary.pop("peak_kw", None)
     metadata_dir.mkdir(parents=True, exist_ok=True)
     metadata_path = metadata_dir / f"{stem}_manifest.json"
     metadata = {
@@ -361,7 +394,7 @@ def write_authorized_set_a_artifacts_from_response(
         "status": (
             "single-ev004-probe-batch-generated"
             if batch.seed == 140001 and batch.partition == "candidate"
-            else "ev004-set-a-library-batch-generated"
+            else f"ev004-set-a-{batch.partition}-batch-generated"
         ),
         "library_partition": batch.partition,
         "storage_stem": stem,
@@ -430,16 +463,20 @@ def write_authorized_set_a_artifacts_from_response(
             "library_adequacy_proven": False,
             "note": "This source-level probe checks API shape and member distinctness only; EV-005 adequacy is downstream and must not be inferred from component diagnostics.",
         },
-        "bulk_generation_performed": False,
+        "bulk_generation_performed": not (batch.seed == 140001 and batch.partition == "candidate"),
         "authorized_generation_scope": "EV-004 Set A home charge-point batch; no public or smart-control profiles.",
         "only_authorized_batch_generated": batch.seed == 140001 and batch.partition == "candidate",
         "held_out_policy": {
             "partition": batch.partition,
-            "adequacy_use_allowed": batch.partition != "held_out",
+            "adequacy_use_allowed": False if batch.partition in {"held_out", "quarantined_precriterion_diagnostic"} else True,
             "note": (
                 "Held-out batches are archived and source-validated only; they remain unopened for adequacy analysis until E3.S2a freezes the downstream criterion."
                 if batch.partition == "held_out"
-                else "Candidate batch available for downstream candidate-library construction; adequacy is not inferred here."
+                else (
+                    "Quarantined precriterion diagnostic batch retained transparently but excluded from candidate membership and held-out adequacy certification."
+                    if batch.partition == "quarantined_precriterion_diagnostic"
+                    else "Candidate batch available for downstream candidate-library construction; adequacy is not inferred here."
+                )
             ),
         },
         "reconstructed_from_saved_raw_response": reconstructed_from_saved_raw,
@@ -519,6 +556,7 @@ def _load_verified_checkpoint(
     metadata_dir: Path,
     raw_dir: Path,
     processed_dir: Path,
+    reports_dir: Path,
 ) -> dict[str, Any] | None:
     paths = _batch_paths(batch, metadata_dir=metadata_dir, raw_dir=raw_dir, processed_dir=processed_dir)
     manifest_path = paths["manifest"]
@@ -533,7 +571,52 @@ def _load_verified_checkpoint(
         raise ValueError(f"Raw checksum mismatch for seed {batch.seed}: {paths['raw']}")
     if manifest["processed_profiles"]["sha256_file"] != _sha256_bytes(paths["processed"].read_bytes()):
         raise ValueError(f"Processed checksum mismatch for seed {batch.seed}: {paths['processed']}")
+    if manifest.get("library_partition") != batch.partition:
+        _reclassify_checkpoint_manifest(
+            manifest_path=manifest_path,
+            manifest=manifest,
+            batch=batch,
+            reports_dir=reports_dir,
+        )
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     return manifest
+
+
+def _reclassify_checkpoint_manifest(
+    *,
+    manifest_path: Path,
+    manifest: dict[str, Any],
+    batch: ProfileBatch,
+    reports_dir: Path,
+) -> None:
+    manifest["library_partition"] = batch.partition
+    manifest["status"] = f"ev004-set-a-{batch.partition}-batch-retained"
+    manifest["bulk_generation_performed"] = not (batch.seed == 140001 and batch.partition == "candidate")
+    if batch.partition == "candidate":
+        policy_note = "Candidate batch available for downstream candidate-library construction; adequacy is not inferred here."
+        adequacy_use_allowed = True
+    elif batch.partition == "held_out":
+        policy_note = "Held-out batch archived and source-validated only; adequacy use blocked until E3.S2a criterion authorization exists."
+        adequacy_use_allowed = False
+    else:
+        policy_note = "Quarantined precriterion diagnostic batch retained transparently but excluded from candidate membership and held-out adequacy certification."
+        adequacy_use_allowed = False
+    manifest["held_out_policy"] = {
+        "partition": batch.partition,
+        "adequacy_use_allowed": adequacy_use_allowed,
+        "note": policy_note,
+    }
+    if batch.partition == "quarantined_precriterion_diagnostic":
+        manifest["quarantine"] = {
+            "decision": "EV-005 follow-up",
+            "reason": "PI-approved low-cost conservative replacement after source-level summaries were viewed before E3.S2a criterion freeze.",
+            "not_general_redo_rule": True,
+            "replacement_required_consultation_note": "Materially expensive repetition or evidence invalidation still requires PI consultation before repeating work.",
+        }
+    manifest_path.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    reports_dir.mkdir(parents=True, exist_ok=True)
+    report_path = reports_dir / f"elaad_e2_s2_ev004_home_cp_batchseed{batch.seed}_shape_report.md"
+    report_path.write_text(_shape_report(manifest, manifest_path), encoding="utf-8")
 
 
 def run_set_a_library_batch(
@@ -556,6 +639,7 @@ def run_set_a_library_batch(
         metadata_dir=metadata_dir,
         raw_dir=raw_dir,
         processed_dir=processed_dir,
+        reports_dir=reports_dir,
     )
     if checkpoint is not None:
         return metadata_dir / f"{batch.storage_stem}_manifest.json"
@@ -645,12 +729,15 @@ def write_set_a_library_manifest(
     for item in manifests:
         item.setdefault("library_partition", partitions_by_seed[item["request_json"]["seed"]])
     candidate = [item for item in manifests if item["library_partition"] == "candidate"]
+    quarantined = [
+        item for item in manifests if item["library_partition"] == "quarantined_precriterion_diagnostic"
+    ]
     held_out = [item for item in manifests if item["library_partition"] == "held_out"]
     payload = {
         "data_id": "D-002",
         "task_id": "E2.S2",
         "manifest_type": "elaad_set_a_home_cp_library",
-        "status": "candidate-and-held-out-batches-archived-locally",
+        "status": "candidate-quarantined-and-fresh-held-out-batches-archived-locally",
         "created_timestamp_utc": datetime.now(UTC).isoformat().replace("+00:00", "Z"),
         "command_wall_time_s": command_wall_time_s,
         "summed_recorded_api_runtime_s": sum(
@@ -658,8 +745,12 @@ def write_set_a_library_manifest(
         ),
         "api_runtime_note": "Sum excludes any batch whose HTTPS runtime was not recorded, including recovered seed 140001.",
         "candidate_seed_range": "140001-140901 step 100",
-        "held_out_seeds": [141001, 141101],
+        "quarantined_diagnostic_seeds": [141001, 141101],
+        "held_out_seeds": [141201, 141301],
         "candidate_member_count": sum(item["response_shape_summary"]["n_profiles"] for item in candidate),
+        "quarantined_diagnostic_member_count": sum(
+            item["response_shape_summary"]["n_profiles"] for item in quarantined
+        ),
         "held_out_member_count": sum(item["response_shape_summary"]["n_profiles"] for item in held_out),
         "library_adequacy_proven": False,
         "held_out_unopened_for_adequacy": True,
@@ -704,14 +795,29 @@ def write_set_a_library_manifest(
 
 def _shape_report(metadata: dict[str, Any], metadata_path: Path) -> str:
     summary = metadata["response_shape_summary"]
-    energy = summary["annual_energy_kwh"]
-    peak = summary["peak_kw"]
     request_body = metadata["request_json"]
     request_json = json.dumps(metadata["request_json"], indent=2, sort_keys=True)
+    partition = metadata.get("library_partition", "candidate")
+    behavior_summary = ""
+    if "annual_energy_kwh" in summary and "peak_kw" in summary:
+        energy = summary["annual_energy_kwh"]
+        peak = summary["peak_kw"]
+        behavior_summary = (
+            "## Summary statistics\n\n"
+            f"- Annual energy kWh: min {energy['min']:.3f}, median {energy['median']:.3f}, "
+            f"mean {energy['mean']:.3f}, p95 {energy['p95']:.3f}, max {energy['max']:.3f}\n"
+            f"- Peak kW: min {peak['min']:.3f}, median {peak['median']:.3f}, "
+            f"mean {peak['mean']:.3f}, p95 {peak['p95']:.3f}, max {peak['max']:.3f}\n\n"
+        )
+    else:
+        behavior_summary = (
+            "## Summary statistics\n\n"
+            "Behavioral annual-energy, peak, and percentile summaries are intentionally omitted for fresh held-out batches until E3.S2a freezes the adequacy criterion.\n\n"
+        )
     return (
         "# E2.S2 ElaadNL Set A shape report\n\n"
         "## Scope\n\n"
-        "Single EV-004 Set A candidate probe only: home charge-point profiles "
+        f"EV-004 Set A `{partition}` batch: home charge-point profiles "
         f"with the native car/van mix, simulated_year {request_body['simulated_year']}, "
         f"batch seed {request_body['seed']}, n_profiles {request_body['n_profiles']}. Raw and processed "
         "generated profiles are ignored and not redistributed under EV-002.\n\n"
@@ -728,11 +834,7 @@ def _shape_report(metadata: dict[str, Any], metadata_path: Path) -> str:
         f"- Last local timestamp: `{summary['last_timestamp_local']}`\n"
         f"- Missing/nonfinite values: {summary['missing_or_nonfinite_values']}\n"
         f"- Negative values: {summary['negative_values']}\n\n"
-        "## Summary statistics\n\n"
-        f"- Annual energy kWh: min {energy['min']:.3f}, median {energy['median']:.3f}, "
-        f"mean {energy['mean']:.3f}, p95 {energy['p95']:.3f}, max {energy['max']:.3f}\n"
-        f"- Peak kW: min {peak['min']:.3f}, median {peak['median']:.3f}, "
-        f"mean {peak['mean']:.3f}, p95 {peak['p95']:.3f}, max {peak['max']:.3f}\n\n"
+        f"{behavior_summary}"
         "## Seed semantics\n\n"
         "Members are identified as `(batch seed, returned profile index)`. This "
         "report does not interpret a batch seed as a range of per-member seeds. "
@@ -780,6 +882,9 @@ def _raw_response_provenance_lines(metadata: dict[str, Any]) -> str:
 def _library_report(payload: dict[str, Any], manifest_path: Path) -> str:
     batches = payload["batches"]
     candidate = [item for item in batches if item["partition"] == "candidate"]
+    quarantined = [
+        item for item in batches if item["partition"] == "quarantined_precriterion_diagnostic"
+    ]
     held_out = [item for item in batches if item["partition"] == "held_out"]
     return (
         "# E2.S2 ElaadNL Set A home charge-point library report\n\n"
@@ -792,6 +897,8 @@ def _library_report(payload: dict[str, Any], manifest_path: Path) -> str:
         "## Generated batches\n\n"
         f"- Candidate seeds: {payload['candidate_seed_range']} "
         f"({len(candidate)} batches, {payload['candidate_member_count']} members)\n"
+        f"- Quarantined diagnostic seeds: {', '.join(str(seed) for seed in payload['quarantined_diagnostic_seeds'])} "
+        f"({len(quarantined)} batches, {payload['quarantined_diagnostic_member_count']} members)\n"
         f"- Held-out seeds: {', '.join(str(seed) for seed in payload['held_out_seeds'])} "
         f"({len(held_out)} batches, {payload['held_out_member_count']} members)\n"
         "- Public Set B generated: False\n"
@@ -809,9 +916,13 @@ def _library_report(payload: dict[str, Any], manifest_path: Path) -> str:
         f"- Smart pair order verified: {all(item['smart_pair_order_verified'] for item in batches)}\n"
         "- Missing/nonfinite and negative-value checks are recorded in the per-batch manifests.\n\n"
         "## Held-out isolation\n\n"
-        "Held-out batches were generated, source-validated, checksummed, and "
-        "archived only. They were not opened for adequacy analysis, and E3.S2a "
-        "must freeze the adequacy criterion before any held-out use.\n\n"
+        "Seeds 141001 and 141101 are retained as quarantined precriterion "
+        "diagnostics and may not certify held-out adequacy. Fresh held-out "
+        "batches 141201 and 141301 were generated, source-validated, "
+        "checksummed, and archived only. They were not opened for adequacy "
+        "analysis, and E3.S2a must freeze the criterion before any held-out "
+        "use. The low-cost replacement does not create a blanket requirement "
+        "to redo materially expensive work without PI consultation.\n\n"
         "## Evidence\n\n"
         f"- Library manifest: `{manifest_path.as_posix()}`\n"
         "- Per-batch raw and processed checksums are listed in the manifest.\n"

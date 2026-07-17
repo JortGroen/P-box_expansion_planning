@@ -7,7 +7,8 @@ Frozen EV-004 uncontrolled home charge-point library for the native van/car mix,
 ## Generated batches
 
 - Candidate seeds: 140001-140901 step 100 (10 batches, 1000 members)
-- Held-out seeds: 141001, 141101 (2 batches, 200 members)
+- Quarantined diagnostic seeds: 141001, 141101 (2 batches, 200 members)
+- Held-out seeds: 141201, 141301 (2 batches, 200 members)
 - Public Set B generated: False
 - Smart Set D generated: False
 
@@ -17,8 +18,8 @@ Re-run data/get_elaad_profiles.py --run-set-a-home-profile-library; verified che
 
 ## Verification
 
-- Command wall time seconds: 0.035
-- Summed recorded API runtime seconds: 199.805
+- Command wall time seconds: 0.059
+- Summed recorded API runtime seconds: 239.673
 - API runtime note: Sum excludes any batch whose HTTPS runtime was not recorded, including recovered seed 140001.
 - Every listed batch has 35,040 timesteps: True
 - Every listed batch has 100 profiles: True
@@ -28,7 +29,7 @@ Re-run data/get_elaad_profiles.py --run-set-a-home-profile-library; verified che
 
 ## Held-out isolation
 
-Held-out batches were generated, source-validated, checksummed, and archived only. They were not opened for adequacy analysis, and E3.S2a must freeze the adequacy criterion before any held-out use.
+Seeds 141001 and 141101 are retained as quarantined precriterion diagnostics and may not certify held-out adequacy. Fresh held-out batches 141201 and 141301 were generated, source-validated, checksummed, and archived only. They were not opened for adequacy analysis, and E3.S2a must freeze the criterion before any held-out use. The low-cost replacement does not create a blanket requirement to redo materially expensive work without PI consultation.
 
 ## Evidence
 

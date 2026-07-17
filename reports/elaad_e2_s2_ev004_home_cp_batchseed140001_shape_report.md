@@ -2,7 +2,7 @@
 
 ## Scope
 
-Single EV-004 Set A candidate probe only: home charge-point profiles with the native car/van mix, simulated_year 2030, batch seed 140001, n_profiles 100. Raw and processed generated profiles are ignored and not redistributed under EV-002.
+EV-004 Set A `candidate` batch: home charge-point profiles with the native car/van mix, simulated_year 2030, batch seed 140001, n_profiles 100. Raw and processed generated profiles are ignored and not redistributed under EV-002.
 
 ## Request JSON
 
@@ -63,5 +63,5 @@ Members are identified as `(batch seed, returned profile index)`. This report do
   - initial_saved_wrapper_sha256_gzip_file: `723f72260517455d7981ef814012affb80c72a8b4935e11d661e77f4c6219924`
   - recovery_rewritten_wrapper_sha256_gzip_file: `7ea96ed8a113fd417957107926f4548b9f937dc1bd84703faefc0281e212d3df`
   - sha256_uncompressed_json: `d8dc58745311a772c171f3dee129d98b9c553833119f36e0d3a580dcb2cb7804`
-  - note: The initial saved gzip wrapper came from the single authorized API retrieval at `2026-07-17T09:52:03.233106Z`. A later local recovery bug rewrote the ignored gzip wrapper without changing the uncompressed JSON; the rewritten wrapper is the current local raw file, is recorded for audit, and is not a new retrieval.
+  - note: `The initial saved gzip wrapper came from the single authorized API retrieval at retrieval_timestamp_utc. A later local recovery bug rewrote the ignored gzip wrapper without changing the uncompressed JSON; the rewritten wrapper is the current local raw file, is recorded for audit, and is not a new retrieval.`
 - Processed local checksum: `e550931ead774e7a9c42a4ff06f221eb1d2c3337bc4f43e57e0ff00bd63a0f2c` (394116 bytes npz)
