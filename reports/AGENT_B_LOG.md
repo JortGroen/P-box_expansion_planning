@@ -21,3 +21,9 @@ VERIFIED: `.\scripts\task.ps1 test` passed: 94 tests green in 75.09s. No experim
 OPEN: No blocking questions for E6.S1. The never-satisfied case returns `math.inf`, following the mathematical `inf(empty)` convention rather than a project-specific sentinel.
 NEXT: Open the E6.S1 PR for review; do not resume E7.S1 or begin E6.S2.
 
+## 2026-07-17 17:01 — E5.S3 — in-progress
+DID: Completed T1 only by drafting `reports/E5_S3_OUTPUT_ERROR_SCHEMA_PROPOSAL.md`, proposing the smallest G1-A2-compliant IC-2/IC-3 schema for output-domain model-error propagation. Added proposed decision E5-S3-T1, matching methods prose, blocking Q-6 for PI approval and Agent A review, and updated STATUS to 1/4 with T2-T4 blocked.
+VERIFIED: `.\scripts\task.ps1 test` passed: 94 tests green in 73.12s. No interface implementation, experiments, or manuscript numbers were produced.
+OPEN: Q-6 asks the PI to approve or amend E5-S3-T1. E5.S3 T2-T4 remain blocked by PI-approved schema, G2 Tier-1 endpoints, signed A-013 values, and Q-5 before paper event results.
+NEXT: Wait for PI schema decision and Agent A review; do not implement E5.S3 T2-T4 until approved.
+

@@ -50,3 +50,10 @@ QUESTION: Before event-based scientific analysis, should G0-A3 remain four conse
 OPTIONS: A) Retain strict `>1.1` for four consecutive steps as primary, with the verified source and scope recorded.  B) Amend the event and sensitivities to match the verified source and applicable Dutch transformer-planning interpretation.
 RECOMMENDATION: Verify the exact passage and prefer B if its time aggregation, asset, jurisdiction, or companion 100-110% rule differs from the current working implementation.
 STATUS: open; model/data construction and non-event diagnostics may continue, but resolve before E3.S2a held-out event results, E3.S2b/E3.S3 threshold-based integrated runs, E4 `P(E)`, or manuscript results.
+
+## Q-6 - E5.S3 - 2026-07-17 - BLOCKING: yes
+CONTEXT: E5.S3 T1 requires the smallest G1-A2-compliant IC-2/IC-3 schema change before implementation. Agent B drafted `reports/E5_S3_OUTPUT_ERROR_SCHEMA_PROPOSAL.md`, proposing to pass the existing IC-2 loading trajectory payload into IC-3 and add an explicit output-error envelope with `epsilon_grid`, `epsilon_tier1_minus`, and `epsilon_tier1_plus`.
+QUESTION: Does the PI approve proposed decision E5-S3-T1 as the IC-2/IC-3 schema for output-domain model-error propagation, subject to Agent A confirming the IC-2 trajectory payload?
+OPTIONS: A) Approve E5-S3-T1 as proposed - Agents A/B can implement E5.S3 T2-T4 against trajectory endpoint counts once G2/A-013/Q-5 dependencies permit paper use.  B) Amend the schema before implementation - E5.S3 remains blocked until the PI states the required field or ownership changes.
+RECOMMENDATION: A, because the proposal reuses the current `Tier1Evaluation` fields, avoids boolean-only sample evaluation, preserves unwidened direction gating, supports asymmetric Tier-1 endpoints, and keeps implementation ownership split between A and B.
+STATUS: open

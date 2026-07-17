@@ -217,6 +217,25 @@ and decision usefulness rather than simply to create congestion. If firm
 capacity is selected, a one-transformer-out AC case is required because a
 normal-operation flow divided by 40 MVA is only a headroom diagnostic.
 
+<!-- methods-id: E5-S3-T1 -->
+### E5-S3-T1 - Proposed Output-Error Schema
+
+**Status: Proposed; pending PI approval.** The proposed IC-2/IC-3 schema for
+output-domain model-error propagation passes complete loading trajectories,
+unwidened active-power direction masks, threshold metadata, and time-domain
+flags from IC-2 to IC-3 rather than passing only a boolean overload result.
+IC-3 would then combine the G2 additive Tier-1 endpoints and the A-013
+symmetric relative grid envelope as
+`L_lower=(1-epsilon_grid)*max(0,L_T1-epsilon_Tier1_minus)` and
+`L_upper=(1+epsilon_grid)*(L_T1+epsilon_Tier1_plus)`, apply the import gate from
+unwidened `P_net`, and run the approved consecutive-step event detector on the
+lower and upper trajectories. Lower and upper event counts would generate the
+reported probabilities and confidence intervals; probabilities would not be
+widened after estimation, and `epsilon_grid` would not be independently
+sampled. This proposal is not an approved contract until Q-6 is resolved, and
+T2-T4 remain blocked by PI schema approval, G2 Tier-1 endpoints, signed A-013
+values, and Q-5 before paper event results.
+
 <!-- methods-id: ALEA-001 -->
 ### ALEA-001 - Joint Aleatory Dependency Protocol
 
