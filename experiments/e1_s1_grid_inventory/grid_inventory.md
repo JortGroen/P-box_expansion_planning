@@ -9,7 +9,8 @@ threshold to relabel under G0-A3.
 ## Evidence
 
 - Runner config: `experiments/e1_s1_grid_inventory/runner_config.json`
-- Manifest: `experiments/e1_s1_grid_inventory/manifest.json`
+- Standard claim-source manifest: `experiments/e1_s1_grid_inventory/manifest.json`
+- Retained/custom evidence: `experiments/e1_s1_grid_inventory/custom_evidence.json`
 - Data: `experiments/e1_s1_grid_inventory/grid_inventory_rows.json`
 - Report: `experiments/e1_s1_grid_inventory/grid_inventory.md`
 - Command: `.\.venv\Scripts\python.exe -m src.runner experiments/e1_s1_grid_inventory/runner_config.json`

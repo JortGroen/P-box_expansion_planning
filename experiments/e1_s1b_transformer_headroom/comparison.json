@@ -11,7 +11,7 @@
   {
     "expected_difference": "runner output paths and manifest references differ from the retained historical report",
     "generated_path": "experiments/e1_s1b_transformer_headroom/reports/transformer_headroom_diagnostic.md",
-    "generated_sha256": "93ab6803ba3db425a1811a8a4c4473135d75554831cf451d0d130968edb86790",
+    "generated_sha256": "f8816cd3831c11e407c32905e6c9dfc1568580b491dbd829e83488e4c205ed4b",
     "historical_path": "reports/transformer_headroom_diagnostic.md",
     "historical_sha256": "bb9a73d3ed61b8d16d01495a0a9aa6362047fab23b2cef2fc0190b995be07d25",
     "label": "report",
@@ -20,7 +20,7 @@
   {
     "expected_difference": "fresh runner reproduction records a new config path, timestamp, commit, and output paths",
     "generated_path": "experiments/e1_s1b_transformer_headroom/custom_evidence.json",
-    "generated_sha256": "07310abf8e3c9809ece446fcaff9eda8c2bec873d65085bf9c9917548626b287",
+    "generated_sha256": "81b85390760bb8335932e296e3b2c7512150a6da6a7a164e8813b0684826bea3",
     "historical_path": "reports/transformer_headroom_evidence.json",
     "historical_sha256": "e68dc9331b709e583e6502744a242e3004f7e6b273ab9e3aa18c3814a54118ae",
     "label": "custom evidence",

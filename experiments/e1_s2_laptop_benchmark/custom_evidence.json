@@ -6,13 +6,13 @@
     "command": ".\\.venv\\Scripts\\python.exe -m src.runner experiments/e1_s2_laptop_benchmark/runner_config.json",
     "repeats": 10,
     "task_id": "E1.S2",
-    "timestamp_utc": "2026-07-17T12:38:07.495637Z",
+    "timestamp_utc": "2026-07-17T13:09:29.719041Z",
     "warmups": 2
   },
-  "git_commit": "22e9d81c19b32d5ec0bacd9de8c72a0bf806393a",
+  "git_commit": "97f4fb6cfee247fdea42a12004b3c9fbbf7f9f3d",
   "output_checksums": {
-    "experiments/e1_s2_laptop_benchmark/BENCHMARK.md": "43a55d2ab518a4e44e165a35f99263b1fde1fa877a1ec7a88e500070e83ff2d6",
-    "experiments/e1_s2_laptop_benchmark/benchmark_raw.json": "f1a8cd5273004918d1c59c6976d5556cd6d28b52cbd57fdccec08f10ad0c614a"
+    "experiments/e1_s2_laptop_benchmark/BENCHMARK.md": "bb9f80337f629010549dbd7fe3a667900a44d8686c64621374d5272401c3cfdc",
+    "experiments/e1_s2_laptop_benchmark/benchmark_raw.json": "2824ebe3eb5e81dd464456cd42d219fb0cca866f0074dcea08d19ccf5f9633bf"
   },
   "package_versions": {
     "hypothesis": "6.156.4",

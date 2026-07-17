@@ -9,15 +9,15 @@
     "historical_task": "E1.S1b",
     "historical_threshold_preserved": true,
     "task_id": "E1.S1b",
-    "timestamp_utc": "2026-07-17T12:43:26.243599Z"
+    "timestamp_utc": "2026-07-17T13:17:24.890969Z"
   },
-  "git_commit": "22e9d81c19b32d5ec0bacd9de8c72a0bf806393a",
+  "git_commit": "97f4fb6cfee247fdea42a12004b3c9fbbf7f9f3d",
   "output_checksums": {
-    "experiments/e1_s1b_transformer_headroom/comparison.json": "0a42ded62f06d5a720a83284167ccdf4cd3d1017725d10e9a211eec705dc3a54",
-    "experiments/e1_s1b_transformer_headroom/custom_evidence.json": "07310abf8e3c9809ece446fcaff9eda8c2bec873d65085bf9c9917548626b287",
+    "experiments/e1_s1b_transformer_headroom/comparison.json": "a762c0181b7f648e660a2536c969d17b60c10e657681e4e305dac311802d5270",
+    "experiments/e1_s1b_transformer_headroom/custom_evidence.json": "81b85390760bb8335932e296e3b2c7512150a6da6a7a164e8813b0684826bea3",
     "experiments/e1_s1b_transformer_headroom/data/transformer_headroom_diagnostic.csv": "74d6254cce8d8fb0f6c16bdc4f3aef8465bd8c6c2d5275151c804edee7c14eb8",
     "experiments/e1_s1b_transformer_headroom/diagnostic_config.runtime.json": "926c4e2efa2c8e2209aa04c84ee86f197ece13632849eeab3ccd67d2d9aa5457",
-    "experiments/e1_s1b_transformer_headroom/reports/transformer_headroom_diagnostic.md": "93ab6803ba3db425a1811a8a4c4473135d75554831cf451d0d130968edb86790"
+    "experiments/e1_s1b_transformer_headroom/reports/transformer_headroom_diagnostic.md": "f8816cd3831c11e407c32905e6c9dfc1568580b491dbd829e83488e4c205ed4b"
   },
   "package_versions": {
     "hypothesis": "6.156.4",

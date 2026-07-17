@@ -27,17 +27,17 @@
     ],
     "task_id": "E1.S3b",
     "threshold_pu": 1.0,
-    "timestamp_utc": "2026-07-17T12:43:16.307900Z",
+    "timestamp_utc": "2026-07-17T13:17:10.765347Z",
     "top_count": 672
   },
-  "git_commit": "22e9d81c19b32d5ec0bacd9de8c72a0bf806393a",
+  "git_commit": "97f4fb6cfee247fdea42a12004b3c9fbbf7f9f3d",
   "output_checksums": {
     "experiments/e1_s3b_import_window/data/export_direction_exceedance.csv": "ead265f0a22ffbe54c6cfb5508484f0a26f187cccad809ebf25887e53ac8e8d7",
     "experiments/e1_s3b_import_window/data/import_window_coverage.csv": "aaabd1863f075c50fad56fd3142a54c6fd35bd434f7515d7f95e9d415334b323",
     "experiments/e1_s3b_import_window/data/import_window_proposal.csv": "fda96e1636bacf8311ffff2f11a6dd8b57d2197af72a1793ab5b4c22badf2bfb",
     "experiments/e1_s3b_import_window/data/import_windows.csv": "d8e0461e4c98bac5666aa885b8a1e86a62805e45cbdae520e47ee691dd9d0c75",
     "experiments/e1_s3b_import_window/reports/import_window_coverage.png": "208a7d170f2f5f1d63e7e8879b762cd729d7c2fe0a9fbd0d49b46a354bd2b83a",
-    "experiments/e1_s3b_import_window/reports/import_window_diagnostic.md": "9512256cf3ee780424df982927596a32cfef1febc8ef65d7f57ff00432175d37"
+    "experiments/e1_s3b_import_window/reports/import_window_diagnostic.md": "484c5701bebfd86bc7045e69534f5f03e0076b4b1a1c14bc90be1e1c8e9a2c1e"
   },
   "package_versions": {
     "hypothesis": "6.156.4",

@@ -16,12 +16,13 @@ claim; the E2/E3 technology layer does not yet exist.
 ## Evidence
 
 - Input config: `experiments/e1_s1b_transformer_headroom/runner_config.json`
-- Manifest: `experiments/e1_s1b_transformer_headroom/custom_evidence.json`
+- Standard claim-source manifest: `experiments/e1_s1b_transformer_headroom/manifest.json`
+- Retained/custom evidence: `experiments/e1_s1b_transformer_headroom/custom_evidence.json`
 - Report: `experiments/e1_s1b_transformer_headroom/reports/transformer_headroom_diagnostic.md`
 - Numeric table: `experiments/e1_s1b_transformer_headroom/data/transformer_headroom_diagnostic.csv`
 - Prior inventory reference: `reports/grid_inventory.md`
-- G1-A1 denominator/envelope reference:
-  `reports/G1_A1_MODEL_ERROR_AMENDMENT_PROPOSAL.md`
+- G1-A2 grid-error and capacity-screen reference: `registers/DECISIONS.md`
+- G1-A1 background reference: `reports/G1_A1_MODEL_ERROR_AMENDMENT_PROPOSAL.md`
 
 ## Decision Transformer And Parallel Operation
 
@@ -60,14 +61,17 @@ criterion is triggered: `false`.
 
 Firm capacity does not change the scenario-0 baseline fallback classification in this diagnostic, although it doubles the reported loading ratio for the two identical units.
 
-## Implications For Model-Error Envelopes
+## Implications For G1-A2
 
-- Additive p.u. envelopes depend on the selected nameplate denominator. A
-  fixed MVA discrepancy divided by total nameplate is not the same p.u.
-  value when divided by firm capacity.
-- Relative envelopes are invariant to the nameplate convention because the
-  same multiplicative factor applies to either denominator.
+- G1-A2 fixes the grid-model discrepancy as a symmetric relative
+  `epsilon_grid` envelope with arbitrary unknown dependence.
+- That relative grid-error form is invariant to the total-versus-firm
+  denominator choice.
+- The total 80 MVA and firm `(n-1)` 40 MVA capacity conventions remain
+  open until E3.S2b reports raw future-layer MVA and both loading ratios.
+- If firm capacity is selected as primary, E3.S3 must model and validate
+  the actual one-transformer-out topology with AC power flow.
 
 ## Recommendation
 
-Recommendation: keep the current total-nameplate convention for continuity with G0 unless the PI wants the study to represent firm `(n-1)` planning headroom. If firm capacity is selected later, update the denominator convention explicitly before freezing additive p.u. model-error envelopes.
+Recommendation: keep total and firm capacity conventions side by side until E3.S2b reports raw future-layer MVA and loading under both conventions. If the PI later selects firm capacity, E3.S3 must validate the actual one-transformer-out topology with AC power flow before paper-use results.

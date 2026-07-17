@@ -8,15 +8,15 @@
     "diagnostic_threshold_pu": "not_applicable",
     "historical_task": "E1.S2b",
     "task_id": "E1.S2b",
-    "timestamp_utc": "2026-07-17T12:44:56.103111Z",
+    "timestamp_utc": "2026-07-17T13:20:13.420330Z",
     "timing_rerun": true
   },
-  "git_commit": "22e9d81c19b32d5ec0bacd9de8c72a0bf806393a",
+  "git_commit": "97f4fb6cfee247fdea42a12004b3c9fbbf7f9f3d",
   "output_checksums": {
-    "experiments/e1_s2b_timeseriescpp_benchmark/BENCHMARK_TIMESERIESCPP.md": "d0897e84b5443d4d0fca306cd666f9b1ec29e738cf5ed3e93c05d0291165e729",
-    "experiments/e1_s2b_timeseriescpp_benchmark/benchmark_timeseriescpp_raw.json": "d976e87497f49c53aee730dd59ff4c05eba4deea19e77252fe445760ed3acbe8",
-    "experiments/e1_s2b_timeseriescpp_benchmark/comparison.json": "280f5e5ef2a5c82dec7262887558d11c0807561ecad5f91c33b460e585fc53a6",
-    "experiments/e1_s2b_timeseriescpp_benchmark/custom_evidence.json": "9b110ae2bfede33a42ef0964adb9be8a81bfe3f7f00a1fb52988675f325d3d67",
+    "experiments/e1_s2b_timeseriescpp_benchmark/BENCHMARK_TIMESERIESCPP.md": "e82545b0edabea28f4552755b2743c15ffb654f98cc12afb1b882676a89faff2",
+    "experiments/e1_s2b_timeseriescpp_benchmark/benchmark_timeseriescpp_raw.json": "6fe55297e6c4b6c4fc335fc7a7e16b9fc40a37b39da1124ae765bf8cc5871ddc",
+    "experiments/e1_s2b_timeseriescpp_benchmark/comparison.json": "b1c47aec8abd34461db26b9e3f6e6acfec57bedf7f2d02b248ca33b7f8ab35cb",
+    "experiments/e1_s2b_timeseriescpp_benchmark/custom_evidence.json": "045e2ca3ca579e3c9c753d4af889c642f5a423b60346c9fb2c0afe26c23a3dd6",
     "experiments/e1_s2b_timeseriescpp_benchmark/diagnostic_config.runtime.json": "e0b8281bba346c88cc71c600e574652c7fd0c2777fcae1b650f3ed0997049e8c"
   },
   "package_versions": {

@@ -38,7 +38,7 @@
   {
     "expected_difference": "runner output paths and manifest references differ from the retained historical report",
     "generated_path": "experiments/e1_s3b_import_window/reports/import_window_diagnostic.md",
-    "generated_sha256": "9512256cf3ee780424df982927596a32cfef1febc8ef65d7f57ff00432175d37",
+    "generated_sha256": "484c5701bebfd86bc7045e69534f5f03e0076b4b1a1c14bc90be1e1c8e9a2c1e",
     "historical_path": "reports/import_window_diagnostic.md",
     "historical_sha256": "12a3c729e54336a572ff9a27fadb4ca2b3d811cf46da00f2b11ab196b4fdc9e5",
     "label": "report",
@@ -47,7 +47,7 @@
   {
     "expected_difference": "fresh runner reproduction records a new config path, timestamp, commit, and output paths while preserving threshold_pu=1.0",
     "generated_path": "experiments/e1_s3b_import_window/custom_evidence.json",
-    "generated_sha256": "d766df3c7d47b52ed05a99266303e63cb36071d7b59080c55fed15a04b9ecb36",
+    "generated_sha256": "dcf4ff42a4a1e89398a34474ff1a52b4f45c673ccbd654464da1fbcf746504e2",
     "historical_path": "reports/import_window_evidence.json",
     "historical_sha256": "7633fc2797cc105866c2ebd48da16fb0b9e79fa3582b13a70cdec92c9c2329d5",
     "label": "custom evidence",

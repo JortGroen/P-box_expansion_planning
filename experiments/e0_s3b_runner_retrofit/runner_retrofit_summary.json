@@ -12,13 +12,13 @@
           "diagnostic_threshold_pu": "not_applicable",
           "historical_task": "E1.S1",
           "task_id": "E1.S1",
-          "timestamp_utc": "2026-07-17T12:38:07.392049Z"
+          "timestamp_utc": "2026-07-17T13:09:29.640035Z"
         },
-        "git_commit": "22e9d81c19b32d5ec0bacd9de8c72a0bf806393a",
+        "git_commit": "97f4fb6cfee247fdea42a12004b3c9fbbf7f9f3d",
         "output_checksums": {
-          "experiments/e1_s1_grid_inventory/comparison.json": "b122dcd378b388fde9f9eee00c41420d214d71d14b034e98e8c1deb2f5fd9f19",
-          "experiments/e1_s1_grid_inventory/custom_evidence.json": "0c9a6bfdc8abcbd96c10e4aa241d55fb3ef9e6b13d9197ed73146dcb6a2451c5",
-          "experiments/e1_s1_grid_inventory/grid_inventory.md": "e3e5da1d09063183775cf6c9a0f57da337eafa8e24538531aba463b51baf133d",
+          "experiments/e1_s1_grid_inventory/comparison.json": "c2c162d57e399443cb72784ee4a8a13e5d8fcfff88ba11dc33ef4badfb76f923",
+          "experiments/e1_s1_grid_inventory/custom_evidence.json": "8a3c716790f8b4fd136cff79c367dcea507a5bec17dc90e43c851f5d9d41d327",
+          "experiments/e1_s1_grid_inventory/grid_inventory.md": "4a33410aae3c3f85d58069bbe65a1d40439edbf488f318b6086ad94a9f5395d9",
           "experiments/e1_s1_grid_inventory/grid_inventory_rows.json": "040e5bc42ac307cc528f5cf7e742594d6c07a72c6ad3c3ba40538e6084191d5d"
         },
         "package_versions": {
@@ -51,14 +51,14 @@
           "diagnostic_threshold_pu": "not_applicable",
           "historical_task": "E1.S2",
           "task_id": "E1.S2",
-          "timestamp_utc": "2026-07-17T12:42:44.726919Z"
+          "timestamp_utc": "2026-07-17T13:16:16.959976Z"
         },
-        "git_commit": "22e9d81c19b32d5ec0bacd9de8c72a0bf806393a",
+        "git_commit": "97f4fb6cfee247fdea42a12004b3c9fbbf7f9f3d",
         "output_checksums": {
-          "experiments/e1_s2_laptop_benchmark/BENCHMARK.md": "43a55d2ab518a4e44e165a35f99263b1fde1fa877a1ec7a88e500070e83ff2d6",
-          "experiments/e1_s2_laptop_benchmark/benchmark_raw.json": "f1a8cd5273004918d1c59c6976d5556cd6d28b52cbd57fdccec08f10ad0c614a",
-          "experiments/e1_s2_laptop_benchmark/comparison.json": "2b7176c11be9388c28e001cc163e35082c656e44f1d27f51277286597dc2ac48",
-          "experiments/e1_s2_laptop_benchmark/custom_evidence.json": "785a613de7b764de8ee66125a19b24fe2b186e7eca6730f4c163e83e260107c9"
+          "experiments/e1_s2_laptop_benchmark/BENCHMARK.md": "bb9f80337f629010549dbd7fe3a667900a44d8686c64621374d5272401c3cfdc",
+          "experiments/e1_s2_laptop_benchmark/benchmark_raw.json": "2824ebe3eb5e81dd464456cd42d219fb0cca866f0074dcea08d19ccf5f9633bf",
+          "experiments/e1_s2_laptop_benchmark/comparison.json": "35125d1b73a422618303a7e918e5f7a62eb43154ac8132eca07118dbf012599e",
+          "experiments/e1_s2_laptop_benchmark/custom_evidence.json": "44a78426c59bc7d9bf592f30b47e8534a75dd2749ea85d59c19abd709acb614e"
         },
         "package_versions": {
           "hypothesis": "6.156.4",
@@ -91,19 +91,19 @@
           "historical_task": "E1.S3",
           "historical_threshold_preserved": true,
           "task_id": "E1.S3",
-          "timestamp_utc": "2026-07-17T12:43:00.328915Z"
+          "timestamp_utc": "2026-07-17T13:16:42.305931Z"
         },
-        "git_commit": "22e9d81c19b32d5ec0bacd9de8c72a0bf806393a",
+        "git_commit": "97f4fb6cfee247fdea42a12004b3c9fbbf7f9f3d",
         "output_checksums": {
-          "experiments/e1_s3_critical_weeks/comparison.json": "16dbdcb640575687e23e214e4908f42b93861a4b85948cab88e9a7d7a56b390f",
-          "experiments/e1_s3_critical_weeks/custom_evidence.json": "2388a75a85d60b2aa9ded90802a1c697d9872ca27751e6a5cdd9d8984bbf0332",
+          "experiments/e1_s3_critical_weeks/comparison.json": "7bd8733649336c16a686063db456f9a882ddc6c73cfadf0c31241ea898f1cc8b",
+          "experiments/e1_s3_critical_weeks/custom_evidence.json": "aea8d3282ecda673480c2cca273eddd415f49a44113533a73babb958aee83686",
           "experiments/e1_s3_critical_weeks/data/critical_week_coverage.csv": "5c51d9d38afde72c4d40ef55eaf3d67899a340e2b0132ccd8b45f5c4024e9532",
           "experiments/e1_s3_critical_weeks/data/critical_week_summary.csv": "2d8a4968512fc8a6859ddb2a3719919d9b4998fbe1b3f0b641be1b24836e521a",
           "experiments/e1_s3_critical_weeks/data/critical_weeks.csv": "34cf20899ebbf278eb6f9add683a73b068e170f1525c78fdcfdf8332c180e3cf",
           "experiments/e1_s3_critical_weeks/diagnostic_config.runtime.json": "556727ab55b974917bf677cf282ad04b6f55bd751b80194b9fff0370ac585f4f",
           "experiments/e1_s3_critical_weeks/reports/critical_week_coverage.png": "706d64d21a39bb5008db723e374ad46d3165aef0c4a73872860b5ca493f0aeda",
           "experiments/e1_s3_critical_weeks/reports/critical_week_loading.png": "c1e96a681e73d0f8847c5c8e47f32ddf6800304ac7c357f20474f5314517fab7",
-          "experiments/e1_s3_critical_weeks/reports/critical_weeks_validation.md": "6dda8af2c1699a063ba07ca39e03f2ec1c3f17d4c4f2504f6bf2b5faa2dec9d5"
+          "experiments/e1_s3_critical_weeks/reports/critical_weeks_validation.md": "925bba42b8039f06bfd17c0f6deecfc9ffdfb1028048e9121d885e5d356bded4"
         },
         "package_versions": {
           "hypothesis": "6.156.4",
@@ -136,19 +136,19 @@
           "historical_task": "E1.S3b",
           "historical_threshold_preserved": true,
           "task_id": "E1.S3b",
-          "timestamp_utc": "2026-07-17T12:43:16.409834Z"
+          "timestamp_utc": "2026-07-17T13:17:10.922125Z"
         },
-        "git_commit": "22e9d81c19b32d5ec0bacd9de8c72a0bf806393a",
+        "git_commit": "97f4fb6cfee247fdea42a12004b3c9fbbf7f9f3d",
         "output_checksums": {
-          "experiments/e1_s3b_import_window/comparison.json": "be7b74ccb2f59c8cf69637b40871320fb66967afa261d2ff076b1fdf5b557a80",
-          "experiments/e1_s3b_import_window/custom_evidence.json": "d766df3c7d47b52ed05a99266303e63cb36071d7b59080c55fed15a04b9ecb36",
+          "experiments/e1_s3b_import_window/comparison.json": "da71526b0285f7d9ee72aee9b3997998ab560db27d549b40fb023fba4b77cd57",
+          "experiments/e1_s3b_import_window/custom_evidence.json": "dcf4ff42a4a1e89398a34474ff1a52b4f45c673ccbd654464da1fbcf746504e2",
           "experiments/e1_s3b_import_window/data/export_direction_exceedance.csv": "ead265f0a22ffbe54c6cfb5508484f0a26f187cccad809ebf25887e53ac8e8d7",
           "experiments/e1_s3b_import_window/data/import_window_coverage.csv": "aaabd1863f075c50fad56fd3142a54c6fd35bd434f7515d7f95e9d415334b323",
           "experiments/e1_s3b_import_window/data/import_window_proposal.csv": "fda96e1636bacf8311ffff2f11a6dd8b57d2197af72a1793ab5b4c22badf2bfb",
           "experiments/e1_s3b_import_window/data/import_windows.csv": "d8e0461e4c98bac5666aa885b8a1e86a62805e45cbdae520e47ee691dd9d0c75",
           "experiments/e1_s3b_import_window/diagnostic_config.runtime.json": "17da9d15652a5a7826ba2ed9d64103ff79d5c4df8ebb1016e49523f4133dd8a2",
           "experiments/e1_s3b_import_window/reports/import_window_coverage.png": "208a7d170f2f5f1d63e7e8879b762cd729d7c2fe0a9fbd0d49b46a354bd2b83a",
-          "experiments/e1_s3b_import_window/reports/import_window_diagnostic.md": "9512256cf3ee780424df982927596a32cfef1febc8ef65d7f57ff00432175d37"
+          "experiments/e1_s3b_import_window/reports/import_window_diagnostic.md": "484c5701bebfd86bc7045e69534f5f03e0076b4b1a1c14bc90be1e1c8e9a2c1e"
         },
         "package_versions": {
           "hypothesis": "6.156.4",
@@ -181,15 +181,15 @@
           "historical_task": "E1.S1b",
           "historical_threshold_preserved": true,
           "task_id": "E1.S1b",
-          "timestamp_utc": "2026-07-17T12:43:26.243599Z"
+          "timestamp_utc": "2026-07-17T13:17:24.890969Z"
         },
-        "git_commit": "22e9d81c19b32d5ec0bacd9de8c72a0bf806393a",
+        "git_commit": "97f4fb6cfee247fdea42a12004b3c9fbbf7f9f3d",
         "output_checksums": {
-          "experiments/e1_s1b_transformer_headroom/comparison.json": "0a42ded62f06d5a720a83284167ccdf4cd3d1017725d10e9a211eec705dc3a54",
-          "experiments/e1_s1b_transformer_headroom/custom_evidence.json": "07310abf8e3c9809ece446fcaff9eda8c2bec873d65085bf9c9917548626b287",
+          "experiments/e1_s1b_transformer_headroom/comparison.json": "a762c0181b7f648e660a2536c969d17b60c10e657681e4e305dac311802d5270",
+          "experiments/e1_s1b_transformer_headroom/custom_evidence.json": "81b85390760bb8335932e296e3b2c7512150a6da6a7a164e8813b0684826bea3",
           "experiments/e1_s1b_transformer_headroom/data/transformer_headroom_diagnostic.csv": "74d6254cce8d8fb0f6c16bdc4f3aef8465bd8c6c2d5275151c804edee7c14eb8",
           "experiments/e1_s1b_transformer_headroom/diagnostic_config.runtime.json": "926c4e2efa2c8e2209aa04c84ee86f197ece13632849eeab3ccd67d2d9aa5457",
-          "experiments/e1_s1b_transformer_headroom/reports/transformer_headroom_diagnostic.md": "93ab6803ba3db425a1811a8a4c4473135d75554831cf451d0d130968edb86790"
+          "experiments/e1_s1b_transformer_headroom/reports/transformer_headroom_diagnostic.md": "f8816cd3831c11e407c32905e6c9dfc1568580b491dbd829e83488e4c205ed4b"
         },
         "package_versions": {
           "hypothesis": "6.156.4",
@@ -221,15 +221,15 @@
           "diagnostic_threshold_pu": "not_applicable",
           "historical_task": "E1.S2b",
           "task_id": "E1.S2b",
-          "timestamp_utc": "2026-07-17T12:44:56.103111Z",
+          "timestamp_utc": "2026-07-17T13:20:13.420330Z",
           "timing_rerun": true
         },
-        "git_commit": "22e9d81c19b32d5ec0bacd9de8c72a0bf806393a",
+        "git_commit": "97f4fb6cfee247fdea42a12004b3c9fbbf7f9f3d",
         "output_checksums": {
-          "experiments/e1_s2b_timeseriescpp_benchmark/BENCHMARK_TIMESERIESCPP.md": "d0897e84b5443d4d0fca306cd666f9b1ec29e738cf5ed3e93c05d0291165e729",
-          "experiments/e1_s2b_timeseriescpp_benchmark/benchmark_timeseriescpp_raw.json": "d976e87497f49c53aee730dd59ff4c05eba4deea19e77252fe445760ed3acbe8",
-          "experiments/e1_s2b_timeseriescpp_benchmark/comparison.json": "280f5e5ef2a5c82dec7262887558d11c0807561ecad5f91c33b460e585fc53a6",
-          "experiments/e1_s2b_timeseriescpp_benchmark/custom_evidence.json": "9b110ae2bfede33a42ef0964adb9be8a81bfe3f7f00a1fb52988675f325d3d67",
+          "experiments/e1_s2b_timeseriescpp_benchmark/BENCHMARK_TIMESERIESCPP.md": "e82545b0edabea28f4552755b2743c15ffb654f98cc12afb1b882676a89faff2",
+          "experiments/e1_s2b_timeseriescpp_benchmark/benchmark_timeseriescpp_raw.json": "6fe55297e6c4b6c4fc335fc7a7e16b9fc40a37b39da1124ae765bf8cc5871ddc",
+          "experiments/e1_s2b_timeseriescpp_benchmark/comparison.json": "b1c47aec8abd34461db26b9e3f6e6acfec57bedf7f2d02b248ca33b7f8ab35cb",
+          "experiments/e1_s2b_timeseriescpp_benchmark/custom_evidence.json": "045e2ca3ca579e3c9c753d4af889c642f5a423b60346c9fb2c0afe26c23a3dd6",
           "experiments/e1_s2b_timeseriescpp_benchmark/diagnostic_config.runtime.json": "e0b8281bba346c88cc71c600e574652c7fd0c2777fcae1b650f3ed0997049e8c"
         },
         "package_versions": {
@@ -259,7 +259,7 @@
         {
           "expected_difference": "runner-normalized report path/content differs from the historical narrative report; numeric inventory rows are reproduced in grid_inventory_rows.json",
           "generated_path": "experiments/e1_s1_grid_inventory/grid_inventory.md",
-          "generated_sha256": "e3e5da1d09063183775cf6c9a0f57da337eafa8e24538531aba463b51baf133d",
+          "generated_sha256": "4a33410aae3c3f85d58069bbe65a1d40439edbf488f318b6086ad94a9f5395d9",
           "historical_path": "reports/grid_inventory.md",
           "historical_sha256": "db609911f413bf0a30cbfc0a6d502d773b4d139277976296c3d0af28ad0ec128",
           "label": "report",
@@ -268,7 +268,7 @@
         {
           "expected_difference": "fresh runner reproduction records a new config path, timestamp, commit, and output paths",
           "generated_path": "experiments/e1_s1_grid_inventory/custom_evidence.json",
-          "generated_sha256": "0c9a6bfdc8abcbd96c10e4aa241d55fb3ef9e6b13d9197ed73146dcb6a2451c5",
+          "generated_sha256": "8a3c716790f8b4fd136cff79c367dcea507a5bec17dc90e43c851f5d9d41d327",
           "historical_path": "reports/grid_inventory_evidence.json",
           "historical_sha256": "18498d4352e8b7c953cbc3b3a42789fc8d8cf5118160908fbcfacc2f859a1d4a",
           "label": "custom evidence",
@@ -287,7 +287,7 @@
         {
           "expected_difference": "fresh wall-clock benchmark rerun has new timestamps and timing measurements",
           "generated_path": "experiments/e1_s2_laptop_benchmark/benchmark_raw.json",
-          "generated_sha256": "f1a8cd5273004918d1c59c6976d5556cd6d28b52cbd57fdccec08f10ad0c614a",
+          "generated_sha256": "2824ebe3eb5e81dd464456cd42d219fb0cca866f0074dcea08d19ccf5f9633bf",
           "historical_path": "reports/benchmark_raw.json",
           "historical_sha256": "fbbddb9b70b2e68d4187bda650f7fb1dba58b286781eb2285817bafa1183913f",
           "label": "raw timing",
@@ -296,7 +296,7 @@
         {
           "expected_difference": "runner report is normalized and timing values are a fresh rerun",
           "generated_path": "experiments/e1_s2_laptop_benchmark/BENCHMARK.md",
-          "generated_sha256": "43a55d2ab518a4e44e165a35f99263b1fde1fa877a1ec7a88e500070e83ff2d6",
+          "generated_sha256": "bb9f80337f629010549dbd7fe3a667900a44d8686c64621374d5272401c3cfdc",
           "historical_path": "reports/BENCHMARK.md",
           "historical_sha256": "29edba1a3c7583bf9354967a264208523a3287668fc51fff899acebdadf36d3d",
           "label": "report",
@@ -305,7 +305,7 @@
         {
           "expected_difference": "fresh runner reproduction records a new config path, timestamp, commit, and output paths",
           "generated_path": "experiments/e1_s2_laptop_benchmark/custom_evidence.json",
-          "generated_sha256": "785a613de7b764de8ee66125a19b24fe2b186e7eca6730f4c163e83e260107c9",
+          "generated_sha256": "44a78426c59bc7d9bf592f30b47e8534a75dd2749ea85d59c19abd709acb614e",
           "historical_path": "reports/benchmark_evidence.json",
           "historical_sha256": "97c56e222c7019fc2e421603169bb480f4b6e97273c2cee9df7c437bf461593d",
           "label": "custom evidence",
@@ -351,7 +351,7 @@
         {
           "expected_difference": "runner output paths and manifest references differ from the retained historical report",
           "generated_path": "experiments/e1_s3_critical_weeks/reports/critical_weeks_validation.md",
-          "generated_sha256": "6dda8af2c1699a063ba07ca39e03f2ec1c3f17d4c4f2504f6bf2b5faa2dec9d5",
+          "generated_sha256": "925bba42b8039f06bfd17c0f6deecfc9ffdfb1028048e9121d885e5d356bded4",
           "historical_path": "reports/critical_weeks_validation.md",
           "historical_sha256": "bd005107fc35bb5c95e44478cdb6bfe8dc9481204a00392e0288214736716490",
           "label": "report",
@@ -360,7 +360,7 @@
         {
           "expected_difference": "fresh runner reproduction records a new config path, timestamp, commit, and output paths",
           "generated_path": "experiments/e1_s3_critical_weeks/custom_evidence.json",
-          "generated_sha256": "2388a75a85d60b2aa9ded90802a1c697d9872ca27751e6a5cdd9d8984bbf0332",
+          "generated_sha256": "aea8d3282ecda673480c2cca273eddd415f49a44113533a73babb958aee83686",
           "historical_path": "reports/critical_weeks_evidence.json",
           "historical_sha256": "36571a0c8adf06c527f15003381745d1f880cb082b4c6950968ae4f25e6e6d56",
           "label": "custom evidence",
@@ -415,7 +415,7 @@
         {
           "expected_difference": "runner output paths and manifest references differ from the retained historical report",
           "generated_path": "experiments/e1_s3b_import_window/reports/import_window_diagnostic.md",
-          "generated_sha256": "9512256cf3ee780424df982927596a32cfef1febc8ef65d7f57ff00432175d37",
+          "generated_sha256": "484c5701bebfd86bc7045e69534f5f03e0076b4b1a1c14bc90be1e1c8e9a2c1e",
           "historical_path": "reports/import_window_diagnostic.md",
           "historical_sha256": "12a3c729e54336a572ff9a27fadb4ca2b3d811cf46da00f2b11ab196b4fdc9e5",
           "label": "report",
@@ -424,7 +424,7 @@
         {
           "expected_difference": "fresh runner reproduction records a new config path, timestamp, commit, and output paths while preserving threshold_pu=1.0",
           "generated_path": "experiments/e1_s3b_import_window/custom_evidence.json",
-          "generated_sha256": "d766df3c7d47b52ed05a99266303e63cb36071d7b59080c55fed15a04b9ecb36",
+          "generated_sha256": "dcf4ff42a4a1e89398a34474ff1a52b4f45c673ccbd654464da1fbcf746504e2",
           "historical_path": "reports/import_window_evidence.json",
           "historical_sha256": "7633fc2797cc105866c2ebd48da16fb0b9e79fa3582b13a70cdec92c9c2329d5",
           "label": "custom evidence",
@@ -452,7 +452,7 @@
         {
           "expected_difference": "runner output paths and manifest references differ from the retained historical report",
           "generated_path": "experiments/e1_s1b_transformer_headroom/reports/transformer_headroom_diagnostic.md",
-          "generated_sha256": "93ab6803ba3db425a1811a8a4c4473135d75554831cf451d0d130968edb86790",
+          "generated_sha256": "f8816cd3831c11e407c32905e6c9dfc1568580b491dbd829e83488e4c205ed4b",
           "historical_path": "reports/transformer_headroom_diagnostic.md",
           "historical_sha256": "bb9a73d3ed61b8d16d01495a0a9aa6362047fab23b2cef2fc0190b995be07d25",
           "label": "report",
@@ -461,7 +461,7 @@
         {
           "expected_difference": "fresh runner reproduction records a new config path, timestamp, commit, and output paths",
           "generated_path": "experiments/e1_s1b_transformer_headroom/custom_evidence.json",
-          "generated_sha256": "07310abf8e3c9809ece446fcaff9eda8c2bec873d65085bf9c9917548626b287",
+          "generated_sha256": "81b85390760bb8335932e296e3b2c7512150a6da6a7a164e8813b0684826bea3",
           "historical_path": "reports/transformer_headroom_evidence.json",
           "historical_sha256": "e68dc9331b709e583e6502744a242e3004f7e6b273ab9e3aa18c3814a54118ae",
           "label": "custom evidence",
@@ -480,7 +480,7 @@
         {
           "expected_difference": "fresh wall-clock benchmark rerun has new timestamps, hardware/runtime context, and timing measurements",
           "generated_path": "experiments/e1_s2b_timeseriescpp_benchmark/benchmark_timeseriescpp_raw.json",
-          "generated_sha256": "d976e87497f49c53aee730dd59ff4c05eba4deea19e77252fe445760ed3acbe8",
+          "generated_sha256": "6fe55297e6c4b6c4fc335fc7a7e16b9fc40a37b39da1124ae765bf8cc5871ddc",
           "historical_path": "reports/benchmark_timeseriescpp_raw.json",
           "historical_sha256": "7efb282a00e7186fb1dbf69427486cc7aa7cb62e3f0fa2ba444fbccd28e042b8",
           "label": "raw timing",
@@ -489,7 +489,7 @@
         {
           "expected_difference": "runner output paths and timing values differ from the retained historical report",
           "generated_path": "experiments/e1_s2b_timeseriescpp_benchmark/BENCHMARK_TIMESERIESCPP.md",
-          "generated_sha256": "d0897e84b5443d4d0fca306cd666f9b1ec29e738cf5ed3e93c05d0291165e729",
+          "generated_sha256": "e82545b0edabea28f4552755b2743c15ffb654f98cc12afb1b882676a89faff2",
           "historical_path": "reports/BENCHMARK_TIMESERIESCPP.md",
           "historical_sha256": "3da6ac6838eccb86362efe05799925c69ee57d38e6c024bcdd1218c49d1ba43f",
           "label": "report",
@@ -498,7 +498,7 @@
         {
           "expected_difference": "fresh runner reproduction records a new config path, timestamp, commit, hardware context, and output paths",
           "generated_path": "experiments/e1_s2b_timeseriescpp_benchmark/custom_evidence.json",
-          "generated_sha256": "9b110ae2bfede33a42ef0964adb9be8a81bfe3f7f00a1fb52988675f325d3d67",
+          "generated_sha256": "045e2ca3ca579e3c9c753d4af889c642f5a423b60346c9fb2c0afe26c23a3dd6",
           "historical_path": "reports/benchmark_timeseriescpp_evidence.json",
           "historical_sha256": "2a124b10967408e25bad14f1e903d13269969650e1a94aaa8427739be317365e",
           "label": "custom evidence",
@@ -513,5 +513,5 @@
   ],
   "schema_version": 1,
   "task_id": "E0.S3b",
-  "timestamp_utc": "2026-07-17T12:44:56.187170Z"
+  "timestamp_utc": "2026-07-17T13:20:13.552900Z"
 }
