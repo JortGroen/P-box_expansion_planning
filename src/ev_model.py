@@ -177,6 +177,125 @@ class EVProfileBootstrapSampler:
         return profiles.sum(axis=1)
 
 
+@dataclass(frozen=True)
+class EVProfileLibrary:
+    """Traceable frozen ElaadNL profile library assembled from annual batches."""
+
+    batches: tuple[ElaadProfileBatch, ...]
+    partitions: tuple[str, ...]
+
+    def __post_init__(self) -> None:
+        if len(self.batches) != len(self.partitions):
+            raise ValueError("batches and partitions must have the same length")
+        if not self.batches:
+            raise ValueError("EV profile library cannot be empty")
+        first_times = self.batches[0].datetimes_utc
+        for batch in self.batches:
+            if batch.datetimes_utc != first_times:
+                raise ValueError("All EV profile batches must share one complete calendar")
+        member_ids = self.member_ids
+        if len(member_ids) != len(set(member_ids)):
+            raise ValueError("EV profile member IDs must be unique across batches")
+
+    @classmethod
+    def from_npz_paths(
+        cls,
+        paths: Sequence[Path],
+        *,
+        partitions: Sequence[str],
+    ) -> EVProfileLibrary:
+        return cls(
+            batches=tuple(load_processed_batch_npz(path) for path in paths),
+            partitions=tuple(partitions),
+        )
+
+    @property
+    def n_members(self) -> int:
+        return sum(batch.n_profiles for batch in self.batches)
+
+    @property
+    def member_ids(self) -> tuple[str, ...]:
+        return tuple(member_id for batch in self.batches for member_id in batch.member_ids)
+
+    @property
+    def demands_kw(self) -> np.ndarray:
+        return np.concatenate([batch.demands_kw for batch in self.batches], axis=1)
+
+    def member_table(self) -> tuple[dict[str, int | str], ...]:
+        rows: list[dict[str, int | str]] = []
+        for batch, partition in zip(self.batches, self.partitions, strict=True):
+            for returned_index, member_id in enumerate(batch.member_ids):
+                rows.append(
+                    {
+                        "member_id": member_id,
+                        "partition": partition,
+                        "batch_seed": batch.batch_seed,
+                        "returned_profile_index": returned_index,
+                    }
+                )
+        return tuple(rows)
+
+    def view(self, partition: str, *, allow_held_out: bool = False) -> EVProfileLibrary:
+        if partition == "held_out" and not allow_held_out:
+            raise PermissionError(
+                "Held-out EV profiles remain isolated until the downstream adequacy criterion is frozen"
+            )
+        selected = [
+            (batch, item_partition)
+            for batch, item_partition in zip(self.batches, self.partitions, strict=True)
+            if item_partition == partition
+        ]
+        if not selected:
+            raise ValueError(f"No EV profile batches found for partition {partition!r}")
+        return EVProfileLibrary(
+            batches=tuple(batch for batch, _ in selected),
+            partitions=tuple(item_partition for _, item_partition in selected),
+        )
+
+    def nested_candidate_view(self, n_batches: int) -> EVProfileLibrary:
+        candidate = self.view("candidate")
+        if n_batches <= 0 or n_batches > len(candidate.batches):
+            raise ValueError("n_batches must select at least one available candidate batch")
+        return EVProfileLibrary(
+            batches=candidate.batches[:n_batches],
+            partitions=candidate.partitions[:n_batches],
+        )
+
+    def leave_one_batch_out_candidate_views(self) -> tuple[EVProfileLibrary, ...]:
+        candidate = self.view("candidate")
+        if len(candidate.batches) < 2:
+            raise ValueError("At least two candidate batches are required for leave-one-batch-out views")
+        views: list[EVProfileLibrary] = []
+        for omitted in range(len(candidate.batches)):
+            # Leave out whole API batches so finite-library diagnostics preserve
+            # EV-005 seed separation instead of pretending profiles are iid rows.
+            views.append(
+                EVProfileLibrary(
+                    batches=tuple(
+                        batch for index, batch in enumerate(candidate.batches) if index != omitted
+                    ),
+                    partitions=tuple(
+                        partition
+                        for index, partition in enumerate(candidate.partitions)
+                        if index != omitted
+                    ),
+                )
+            )
+        return tuple(views)
+
+    def sampler(self) -> EVProfileBootstrapSampler:
+        first = self.batches[0]
+        batch = ElaadProfileBatch(
+            member_ids=self.member_ids,
+            datetimes_utc=first.datetimes_utc,
+            datetimes_local=first.datetimes_local,
+            demands_kw=self.demands_kw,
+            batch_seed=-1,
+            response_config={"source": "EVProfileLibrary"},
+        )
+        return EVProfileBootstrapSampler(batch)
+
+
 def batch_summary(batch: ElaadProfileBatch) -> dict[str, Any]:
     """Return commit-safe shape and aggregate statistics for a generated batch."""
     annual = batch.annual_energy_kwh()

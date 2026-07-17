@@ -9,6 +9,7 @@ import numpy as np
 import pytest
 
 from src.ev_model import (
+    EVProfileLibrary,
     EVProfileBootstrapSampler,
     EXPECTED_FULL_YEAR_STEPS,
     distinct_member_count,
@@ -118,3 +119,50 @@ def test_gzip_payload_can_be_parsed(tmp_path: Path) -> None:
         batch = parse_elaad_profile_response(handle.read(), batch_seed=130001, expected_n_profiles=1)
 
     assert batch.n_profiles == 1
+
+
+def test_profile_library_preserves_member_identity_and_isolates_held_out() -> None:
+    candidate_a = parse_elaad_profile_response(_payload(n_profiles=2), batch_seed=140001, expected_n_profiles=2)
+    candidate_b = parse_elaad_profile_response(_payload(n_profiles=2), batch_seed=140101, expected_n_profiles=2)
+    held_out = parse_elaad_profile_response(_payload(n_profiles=1), batch_seed=141001, expected_n_profiles=1)
+    library = EVProfileLibrary(
+        batches=(candidate_a, candidate_b, held_out),
+        partitions=("candidate", "candidate", "held_out"),
+    )
+
+    assert library.n_members == 5
+    assert library.member_ids == (
+        "profile_140001_000",
+        "profile_140001_001",
+        "profile_140101_000",
+        "profile_140101_001",
+        "profile_141001_000",
+    )
+    assert library.demands_kw.shape == (EXPECTED_FULL_YEAR_STEPS, 5)
+    assert library.member_table()[2] == {
+        "member_id": "profile_140101_000",
+        "partition": "candidate",
+        "batch_seed": 140101,
+        "returned_profile_index": 0,
+    }
+    assert library.view("candidate").n_members == 4
+    with pytest.raises(PermissionError, match="Held-out EV profiles remain isolated"):
+        library.view("held_out")
+    assert library.view("held_out", allow_held_out=True).n_members == 1
+
+
+def test_profile_library_sampler_reproducibility_and_leave_one_batch_views() -> None:
+    batches = tuple(
+        parse_elaad_profile_response(_payload(n_profiles=2), batch_seed=seed, expected_n_profiles=2)
+        for seed in (140001, 140101, 140201)
+    )
+    library = EVProfileLibrary(batches=batches, partitions=("candidate", "candidate", "candidate"))
+
+    sampler = library.sampler()
+    first = sampler.sample_member_indices(3, seed=123, replace=False)
+    second = sampler.sample_member_indices(3, seed=123, replace=False)
+    assert np.array_equal(first, second)
+    assert library.nested_candidate_view(2).n_members == 4
+    leave_one_out = library.leave_one_batch_out_candidate_views()
+    assert len(leave_one_out) == 3
+    assert all(view.n_members == 4 for view in leave_one_out)
