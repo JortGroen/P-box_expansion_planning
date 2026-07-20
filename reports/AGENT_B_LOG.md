@@ -51,3 +51,9 @@ VERIFIED: Focused `.\.venv\Scripts\python.exe -m pytest tests/test_dfmp.py` pass
 OPEN: No E7.S1 blocker known. D-009 remains proposed until PI sign-off; E7.S2/G4 still own factor values and fuzzy corners.
 NEXT: Push PR #38 update and await review.
 
+## 2026-07-20 16:43 — E7.S1 — in-progress
+DID: Revised the D-009 methods paragraph for PR #38 to explain the DFMP transform in plain scientific terms, including that possibility grades are not probabilities or percentiles, that grade 1 means most plausible/not excluded rather than certain, and that `P(A) <= Pi(A)` with `Pi(A)` as the event's maximum grade.
+VERIFIED: `.\scripts\task.ps1 ownership` passed for Agent B with 6 authorized changed paths. Focused `.\.venv\Scripts\python.exe -m pytest tests/test_dfmp.py` passed: 17 tests green in 0.76s. Full `.\scripts\task.ps1 test` passed: 131 tests green in 75.79s. `git diff --check` passed.
+OPEN: D-009 remains proposed until PI sign-off; E7.S2/G4 still determine input probabilities, flexibility values, and fuzzy corners.
+NEXT: Push the methods update and await PR #38 review.
+

@@ -783,16 +783,23 @@ current regulated prices.
 
 **Status: Proposed citation/protocol source.** The elicitation workflow uses
 the probability-to-possibility transformation of Dubois, Foulloy, Mauris, and
-Prade as the reproducible bridge from finite probability weights or density
-ranks to possibility grades. For a normalized finite mass function, the
-implemented indifference-preserving convention assigns each state the total
-probability mass of states with no greater plausibility score; when no separate
-score is supplied, the probability masses themselves define the order. Equal
-probability masses therefore receive equal possibility grades rather than an
-arbitrary ordering. The implementation is checked against the paper's Example
-4.1, where the maximally specific transform of the stated piecewise-linear density
-gives `pi(-1.5)=0.3`. This source supports the mathematical transform only; it
-does not choose flexibility-factor values, fuzzy corners, or any paper result.
+Prade to convert finite probability evidence into a possibility, or fuzzy-
+membership, distribution. A possibility grade is not a probability and is not
+a percentile: grade 1 means that a state is among the most plausible and is not
+excluded by the evidence, not that the state is certain. The DFMP transform
+returns the tightest, maximally specific possibility distribution that still
+conservatively contains the original probability model, meaning that every
+event `A` satisfies `P(A) <= Pi(A)`, where `Pi(A)` is the maximum possibility
+grade among the states in `A`. For normalized finite masses `p_i`, the default
+formula is `pi_i = sum(p_j for p_j <= p_i)`; if separate plausibility scores are
+supplied, the same cumulative rule is applied over states with no greater
+score. Equal probability masses, or equal supplied scores, receive equal
+possibility grades rather than arbitrary rank-order splits. The implementation
+is checked against the paper's Example 4.1, where the maximally specific
+transform of the stated piecewise-linear density gives `pi(-1.5)=0.3`. D-009
+approves only this conversion method; E7.S2 and G4 still determine the input
+probabilities, flexibility values, and fuzzy corners before any paper result
+uses them.
 
 <!-- methods-id: OWN-001 -->
 ### OWN-001 - Machine-Enforced Agent Ownership
