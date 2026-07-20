@@ -32,6 +32,7 @@ You are **one of up to three agents** on this project. Your role (A, B, or C —
 9. **Use the project `.venv`, never `base`.** Run project commands through the `.venv` in your assigned worktree. Do not install or run project dependencies from Anaconda `base`.
 10. **Report bounds, never a defuzzified number.** Project-specific hard rule: every probability result is reported as α-indexed lower/upper bounds with Monte-Carlo CIs. Producing a single collapsed scalar as "the answer" is a violation (Baudrit rule, plan §3).
 11. **No silent or restart-only long runs.** Inform the PI before launching any process expected to exceed about 15 minutes, and make it durably resumable from verified checkpoints. A long process that cannot be checkpointed requires explicit PI approval before launch.
+12. **Ownership is machine-enforced.** Run `.\scripts\task.ps1 ownership` before committing. A cross-boundary edit fails CI unless an exact PI exception already exists on the PR base branch.
 
 ---
 
@@ -43,7 +44,15 @@ You are **one of up to three agents** on this project. Your role (A, B, or C —
 | **B — Uncertainty & Decision Scientist** | Fuzzy/p-box core, decision layer, monotonicity | E4, E5, E6, E7 (math) | `src/fuzzy.py`, `src/pbox*.py`, `src/decision.py`, `src/dfmp.py` | grid/physics internals; data pipelines; running paper experiments |
 | **C — Data & Experiments Engineer** | Data pipelines, orchestration, robustness, paper support | E0, E2, E8, E9, E10 (support) | `data/get_*.py`, `src/*_model.py` (EV/HP/PV/baseline), `src/runner.py`, `experiments/`, `paper/figures/` | contract implementations of A/B; math core |
 
-Shared read access to everything; shared write access **only** to `registers/STATUS.md`, `registers/QUESTIONS.md`, `reports/AGENT_<X>_LOG.md` (your own), and your own branches. `registers/DECISIONS.md`, `ASSUMPTIONS.md` (sign-off column), and `DATA_REGISTER.md` (sign-off column) are PI-signed; you may append `proposed` rows only. Each active agent works in a separate Git worktree:
+Shared read access applies to everything. The machine-readable write policy is
+`configs/agent_ownership.json`: core modules and their tests are role-exclusive;
+control-register proposals, the methods registry, and task reports are shared;
+each `reports/AGENT_<X>_LOG.md` remains exclusive to its named agent. The path
+policy does not grant scientific authority: `registers/DECISIONS.md`,
+`ASSUMPTIONS.md` (sign-off column), and `DATA_REGISTER.md` (sign-off column) are
+still PI-signed, and agents may add only clearly proposed material. Paths not
+assigned or shared by the policy are forbidden by default. Each active agent
+works in a separate Git worktree:
 
 - PI dashboard: `P-box_expansion_planning/` on `main`
 - Agent A: `P-box_expansion_planning-agent-a/` on an `agent-a/...` branch
@@ -66,6 +75,7 @@ If your current directory, branch, or worktree does not match your role and assi
 7. Read `registers/STATUS.md`, your `reports/AGENT_<X>_LOG.md` last entry, and any PI answers in `registers/QUESTIONS.md`.
 8. Select **one** task by plan ID. Check its dependencies: if it sits behind an unpassed gate, pick a non-gated task or end the session — never "provisionally" do gated work.
 9. Open your log entry: session start time, task ID, intent.
+10. Run `.\scripts\task.ps1 ownership` after selecting the task. If the planned path set fails, escalate before editing.
 
 ### 3.2 During the session
 - One task at a time; scope = exactly the task's deliverable, nothing more. New ideas go to `BACKLOG.md`, not into code.
@@ -114,9 +124,10 @@ outputs. In-memory progress, terminal text, and an open process do not count as
 checkpoints.
 
 ### 3.4 End of session (mandatory, even mid-task)
-1. Log entry (template §10): what was done, what was **verified** (test/manifest evidence), open questions, next step.
-2. Update your line(s) in `registers/STATUS.md`.
-3. Commit and push your branch. If a story's deliverable is complete: open/update the PR with the checklist (§9).
+1. Run `.\scripts\task.ps1 ownership`; an ownership failure is a stop condition.
+2. Log entry (template §10): what was done, what was **verified** (test/manifest evidence), open questions, next step.
+3. Update your line(s) in `registers/STATUS.md`.
+4. Commit and push your branch. If a story's deliverable is complete: open/update the PR with the checklist (§9).
 
 ---
 
@@ -133,7 +144,7 @@ checkpoints.
 - You would need to edit outside your owned paths, add a dependency, or touch `main`.
 - Your role, task, or any instruction is ambiguous.
 
-**How to escalate:** append to `registers/QUESTIONS.md` using the template in §10 (context, precise question, options with your recommendation, blocking-or-not), set the story to `blocked` in `STATUS.md`, then either switch to an unblocked task or end the session. **Never resolve a trigger by assuming.** Escalations are answered by the PI in the same file; treat answers as decisions once mirrored into `DECISIONS.md`.
+**How to escalate:** append to `registers/QUESTIONS.md` using the template in §10 (context, precise question, options with your recommendation, blocking-or-not), set the story to `blocked` in `STATUS.md`, then either switch to an unblocked task or end the session. **Never resolve a trigger by assuming.** Escalations are answered by the PI in the same file; treat answers as decisions once mirrored into `DECISIONS.md`. For a cross-boundary edit, the preferred resolution is a separate PR by the owning agent. If that is impractical, the PI must merge an exact branch, role, task, and path exception into `registers/OWNERSHIP_EXCEPTIONS.json` on `main`; an exception introduced by the requesting agent's own PR is ignored by the checker.
 
 ---
 
@@ -205,6 +216,7 @@ checkpoints.
   - `## Checklist`: the checklist below, with every box marked truthfully.
 - Keep PR prose direct and readable. Explain why a change exists and what a reviewer should verify; avoid inflated claims, repetitive detail, internal chain-of-thought, or unexplained task jargon.
 - **PR checklist:**
+  - [ ] `.\scripts\task.ps1 ownership` green locally (or base-branch PI exception linked)
   - [ ] `.\scripts\task.ps1 test` green locally
   - [ ] Invariant suite green (if math touched)
   - [ ] Manifest(s) attached for every produced result
