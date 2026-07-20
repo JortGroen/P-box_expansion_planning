@@ -94,4 +94,4 @@ NEXT: Update PR #35 description with the OWN-001 checklist and wait for PI/downs
 DID: Created a dedicated `agent-c/E2.S3-hp-model` worktree under `.tmp/worktrees/agent-c-e2s3-hp-model` to avoid touching the dirty E2.S6 worktree. Implemented OPSD When2Heat retrieval/checksum support, `src/hp_model.py`, focused HP tests, methods/report traceability, explicit hourly-to-15-minute downscaling, externally supplied weather-member alignment, and a cold-week sanity diagnostic.
 VERIFIED: Planned-path ownership preflight passed for the E2.S3 source, test, report, log, status, and methods paths. Focused `.venv` pytest for `tests/test_hp_model.py tests/test_data_sources.py` passed 24 tests; final `.\scripts\task.ps1 test` passed 138 tests. No concrete When2Heat file was downloaded.
 OPEN: D-003 remains proposed and no concrete When2Heat checksum is selected in this PR.
-NEXT: Open the E2.S3 PR and wait for PI review.
+NEXT: PR #44 is open; wait for PI review.
