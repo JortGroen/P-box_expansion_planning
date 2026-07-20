@@ -9,6 +9,7 @@ import numpy as np
 import pytest
 
 from src.ev_model import (
+    EVProfileLibrary,
     EVProfileBootstrapSampler,
     EXPECTED_FULL_YEAR_STEPS,
     distinct_member_count,
@@ -118,3 +119,115 @@ def test_gzip_payload_can_be_parsed(tmp_path: Path) -> None:
         batch = parse_elaad_profile_response(handle.read(), batch_seed=130001, expected_n_profiles=1)
 
     assert batch.n_profiles == 1
+
+
+def test_profile_library_preserves_member_identity_and_isolates_held_out() -> None:
+    candidate_a = parse_elaad_profile_response(_payload(n_profiles=2), batch_seed=140001, expected_n_profiles=2)
+    candidate_b = parse_elaad_profile_response(_payload(n_profiles=2), batch_seed=140101, expected_n_profiles=2)
+    held_out = parse_elaad_profile_response(_payload(n_profiles=1), batch_seed=141001, expected_n_profiles=1)
+    library = EVProfileLibrary(
+        batches=(candidate_a, candidate_b, held_out),
+        partitions=("candidate", "candidate", "held_out"),
+    )
+
+    assert library.n_members == 5
+    assert library.member_ids == (
+        "profile_140001_000",
+        "profile_140001_001",
+        "profile_140101_000",
+        "profile_140101_001",
+        "profile_141001_000",
+    )
+    assert library.demands_kw.shape == (EXPECTED_FULL_YEAR_STEPS, 5)
+    assert library.member_table()[2] == {
+        "member_id": "profile_140101_000",
+        "partition": "candidate",
+        "batch_seed": 140101,
+        "returned_profile_index": 0,
+    }
+    assert library.view("candidate").n_members == 4
+    with pytest.raises(PermissionError, match="Held-out and quarantined EV profiles remain isolated"):
+        library.view("held_out")
+
+
+def test_profile_library_sampler_reproducibility_and_leave_one_batch_views() -> None:
+    batches = tuple(
+        parse_elaad_profile_response(_payload(n_profiles=2), batch_seed=seed, expected_n_profiles=2)
+        for seed in (140001, 140101, 140201)
+    )
+    library = EVProfileLibrary(batches=batches, partitions=("candidate", "candidate", "candidate"))
+
+    sampler = library.sampler()
+    first = sampler.sample_member_indices(3, seed=123, replace=False)
+    second = sampler.sample_member_indices(3, seed=123, replace=False)
+    assert np.array_equal(first, second)
+    assert library.nested_candidate_view(2).n_members == 4
+    leave_one_out = library.leave_one_batch_out_candidate_views()
+    assert len(leave_one_out) == 3
+    assert all(view.n_members == 4 for view in leave_one_out)
+    disjoint = library.disjoint_candidate_batch_views(1)
+    assert len(disjoint) == 3
+    assert all(view.n_members == 2 for view in disjoint)
+
+
+def test_profile_library_rejects_mixed_sampling_and_partition_relabeling(tmp_path: Path) -> None:
+    candidate = parse_elaad_profile_response(_payload(n_profiles=2), batch_seed=140001, expected_n_profiles=2)
+    held_out = parse_elaad_profile_response(_payload(n_profiles=1), batch_seed=141201, expected_n_profiles=1)
+    mixed = EVProfileLibrary(
+        batches=(candidate, held_out),
+        partitions=("candidate", "held_out"),
+    )
+
+    with pytest.raises(PermissionError, match="candidate-only"):
+        mixed.sampler()
+    with pytest.raises(PermissionError, match="traceable E3.S2a"):
+        mixed.view("held_out")
+    with pytest.raises(PermissionError, match="committed library manifest"):
+        EVProfileLibrary.from_npz_paths(
+            [tmp_path / "candidate.npz"],
+            partitions=["candidate"],
+        )
+
+
+def test_profile_library_loads_candidate_partitions_from_manifest(tmp_path: Path) -> None:
+    candidate = parse_elaad_profile_response(_payload(n_profiles=2), batch_seed=140001, expected_n_profiles=2)
+    held_out = parse_elaad_profile_response(_payload(n_profiles=1), batch_seed=141201, expected_n_profiles=1)
+    candidate_path = tmp_path / "candidate.npz"
+    held_out_path = tmp_path / "held_out.npz"
+    save_processed_batch_npz(candidate, candidate_path)
+    save_processed_batch_npz(held_out, held_out_path)
+
+    import hashlib
+
+    manifest_path = tmp_path / "manifest.json"
+    manifest = {
+        "batches": [
+            {
+                "partition": "candidate",
+                "processed_path": candidate_path.name,
+                "processed_sha256_file": hashlib.sha256(candidate_path.read_bytes()).hexdigest(),
+            },
+            {
+                "partition": "held_out",
+                "processed_path": held_out_path.name,
+                "processed_sha256_file": hashlib.sha256(held_out_path.read_bytes()).hexdigest(),
+            },
+        ]
+    }
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+
+    library = EVProfileLibrary.from_library_manifest(manifest_path, base_dir=tmp_path)
+    assert library.n_members == 2
+    assert library.partitions == ("candidate",)
+
+    with pytest.raises(PermissionError, match="traceable E3.S2a"):
+        EVProfileLibrary.from_library_manifest(
+            manifest_path,
+            base_dir=tmp_path,
+            include_partitions=("held_out",),
+        )
+
+    manifest["batches"][0]["processed_sha256_file"] = "bad"
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+    with pytest.raises(ValueError, match="checksum mismatch"):
+        EVProfileLibrary.from_library_manifest(manifest_path, base_dir=tmp_path)
