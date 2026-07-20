@@ -1,6 +1,6 @@
 param(
     [Parameter(Mandatory = $true, Position = 0)]
-    [ValidateSet("test", "run", "figures", "ownership")]
+    [ValidateSet("test", "test-fast", "test-full", "run", "figures", "ownership")]
     [string] $Task,
 
     [string[]] $Paths = @()
@@ -22,12 +22,22 @@ if (-not $env:NUMBA_CACHE_DIR) {
 }
 
 switch ($Task) {
-    "test" {
+    { $_ -in @("test", "test-full") } {
         & $VenvPython scripts/check_agent_ownership.py --base-ref origin/main
         if ($LASTEXITCODE -ne 0) {
             exit $LASTEXITCODE
         }
-        & $VenvPython -m pytest
+        $PytestBaseTemp = Join-Path $RepoRoot ".tmp\pytest-full"
+        & $VenvPython -m pytest --basetemp $PytestBaseTemp
+        exit $LASTEXITCODE
+    }
+    "test-fast" {
+        & $VenvPython scripts/check_agent_ownership.py --base-ref origin/main
+        if ($LASTEXITCODE -ne 0) {
+            exit $LASTEXITCODE
+        }
+        $PytestBaseTemp = Join-Path $RepoRoot ".tmp\pytest-fast"
+        & $VenvPython -m pytest -m "not slow" --basetemp $PytestBaseTemp
         exit $LASTEXITCODE
     }
     "run" {

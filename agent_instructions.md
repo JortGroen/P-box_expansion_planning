@@ -68,7 +68,7 @@ If your current directory, branch, or worktree does not match your role and assi
 ### 3.1 Start of session (in this order, every time)
 1. Confirm you are in your assigned role worktree, not the PI dashboard: run `git status --short --branch` and check that the branch prefix matches your role (`agent-a/`, `agent-b/`, or `agent-c/`). If it does not match, stop and ask the PI.
 2. Ensure the worktree `.venv` exists: if `.venv\Scripts\python.exe` is missing, run `.\scripts\setup_venv.ps1` from the worktree root.
-3. Use `.\scripts\task.ps1 test` / `run` / `figures` for project tasks; the wrapper selects `.venv` directly and sets `NUMBA_CACHE_DIR` to `.tmp\numba_cache`.
+3. Use `.\scripts\task.ps1 test-fast` for the normal local development loop, `.\scripts\task.ps1 test` (or `test-full`) for the full merge-gate suite, and `run` / `figures` for project tasks. The wrapper selects `.venv` directly, sets `NUMBA_CACHE_DIR` to `.tmp\numba_cache`, and keeps pytest temporary files under `.tmp`.
 4. For direct Python commands, use `.venv\Scripts\python.exe` rather than `python` from Anaconda `base`. If the command imports pandapower/numba, set `NUMBA_CACHE_DIR` to `.tmp\numba_cache` first.
 5. `git fetch --all --prune`; update your task branch from `origin/main` only by fast-forward or an explicit PR/PI instruction. Never `git switch` into another agent's branch inside your worktree.
 6. Read the **diff of `registers/DECISIONS.md`** since your last session — gates may have passed or reversed; frozen items may have changed.
@@ -79,7 +79,7 @@ If your current directory, branch, or worktree does not match your role and assi
 
 ### 3.2 During the session
 - One task at a time; scope = exactly the task's deliverable, nothing more. New ideas go to `BACKLOG.md`, not into code.
-- Math modules: tests first (or alongside). `.\scripts\task.ps1 test` before every commit. A red test you cannot fix without changing the spec ⇒ escalate (§4); never bend the test.
+- Math modules: tests first (or alongside). Run focused tests or `.\scripts\task.ps1 test-fast` during iteration, and `.\scripts\task.ps1 test` before PR completion. A red test you cannot fix without changing the spec ⇒ escalate (§4); never bend the test.
 - All randomness through `src/rng.py`'s seed tree — never a bare `np.random` call.
 - No magic numbers in code: scientific constants and parameters live in `configs/*.yaml` with units in key names (`p_crit`, `s_rated_kva`, `step_min: 15`).
 - A PR that adds or changes an entry in `DECISIONS.md`, `ASSUMPTIONS.md`, or `DATA_REGISTER.md` must add or update its same-ID block in `paper/methods_decisions_and_assumptions.md`. Write one standalone manuscript paragraph explaining and defending the choice, scope, and limitations. Use an explicit status label so proposed, not-invoked, superseded, and pending items cannot be mistaken for approved claims.
