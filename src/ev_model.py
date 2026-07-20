@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import UTC, datetime
 import gzip
+import hashlib
 import json
 from pathlib import Path
 from typing import Any, Sequence
@@ -177,6 +178,176 @@ class EVProfileBootstrapSampler:
         return profiles.sum(axis=1)
 
 
+@dataclass(frozen=True)
+class EVProfileLibrary:
+    """Traceable frozen ElaadNL profile library assembled from annual batches."""
+
+    batches: tuple[ElaadProfileBatch, ...]
+    partitions: tuple[str, ...]
+
+    def __post_init__(self) -> None:
+        if len(self.batches) != len(self.partitions):
+            raise ValueError("batches and partitions must have the same length")
+        if not self.batches:
+            raise ValueError("EV profile library cannot be empty")
+        first_times = self.batches[0].datetimes_utc
+        for batch in self.batches:
+            if batch.datetimes_utc != first_times:
+                raise ValueError("All EV profile batches must share one complete calendar")
+        member_ids = self.member_ids
+        if len(member_ids) != len(set(member_ids)):
+            raise ValueError("EV profile member IDs must be unique across batches")
+
+    @classmethod
+    def from_npz_paths(
+        cls,
+        paths: Sequence[Path],
+        *,
+        partitions: Sequence[str],
+    ) -> EVProfileLibrary:
+        raise PermissionError(
+            "Load EV profile libraries from the committed library manifest so partitions and checksums are traceable"
+        )
+
+    @classmethod
+    def from_library_manifest(
+        cls,
+        manifest_path: Path,
+        *,
+        base_dir: Path | None = None,
+        include_partitions: Sequence[str] = ("candidate",),
+    ) -> EVProfileLibrary:
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        blocked = {"held_out", "quarantined_precriterion_diagnostic"}
+        requested = set(include_partitions)
+        if requested & blocked:
+            raise PermissionError(
+                "Held-out and quarantined EV profiles require traceable E3.S2a criterion authorization, which is not approved"
+            )
+        root = base_dir or Path(".")
+        batches: list[ElaadProfileBatch] = []
+        partitions: list[str] = []
+        for item in manifest.get("batches", []):
+            partition = str(item["partition"])
+            if partition not in requested:
+                continue
+            path = root / str(item["processed_path"])
+            # The manifest checksum is the source of partition truth; callers
+            # cannot relabel arbitrary NPZs without changing committed metadata.
+            actual = _sha256_file(path)
+            if actual != item["processed_sha256_file"]:
+                raise ValueError(f"Processed EV profile checksum mismatch for {path}")
+            batches.append(load_processed_batch_npz(path))
+            partitions.append(partition)
+        return cls(batches=tuple(batches), partitions=tuple(partitions))
+
+    @property
+    def n_members(self) -> int:
+        return sum(batch.n_profiles for batch in self.batches)
+
+    @property
+    def member_ids(self) -> tuple[str, ...]:
+        return tuple(member_id for batch in self.batches for member_id in batch.member_ids)
+
+    @property
+    def demands_kw(self) -> np.ndarray:
+        return np.concatenate([batch.demands_kw for batch in self.batches], axis=1)
+
+    def member_table(self) -> tuple[dict[str, int | str], ...]:
+        rows: list[dict[str, int | str]] = []
+        for batch, partition in zip(self.batches, self.partitions, strict=True):
+            for returned_index, member_id in enumerate(batch.member_ids):
+                rows.append(
+                    {
+                        "member_id": member_id,
+                        "partition": partition,
+                        "batch_seed": batch.batch_seed,
+                        "returned_profile_index": returned_index,
+                    }
+                )
+        return tuple(rows)
+
+    def view(self, partition: str) -> EVProfileLibrary:
+        if partition in {"held_out", "quarantined_precriterion_diagnostic"}:
+            raise PermissionError(
+                "Held-out and quarantined EV profiles remain isolated until traceable E3.S2a criterion authorization exists"
+            )
+        selected = [
+            (batch, item_partition)
+            for batch, item_partition in zip(self.batches, self.partitions, strict=True)
+            if item_partition == partition
+        ]
+        if not selected:
+            raise ValueError(f"No EV profile batches found for partition {partition!r}")
+        return EVProfileLibrary(
+            batches=tuple(batch for batch, _ in selected),
+            partitions=tuple(item_partition for _, item_partition in selected),
+        )
+
+    def nested_candidate_view(self, n_batches: int) -> EVProfileLibrary:
+        candidate = self.view("candidate")
+        if n_batches <= 0 or n_batches > len(candidate.batches):
+            raise ValueError("n_batches must select at least one available candidate batch")
+        return EVProfileLibrary(
+            batches=candidate.batches[:n_batches],
+            partitions=candidate.partitions[:n_batches],
+        )
+
+    def leave_one_batch_out_candidate_views(self) -> tuple[EVProfileLibrary, ...]:
+        candidate = self.view("candidate")
+        if len(candidate.batches) < 2:
+            raise ValueError("At least two candidate batches are required for leave-one-batch-out views")
+        views: list[EVProfileLibrary] = []
+        for omitted in range(len(candidate.batches)):
+            # Leave out whole API batches so finite-library diagnostics preserve
+            # EV-005 seed separation instead of pretending profiles are iid rows.
+            views.append(
+                EVProfileLibrary(
+                    batches=tuple(
+                        batch for index, batch in enumerate(candidate.batches) if index != omitted
+                    ),
+                    partitions=tuple(
+                        partition
+                        for index, partition in enumerate(candidate.partitions)
+                        if index != omitted
+                    ),
+                )
+            )
+        return tuple(views)
+
+    def sampler(self) -> EVProfileBootstrapSampler:
+        disallowed = {"held_out", "quarantined_precriterion_diagnostic"}
+        if set(self.partitions) & disallowed:
+            raise PermissionError("EVProfileLibrary.sampler requires a candidate-only library")
+        first = self.batches[0]
+        batch = ElaadProfileBatch(
+            member_ids=self.member_ids,
+            datetimes_utc=first.datetimes_utc,
+            datetimes_local=first.datetimes_local,
+            demands_kw=self.demands_kw,
+            batch_seed=-1,
+            response_config={"source": "EVProfileLibrary"},
+        )
+        return EVProfileBootstrapSampler(batch)
+
+    def disjoint_candidate_batch_views(self, n_batches_per_view: int) -> tuple[EVProfileLibrary, ...]:
+        candidate = self.view("candidate")
+        if n_batches_per_view <= 0:
+            raise ValueError("n_batches_per_view must be positive")
+        if len(candidate.batches) % n_batches_per_view != 0:
+            raise ValueError("Candidate batches must divide evenly into complete disjoint views")
+        views: list[EVProfileLibrary] = []
+        for start in range(0, len(candidate.batches), n_batches_per_view):
+            stop = start + n_batches_per_view
+            views.append(
+                EVProfileLibrary(
+                    batches=candidate.batches[start:stop],
+                    partitions=candidate.partitions[start:stop],
+                )
+            )
+        return tuple(views)
+
+
 def batch_summary(batch: ElaadProfileBatch) -> dict[str, Any]:
     """Return commit-safe shape and aggregate statistics for a generated batch."""
     annual = batch.annual_energy_kwh()
@@ -202,6 +373,10 @@ def batch_summary(batch: ElaadProfileBatch) -> dict[str, Any]:
 def read_gzip_json(path: Path) -> bytes:
     with gzip.open(path, "rb") as handle:
         return handle.read()
+
+
+def _sha256_file(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
 def _load_response_payload(payload: bytes | str | dict[str, Any]) -> dict[str, Any]:

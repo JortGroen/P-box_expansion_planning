@@ -4,11 +4,12 @@
     "live_api_version_header": null,
     "local_documentation_version": "Documentatie Laadprofielengenerator, ElaadNL, 10 November 2025",
     "outlook_basis": "Outlook Personenauto's 2024; Outlook Logistiek 2025",
-    "server_header": null
+    "server_header": "uvicorn"
   },
-  "api_runtime_note": "Exact HTTPS runtime was not captured because the first authorized call hit a post-response manifest bug; no second API call was made.",
-  "api_runtime_s": null,
+  "api_runtime_note": "Measured around the HTTPS POST only.",
+  "api_runtime_s": 18.79885430005379,
   "api_url": "https://api.charging.data.elaad.nl/profile/simulate",
+  "authorized_generation_scope": "EV-004 Set A home charge-point batch; no public or smart-control profiles.",
   "bulk_generation_performed": false,
   "dashboard_url": "https://charging.elaad.nl/",
   "data_id": "D-002",
@@ -19,8 +20,7 @@
   },
   "library_partition": "candidate",
   "manifest_type": "elaad_profile_batch",
-  "observed_failed_command_wall_time_s": 25.8344,
-  "only_authorized_batch_generated": true,
+  "only_authorized_batch_generated": false,
   "policy": {
     "commit_generated_profiles": false,
     "data_availability": "Readers regenerate through the public API subject to terms applicable at retrieval time.",
@@ -36,29 +36,23 @@
   "processed_profiles": {
     "commit_status": "ignored; not committed or redistributed",
     "format": "npz",
-    "path": "data/processed/elaad_profiles/A_home_vancar_cp_y2030_batchseed140001_n100.npz",
-    "sha256_file": "e550931ead774e7a9c42a4ff06f221eb1d2c3337bc4f43e57e0ff00bd63a0f2c",
-    "size_bytes": 394116
+    "path": "data/processed/elaad_profiles/A_home_vancar_cp_y2030_batchseed140101_n100.npz",
+    "sha256_file": "59efcf0fb3823874f513e05268f504261ab6a835568a973f37d43acea7bb4f38",
+    "size_bytes": 394021
   },
   "raw_response": {
-    "path": "data/raw/elaad_profiles/A_home_vancar_cp_y2030_batchseed140001_n100.json.gz",
-    "provenance": {
-      "initial_saved_wrapper_sha256_gzip_file": "723f72260517455d7981ef814012affb80c72a8b4935e11d661e77f4c6219924",
-      "note": "The initial saved gzip wrapper came from the single authorized API retrieval at retrieval_timestamp_utc. A later local recovery bug rewrote the ignored gzip wrapper without changing the uncompressed JSON; the rewritten wrapper is the current local raw file, is recorded for audit, and is not a new retrieval.",
-      "recovery_rewritten_wrapper_sha256_gzip_file": "7ea96ed8a113fd417957107926f4548b9f937dc1bd84703faefc0281e212d3df",
-      "sha256_uncompressed_json": "d8dc58745311a772c171f3dee129d98b9c553833119f36e0d3a580dcb2cb7804"
-    },
-    "sha256_gzip_file": "7ea96ed8a113fd417957107926f4548b9f937dc1bd84703faefc0281e212d3df",
-    "sha256_uncompressed_json": "d8dc58745311a772c171f3dee129d98b9c553833119f36e0d3a580dcb2cb7804",
-    "size_bytes": 279552
+    "path": "data/raw/elaad_profiles/A_home_vancar_cp_y2030_batchseed140101_n100.json.gz",
+    "sha256_gzip_file": "16becf5293ea4c9008643bcd24f304dd6a4ec5183038afc5d8bff7d02a89d245",
+    "sha256_uncompressed_json": "614350f8c574cfad0f1754dc4312e353dd4fe9e20b7eec4ea5034d8bbda30711",
+    "size_bytes": 278788
   },
-  "reconstructed_from_saved_raw_response": true,
+  "reconstructed_from_saved_raw_response": false,
   "request_json": {
     "cp_capacity_kw": 11,
     "location_type": "home",
     "n_profiles": 100,
     "profile_type": "cp",
-    "seed": 140001,
+    "seed": 140101,
     "simulated_year": 2030,
     "start_datetime": "2025-01-01T00:00:00+01:00",
     "step_size_s": 900,
@@ -85,7 +79,7 @@
     },
     "pooling": "no",
     "profile_type": "cp",
-    "seed": 140001,
+    "seed": 140101,
     "session_datetime_gaussian_noise_std": 1.0,
     "simulated_year": 2030,
     "start_datetime": "2025-01-01T00:00:00+01:00",
@@ -102,14 +96,14 @@
   },
   "response_shape_summary": {
     "annual_energy_kwh": {
-      "max": 2691.699462890625,
-      "mean": 2027.5933837890625,
-      "median": 2011.1751708984375,
-      "min": 1443.6002197265625,
-      "p05": 1549.184814453125,
-      "p95": 2495.991943359375
+      "max": 2778.89892578125,
+      "mean": 2033.92333984375,
+      "median": 2027.099365234375,
+      "min": 1335.25,
+      "p05": 1641.5474853515625,
+      "p95": 2441.931884765625
     },
-    "batch_seed": 140001,
+    "batch_seed": 140101,
     "distinct_member_count": 100,
     "first_timestamp_local": "2025-01-01T00:00:00+01:00",
     "first_timestamp_utc": "2024-12-31T23:00:00+00:00",
@@ -131,14 +125,14 @@
     "timezone_conversion": "UTC response timestamps converted to Europe/Amsterdam for local use."
   },
   "response_status_code": 200,
-  "response_status_code_source": "Inferred from successful urlopen before the post-response manifest bug.",
-  "retrieval_timestamp_utc": "2026-07-17T09:52:03.233106Z",
+  "response_status_code_source": "HTTP response object",
+  "retrieval_timestamp_utc": "2026-07-17T14:45:30.411831Z",
   "seed_semantics_observed": {
-    "batch_seed": 140001,
+    "batch_seed": 140101,
     "control_mode": "uncontrolled",
     "distinct_returned_members": 100,
     "future_smart_pair_identity": "A future EV-006 smart counterpart would add control_mode and reuse this batch seed plus returned profile index.",
-    "independent_seed_claim": "Not claimed; batch seed 140001 identifies the response and member indices distinguish returned profiles.",
+    "independent_seed_claim": "Not claimed; batch seed 140101 identifies the response and member indices distinguish returned profiles.",
     "member_identity": "Members are identified as (batch seed, returned profile index).",
     "n_profiles": 100,
     "returned_indices_available_for_planned_pairing": true,
@@ -150,6 +144,7 @@
     "note": "This source-level probe checks API shape and member distinctness only; EV-005 adequacy is downstream and must not be inferred from component diagnostics.",
     "supports_remaining_candidate_and_held_out_generation": true
   },
-  "status": "ev004-set-a-candidate-batch-retained",
+  "status": "ev004-set-a-library-batch-generated",
+  "storage_stem": "A_home_vancar_cp_y2030_batchseed140101_n100",
   "task_id": "E2.S2"
 }
