@@ -106,3 +106,9 @@ DID: Tightened AleatoryRealization validation so every supplied ComponentStream 
 VERIFIED: Focused .\.venv\Scripts\python.exe -m pytest tests\test_rng.py passed: 14 tests. .\scripts\task.ps1 ownership passed: 6 changed paths authorized. Final .\scripts\task.ps1 test passed: 128 tests in 96.48 s. git diff --check passed with line-ending warnings only.
 OPEN: RNG-001 remains proposed pending PI approval. No Q-6 trajectory contract, scientific values, threshold semantics, capacity convention, G2 endpoints, or A-013 values were implemented or changed.
 NEXT: PI reviews PR #34 and proposed RNG-001; Agent A waits and does not start the Q-6 trajectory-contract task in this PR.
+
+## 2026-07-20 16:43 - E3.S4 PR #34 RNG-001 approval update - review
+DID: Recorded PI approval of RNG-001 in `registers/DECISIONS.md` and updated the matching Methods paragraph from proposed to approved. No code, threshold, IC contract, capacity convention, G2 endpoint, or A-013 numerical value was changed.
+VERIFIED: Planned-path ownership preflight passed before editing. `.\scripts\task.ps1 ownership` passed: 6 changed paths authorized. Final `.\scripts\task.ps1 test` passed: 128 tests in 74.79 s. `git diff --check` passed with line-ending warnings only.
+OPEN: Q-5, Q-6 trajectory-contract implementation, total-versus-firm capacity, G2 endpoints, and numerical A-013 values remain separate unresolved items.
+NEXT: Push the approval update and rerun/check PR #34 CI.
