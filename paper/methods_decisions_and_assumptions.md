@@ -723,9 +723,20 @@ prohibition of this research use stops profile use pending PI escalation.
 When2Heat dataset so heating behavior is tied to an openly documented empirical
 profile source rather than invented load shapes. Source retrieval, checksum,
 hourly-to-15-minute conversion, and COP treatment must be manifested before
-use. Cold-period validation checks that demand peaks under physically plausible
-temperature conditions and that temporal downscaling does not manufacture
-additional energy.
+use. The implemented E2.S3 parser treats selected When2Heat heat-profile
+columns as average MW per annual TWh and requires the annual TWh scaling for
+each component to be passed explicitly, so adoption or building-stock volumes
+are not hidden as defaults. Each component is divided by its matching When2Heat
+COP column before aggregation, preserving distinct COP treatment for space and
+water heating where those columns are selected. Hourly source values are
+downscaled to 15 minutes by repeating the average-power value into four
+quarter-hour intervals, which preserves energy and does not interpolate new
+peaks. The resulting profile must match an externally supplied timezone-aware
+weather member on the canonical 15-minute UTC calendar; the heat-pump module
+records the weather-member identifier but does not sample weather independently
+or shuffle timesteps. Cold-period validation checks that demand peaks under
+physically plausible temperature conditions and that temporal downscaling does
+not manufacture additional energy.
 
 <!-- methods-id: D-004 -->
 ### D-004 - Weather and PV Inputs

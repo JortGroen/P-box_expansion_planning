@@ -1,0 +1,222 @@
+from __future__ import annotations
+
+from datetime import UTC, datetime, timedelta
+import hashlib
+import json
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
+import pytest
+
+from data.get_when2heat import (
+    WHEN2HEAT_FILES,
+    retrieve_when2heat_file,
+    write_when2heat_source_metadata,
+)
+from src.hp_model import (
+    HeatPumpProfile,
+    WeatherMember,
+    When2HeatComponent,
+    When2HeatHourlyProfile,
+    align_heat_pump_profile,
+    build_heat_pump_profile_from_when2heat_csv,
+    cold_week_sanity_check,
+    default_when2heat_components,
+    downscale_hourly_to_15min,
+    load_when2heat_hourly_csv,
+)
+
+
+def _hourly_timestamps(count: int) -> tuple[datetime, ...]:
+    start = datetime(2025, 1, 1, tzinfo=UTC)
+    return tuple(start + timedelta(hours=index) for index in range(count))
+
+
+def _quarter_timestamps(count: int) -> tuple[datetime, ...]:
+    start = datetime(2025, 1, 1, tzinfo=UTC)
+    return tuple(start + timedelta(minutes=15 * index) for index in range(count))
+
+
+def test_when2heat_metadata_default_is_no_download(tmp_path: Path) -> None:
+    path = write_when2heat_source_metadata(tmp_path)
+
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    assert payload["data_id"] == "D-003"
+    assert payload["download_performed"] is False
+    assert payload["extra"]["package_version"] == "2023-07-27"
+    assert payload["extra"]["downloadable_files"]["csv"]["filename"] == "when2heat.csv"
+
+
+def test_when2heat_retrieval_records_checksum_with_local_url(tmp_path: Path) -> None:
+    source = tmp_path / "source_datapackage.json"
+    source.write_bytes(b'{"name":"when2heat-test"}\n')
+
+    metadata_path = retrieve_when2heat_file(
+        "datapackage",
+        raw_dir=tmp_path / "raw",
+        metadata_dir=tmp_path / "metadata",
+        url_override=source.as_uri(),
+    )
+
+    payload = json.loads(metadata_path.read_text(encoding="utf-8"))
+    raw_path = tmp_path / "raw" / WHEN2HEAT_FILES["datapackage"].filename
+    assert raw_path.read_bytes() == source.read_bytes()
+    assert payload["download_performed"] is True
+    assert payload["sha256_file"] == hashlib.sha256(source.read_bytes()).hexdigest()
+    assert payload["data_register_update_required"] is True
+
+
+def test_load_when2heat_csv_uses_component_cop_columns(tmp_path: Path) -> None:
+    path = tmp_path / "when2heat.csv"
+    pd.DataFrame(
+        {
+            "utc_timestamp": [item.isoformat().replace("+00:00", "Z") for item in _hourly_timestamps(2)],
+            "NL_heat_profile_space_SFH": [2.0, 4.0],
+            "NL_COP_ASHP_radiator": [2.0, 4.0],
+            "NL_heat_profile_water_SFH": [1.0, 1.0],
+            "NL_COP_ASHP_water": [2.0, 2.0],
+        }
+    ).to_csv(path, index=False)
+    components = (
+        When2HeatComponent("NL_heat_profile_space_SFH", "NL_COP_ASHP_radiator", 0.5),
+        When2HeatComponent("NL_heat_profile_water_SFH", "NL_COP_ASHP_water", 1.0),
+    )
+
+    profile = load_when2heat_hourly_csv(path, components=components)
+
+    assert np.allclose(profile.thermal_demand_kw, [2000.0, 3000.0])
+    assert np.allclose(profile.electric_kw, [1000.0, 1000.0])
+    assert np.allclose(profile.cop, [2.0, 3.0])
+    assert profile.source_path == path.as_posix()
+
+
+def test_default_components_make_space_and_water_cop_mapping_explicit() -> None:
+    components = default_when2heat_components(
+        space_heat_twh_by_class={"SFH": 0.25},
+        water_heat_twh_by_class={"SFH": 0.1},
+    )
+
+    assert components == (
+        When2HeatComponent("NL_heat_profile_space_SFH", "NL_COP_ASHP_radiator", 0.25),
+        When2HeatComponent("NL_heat_profile_water_SFH", "NL_COP_ASHP_water", 0.1),
+    )
+
+
+def test_default_components_require_explicit_scales() -> None:
+    with pytest.raises(ValueError, match="explicit annual heat TWh scale"):
+        default_when2heat_components()
+
+
+def test_hourly_to_15min_downscale_preserves_energy_and_calendar() -> None:
+    hourly = When2HeatHourlyProfile(
+        timestamps_utc=_hourly_timestamps(2),
+        thermal_demand_kw=np.array([4000.0, 8000.0]),
+        electric_kw=np.array([1000.0, 2000.0]),
+        cop=np.array([4.0, 4.0]),
+        components=(When2HeatComponent("heat", "cop", 1.0),),
+    )
+
+    quarter = downscale_hourly_to_15min(hourly)
+
+    assert len(quarter.timestamps_utc) == 8
+    assert quarter.timestamps_utc[1] == datetime(2025, 1, 1, 0, 15, tzinfo=UTC)
+    assert np.allclose(quarter.electric_kw, [1000.0] * 4 + [2000.0] * 4)
+    hourly_energy_kwh = hourly.electric_kw.sum() * 1.0
+    quarter_energy_kwh = quarter.electric_kw.sum() * 0.25
+    assert quarter_energy_kwh == hourly_energy_kwh
+    assert quarter.downscaling_method == "hourly_zero_order_hold_to_15min_energy_preserving"
+
+
+def test_profile_alignment_records_weather_member_and_rejects_mismatch() -> None:
+    hourly = When2HeatHourlyProfile(
+        timestamps_utc=_hourly_timestamps(1),
+        thermal_demand_kw=np.array([6000.0]),
+        electric_kw=np.array([2000.0]),
+        cop=np.array([3.0]),
+        components=(When2HeatComponent("heat", "cop", 1.0),),
+    )
+    quarter = downscale_hourly_to_15min(hourly)
+    weather = WeatherMember(
+        member_id="knmi-2012",
+        timestamps_utc=quarter.timestamps_utc,
+        temperature_c=np.array([3.0, 2.5, 2.0, 1.5]),
+    )
+
+    profile = align_heat_pump_profile(quarter, weather)
+
+    assert profile.weather_member_id == "knmi-2012"
+    assert profile.timestamps_utc == weather.timestamps_utc
+    assert np.array_equal(profile.temperature_c, weather.temperature_c)
+    assert profile.source_columns == ("heat", "cop")
+
+    shifted_weather = WeatherMember(
+        member_id="knmi-shifted",
+        timestamps_utc=tuple(item + timedelta(minutes=15) for item in quarter.timestamps_utc),
+        temperature_c=np.array([3.0, 2.5, 2.0, 1.5]),
+    )
+    with pytest.raises(ValueError, match="not exactly aligned"):
+        align_heat_pump_profile(quarter, shifted_weather)
+
+
+def test_build_heat_pump_profile_from_csv_requires_supplied_weather(tmp_path: Path) -> None:
+    path = tmp_path / "when2heat.csv"
+    pd.DataFrame(
+        {
+            "utc_timestamp": [datetime(2025, 1, 1, tzinfo=UTC).isoformat().replace("+00:00", "Z")],
+            "NL_heat_profile_space_SFH": [3.0],
+            "NL_COP_ASHP_radiator": [3.0],
+        }
+    ).to_csv(path, index=False)
+    weather = WeatherMember(
+        member_id="weather-member-1",
+        timestamps_utc=_quarter_timestamps(4),
+        temperature_c=np.array([0.0, 0.0, 0.0, 0.0]),
+    )
+
+    profile = build_heat_pump_profile_from_when2heat_csv(
+        path,
+        weather=weather,
+        components=(When2HeatComponent("NL_heat_profile_space_SFH", "NL_COP_ASHP_radiator", 1.0),),
+    )
+
+    assert np.allclose(profile.electric_kw, [1000.0] * 4)
+    assert profile.weather_member_id == "weather-member-1"
+
+
+def test_cold_week_sanity_peak_coincides_with_cold_spell() -> None:
+    timestamps = _quarter_timestamps(14 * 96)
+    temperature = np.full(len(timestamps), 7.0)
+    cold_start = 3 * 96
+    cold_stop = 10 * 96
+    temperature[cold_start:cold_stop] = -5.0
+    electric = np.full(len(timestamps), 1.0)
+    electric[cold_start:cold_stop] = 4.0
+    profile = HeatPumpProfile(
+        weather_member_id="design-cold-week",
+        timestamps_utc=timestamps,
+        electric_kw=electric,
+        thermal_demand_kw=electric * 3.0,
+        cop=np.full(len(timestamps), 3.0),
+        temperature_c=temperature,
+        source_columns=("synthetic_heat", "synthetic_cop"),
+        source_path=None,
+        downscaling_method="test_15min_native",
+    )
+
+    sanity = cold_week_sanity_check(profile)
+
+    assert sanity.peak_inside_cold_week is True
+    assert sanity.coldest_week_start_utc == timestamps[cold_start]
+    assert sanity.peak_temperature_c == -5.0
+    assert sanity.max_load_inside_cold_week_kw == 4.0
+    assert sanity.max_load_outside_cold_week_kw == 1.0
+
+
+def test_weather_member_rejects_non_15min_calendar() -> None:
+    with pytest.raises(ValueError, match="15-minute"):
+        WeatherMember(
+            member_id="hourly-weather",
+            timestamps_utc=_hourly_timestamps(2),
+            temperature_c=np.array([1.0, 2.0]),
+        )
