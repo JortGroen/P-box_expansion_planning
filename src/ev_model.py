@@ -10,11 +10,14 @@ from typing import Any, Sequence
 
 import numpy as np
 
+from src.rng import ComponentSelection, ComponentStream
+
 
 EXPECTED_FULL_YEAR_STEPS = 35_040
 STEP_HOURS = 0.25
 LOCAL_TIMEZONE = "Europe/Amsterdam"
 ADOPTION_SCHEMA_VERSION = 1
+EV_HOME_COMPONENT = "ev_home"
 
 
 @dataclass(frozen=True)
@@ -162,21 +165,108 @@ class EVProfileBootstrapSampler:
 
     # EV-005 deliberately has no default: replacement changes the dependence
     # structure within one realization and therefore requires an explicit choice.
-    def sample_member_indices(self, n_members: int, *, seed: int, replace: bool) -> np.ndarray:
+    def select_members(
+        self,
+        n_members: int,
+        *,
+        component_stream: ComponentStream,
+        replace: bool,
+    ) -> EVBootstrapSelection:
         if n_members < 0:
             raise ValueError("n_members must be non-negative")
         if not replace and n_members > self.batch.n_profiles:
             raise ValueError("Cannot sample more distinct members than are available")
-        rng = np.random.default_rng(seed)
-        return rng.choice(self.batch.n_profiles, size=n_members, replace=replace)
+        indices = tuple(
+            int(index)
+            for index in component_stream.rng().choice(
+                self.batch.n_profiles,
+                size=n_members,
+                replace=replace,
+            )
+        )
+        member_ids = tuple(self.batch.member_ids[index] for index in indices)
+        return EVBootstrapSelection(
+            indices=indices,
+            member_ids=member_ids,
+            component_stream=component_stream,
+            replace=replace,
+        )
 
-    def sample_profiles_kw(self, n_members: int, *, seed: int, replace: bool) -> np.ndarray:
-        indices = self.sample_member_indices(n_members, seed=seed, replace=replace)
-        return self.batch.demands_kw[:, indices]
+    def sample_member_indices(
+        self,
+        n_members: int,
+        *,
+        component_stream: ComponentStream,
+        replace: bool,
+    ) -> np.ndarray:
+        selection = self.select_members(
+            n_members,
+            component_stream=component_stream,
+            replace=replace,
+        )
+        return selection.index_array()
 
-    def sample_aggregate_kw(self, n_members: int, *, seed: int, replace: bool) -> np.ndarray:
-        profiles = self.sample_profiles_kw(n_members, seed=seed, replace=replace)
+    def sample_profiles_kw(
+        self,
+        n_members: int,
+        *,
+        component_stream: ComponentStream,
+        replace: bool,
+    ) -> np.ndarray:
+        selection = self.select_members(
+            n_members,
+            component_stream=component_stream,
+            replace=replace,
+        )
+        return self.batch.demands_kw[:, selection.index_array()]
+
+    def sample_aggregate_kw(
+        self,
+        n_members: int,
+        *,
+        component_stream: ComponentStream,
+        replace: bool,
+    ) -> np.ndarray:
+        profiles = self.sample_profiles_kw(
+            n_members,
+            component_stream=component_stream,
+            replace=replace,
+        )
         return profiles.sum(axis=1)
+
+
+@dataclass(frozen=True)
+class EVBootstrapSelection:
+    """Traceable EV source-member selection for one component stream."""
+
+    indices: tuple[int, ...]
+    member_ids: tuple[str, ...]
+    component_stream: ComponentStream
+    replace: bool
+
+    def __post_init__(self) -> None:
+        if len(self.indices) != len(self.member_ids):
+            raise ValueError("indices and member_ids must have the same length")
+
+    @property
+    def stream_id(self) -> str:
+        return self.component_stream.stream_id
+
+    def index_array(self) -> np.ndarray:
+        return np.asarray(self.indices, dtype=np.int64)
+
+    def component_selections(self) -> tuple[ComponentSelection, ...]:
+        # Selection indices are stored so future manifests can reconstruct the
+        # bootstrap draw without treating the ElaadNL member IDs as new seeds.
+        return tuple(
+            ComponentSelection(
+                component=self.component_stream.component,
+                source_member_id=member_id,
+                stream_id=self.component_stream.stream_id,
+                selection_index=selection_index,
+            )
+            for selection_index, member_id in enumerate(self.member_ids)
+        )
 
 
 @dataclass(frozen=True)

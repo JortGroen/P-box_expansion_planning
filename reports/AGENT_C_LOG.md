@@ -101,3 +101,9 @@ DID: Revised PR #39 so D-009 national Outlook projections are provenance-only an
 VERIFIED: Planned-path ownership preflight passed for the revised Agent C paths; `.\scripts\task.ps1 ownership` passed for 10 changed paths before and after merging latest `origin/main`; focused `.\.venv\Scripts\python.exe -m pytest tests\test_ev_model.py` passed 23 tests; post-merge full `.\scripts\task.ps1 test` passed 139 tests in 86.69 s.
 OPEN: Q-7 remains blocking: local home/public totals and EV-005 `K_r` ranges are not established until PI chooses a local scaling method and public-charging basis.
 NEXT: Update PR #39 and await Q-7 resolution before any integrated EV adoption use.
+
+## 2026-07-20 18:10 - E2.S6 RNG-001 follow-up - blocked
+DID: Updated PR #39's EV bootstrap sampler so member draws use `src.rng.ComponentStream.rng()` instead of a raw integer seed and local `np.random.default_rng` call. Added traceable `EVBootstrapSelection` records containing selected member indices, source member IDs, stream identity, and replacement setting for later manifests. No ElaadNL API calls, held-out inspection, scientific experiments, replacement-policy choice, or STATUS cleanup were performed.
+VERIFIED: Worktree started clean and already pushed; `git fetch origin --prune` and `git merge origin/main` left the branch up to date. Planned-path ownership preflight passed for `src/ev_model.py`, `tests/test_ev_model.py`, and this log. Focused `.\.venv\Scripts\python.exe -m pytest tests\test_ev_model.py tests\test_rng.py` passed 40 tests. `.\scripts\task.ps1 ownership` passed for 10 changed paths. Full `.\scripts\task.ps1 test` passed 142 tests in 149.85 s. `git diff --check` returned clean.
+OPEN: Q-7 remains blocking: local home/public totals and EV-005 `K_r` ranges are not established until PI chooses a local scaling method and public-charging basis.
+NEXT: Update PR #39 with the RNG-001 compliance note and await Q-7 resolution before any integrated EV adoption use.

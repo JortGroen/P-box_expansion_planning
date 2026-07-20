@@ -2,13 +2,16 @@ from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
 import gzip
+import inspect
 import json
 from pathlib import Path
 
 import numpy as np
 import pytest
 
+import src.ev_model as ev_model
 from src.ev_model import (
+    EV_HOME_COMPONENT,
     EVProfileLibrary,
     EVProfileBootstrapSampler,
     EXPECTED_FULL_YEAR_STEPS,
@@ -25,6 +28,7 @@ from src.ev_model import (
     save_processed_batch_npz,
     validate_adoption_scenarios_config,
 )
+from src.rng import SeedTree
 
 
 def _payload(n_profiles: int = 3, timesteps: int = EXPECTED_FULL_YEAR_STEPS) -> dict:
@@ -77,36 +81,95 @@ def test_processed_roundtrip_and_sampler_reproducibility(tmp_path: Path) -> None
     save_processed_batch_npz(batch, path)
     loaded = load_processed_batch_npz(path)
     sampler = EVProfileBootstrapSampler(loaded)
+    stream = SeedTree(root_seed=42).component_stream(sample_index=0, component=EV_HOME_COMPONENT)
+    repeated_stream = SeedTree(root_seed=42).component_stream(sample_index=0, component=EV_HOME_COMPONENT)
+    different_stream = SeedTree(root_seed=43).component_stream(sample_index=0, component=EV_HOME_COMPONENT)
 
     # EV-005 leaves replacement unresolved, so tests and production callers
     # must state the provisional sampling rule instead of inheriting a default.
-    first = sampler.sample_member_indices(3, seed=42, replace=False)
-    second = sampler.sample_member_indices(3, seed=42, replace=False)
-    different = sampler.sample_member_indices(3, seed=43, replace=False)
+    first = sampler.sample_member_indices(3, component_stream=stream, replace=False)
+    second = sampler.sample_member_indices(3, component_stream=repeated_stream, replace=False)
+    different = sampler.sample_member_indices(3, component_stream=different_stream, replace=False)
 
     assert np.array_equal(first, second)
     assert not np.array_equal(first, different)
     assert len(set(first.tolist())) == 3
     assert np.array_equal(
-        sampler.sample_aggregate_kw(3, seed=42, replace=False),
+        sampler.sample_aggregate_kw(3, component_stream=stream, replace=False),
         loaded.demands_kw[:, first].sum(axis=1),
     )
+
+
+def test_sampler_selection_records_component_stream_and_member_ids() -> None:
+    batch = parse_elaad_profile_response(_payload(n_profiles=5), batch_seed=130001, expected_n_profiles=5)
+    sampler = EVProfileBootstrapSampler(batch)
+    stream = SeedTree(root_seed=20260720).component_stream(
+        sample_index=12,
+        component=EV_HOME_COMPONENT,
+    )
+
+    first = sampler.select_members(4, component_stream=stream, replace=False)
+    second = sampler.select_members(4, component_stream=stream, replace=False)
+    records = tuple(record.manifest_record() for record in first.component_selections())
+
+    assert first.indices == second.indices
+    assert first.member_ids == second.member_ids
+    assert first.stream_id == stream.stream_id
+    assert all(record["stream_id"] == stream.stream_id for record in records)
+    assert [record["selection_index"] for record in records] == [0, 1, 2, 3]
+    assert first.member_ids == tuple(batch.member_ids[index] for index in first.indices)
+
+
+def test_sampler_component_stream_identity_changes_selection() -> None:
+    batch = parse_elaad_profile_response(_payload(n_profiles=10), batch_seed=130001, expected_n_profiles=10)
+    sampler = EVProfileBootstrapSampler(batch)
+    base = SeedTree(root_seed=20260720).component_stream(sample_index=0, component=EV_HOME_COMPONENT)
+    different_root = SeedTree(root_seed=20260721).component_stream(
+        sample_index=0,
+        component=EV_HOME_COMPONENT,
+    )
+    different_sample = SeedTree(root_seed=20260720).component_stream(
+        sample_index=1,
+        component=EV_HOME_COMPONENT,
+    )
+
+    base_selection = sampler.select_members(6, component_stream=base, replace=False)
+    root_selection = sampler.select_members(6, component_stream=different_root, replace=False)
+    sample_selection = sampler.select_members(6, component_stream=different_sample, replace=False)
+
+    assert base.stream_id != different_root.stream_id
+    assert base.stream_id != different_sample.stream_id
+    assert base_selection.indices != root_selection.indices
+    assert base_selection.indices != sample_selection.indices
 
 
 def test_sampler_rejects_too_many_without_replacement() -> None:
     batch = parse_elaad_profile_response(_payload(n_profiles=2), batch_seed=130001, expected_n_profiles=2)
     sampler = EVProfileBootstrapSampler(batch)
+    stream = SeedTree(root_seed=1).component_stream(sample_index=0, component=EV_HOME_COMPONENT)
 
     with pytest.raises(ValueError, match="more distinct members"):
-        sampler.sample_member_indices(3, seed=1, replace=False)
+        sampler.sample_member_indices(3, component_stream=stream, replace=False)
+
+    replacement = sampler.sample_member_indices(3, component_stream=stream, replace=True)
+    assert len(replacement) == 3
+    assert set(replacement.tolist()) <= {0, 1}
 
 
 def test_sampler_requires_explicit_replacement_rule() -> None:
     batch = parse_elaad_profile_response(_payload(n_profiles=2), batch_seed=130001, expected_n_profiles=2)
     sampler = EVProfileBootstrapSampler(batch)
+    stream = SeedTree(root_seed=1).component_stream(sample_index=0, component=EV_HOME_COMPONENT)
 
     with pytest.raises(TypeError, match="replace"):
-        sampler.sample_member_indices(1, seed=1)
+        sampler.sample_member_indices(1, component_stream=stream)
+
+
+def test_ev_sampler_contains_no_independent_local_random_generator() -> None:
+    sampler_source = inspect.getsource(ev_model.EVProfileBootstrapSampler)
+
+    assert "default_rng" not in sampler_source
+    assert "np.random" not in sampler_source
 
 
 def test_distinct_member_count_detects_duplicate_profiles() -> None:
@@ -166,8 +229,9 @@ def test_profile_library_sampler_reproducibility_and_leave_one_batch_views() -> 
     library = EVProfileLibrary(batches=batches, partitions=("candidate", "candidate", "candidate"))
 
     sampler = library.sampler()
-    first = sampler.sample_member_indices(3, seed=123, replace=False)
-    second = sampler.sample_member_indices(3, seed=123, replace=False)
+    stream = SeedTree(root_seed=123).component_stream(sample_index=0, component=EV_HOME_COMPONENT)
+    first = sampler.sample_member_indices(3, component_stream=stream, replace=False)
+    second = sampler.sample_member_indices(3, component_stream=stream, replace=False)
     assert np.array_equal(first, second)
     assert library.nested_candidate_view(2).n_members == 4
     leave_one_out = library.leave_one_batch_out_candidate_views()
