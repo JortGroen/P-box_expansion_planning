@@ -1,15 +1,17 @@
 """Heat-pump profile support for E2.S3.
 
-The module consumes externally selected weather/calendar members. It does not
-sample weather, retrieve KNMI/PVGIS data, or aggregate net load.
+The module consumes the paired weather/PV member selected by the shared
+weather layer. It does not sample weather, retrieve KNMI/PVGIS data, or
+aggregate net load.
 """
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from collections.abc import Mapping, Sequence
+from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from typing import Mapping, Sequence
+from typing import Any, Protocol
 
 import numpy as np
 import pandas as pd
@@ -20,41 +22,20 @@ QUARTER_HOUR_STEP_MINUTES = 15
 QUARTER_HOURS_PER_HOUR = HOURLY_STEP_MINUTES // QUARTER_HOUR_STEP_MINUTES
 
 
-@dataclass(frozen=True)
-class WeatherMember:
-    """Aligned weather member supplied by the future shared weather layer.
+class SharedWeatherMember(Protocol):
+    """Structural contract supplied by the paired weather/PV layer.
 
-    Parameters
-    ----------
-    member_id:
-        Traceable identifier for the paired weather realization.
-    timestamps_utc:
-        Timezone-aware UTC timestamps at 15-minute resolution.
-    temperature_c:
-        Outdoor dry-bulb temperature in degrees Celsius aligned to
-        ``timestamps_utc``.
-    source:
-        Human-readable source label; this module does not interpret it as a
-        sampling rule.
+    HP consumes this shared weather object; it does not construct an
+    independent temperature-only realization.
     """
 
     member_id: str
-    timestamps_utc: tuple[datetime, ...]
-    temperature_c: np.ndarray
-    source: str = "shared_weather_layer"
+    source: str
+    timestamps_utc: Sequence[datetime]
+    temperature_c: Sequence[float]
 
-    def __post_init__(self) -> None:
-        timestamps = tuple(_as_utc_timestamp(item) for item in self.timestamps_utc)
-        temperature = np.asarray(self.temperature_c, dtype=np.float64)
-        if len(timestamps) != temperature.shape[0]:
-            raise ValueError("weather timestamps and temperature_c must have the same length")
-        if not self.member_id:
-            raise ValueError("weather member_id must be non-empty")
-        if not np.isfinite(temperature).all():
-            raise ValueError("temperature_c must contain only finite values")
-        _validate_regular_step(timestamps, QUARTER_HOUR_STEP_MINUTES, label="weather")
-        object.__setattr__(self, "timestamps_utc", timestamps)
-        object.__setattr__(self, "temperature_c", temperature)
+    @property
+    def shared_weather_driver_id(self) -> str: ...
 
 
 @dataclass(frozen=True)
@@ -146,7 +127,9 @@ class When2HeatQuarterHourProfile:
 class HeatPumpProfile:
     """Heat-pump electric demand aligned to one shared weather member."""
 
+    shared_weather_driver_id: str
     weather_member_id: str
+    weather_source: str
     timestamps_utc: tuple[datetime, ...]
     electric_kw: np.ndarray
     thermal_demand_kw: np.ndarray
@@ -155,13 +138,23 @@ class HeatPumpProfile:
     source_columns: tuple[str, ...]
     source_path: str | None
     downscaling_method: str
+    timestamps_local: tuple[datetime, ...] | None = None
+    weather_provenance: Mapping[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
+        if not self.shared_weather_driver_id:
+            raise ValueError("shared_weather_driver_id must be non-empty")
+        if not self.weather_member_id:
+            raise ValueError("weather_member_id must be non-empty")
+        if not self.weather_source:
+            raise ValueError("weather_source must be non-empty")
         timestamps = tuple(_as_utc_timestamp(item) for item in self.timestamps_utc)
+        timestamps_local = _coerce_optional_local_timestamps(self.timestamps_local, timestamps)
         electric = np.asarray(self.electric_kw, dtype=np.float64)
         thermal = np.asarray(self.thermal_demand_kw, dtype=np.float64)
         cop = np.asarray(self.cop, dtype=np.float64)
         temperature = np.asarray(self.temperature_c, dtype=np.float64)
+        provenance = _as_provenance_mapping(self.weather_provenance, "weather_provenance")
         _validate_profile_arrays(
             timestamps,
             thermal,
@@ -178,6 +171,39 @@ class HeatPumpProfile:
         object.__setattr__(self, "thermal_demand_kw", thermal)
         object.__setattr__(self, "cop", cop)
         object.__setattr__(self, "temperature_c", temperature)
+        object.__setattr__(self, "timestamps_local", timestamps_local)
+        object.__setattr__(self, "weather_provenance", provenance)
+
+    @property
+    def n_timesteps(self) -> int:
+        return len(self.timestamps_utc)
+
+    @property
+    def cadence_seconds(self) -> int:
+        if len(self.timestamps_utc) < 2:
+            return 0
+        return int((self.timestamps_utc[1] - self.timestamps_utc[0]).total_seconds())
+
+    def weather_identity_record(self) -> dict[str, object]:
+        """Return an auditable record for HP/PV shared-weather comparison."""
+        record: dict[str, object] = {
+            "shared_weather_driver_id": self.shared_weather_driver_id,
+            "member_id": self.weather_member_id,
+            "source": self.weather_source,
+            "first_timestamp_utc": self.timestamps_utc[0].isoformat(),
+            "last_timestamp_utc": self.timestamps_utc[-1].isoformat(),
+            "n_timesteps": self.n_timesteps,
+            "cadence_seconds": self.cadence_seconds,
+            "provenance": dict(self.weather_provenance),
+        }
+        if self.timestamps_local is not None:
+            record.update(
+                {
+                    "first_timestamp_local": self.timestamps_local[0].isoformat(),
+                    "last_timestamp_local": self.timestamps_local[-1].isoformat(),
+                }
+            )
+        return record
 
 
 @dataclass(frozen=True)
@@ -321,33 +347,52 @@ def downscale_hourly_to_15min(hourly: When2HeatHourlyProfile) -> When2HeatQuarte
 
 def align_heat_pump_profile(
     when2heat_15min: When2HeatQuarterHourProfile,
-    weather: WeatherMember,
+    weather: SharedWeatherMember,
 ) -> HeatPumpProfile:
     """Attach a 15-minute When2Heat profile to one supplied weather member."""
-    if when2heat_15min.timestamps_utc != weather.timestamps_utc:
+    weather_timestamps = tuple(_as_utc_timestamp(item) for item in weather.timestamps_utc)
+    if when2heat_15min.timestamps_utc != weather_timestamps:
         raise ValueError("When2Heat profile and weather member timestamps are not exactly aligned")
+    weather_temperature = np.asarray(weather.temperature_c, dtype=np.float64)
+    if weather_temperature.shape != when2heat_15min.electric_kw.shape:
+        raise ValueError("weather temperature_c must align with heat-pump demand")
+    if not np.isfinite(weather_temperature).all():
+        raise ValueError("weather temperature_c must contain only finite values")
+    _validate_regular_step(weather_timestamps, QUARTER_HOUR_STEP_MINUTES, label="weather")
+
+    member_id = _required_text_attr(weather, "member_id")
+    source = _required_text_attr(weather, "source")
+    shared_driver_id = _required_text_attr(weather, "shared_weather_driver_id")
+    timestamps_local = _coerce_optional_local_timestamps(
+        getattr(weather, "timestamps_local", None),
+        weather_timestamps,
+    )
     source_columns = tuple(
         column
         for component in when2heat_15min.components
         for column in (component.heat_column, component.cop_column)
     )
     return HeatPumpProfile(
-        weather_member_id=weather.member_id,
+        shared_weather_driver_id=shared_driver_id,
+        weather_member_id=member_id,
+        weather_source=source,
         timestamps_utc=when2heat_15min.timestamps_utc,
         electric_kw=when2heat_15min.electric_kw,
         thermal_demand_kw=when2heat_15min.thermal_demand_kw,
         cop=when2heat_15min.cop,
-        temperature_c=weather.temperature_c,
+        temperature_c=weather_temperature,
         source_columns=source_columns,
         source_path=when2heat_15min.source_path,
         downscaling_method=when2heat_15min.downscaling_method,
+        timestamps_local=timestamps_local,
+        weather_provenance=_weather_provenance(weather),
     )
 
 
 def build_heat_pump_profile_from_when2heat_csv(
     path: str | Path,
     *,
-    weather: WeatherMember,
+    weather: SharedWeatherMember,
     components: Sequence[When2HeatComponent],
     timestamp_column: str = "utc_timestamp",
 ) -> HeatPumpProfile:
@@ -396,6 +441,50 @@ def cold_week_sanity_check(profile: HeatPumpProfile, *, window_days: int = 7) ->
         max_load_outside_cold_week_kw=outside_max,
         peak_inside_cold_week=bool(inside_peak_indices),
     )
+
+
+def _required_text_attr(obj: object, name: str) -> str:
+    try:
+        value = getattr(obj, name)
+    except AttributeError as exc:
+        raise ValueError(f"weather member must provide {name}") from exc
+    if value is None:
+        raise ValueError(f"weather {name} must be non-empty")
+    text = str(value).strip()
+    if not text:
+        raise ValueError(f"weather {name} must be non-empty")
+    return text
+
+
+def _weather_provenance(weather: object) -> dict[str, Any]:
+    provenance: dict[str, Any] = {}
+    for attribute in ("metadata", "provenance"):
+        raw = getattr(weather, attribute, None)
+        if raw is None:
+            continue
+        provenance.update(_as_provenance_mapping(raw, f"weather {attribute}"))
+    return dict(sorted(provenance.items()))
+
+
+def _as_provenance_mapping(raw: Mapping[str, Any], label: str) -> dict[str, Any]:
+    if not isinstance(raw, Mapping):
+        raise ValueError(f"{label} must be a mapping")
+    return dict(sorted((str(key), value) for key, value in raw.items()))
+
+
+def _coerce_optional_local_timestamps(
+    timestamps_local: Sequence[datetime] | None,
+    timestamps_utc: Sequence[datetime],
+) -> tuple[datetime, ...] | None:
+    if timestamps_local is None:
+        return None
+    local = tuple(_as_aware_timestamp(item, "timestamps_local") for item in timestamps_local)
+    if len(local) != len(timestamps_utc):
+        raise ValueError("UTC and local timestamp counts must match")
+    for utc_timestamp, local_timestamp in zip(timestamps_utc, local, strict=True):
+        if local_timestamp.astimezone(UTC) != utc_timestamp:
+            raise ValueError("UTC and local timestamps must represent the same instants")
+    return local
 
 
 def _validate_profile_arrays(
@@ -451,6 +540,12 @@ def _parse_utc_timestamp(value: object) -> datetime:
 
 
 def _as_utc_timestamp(value: datetime) -> datetime:
-    if value.tzinfo is None:
-        raise ValueError("timestamps must be timezone-aware")
-    return value.astimezone(UTC)
+    return _as_aware_timestamp(value, "timestamps").astimezone(UTC)
+
+
+def _as_aware_timestamp(value: datetime, label: str) -> datetime:
+    if not isinstance(value, datetime):
+        raise ValueError(f"{label} entries must be datetimes")
+    if value.tzinfo is None or value.utcoffset() is None:
+        raise ValueError(f"{label} must be timezone-aware")
+    return value

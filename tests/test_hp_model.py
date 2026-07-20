@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 import hashlib
 import json
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 import numpy as np
 import pandas as pd
@@ -16,7 +18,6 @@ from data.get_when2heat import (
 )
 from src.hp_model import (
     HeatPumpProfile,
-    WeatherMember,
     When2HeatComponent,
     When2HeatHourlyProfile,
     align_heat_pump_profile,
@@ -26,6 +27,45 @@ from src.hp_model import (
     downscale_hourly_to_15min,
     load_when2heat_hourly_csv,
 )
+
+
+@dataclass(frozen=True)
+class PairedWeatherMemberStub:
+    """PV/weather-shaped member used to verify HP consumes the shared contract."""
+
+    member_id: str
+    source: str
+    timestamps_utc: tuple[datetime, ...]
+    timestamps_local: tuple[datetime, ...]
+    temperature_c: np.ndarray
+    ghi_w_per_m2: np.ndarray
+    metadata: dict[str, object] = field(default_factory=dict)
+
+    @property
+    def shared_weather_driver_id(self) -> str:
+        return f"{self.source}:{self.member_id}"
+
+
+def _shared_weather(
+    *,
+    member_id: str = "knmi_2025_rotterdam_001",
+    source: str = "knmi_historical_plus_paired_irradiance",
+    timestamps_utc: tuple[datetime, ...],
+    temperature_c: list[float] | np.ndarray,
+    metadata: dict[str, object] | None = None,
+) -> PairedWeatherMemberStub:
+    local_zone = ZoneInfo("Europe/Amsterdam")
+    local = tuple(item.astimezone(local_zone) for item in timestamps_utc)
+    temperature = np.asarray(temperature_c, dtype=np.float64)
+    return PairedWeatherMemberStub(
+        member_id=member_id,
+        source=source,
+        timestamps_utc=timestamps_utc,
+        timestamps_local=local,
+        temperature_c=temperature,
+        ghi_w_per_m2=np.zeros_like(temperature),
+        metadata=metadata or {},
+    )
 
 
 def _hourly_timestamps(count: int) -> tuple[datetime, ...]:
@@ -137,23 +177,40 @@ def test_profile_alignment_records_weather_member_and_rejects_mismatch() -> None
         components=(When2HeatComponent("heat", "cop", 1.0),),
     )
     quarter = downscale_hourly_to_15min(hourly)
-    weather = WeatherMember(
+    weather = _shared_weather(
         member_id="knmi-2012",
         timestamps_utc=quarter.timestamps_utc,
-        temperature_c=np.array([3.0, 2.5, 2.0, 1.5]),
+        temperature_c=[3.0, 2.5, 2.0, 1.5],
+        metadata={"station_id": "260", "source_file_sha256": "abc123"},
     )
 
     profile = align_heat_pump_profile(quarter, weather)
 
     assert profile.weather_member_id == "knmi-2012"
+    assert profile.weather_source == "knmi_historical_plus_paired_irradiance"
+    assert profile.shared_weather_driver_id == weather.shared_weather_driver_id
     assert profile.timestamps_utc == weather.timestamps_utc
+    assert profile.timestamps_local == weather.timestamps_local
     assert np.array_equal(profile.temperature_c, weather.temperature_c)
     assert profile.source_columns == ("heat", "cop")
+    assert profile.weather_provenance == {"source_file_sha256": "abc123", "station_id": "260"}
+    assert profile.weather_identity_record() == {
+        "shared_weather_driver_id": weather.shared_weather_driver_id,
+        "member_id": "knmi-2012",
+        "source": "knmi_historical_plus_paired_irradiance",
+        "first_timestamp_utc": "2025-01-01T00:00:00+00:00",
+        "last_timestamp_utc": "2025-01-01T00:45:00+00:00",
+        "n_timesteps": 4,
+        "cadence_seconds": 900,
+        "provenance": {"source_file_sha256": "abc123", "station_id": "260"},
+        "first_timestamp_local": "2025-01-01T01:00:00+01:00",
+        "last_timestamp_local": "2025-01-01T01:45:00+01:00",
+    }
 
-    shifted_weather = WeatherMember(
+    shifted_weather = _shared_weather(
         member_id="knmi-shifted",
         timestamps_utc=tuple(item + timedelta(minutes=15) for item in quarter.timestamps_utc),
-        temperature_c=np.array([3.0, 2.5, 2.0, 1.5]),
+        temperature_c=[3.0, 2.5, 2.0, 1.5],
     )
     with pytest.raises(ValueError, match="not exactly aligned"):
         align_heat_pump_profile(quarter, shifted_weather)
@@ -168,10 +225,10 @@ def test_build_heat_pump_profile_from_csv_requires_supplied_weather(tmp_path: Pa
             "NL_COP_ASHP_radiator": [3.0],
         }
     ).to_csv(path, index=False)
-    weather = WeatherMember(
+    weather = _shared_weather(
         member_id="weather-member-1",
         timestamps_utc=_quarter_timestamps(4),
-        temperature_c=np.array([0.0, 0.0, 0.0, 0.0]),
+        temperature_c=[0.0, 0.0, 0.0, 0.0],
     )
 
     profile = build_heat_pump_profile_from_when2heat_csv(
@@ -182,6 +239,7 @@ def test_build_heat_pump_profile_from_csv_requires_supplied_weather(tmp_path: Pa
 
     assert np.allclose(profile.electric_kw, [1000.0] * 4)
     assert profile.weather_member_id == "weather-member-1"
+    assert profile.shared_weather_driver_id == weather.shared_weather_driver_id
 
 
 def test_cold_week_sanity_peak_coincides_with_cold_spell() -> None:
@@ -193,7 +251,9 @@ def test_cold_week_sanity_peak_coincides_with_cold_spell() -> None:
     electric = np.full(len(timestamps), 1.0)
     electric[cold_start:cold_stop] = 4.0
     profile = HeatPumpProfile(
+        shared_weather_driver_id="knmi_synthetic:design-cold-week",
         weather_member_id="design-cold-week",
+        weather_source="knmi_synthetic",
         timestamps_utc=timestamps,
         electric_kw=electric,
         thermal_demand_kw=electric * 3.0,
@@ -202,6 +262,7 @@ def test_cold_week_sanity_peak_coincides_with_cold_spell() -> None:
         source_columns=("synthetic_heat", "synthetic_cop"),
         source_path=None,
         downscaling_method="test_15min_native",
+        weather_provenance={"acceptance_evidence": "synthetic_unit_test_only"},
     )
 
     sanity = cold_week_sanity_check(profile)
@@ -213,10 +274,29 @@ def test_cold_week_sanity_peak_coincides_with_cold_spell() -> None:
     assert sanity.max_load_outside_cold_week_kw == 1.0
 
 
-def test_weather_member_rejects_non_15min_calendar() -> None:
-    with pytest.raises(ValueError, match="15-minute"):
-        WeatherMember(
-            member_id="hourly-weather",
-            timestamps_utc=_hourly_timestamps(2),
-            temperature_c=np.array([1.0, 2.0]),
-        )
+def test_alignment_requires_shared_weather_driver_identity() -> None:
+    hourly = When2HeatHourlyProfile(
+        timestamps_utc=_hourly_timestamps(1),
+        thermal_demand_kw=np.array([3000.0]),
+        electric_kw=np.array([1000.0]),
+        cop=np.array([3.0]),
+        components=(When2HeatComponent("heat", "cop", 1.0),),
+    )
+    quarter = downscale_hourly_to_15min(hourly)
+
+    @dataclass(frozen=True)
+    class TemperatureOnlyWeather:
+        member_id: str
+        source: str
+        timestamps_utc: tuple[datetime, ...]
+        temperature_c: np.ndarray
+
+    weather = TemperatureOnlyWeather(
+        member_id="temperature-only",
+        source="knmi",
+        timestamps_utc=quarter.timestamps_utc,
+        temperature_c=np.zeros(4),
+    )
+
+    with pytest.raises(ValueError, match="shared_weather_driver_id"):
+        align_heat_pump_profile(quarter, weather)

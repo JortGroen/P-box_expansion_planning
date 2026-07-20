@@ -731,12 +731,14 @@ COP column before aggregation, preserving distinct COP treatment for space and
 water heating where those columns are selected. Hourly source values are
 downscaled to 15 minutes by repeating the average-power value into four
 quarter-hour intervals, which preserves energy and does not interpolate new
-peaks. The resulting profile must match an externally supplied timezone-aware
-weather member on the canonical 15-minute UTC calendar; the heat-pump module
-records the weather-member identifier but does not sample weather independently
-or shuffle timesteps. Cold-period validation checks that demand peaks under
-physically plausible temperature conditions and that temporal downscaling does
-not manufacture additional energy.
+peaks. The resulting profile must match the externally supplied shared
+weather/PV member on the canonical 15-minute UTC calendar, preserving
+`shared_weather_driver_id`, `member_id`, source, optional local calendar, and
+provenance or metadata so HP and PV outputs can be audited as products of the
+same weather realization. The heat-pump module does not sample weather
+independently or shuffle timesteps. Cold-period validation currently has only
+synthetic scaffold coverage; real D-003/paired-weather cold-spell acceptance
+remains pending concrete file selection and PI review.
 
 <!-- methods-id: D-004 -->
 ### D-004 - Weather and PV Inputs

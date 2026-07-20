@@ -95,3 +95,9 @@ DID: Created a dedicated `agent-c/E2.S3-hp-model` worktree under `.tmp/worktrees
 VERIFIED: Planned-path ownership preflight passed for the E2.S3 source, test, report, log, status, and methods paths. Focused `.venv` pytest for `tests/test_hp_model.py tests/test_data_sources.py` passed 24 tests; final `.\scripts\task.ps1 test` passed 138 tests. No concrete When2Heat file was downloaded.
 OPEN: D-003 remains proposed and no concrete When2Heat checksum is selected in this PR.
 NEXT: PR #44 is open; wait for PI review.
+
+## 2026-07-20 19:05 - E2.S3 - in-progress
+DID: Re-read the required governance files and coordinated against C.PV/weather branch `agent-c/E2.S4-pv-weather-inputs` at `74e686b`. Revised HP to consume the shared weather/PV member interface by requiring `shared_weather_driver_id`, preserving member/source/provenance and UTC/local calendar identity on `HeatPumpProfile`, and rejecting temperature-only weather objects.
+VERIFIED: Planned-path ownership preflight passed for the revised E2.S3 source, test, report, log, status, and methods paths. Focused `.venv` pytest for `tests/test_hp_model.py tests/test_methods_registry.py` passed 12 tests; `.\scripts\task.ps1 test` passed 138 tests in 57.30 s.
+OPEN: E2.S3 remains scaffold/in-progress. No concrete When2Heat file/checksum was selected, and no real paired-weather cold-spell acceptance evidence exists.
+NEXT: Update PR #44 text and wait for PI/maintainer review or concrete D-003/weather-file authorization.
