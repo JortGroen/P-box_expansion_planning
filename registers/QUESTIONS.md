@@ -56,4 +56,4 @@ CONTEXT: E5.S3 T1 requires the smallest G1-A2-compliant IC-2/IC-3 schema change 
 QUESTION: Does the PI approve proposed decision E5-S3-T1 as the IC-2/IC-3 schema for output-domain model-error propagation, subject to Agent A confirming the IC-2 trajectory payload?
 OPTIONS: A) Approve E5-S3-T1 as proposed - Agents A/B can implement E5.S3 T2-T4 against trajectory endpoint counts once G2/A-013/Q-5 dependencies permit paper use.  B) Amend the schema before implementation - E5.S3 remains blocked until the PI states the required field or ownership changes.
 RECOMMENDATION: A, because the proposal reuses the current `Tier1Evaluation` fields, avoids boolean-only sample evaluation, preserves unwidened direction gating, supports asymmetric Tier-1 endpoints, and keeps implementation ownership split between A and B.
-STATUS: open
+STATUS: resolved by E5-S3-T1 in `registers/DECISIONS.md`; PI approved with conditions on 2026-07-20. Agent A must provide the shared `LoadingTrajectoryResult` contract/validator before Agent B implements IC-3 propagation; this approval does not resolve Q-5, total-versus-firm capacity, G2 error values, or numerical A-013 grid-error values.

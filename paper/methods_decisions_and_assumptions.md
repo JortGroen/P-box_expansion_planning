@@ -218,23 +218,32 @@ capacity is selected, a one-transformer-out AC case is required because a
 normal-operation flow divided by 40 MVA is only a headroom diagnostic.
 
 <!-- methods-id: E5-S3-T1 -->
-### E5-S3-T1 - Proposed Output-Error Schema
+### E5-S3-T1 - Output-Error Schema
 
-**Status: Proposed; pending PI approval.** The proposed IC-2/IC-3 schema for
-output-domain model-error propagation passes complete loading trajectories,
-unwidened active-power direction masks, threshold metadata, and time-domain
-flags from IC-2 to IC-3 rather than passing only a boolean overload result.
-IC-3 would then combine the G2 additive Tier-1 endpoints and the A-013
-symmetric relative grid envelope as
+**Status: Approved with conditions.** The IC-2/IC-3 schema for output-domain
+model-error propagation passes validated loading trajectories, unwidened
+active-power direction masks, threshold metadata, and time-domain flags from
+IC-2 to IC-3 rather than passing only a boolean overload result. Agent A must
+provide the shared `LoadingTrajectoryResult` contract and validator before
+Agent B implements IC-3 propagation. That validation covers array shapes,
+finite values, direction masks, time-domain consistency, threshold,
+persistence length, and any supplied import/export diagnostics. IC-3 combines
+the G2 additive Tier-1 endpoints and the A-013 symmetric relative grid envelope
+as
 `L_lower=(1-epsilon_grid)*max(0,L_T1-epsilon_Tier1_minus)` and
-`L_upper=(1+epsilon_grid)*(L_T1+epsilon_Tier1_plus)`, apply the import gate from
-unwidened `P_net`, and run the approved consecutive-step event detector on the
-lower and upper trajectories. Lower and upper event counts would generate the
-reported probabilities and confidence intervals; probabilities would not be
-widened after estimation, and `epsilon_grid` would not be independently
-sampled. This proposal is not an approved contract until Q-6 is resolved, and
-T2-T4 remain blocked by PI schema approval, G2 Tier-1 endpoints, signed A-013
-values, and Q-5 before paper event results.
+`L_upper=(1+epsilon_grid)*(L_T1+epsilon_Tier1_plus)`, applies the import gate from
+unwidened `P_net`, and runs the approved consecutive-step event detector on the
+lower and upper trajectories. Lower and upper event counts generate the
+reported probabilities and confidence intervals; probabilities are not
+widened after estimation. Tier-1 error and grid-model error are both parts of
+total model-output error; their dependence on inputs, time, and each other is
+unknown, so they are not sampled independently, assumed to cancel, or combined
+by root-sum-of-squares. Their conservative endpoint envelope is composed before
+event detection. Runner configuration and manifests must record timestep
+cadence and transformer capacity/denominator provenance. This approval does
+not resolve Q-5, total-versus-firm capacity, G2 error values, or numerical
+A-013 grid-error values; those remain blocking dependencies for paper-facing
+event results.
 
 <!-- methods-id: ALEA-001 -->
 ### ALEA-001 - Joint Aleatory Dependency Protocol

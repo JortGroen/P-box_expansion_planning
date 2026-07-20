@@ -33,3 +33,9 @@ VERIFIED: `.\scripts\task.ps1 ownership` passed for Agent B with 6 authorized ch
 OPEN: Q-6 remains the blocking PI/Agent A schema-review question; E5.S3 T2-T4 remain blocked and were not implemented.
 NEXT: Keep PR #36 open for review until the PI approves or amends E5-S3-T1.
 
+## 2026-07-20 15:58 — E5.S3 — in-progress
+DID: Updated PR #36 after the PI's Q-6 decision. Marked E5-S3-T1 approved with conditions, resolved Q-6, and revised the schema report/methods prose to require Agent A's shared `LoadingTrajectoryResult` contract/validator before Agent B implements IC-3 propagation.
+VERIFIED: `.\scripts\task.ps1 ownership` passed for Agent B with 6 authorized changed paths. `.\scripts\task.ps1 test` passed: 114 tests green in 86.78s. `git diff --check` passed after removing one trailing-space issue. No IC-3 implementation, experiments, or manuscript numbers were produced.
+OPEN: E5.S3 T2-T4 remain blocked by the Agent A contract/validator, G2 error values, signed A-013 numerical grid-error values, Q-5, and total-versus-firm capacity/provenance decisions before paper-facing use.
+NEXT: Update PR #36 and await the remaining implementation prerequisites.
+
