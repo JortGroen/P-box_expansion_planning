@@ -19,6 +19,7 @@ from src.ev_model import (
     distinct_member_count,
     load_adoption_scenarios_config,
     load_processed_batch_npz,
+    national_outlook_projections,
     node_charge_point_ranges,
     parse_elaad_profile_response,
     save_processed_batch_npz,
@@ -244,37 +245,60 @@ def _adoption_config() -> dict:
     return {
         "schema_version": 1,
         "task_id": "E2.S6",
+        "source_ids": {
+            "national_outlook_projection": "D-009",
+            "local_allocation_assumption": "A-014",
+        },
         "sources": {"D-009": {"url": "https://outlook.elaad.nl/scenariotool"}},
+        "national_outlook_projections": [
+            {
+                "year": 2030,
+                "scenario": "low",
+                "location": "home",
+                "value": 10.6,
+                "rounded_count": 11,
+                "provenance": {
+                    "source_id": "D-009",
+                    "response_sha256": "a" * 64,
+                },
+            }
+        ],
         "allocation": {
-            "status": "proposed",
+            "status": "approved",
+            "method_id": "A-014",
             "node_weights": [
                 {"node_id": "load_a", "weight": 0.5},
                 {"node_id": "load_b", "weight": 0.3},
                 {"node_id": "load_c", "weight": 0.2},
             ],
         },
-        "scenarios": [
-            {
-                "year": 2030,
-                "scenario": "low",
-                "home_charge_points": 11,
-                "public_charge_points": 5,
-                "provenance": {
-                    "home_charge_points": "D-009",
-                    "public_charge_points": "D-009",
+        "local_grid_scenarios": {
+            "status": "approved",
+            "scenarios": [
+                {
+                    "year": 2030,
+                    "scenario": "low",
+                    "home_charge_points": 11,
+                    "public_charge_points": 5,
+                    "provenance": {
+                        "source_type": "local_grid",
+                        "home_charge_points": "Q-7-approved-local-home",
+                        "public_charge_points": "Q-7-approved-local-public",
+                    },
                 },
-            },
-            {
-                "year": 2030,
-                "scenario": "high",
-                "home_charge_points": 17,
-                "public_charge_points": 9,
-                "provenance": {
-                    "home_charge_points": "D-009",
-                    "public_charge_points": "D-009",
+                {
+                    "year": 2030,
+                    "scenario": "high",
+                    "home_charge_points": 17,
+                    "public_charge_points": 9,
+                    "provenance": {
+                        "source_type": "local_grid",
+                        "home_charge_points": "Q-7-approved-local-home",
+                        "public_charge_points": "Q-7-approved-local-public",
+                    },
                 },
-            },
-        ],
+            ],
+        },
     }
 
 
@@ -283,24 +307,79 @@ def test_adoption_config_validates_schema_and_provenance() -> None:
 
     validate_adoption_scenarios_config(config)
     scenarios = adoption_scenarios(config)
+    national = national_outlook_projections(config)
 
     assert scenarios[0].home_charge_points == 11
-    assert scenarios[0].provenance["home_charge_points"] == "D-009"
+    assert scenarios[0].provenance["source_type"] == "local_grid"
+    assert national[0].rounded_count == 11
+    assert national[0].source_id == "D-009"
 
 
 def test_committed_adoption_scenarios_config_validates() -> None:
     config = load_adoption_scenarios_config(Path("configs/scenarios.yaml"))
+    national = national_outlook_projections(config)
     scenarios = adoption_scenarios(config)
 
-    assert len(scenarios) == 9
-    assert {scenario.year for scenario in scenarios} == {2030, 2033, 2035}
+    assert len(national) == 18
+    assert len(scenarios) == 0
+    assert config["local_grid_scenarios"]["status"] == "blocked"
 
 
-def test_adoption_config_rejects_unsigned_allocation_status() -> None:
+def test_adoption_config_accepts_approved_status() -> None:
     config = _adoption_config()
     config["allocation"]["status"] = "approved"
+    config["local_grid_scenarios"]["status"] = "approved"
 
-    with pytest.raises(ValueError, match="proposed"):
+    validate_adoption_scenarios_config(config)
+
+
+def test_adoption_config_rejects_invalid_allocation_status() -> None:
+    config = _adoption_config()
+    config["allocation"]["status"] = "signed"
+
+    with pytest.raises(ValueError, match="status"):
+        validate_adoption_scenarios_config(config)
+
+
+def test_national_projections_cannot_flow_into_local_allocation() -> None:
+    config = _adoption_config()
+    config["local_grid_scenarios"]["scenarios"][0]["provenance"]["home_charge_points"] = "D-009"
+
+    with pytest.raises(ValueError, match="National Outlook projections cannot be used directly"):
+        validate_adoption_scenarios_config(config)
+
+
+def test_blocked_committed_local_scenarios_cannot_allocate() -> None:
+    config = load_adoption_scenarios_config(Path("configs/scenarios.yaml"))
+
+    with pytest.raises(ValueError, match="blocked until Q-7"):
+        adoption_node_allocations(config)
+
+
+def test_adoption_config_rejects_duplicate_scenario_keys_and_noninteger_counts() -> None:
+    config = _adoption_config()
+    config["local_grid_scenarios"]["scenarios"].append(
+        dict(config["local_grid_scenarios"]["scenarios"][0])
+    )
+
+    with pytest.raises(ValueError, match="keys must be unique"):
+        validate_adoption_scenarios_config(config)
+
+    config = _adoption_config()
+    config["local_grid_scenarios"]["scenarios"][0]["home_charge_points"] = 11.2
+    with pytest.raises(ValueError, match="true integer"):
+        validate_adoption_scenarios_config(config)
+
+
+def test_adoption_config_rejects_bad_node_weights() -> None:
+    config = _adoption_config()
+    config["allocation"]["node_weights"][1]["node_id"] = "load_a"
+    with pytest.raises(ValueError, match="unique"):
+        validate_adoption_scenarios_config(config)
+
+    config = _adoption_config()
+    config["allocation"]["node_weights"][1]["weight"] = float("nan")
+    with pytest.raises(ValueError, match="finite and non-negative"):
         validate_adoption_scenarios_config(config)
 
 

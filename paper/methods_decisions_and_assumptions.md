@@ -649,18 +649,18 @@ results may describe the protocol and sensitivity scenarios but may not call
 ### A-014 - EV Adoption Allocation Across Benchmark Load Nodes
 
 **Status: Proposed; blocks integrated EV adoption use until PI resolution of
-Q-7.** The E2.S6 allocation rule maps nationally sourced ElaadNL Outlook
-home/public charge-point counts onto the SimBench primary grid by distributing
-integer counts across the 115 in-service `net.load` rows in proportion to each
-row's static active load `p_mw`. Fractional allocations are converted to
-physical nonnegative integer counts by largest-remainder rounding, with ties
-resolved by node ID for deterministic reruns. This rule makes the EV-005
-cohort sizes explicit and preserves EV-004's separation between fixed 2030
-home charge-point behavior and planning-year adoption growth. It is not yet a
-signed claim that the SimBench benchmark feeder represents a measured Dutch
-population, household count, or service territory; the PI must approve this
-national-equivalent scaling or replace it with a signed local denominator or
-specific Dutch area selection before integrated adoption scenarios are used.
+Q-7.** A-014 is narrowed to a possible second-stage allocation rule only. After
+Q-7 establishes local SimBench-grid home and public charge-point totals, the
+project may distribute those local totals across the 115 in-service `net.load`
+rows in proportion to each row's static active load `p_mw`. Fractional
+allocations are converted to physical nonnegative integer counts by
+largest-remainder rounding, with ties resolved by node ID for deterministic
+reruns. The rule must not be applied directly to the national ElaadNL Outlook
+totals recorded under D-009. Home local totals, public local totals, and the
+resulting EV-005 per-node `K_r` ranges remain blocked until the PI chooses a
+local scaling method, such as a predeclared CBS neighbourhood or cluster from
+ElaadNL local forecasts, or a sourced household/service-area denominator with
+a separate public-charging basis.
 
 ## Data and Evidence Choices
 
@@ -798,32 +798,35 @@ current regulated prices.
 <!-- methods-id: D-009 -->
 ### D-009 - ElaadNL Outlook Mobility Adoption Counts
 
-**Status: Proposed.** EV adoption counts for E2.S6 are taken from the official
-ElaadNL Outlook Mobiliteit scenariotool/API, using December `charging_
-infrastructure` records for 2030, 2033, and 2035 under the low, middle, and
-high scenarios. The home layer uses `location=home`, while public counts use
-`location=public`; both are retained as physical charge-point counts rather
-than as profile behavior. The source site identifies the scenariotool as
-providing forecasts down to CBS-neighbourhood level, supplies report and model
+**Status: Proposed; national projections only.** E2.S6 records national EV
+charging-infrastructure projections from the official ElaadNL Outlook
+Mobiliteit scenariotool/API, using December `charging_infrastructure` records
+for 2030, 2033, and 2035 under the low, middle, and high scenarios. The home
+layer uses `location=home`, while the public layer uses `location=public`.
+These records are not physical charge-point counts for the SimBench grid and
+must not flow into nodal allocation without a separately approved local
+scaling method. The source site identifies the scenariotool as providing
+forecasts down to CBS-neighbourhood level, supplies report and model
 background pages, states that the outlook is assumption-based and indicative
 with a 24-month validity note, and licenses the site under CC BY-NC-ND 4.0.
-The committed config records the exact API endpoint pattern and rounded
-integer values, but no raw dashboard data are redistributed. Public behavior
-profiles remain separately blocked by the Elaad profile-generation
-specification, so D-009 public counts are an adoption layer only until a public
-profile source is approved.
+The committed config records exact query strings, UTC retrieval time, raw
+floating API values, nearest-integer rounded national counts, and response
+checksums without redistributing raw dashboard data. Public behavior profiles
+remain separately blocked by the Elaad profile-generation specification, and
+public local-count scaling requires its own basis.
 
 <!-- methods-id: D-010 -->
 ### D-010 - II3050 Scenario Framing
 
-**Status: Proposed.** Netbeheer Nederland's II3050 edition 2 eindrapport is
-recorded as scenario-framing evidence for 2030-2050 infrastructure planning.
-It justifies treating adoption pathways as scenario inputs relevant to network
-planning, but E2.S6 does not extract numerical EV charge-point counts from
-II3050. Those values come from D-009. Keeping D-010 separate prevents a broad
-infrastructure-scenario report from being mistaken for the numeric source of
-home or public charge-point counts, while still documenting the wider Dutch
-planning context in which the ElaadNL Outlook scenarios are used.
+**Status: Proposed.** Netbeheer Nederland's II3050 edition 2 eindrapport,
+published on 11 October 2023 according to the Netbeheer Nederland publication
+page, is recorded as scenario-framing evidence for 2030-2050 infrastructure
+planning. It justifies treating adoption pathways as scenario inputs relevant
+to network planning, but E2.S6 does not extract numerical EV charge-point
+counts from II3050. Keeping D-010 separate prevents a broad infrastructure-
+scenario report from being mistaken for a numeric source of home or public
+charge-point counts, while still documenting the wider Dutch planning context
+in which the ElaadNL Outlook scenarios are considered.
 
 <!-- methods-id: OWN-001 -->
 ### OWN-001 - Machine-Enforced Agent Ownership

@@ -20,7 +20,7 @@ Format: `Story | Owner | status | tasks | blocked-by | PR`
 | E2.S3 HP model | C | todo | 0/4 | E2.S1, ALEA-001 | -- |
 | E2.S4 PV model | C | todo | 0/3 | E2.S1, G0, ALEA-001 | -- |
 | E2.S5 Baseline & diversity | C | todo | 0/2 | E1.S3, ALEA-001 | -- |
-| E2.S6 Adoption scenarios | C | in-progress | 3/3 | Q-7 before integrated EV adoption use; D-009/D-010/A-014 pending PI sign-off | #39 |
+| E2.S6 Adoption scenarios | C | blocked | 1/3 | National D-009 projections recorded; local counts, public basis, and K_r ranges blocked by Q-7; A-014 narrowed to possible second-stage allocation | #39 |
 | E3.S1 Flexibility aggregator | A | todo | 0/3 | E2 models | -- |
 | E3.S2 IC-1 NetLoadProvider | A | todo | 0/4 | E3.S1, ALEA-001 | -- |
 | E3.S2a Integrated library adequacy | C | todo | 0/5 | E2.S2-E2.S6, E3.S2, ALEA-002, EV-005; resolve Q-5 before opening event-based held-out results | -- |

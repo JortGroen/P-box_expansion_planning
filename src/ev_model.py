@@ -351,7 +351,7 @@ class EVProfileLibrary:
 
 @dataclass(frozen=True)
 class ChargePointScenario:
-    """Physical EV charge-point counts for one planning year and scenario.
+    """Local-grid EV charge-point counts for one planning year and scenario.
 
     Parameters
     ----------
@@ -373,6 +373,19 @@ class ChargePointScenario:
     home_charge_points: int
     public_charge_points: int
     provenance: dict[str, str]
+
+
+@dataclass(frozen=True)
+class NationalOutlookProjection:
+    """Read-only national Outlook projection retained as source provenance."""
+
+    year: int
+    scenario: str
+    location: str
+    value: float
+    rounded_count: int
+    source_id: str
+    response_sha256: str
 
 
 @dataclass(frozen=True)
@@ -410,36 +423,80 @@ def validate_adoption_scenarios_config(config: dict[str, Any]) -> None:
         raise ValueError(f"Expected schema_version {ADOPTION_SCHEMA_VERSION}")
     if config.get("task_id") != "E2.S6":
         raise ValueError("Adoption scenario config must declare task_id E2.S6")
+    source_ids = config.get("source_ids")
+    if not isinstance(source_ids, dict):
+        raise ValueError("Adoption scenario config must declare source_ids")
+    outlook_id = str(source_ids.get("national_outlook_projection", ""))
+    allocation_id = str(source_ids.get("local_allocation_assumption", ""))
     sources = config.get("sources")
     if not isinstance(sources, dict) or not sources:
         raise ValueError("Adoption scenario config must include source provenance")
-    outlook = sources.get("D-009")
+    outlook = sources.get(outlook_id)
     if not isinstance(outlook, dict) or not outlook.get("url"):
-        raise ValueError("D-009 ElaadNL Outlook provenance is required")
+        raise ValueError("ElaadNL Outlook provenance is required")
+    national = config.get("national_outlook_projections")
+    if not isinstance(national, list) or not national:
+        raise ValueError("National Outlook projections are required as separate provenance")
+    national_keys: set[tuple[int, str, str]] = set()
+    for item in national:
+        projection = _national_projection_from_mapping(item, outlook_id=outlook_id)
+        key = (projection.year, projection.scenario, projection.location)
+        if key in national_keys:
+            raise ValueError("National Outlook projection keys must be unique")
+        national_keys.add(key)
     allocation = config.get("allocation")
     if not isinstance(allocation, dict):
         raise ValueError("Adoption scenario config must include allocation settings")
-    if allocation.get("status") != "proposed":
-        raise ValueError("E2.S6 allocation remains proposed until PI sign-off")
+    if allocation.get("method_id") != allocation_id:
+        raise ValueError("allocation.method_id must match source_ids.local_allocation_assumption")
+    if allocation.get("status") not in {"blocked", "proposed", "approved"}:
+        raise ValueError("allocation status must be blocked, proposed, or approved")
     weights = allocation.get("node_weights")
     if weights is None:
         source = allocation.get("node_weight_source")
-        if not isinstance(source, dict) or source.get("method_id") != "A-014":
+        if not isinstance(source, dict) or source.get("method_id") != allocation_id:
             raise ValueError("allocation must provide node_weights or an A-014 node_weight_source")
     else:
         _validate_node_weight_records(weights)
-    scenarios = config.get("scenarios")
-    if not isinstance(scenarios, list) or not scenarios:
-        raise ValueError("scenarios must be a non-empty list")
+    local = config.get("local_grid_scenarios")
+    if not isinstance(local, dict):
+        raise ValueError("local_grid_scenarios must be present")
+    if local.get("status") not in {"blocked", "proposed", "approved"}:
+        raise ValueError("local_grid_scenarios status must be blocked, proposed, or approved")
+    scenarios = local.get("scenarios")
+    if not isinstance(scenarios, list):
+        raise ValueError("local_grid_scenarios.scenarios must be a list")
+    if local.get("status") == "blocked" and scenarios:
+        raise ValueError("Blocked local-grid scenarios must not contain counts")
+    scenario_keys: set[tuple[int, str]] = set()
     for item in scenarios:
-        _scenario_from_mapping(item)
+        scenario = _scenario_from_mapping(item, outlook_id=outlook_id)
+        key = (scenario.year, scenario.scenario)
+        if key in scenario_keys:
+            raise ValueError("Local-grid scenario keys must be unique")
+        scenario_keys.add(key)
+
+
+def national_outlook_projections(config: dict[str, Any]) -> tuple[NationalOutlookProjection, ...]:
+    """Return national Outlook projections; these are not local-grid counts."""
+
+    validate_adoption_scenarios_config(config)
+    outlook_id = str(config["source_ids"]["national_outlook_projection"])
+    return tuple(
+        _national_projection_from_mapping(item, outlook_id=outlook_id)
+        for item in config["national_outlook_projections"]
+    )
 
 
 def adoption_scenarios(config: dict[str, Any]) -> tuple[ChargePointScenario, ...]:
-    """Return validated physical charge-point scenarios from config data."""
+    """Return validated local-grid charge-point scenarios from config data."""
 
     validate_adoption_scenarios_config(config)
-    return tuple(_scenario_from_mapping(item) for item in config["scenarios"])
+    outlook_id = str(config["source_ids"]["national_outlook_projection"])
+    return tuple(
+        _scenario_from_mapping(item, outlook_id=outlook_id)
+        for item in config["local_grid_scenarios"]["scenarios"]
+    )
 
 
 def allocate_charge_points_to_nodes(
@@ -470,6 +527,8 @@ def adoption_node_allocations(config: dict[str, Any]) -> tuple[NodeChargePointAl
     """Derive deterministic per-node home/public charge-point allocations."""
 
     scenarios = adoption_scenarios(config)
+    if not scenarios:
+        raise ValueError("Local-grid charge-point counts are blocked until Q-7 selects a scaling method")
     weight_records = config["allocation"].get("node_weights")
     if weight_records is None:
         raise ValueError("adoption_node_allocations requires explicit node_weights")
@@ -560,13 +619,48 @@ def _sha256_file(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def _scenario_from_mapping(item: Any) -> ChargePointScenario:
+def _national_projection_from_mapping(item: Any, *, outlook_id: str) -> NationalOutlookProjection:
+    if not isinstance(item, dict):
+        raise ValueError("Each national Outlook projection must be a mapping")
+    year = _require_int(item.get("year"), "National Outlook projection year")
+    scenario = str(item.get("scenario", ""))
+    location = str(item.get("location", ""))
+    value = float(item.get("value", float("nan")))
+    rounded_count = _require_int(item.get("rounded_count"), "National Outlook rounded_count")
+    if year not in {2030, 2033, 2035}:
+        raise ValueError("E2.S6 national projections must be for 2030, 2033, or 2035")
+    if scenario not in {"low", "middle", "high"}:
+        raise ValueError("National Outlook scenario must be low, middle, or high")
+    if location not in {"home", "public"}:
+        raise ValueError("National Outlook location must be home or public")
+    if not np.isfinite(value) or value < 0.0:
+        raise ValueError("National Outlook value must be finite and non-negative")
+    if rounded_count < 0 or rounded_count != int(round(value)):
+        raise ValueError("National Outlook rounded_count must be the nearest integer API value")
+    provenance = item.get("provenance")
+    if not isinstance(provenance, dict) or provenance.get("source_id") != outlook_id:
+        raise ValueError("National Outlook projections must trace to the Outlook source ID")
+    response_sha256 = str(provenance.get("response_sha256", ""))
+    if len(response_sha256) != 64:
+        raise ValueError("National Outlook projections must record a response sha256")
+    return NationalOutlookProjection(
+        year=year,
+        scenario=scenario,
+        location=location,
+        value=value,
+        rounded_count=rounded_count,
+        source_id=outlook_id,
+        response_sha256=response_sha256,
+    )
+
+
+def _scenario_from_mapping(item: Any, *, outlook_id: str) -> ChargePointScenario:
     if not isinstance(item, dict):
         raise ValueError("Each adoption scenario must be a mapping")
-    year = int(item.get("year"))
+    year = _require_int(item.get("year"), "Local-grid scenario year")
     scenario = str(item.get("scenario", ""))
-    home = int(item.get("home_charge_points", -1))
-    public = int(item.get("public_charge_points", -1))
+    home = _require_int(item.get("home_charge_points"), "home_charge_points")
+    public = _require_int(item.get("public_charge_points"), "public_charge_points")
     if year not in {2030, 2033, 2035}:
         raise ValueError("E2.S6 scenarios must be for 2030, 2033, or 2035")
     if scenario not in {"low", "middle", "high"}:
@@ -576,10 +670,10 @@ def _scenario_from_mapping(item: Any) -> ChargePointScenario:
     provenance = item.get("provenance")
     if not isinstance(provenance, dict):
         raise ValueError("Each adoption scenario must include provenance")
-    if provenance.get("home_charge_points") != "D-009":
-        raise ValueError("Home charge-point count must trace to D-009")
-    if provenance.get("public_charge_points") != "D-009":
-        raise ValueError("Public charge-point count must trace to D-009")
+    if provenance.get("source_type") != "local_grid":
+        raise ValueError("Local-grid counts must declare source_type=local_grid")
+    if provenance.get("home_charge_points") == outlook_id or provenance.get("public_charge_points") == outlook_id:
+        raise ValueError("National Outlook projections cannot be used directly as local-grid counts")
     return ChargePointScenario(
         year=year,
         scenario=scenario,
@@ -600,12 +694,18 @@ def _validate_node_weight_records(weights: Any) -> None:
         if not node_id or node_id in node_ids:
             raise ValueError("Node IDs must be present and unique")
         node_ids.add(node_id)
-        weight = float(item.get("weight", -1.0))
-        if weight < 0:
-            raise ValueError("Node allocation weights must be non-negative")
+        weight = float(item.get("weight", float("nan")))
+        if not np.isfinite(weight) or weight < 0:
+            raise ValueError("Node allocation weights must be finite and non-negative")
     total_weight = sum(float(item["weight"]) for item in weights)
     if total_weight <= 0:
         raise ValueError("At least one node allocation weight must be positive")
+
+
+def _require_int(value: Any, label: str) -> int:
+    if isinstance(value, bool) or not isinstance(value, int):
+        raise ValueError(f"{label} must be a true integer")
+    return value
 
 
 def _load_response_payload(payload: bytes | str | dict[str, Any]) -> dict[str, Any]:
