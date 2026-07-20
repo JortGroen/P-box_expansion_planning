@@ -98,6 +98,6 @@ NEXT: PR #39 is open with the blocked-use caveat; await PI review and Q-7 resolu
 
 ## 2026-07-20 16:55 - E2.S6 - blocked
 DID: Revised PR #39 so D-009 national Outlook projections are provenance-only and cannot flow into SimBench local allocation. Narrowed A-014 to possible second-stage within-grid allocation after Q-7 establishes local totals, added response checksums/timestamps/query provenance, and corrected the II3050 publication date.
-VERIFIED: Planned-path ownership preflight passed for the revised Agent C paths; `.\scripts\task.ps1 ownership` passed for 10 changed paths; focused `.\.venv\Scripts\python.exe -m pytest tests\test_ev_model.py` passed 23 tests; full `.\scripts\task.ps1 test` passed 125 tests in 97.74 s.
+VERIFIED: Planned-path ownership preflight passed for the revised Agent C paths; `.\scripts\task.ps1 ownership` passed for 10 changed paths before and after merging latest `origin/main`; focused `.\.venv\Scripts\python.exe -m pytest tests\test_ev_model.py` passed 23 tests; post-merge full `.\scripts\task.ps1 test` passed 139 tests in 86.69 s.
 OPEN: Q-7 remains blocking: local home/public totals and EV-005 `K_r` ranges are not established until PI chooses a local scaling method and public-charging basis.
 NEXT: Update PR #39 and await Q-7 resolution before any integrated EV adoption use.
