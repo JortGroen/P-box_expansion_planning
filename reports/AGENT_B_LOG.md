@@ -57,3 +57,9 @@ VERIFIED: `.\scripts\task.ps1 ownership` passed for Agent B with 6 authorized ch
 OPEN: D-009 remains proposed until PI sign-off; E7.S2/G4 still determine input probabilities, flexibility values, and fuzzy corners.
 NEXT: Push the methods update and await PR #38 review.
 
+## 2026-07-20 16:54 — E7.S1 — in-progress
+DID: Merged latest `origin/main` into PR #38, preserving PR #34's RNG/CRN additions. Recorded PI approval of D-009 and the implemented maximally specific finite DFMP convention in `DATA_REGISTER.md` and the matching methods paragraph, while keeping flexibility-factor values and fuzzy corners outside the approval.
+VERIFIED: `.\scripts\task.ps1 ownership` passed for Agent B with 6 authorized changed paths. Focused `.\.venv\Scripts\python.exe -m pytest tests/test_dfmp.py` passed: 17 tests green in 0.79s. Full `.\scripts\task.ps1 test` passed: 145 tests green in 87.88s. `git diff --check` passed.
+OPEN: E7.S2/G4 still determine input probabilities, flexibility values, and fuzzy corners before paper use.
+NEXT: Push PR #38 update and await review.
+

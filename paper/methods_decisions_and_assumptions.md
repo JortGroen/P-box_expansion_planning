@@ -786,7 +786,7 @@ current regulated prices.
 <!-- methods-id: D-009 -->
 ### D-009 - DFMP Probability-to-Possibility Transform
 
-**Status: Proposed citation/protocol source.** The elicitation workflow uses
+**Status: Approved citation/protocol source for E7.S1.** The elicitation workflow uses
 the probability-to-possibility transformation of Dubois, Foulloy, Mauris, and
 Prade to convert finite probability evidence into a possibility, or fuzzy-
 membership, distribution. A possibility grade is not a probability and is not
@@ -801,10 +801,11 @@ supplied, the same cumulative rule is applied over states with no greater
 score. Equal probability masses, or equal supplied scores, receive equal
 possibility grades rather than arbitrary rank-order splits. The implementation
 is checked against the paper's Example 4.1, where the maximally specific
-transform of the stated piecewise-linear density gives `pi(-1.5)=0.3`. D-009
-approves only this conversion method; E7.S2 and G4 still determine the input
-probabilities, flexibility values, and fuzzy corners before any paper result
-uses them.
+transform of the stated piecewise-linear density gives `pi(-1.5)=0.3`. This
+approval covers only the citation/protocol source and the implemented
+maximally specific finite DFMP convention; E7.S2 and G4 still determine the
+input probabilities, flexibility values, and fuzzy corners before any paper
+result uses them.
 
 <!-- methods-id: OWN-001 -->
 ### OWN-001 - Machine-Enforced Agent Ownership
