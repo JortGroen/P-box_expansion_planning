@@ -217,6 +217,34 @@ and decision usefulness rather than simply to create congestion. If firm
 capacity is selected, a one-transformer-out AC case is required because a
 normal-operation flow divided by 40 MVA is only a headroom diagnostic.
 
+<!-- methods-id: E5-S3-T1 -->
+### E5-S3-T1 - Output-Error Schema
+
+**Status: Approved with conditions.** The IC-2/IC-3 schema for output-domain
+model-error propagation passes validated loading trajectories, unwidened
+active-power direction masks, threshold metadata, and time-domain flags from
+IC-2 to IC-3 rather than passing only a boolean overload result. Agent A must
+provide the shared `LoadingTrajectoryResult` contract and validator before
+Agent B implements IC-3 propagation. That validation covers array shapes,
+finite values, direction masks, time-domain consistency, threshold,
+persistence length, and any supplied import/export diagnostics. IC-3 combines
+the G2 additive Tier-1 endpoints and the A-013 symmetric relative grid envelope
+as
+`L_lower=(1-epsilon_grid)*max(0,L_T1-epsilon_Tier1_minus)` and
+`L_upper=(1+epsilon_grid)*(L_T1+epsilon_Tier1_plus)`, applies the import gate from
+unwidened `P_net`, and runs the approved consecutive-step event detector on the
+lower and upper trajectories. Lower and upper event counts generate the
+reported probabilities and confidence intervals; probabilities are not
+widened after estimation. Tier-1 error and grid-model error are both parts of
+total model-output error; their dependence on inputs, time, and each other is
+unknown, so they are not sampled independently, assumed to cancel, or combined
+by root-sum-of-squares. Their conservative endpoint envelope is composed before
+event detection. Runner configuration and manifests must record timestep
+cadence and transformer capacity/denominator provenance. This approval does
+not resolve Q-5, total-versus-firm capacity, G2 error values, or numerical
+A-013 grid-error values; those remain blocking dependencies for paper-facing
+event results.
+
 <!-- methods-id: ALEA-001 -->
 ### ALEA-001 - Joint Aleatory Dependency Protocol
 
@@ -395,17 +423,38 @@ whole-system Monte Carlo size `N` therefore have distinct roles: one realization
 uses `K` profile selections, `N` controls conditional simulation precision, and
 `M` controls the quality of the empirical source distribution. An initial
 candidate library of 1,000 profiles is generated as independent distinct-seed
-batches but is not declared sufficient by construction. Nested library sizes
-and disjoint held-out API batches are propagated through the fully integrated
-net-load and transformer workflow using common random numbers, and variation
-between those results is reported separately from the Monte Carlo confidence
-interval conditional on a fixed library. The library is extended if the
-predeclared downstream adequacy criterion fails. Resampling one library cannot
-detect behavior absent from all its members, so independent held-out generation
-is mandatory and ordinary within-library bootstrapping is only supplementary.
+batches but is not declared sufficient by construction. The local Set A archive
+contains candidate seeds `140001` through `140901`, quarantined diagnostic seeds
+`141001` and `141101`, and fresh disjoint held-out seeds `141201` and `141301`;
+the fresh held-out profiles are generated and checksummed but remain isolated
+from adequacy analysis until E3.S2a freezes the downstream criterion. Nested
+library sizes and disjoint held-out API batches are
+propagated through the fully integrated net-load and transformer workflow using
+common random numbers, and variation between those results is reported
+separately from the Monte Carlo confidence interval conditional on a fixed
+library. The library is extended if the predeclared downstream adequacy
+criterion fails. Resampling one library cannot detect behavior absent from all
+its members, so independent held-out generation is mandatory and ordinary
+within-library bootstrapping is only supplementary.
 The acceptance tolerance is fixed before the adequacy results are inspected and
 is tied to transformer-result or reinforcement-decision stability rather than
 to an isolated EV-profile percentile.
+
+<!-- methods-id: EV-005A -->
+### EV-005A - Low-Cost Held-Out Replacement
+
+**Status: Approved narrow follow-up.** The precriterion summaries viewed for
+seeds `141001` and `141101` do not make those batches scientifically invalid,
+but they are conservatively reclassified as
+`quarantined_precriterion_diagnostic` and may not certify held-out adequacy.
+Because replacement required only two additional API calls, fresh disjoint
+held-out seeds `141201` and `141301` were generated under the same EV-004
+request. Their committed metadata is limited to request/provenance, checksums,
+calendar and shape integrity, finite/nonnegative checks, and distinct-member
+counts until E3.S2a freezes its adequacy criterion. This remediation is not a
+blanket automatic-redo rule: materially expensive repetition, discarded
+evidence, or substantial extra computation still requires PI consultation
+before invalidating or repeating work.
 
 <!-- methods-id: EV-006 -->
 ### EV-006 - Matched Smart-Charging Counterfactuals
@@ -630,10 +679,19 @@ indices available for planned pairing, with no missing, non-finite, or
 negative demand values. Because no smart-control batch was generated, this
 uncontrolled-only probe does not verify that a future smart batch preserves
 member ordering; actual pairing remains pending per section 7 of the Elaad
-profile generation specification. The source-level result supports proceeding
-to the remaining candidate and held-out generation, but it does not establish
-EV-005 library adequacy, which is tested only after downstream net-load
-aggregation and transformer evaluation. The authorized retrieval timestamp is
+profile generation specification. The full EV-004 Set A local archive then
+generated candidate seeds `140101` through `140901`, quarantined diagnostic
+seeds `141001` and `141101`, and fresh held-out seeds `141201` and `141301`
+using the same fixed home charge-point request. Together
+with the previously recovered seed `140001`, the candidate archive contains
+1,000 distinct members, the quarantined diagnostic archive contains 200
+members, and the fresh held-out archive contains 200 distinct members.
+The fresh held-out batches were generated, source-validated, checksummed, and
+archived only; behavioral summaries are not committed for them and they have
+not been opened for adequacy analysis. Set A
+generation does not establish EV-005 library adequacy, which is tested only
+after downstream net-load aggregation and transformer evaluation. The
+authorized retrieval timestamp for seed `140001` is
 `2026-07-17T09:52:03.233106Z`; the initial saved gzip wrapper checksum is
 `723f72260517455d7981ef814012affb80c72a8b4935e11d661e77f4c6219924`, while a
 later local recovery bug produced wrapper checksum
@@ -641,6 +699,9 @@ later local recovery bug produced wrapper checksum
 changing the uncompressed JSON checksum
 `d8dc58745311a772c171f3dee129d98b9c553833119f36e0d3a580dcb2cb7804`; the later
 wrapper is recorded for audit only and is not a new retrieval.
+The Set A library manifest is
+`data/metadata/elaad_profiles/A_home_vancar_cp_y2030_set_a_library_manifest.json`;
+the source-level report is `reports/elaad_e2_s2_home_cp_library_report.md`.
 Generated raw responses and converted local profile outputs remain
 uncommitted and unredistributed; committed artifacts are limited to
 retrieval/generation code, request configurations, seed schedules, metadata,
@@ -716,5 +777,26 @@ page and table reference, interpretation status, and PI approval. Values are
 used as indicative planning inputs and subjected to economic sensitivity; they
 are not generalized beyond the documented Stedin/Eneco context or presented as
 current regulated prices.
+
+<!-- methods-id: OWN-001 -->
+### OWN-001 - Machine-Enforced Agent Ownership
+
+**Status: Approved project-governance protocol.** Role ownership is enforced
+from a versioned path policy through a planned-path preflight before editing,
+a complete worktree check before local tests, and a pull-request status check.
+Core implementation modules and their tests have exclusive
+owners, while registers, methods prose, and task reports retain the shared
+access needed for traceability. Unassigned paths fail closed. Cross-boundary
+work is normally split so the owning agent supplies its own change; an
+exception is accepted only when the PI has already merged an exact branch,
+role, task, and path authorization into the base branch. Loading policy and
+exceptions from that base revision prevents a pull request from granting
+itself additional access. This governance check reduces accidental module
+coupling and unreviewed interface changes but does not replace scientific,
+test, manifest, or PI-sign-off review. Maintainer branches are defined by the
+base policy as well. The sole code-level bootstrap exception is the initial
+`codex/ownership-enforcement` pull request when neither policy file exists on
+its base; after that first merge, the same branch is governed by the base
+policy like every other branch.
 
 

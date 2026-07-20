@@ -1,7 +1,9 @@
 param(
     [Parameter(Mandatory = $true, Position = 0)]
-    [ValidateSet("test", "run", "figures")]
-    [string] $Task
+    [ValidateSet("test", "run", "figures", "ownership")]
+    [string] $Task,
+
+    [string[]] $Paths = @()
 )
 
 $ErrorActionPreference = "Stop"
@@ -21,6 +23,10 @@ if (-not $env:NUMBA_CACHE_DIR) {
 
 switch ($Task) {
     "test" {
+        & $VenvPython scripts/check_agent_ownership.py --base-ref origin/main
+        if ($LASTEXITCODE -ne 0) {
+            exit $LASTEXITCODE
+        }
         & $VenvPython -m pytest
         exit $LASTEXITCODE
     }
@@ -30,6 +36,15 @@ switch ($Task) {
     }
     "figures" {
         & $VenvPython -m paper.figures.build
+        exit $LASTEXITCODE
+    }
+    "ownership" {
+        $OwnershipArgs = @("scripts/check_agent_ownership.py", "--base-ref", "origin/main")
+        if ($Paths.Count -gt 0) {
+            $OwnershipArgs += "--paths"
+            $OwnershipArgs += $Paths
+        }
+        & $VenvPython @OwnershipArgs
         exit $LASTEXITCODE
     }
 }

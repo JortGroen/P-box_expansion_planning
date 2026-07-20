@@ -15,8 +15,11 @@ import data.get_elaad_profiles as elaad
 from data.get_elaad_profiles import (
     ProfileBatch,
     _shape_report,
+    build_batch_request,
     build_library_plan,
     build_probe_request,
+    run_set_a_library_batch,
+    write_set_a_library_manifest,
     write_authorized_set_a_artifacts_from_raw,
     write_library_plan,
 )
@@ -91,8 +94,9 @@ def test_elaad_library_plan_uses_fixed_home_cp_distribution_and_held_out_batches
     seeds = [batch.seed for batch in plan]
 
     assert len(seeds) == len(set(seeds))
-    assert len(plan) == 12
+    assert len(plan) == 14
     assert sum(batch.partition == "candidate" for batch in plan) == 10
+    assert sum(batch.partition == "quarantined_precriterion_diagnostic" for batch in plan) == 2
     assert sum(batch.partition == "held_out" for batch in plan) == 2
     assert all(batch.set_id == "A" for batch in plan)
     assert all(batch.simulated_year == 2030 for batch in plan)
@@ -101,6 +105,8 @@ def test_elaad_library_plan_uses_fixed_home_cp_distribution_and_held_out_batches
     assert all(batch.vehicle_types == ["van", "car"] for batch in plan)
     assert all(batch.cp_capacity_kw == 11 for batch in plan)
     assert all(batch.n_profiles == 100 for batch in plan)
+    assert [batch.seed for batch in plan if batch.partition == "held_out"] == [141201, 141301]
+    assert [batch.seed for batch in plan if batch.partition == "quarantined_precriterion_diagnostic"] == [141001, 141101]
 
 
 def test_elaad_library_plan_metadata_is_non_redistribution_boundary() -> None:
@@ -119,6 +125,7 @@ def test_elaad_library_plan_metadata_is_non_redistribution_boundary() -> None:
     assert pairing["may_be_aggregated_as_independent_members"] is False
     assert pairing["smart_control_role_and_parameters_approved"] is False
     assert sum(batch["partition"] == "candidate" for batch in payload["batches"]) == 10
+    assert sum(batch["partition"] == "quarantined_precriterion_diagnostic" for batch in payload["batches"]) == 2
     assert sum(batch["partition"] == "held_out" for batch in payload["batches"]) == 2
     assert all(batch["processed_path"].endswith(".npz") for batch in payload["batches"])
     assert all(
@@ -230,9 +237,10 @@ def test_elaad_raw_recovery_writes_manifest_without_network(
     ]
     payload = {
         "config": {
-            "seed": 140001,
+            **build_batch_request(elaad.build_library_plan()[0]),
+            "step_size_s": "PT15M",
+            "cp_capacity_kw": 11.0,
             "n_profiles": 2,
-            "profile_type": "cp",
         },
         "statistics": None,
         "profile": {
@@ -290,6 +298,184 @@ def test_elaad_raw_recovery_writes_manifest_without_network(
     report = report_path.read_text(encoding="utf-8")
     assert "Smart pair order verified: False" in report
     assert "no smart-control API call was made" in report
+
+
+def test_elaad_batch_checkpoint_skip_requires_matching_request_and_checksums(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    batch = ProfileBatch(
+        set_id="A",
+        purpose="test_home_van_car_cp_library",
+        partition="candidate",
+        simulated_year=2030,
+        profile_type="cp",
+        n_profiles=2,
+        vehicle_types=["van", "car"],
+        location_type="home",
+        cp_capacity_kw=11,
+        seed=140101,
+        storage_stem="A_home_vancar_cp_y2030_batchseed140101_n2",
+    )
+    monkeypatch.setattr(elaad, "build_library_plan", lambda: (batch,))
+    start = datetime(2024, 12, 31, 23, 0, tzinfo=UTC)
+    payload = {
+        "config": {
+            **build_batch_request(batch),
+            "step_size_s": "PT15M",
+            "cp_capacity_kw": 11.0,
+        },
+        "statistics": None,
+        "profile": {
+            "cp_ids": ["cp_0", "cp_1"],
+            "datetimes": [
+                (start + timedelta(minutes=15 * index)).isoformat()
+                for index in range(35_040)
+            ],
+            "demands_kw": [[float(1 + index % 3), float(2 + index % 4)] for index in range(35_040)],
+        },
+    }
+    raw_dir = tmp_path / "raw"
+    raw_dir.mkdir()
+    raw_path = raw_dir / f"{batch.storage_stem}.json.gz"
+    with gzip.open(raw_path, "wb") as handle:
+        handle.write(json.dumps(payload).encode("utf-8"))
+    metadata_dir = tmp_path / "metadata"
+    processed_dir = tmp_path / "processed"
+    reports_dir = tmp_path / "reports"
+    first_manifest = write_authorized_set_a_artifacts_from_raw(
+        batch=batch,
+        raw_path=raw_path,
+        metadata_dir=metadata_dir,
+        processed_dir=processed_dir,
+        reports_dir=reports_dir,
+    )
+
+    def fail_urlopen(*args, **kwargs):  # noqa: ANN002, ANN003
+        raise AssertionError("verified checkpoints must not make a network request")
+
+    monkeypatch.setattr(elaad.request, "urlopen", fail_urlopen)
+    second_manifest = run_set_a_library_batch(
+        batch,
+        metadata_dir=metadata_dir,
+        raw_dir=raw_dir,
+        processed_dir=processed_dir,
+        reports_dir=reports_dir,
+        timeout_s=1,
+    )
+
+    assert second_manifest == first_manifest
+    manifest = json.loads(second_manifest.read_text(encoding="utf-8"))
+    assert manifest["request_json"]["seed"] == 140101
+    assert manifest["raw_response"]["sha256_gzip_file"] == hashlib.sha256(raw_path.read_bytes()).hexdigest()
+
+    manifest["request_json"]["seed"] = 999999
+    second_manifest.write_text(json.dumps(manifest), encoding="utf-8")
+    with pytest.raises(ValueError, match="Checkpoint request mismatch"):
+        run_set_a_library_batch(
+            batch,
+            metadata_dir=metadata_dir,
+            raw_dir=raw_dir,
+            processed_dir=processed_dir,
+            reports_dir=reports_dir,
+            timeout_s=1,
+        )
+
+
+def test_elaad_raw_recovery_rejects_wrong_response_config(tmp_path: Path) -> None:
+    batch = ProfileBatch(
+        set_id="A",
+        purpose="test_home_van_car_cp_library",
+        partition="candidate",
+        simulated_year=2030,
+        profile_type="cp",
+        n_profiles=2,
+        vehicle_types=["van", "car"],
+        location_type="home",
+        cp_capacity_kw=11,
+        seed=140101,
+        storage_stem="A_home_vancar_cp_y2030_batchseed140101_n2",
+    )
+    start = datetime(2024, 12, 31, 23, 0, tzinfo=UTC)
+    payload = {
+        "config": {
+            **build_batch_request(batch),
+            "step_size_s": "PT15M",
+            "cp_capacity_kw": 11.0,
+            "seed": 999999,
+        },
+        "statistics": None,
+        "profile": {
+            "cp_ids": ["cp_0", "cp_1"],
+            "datetimes": [
+                (start + timedelta(minutes=15 * index)).isoformat()
+                for index in range(35_040)
+            ],
+            "demands_kw": [[1.0, 2.0] for _ in range(35_040)],
+        },
+    }
+    raw_path = tmp_path / "raw.json.gz"
+    with gzip.open(raw_path, "wb") as handle:
+        handle.write(json.dumps(payload).encode("utf-8"))
+
+    with pytest.raises(ValueError, match="response config mismatch for seed"):
+        write_authorized_set_a_artifacts_from_raw(
+            batch=batch,
+            raw_path=raw_path,
+            metadata_dir=tmp_path / "metadata",
+            processed_dir=tmp_path / "processed",
+            reports_dir=tmp_path / "reports",
+        )
+
+
+def test_elaad_library_manifest_records_held_out_isolation(tmp_path: Path) -> None:
+    def manifest(seed: int, partition: str) -> Path:
+        path = tmp_path / "metadata" / f"batch{seed}_manifest.json"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        payload = {
+            "library_partition": partition,
+            "request_json": {"seed": seed},
+            "raw_response": {
+                "path": f"data/raw/elaad_profiles/batch{seed}.json.gz",
+                "sha256_gzip_file": f"raw-{seed}",
+                "sha256_uncompressed_json": f"json-{seed}",
+            },
+            "processed_profiles": {
+                "path": f"data/processed/elaad_profiles/batch{seed}.npz",
+                "sha256_file": f"processed-{seed}",
+            },
+            "response_shape_summary": {
+                "n_timesteps": 35040,
+                "n_profiles": 100,
+                "distinct_member_count": 100,
+            },
+            "seed_semantics_observed": {"smart_pair_order_verified": False},
+        }
+        path.write_text(json.dumps(payload), encoding="utf-8")
+        return path
+
+    library_manifest = write_set_a_library_manifest(
+        metadata_dir=tmp_path / "metadata",
+        reports_dir=tmp_path / "reports",
+        command_wall_time_s=2.0,
+        batch_manifest_paths=[
+            manifest(140001, "candidate"),
+            manifest(141001, "quarantined_precriterion_diagnostic"),
+            manifest(141201, "held_out"),
+        ],
+    )
+
+    payload = json.loads(library_manifest.read_text(encoding="utf-8"))
+    assert payload["candidate_member_count"] == 100
+    assert payload["quarantined_diagnostic_member_count"] == 100
+    assert payload["held_out_member_count"] == 100
+    assert payload["held_out_unopened_for_adequacy"] is True
+    assert payload["library_adequacy_proven"] is False
+    assert payload["policy"]["public_profiles_generated"] is False
+    assert payload["policy"]["smart_profiles_generated"] is False
+    report = (tmp_path / "reports" / "elaad_e2_s2_home_cp_library_report.md").read_text(encoding="utf-8")
+    assert "quarantined precriterion diagnostics" in report
+    assert "They were not opened for adequacy analysis" in report
 
 
 def test_data_entrypoints_run_directly() -> None:

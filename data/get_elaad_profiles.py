@@ -103,9 +103,11 @@ def build_library_plan() -> tuple[ProfileBatch, ...]:
     # same-seed checks ambiguous. EV-006 treatment/control pairing is the only
     # deliberate reuse and keeps the control mode in the member identity.
     candidate_seeds = range(140001, 141001, DEFAULT_BATCH_SIZE)
-    held_out_seeds = (141001, 141101)
+    quarantined_seeds = (141001, 141101)
+    held_out_seeds = (141201, 141301)
     for partition, seeds in (
         ("candidate", candidate_seeds),
+        ("quarantined_precriterion_diagnostic", quarantined_seeds),
         ("held_out", held_out_seeds),
     ):
         for seed in seeds:
@@ -137,6 +139,31 @@ def _parse_json(payload: bytes) -> dict[str, Any]:
     if not isinstance(parsed, dict):
         raise ValueError("Expected API response JSON object")
     return parsed
+
+
+def _validate_response_config_matches_request(config: dict[str, Any], request_body: dict[str, Any]) -> None:
+    """Reject saved responses whose echoed request identity does not match."""
+    expected = {
+        "start_datetime": request_body["start_datetime"],
+        "stop_datetime": request_body["stop_datetime"],
+        "step_size_s": "PT15M",
+        "timezone": request_body["timezone"],
+        "simulated_year": request_body["simulated_year"],
+        "profile_type": request_body["profile_type"],
+        "n_profiles": request_body["n_profiles"],
+        "vehicle_types": request_body["vehicle_types"],
+        "location_type": request_body["location_type"],
+        "cp_capacity_kw": float(request_body["cp_capacity_kw"]),
+        "seed": request_body["seed"],
+    }
+    for key, value in expected.items():
+        actual = config.get(key)
+        if key == "cp_capacity_kw" and actual is not None:
+            actual = float(actual)
+        if actual != value:
+            raise ValueError(
+                f"ElaadNL response config mismatch for {key}: expected {value!r}, got {actual!r}"
+            )
 
 
 def _profile_shape(parsed: dict[str, Any]) -> dict[str, Any]:
@@ -292,6 +319,7 @@ def run_authorized_set_a_batch(
     api_runtime_s = perf_counter() - start
 
     return write_authorized_set_a_artifacts_from_response(
+        batch=batch,
         response_payload=response_payload,
         metadata_dir=metadata_dir,
         raw_dir=raw_dir,
@@ -307,6 +335,7 @@ def run_authorized_set_a_batch(
 
 def write_authorized_set_a_artifacts_from_response(
     *,
+    batch: ProfileBatch | None = None,
     response_payload: bytes,
     metadata_dir: Path,
     raw_dir: Path | None = None,
@@ -321,8 +350,9 @@ def write_authorized_set_a_artifacts_from_response(
     reconstructed_from_saved_raw: bool,
     raw_response_provenance: dict[str, Any] | None = None,
 ) -> Path:
-    """Write commit-safe artifacts for the one authorized EV-004 Set A probe."""
-    batch = build_library_plan()[0]
+    """Write commit-safe artifacts for one authorized EV-004 Set A batch."""
+    if batch is None:
+        batch = build_library_plan()[0]
     stem = batch.storage_stem
     body = build_batch_request(batch)
     if raw_path is None:
@@ -342,6 +372,7 @@ def write_authorized_set_a_artifacts_from_response(
         batch_seed=batch.seed,
         expected_n_profiles=batch.n_profiles,
     )
+    _validate_response_config_matches_request(parsed_batch.response_config, body)
     distinct_members = distinct_member_count(parsed_batch)
 
     processed_dir.mkdir(parents=True, exist_ok=True)
@@ -349,13 +380,24 @@ def write_authorized_set_a_artifacts_from_response(
     save_processed_batch_npz(parsed_batch, processed_path)
 
     summary = batch_summary(parsed_batch)
+    if batch.partition == "held_out":
+        # Fresh held-out batches stay source-integrity-only until E3.S2a freezes
+        # its adequacy criterion; behavior summaries would leak evidence early.
+        summary.pop("annual_energy_kwh", None)
+        summary.pop("peak_kw", None)
     metadata_dir.mkdir(parents=True, exist_ok=True)
     metadata_path = metadata_dir / f"{stem}_manifest.json"
     metadata = {
         "data_id": "D-002",
         "task_id": "E2.S2",
         "manifest_type": "elaad_profile_batch",
-        "status": "single-ev004-probe-batch-generated",
+        "status": (
+            "single-ev004-probe-batch-generated"
+            if batch.seed == 140001 and batch.partition == "candidate"
+            else f"ev004-set-a-{batch.partition}-batch-generated"
+        ),
+        "library_partition": batch.partition,
+        "storage_stem": stem,
         "retrieval_timestamp_utc": retrieval_ts,
         "api_url": API_URL,
         "api_docs_url": DOCS_URL,
@@ -398,7 +440,7 @@ def write_authorized_set_a_artifacts_from_response(
             "future_smart_pair_identity": "A future EV-006 smart counterpart would add control_mode and reuse this batch seed plus returned profile index.",
             "smart_pair_order_verified": False,
             "smart_pair_order_note": "This uncontrolled-only probe cannot verify that a future smart batch preserves member ordering; actual smart-pair order remains pending per reports/elaad_profile_generation_spec.md section 7.",
-            "independent_seed_claim": "Not claimed; batch seed 140001 identifies the response and member indices distinguish returned profiles.",
+            "independent_seed_claim": f"Not claimed; batch seed {batch.seed} identifies the response and member indices distinguish returned profiles.",
             "distinct_returned_members": distinct_members,
             "returned_indices_available_for_planned_pairing": distinct_members == batch.n_profiles,
         },
@@ -421,14 +463,28 @@ def write_authorized_set_a_artifacts_from_response(
             "library_adequacy_proven": False,
             "note": "This source-level probe checks API shape and member distinctness only; EV-005 adequacy is downstream and must not be inferred from component diagnostics.",
         },
-        "bulk_generation_performed": False,
-        "only_authorized_batch_generated": True,
+        "bulk_generation_performed": not (batch.seed == 140001 and batch.partition == "candidate"),
+        "authorized_generation_scope": "EV-004 Set A home charge-point batch; no public or smart-control profiles.",
+        "only_authorized_batch_generated": batch.seed == 140001 and batch.partition == "candidate",
+        "held_out_policy": {
+            "partition": batch.partition,
+            "adequacy_use_allowed": False if batch.partition in {"held_out", "quarantined_precriterion_diagnostic"} else True,
+            "note": (
+                "Held-out batches are archived and source-validated only; they remain unopened for adequacy analysis until E3.S2a freezes the downstream criterion."
+                if batch.partition == "held_out"
+                else (
+                    "Quarantined precriterion diagnostic batch retained transparently but excluded from candidate membership and held-out adequacy certification."
+                    if batch.partition == "quarantined_precriterion_diagnostic"
+                    else "Candidate batch available for downstream candidate-library construction; adequacy is not inferred here."
+                )
+            ),
+        },
         "reconstructed_from_saved_raw_response": reconstructed_from_saved_raw,
     }
     metadata_path.write_text(json.dumps(metadata, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
     reports_dir.mkdir(parents=True, exist_ok=True)
-    report_path = reports_dir / "elaad_e2_s2_ev004_home_cp_batchseed140001_shape_report.md"
+    report_path = reports_dir / f"elaad_e2_s2_ev004_home_cp_batchseed{batch.seed}_shape_report.md"
     report_path.write_text(_shape_report(metadata, metadata_path), encoding="utf-8")
 
     if distinct_members < batch.n_profiles:
@@ -441,6 +497,7 @@ def write_authorized_set_a_artifacts_from_response(
 
 def write_authorized_set_a_artifacts_from_raw(
     *,
+    batch: ProfileBatch | None = None,
     raw_path: Path,
     metadata_dir: Path,
     processed_dir: Path,
@@ -455,6 +512,7 @@ def write_authorized_set_a_artifacts_from_raw(
     """
     response_payload = read_gzip_json(raw_path)
     metadata_path = write_authorized_set_a_artifacts_from_response(
+        batch=batch,
         response_payload=response_payload,
         metadata_dir=metadata_dir,
         raw_path=raw_path,
@@ -472,21 +530,294 @@ def write_authorized_set_a_artifacts_from_raw(
         metadata["observed_failed_command_wall_time_s"] = command_wall_time_s
         metadata_path.write_text(json.dumps(metadata, indent=2, sort_keys=True) + "\n", encoding="utf-8")
         reports_dir.mkdir(parents=True, exist_ok=True)
-        report_path = reports_dir / "elaad_e2_s2_ev004_home_cp_batchseed140001_shape_report.md"
+        active_batch = batch or build_library_plan()[0]
+        report_path = reports_dir / f"elaad_e2_s2_ev004_home_cp_batchseed{active_batch.seed}_shape_report.md"
         report_path.write_text(_shape_report(metadata, metadata_path), encoding="utf-8")
     return metadata_path
 
 
+def _batch_paths(
+    batch: ProfileBatch,
+    *,
+    metadata_dir: Path,
+    raw_dir: Path,
+    processed_dir: Path,
+) -> dict[str, Path]:
+    return {
+        "manifest": metadata_dir / f"{batch.storage_stem}_manifest.json",
+        "raw": raw_dir / f"{batch.storage_stem}.json.gz",
+        "processed": processed_dir / f"{batch.storage_stem}.npz",
+    }
+
+
+def _load_verified_checkpoint(
+    batch: ProfileBatch,
+    *,
+    metadata_dir: Path,
+    raw_dir: Path,
+    processed_dir: Path,
+    reports_dir: Path,
+) -> dict[str, Any] | None:
+    paths = _batch_paths(batch, metadata_dir=metadata_dir, raw_dir=raw_dir, processed_dir=processed_dir)
+    manifest_path = paths["manifest"]
+    if not manifest_path.is_file():
+        return None
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    if manifest.get("request_json") != build_batch_request(batch):
+        raise ValueError(f"Checkpoint request mismatch for seed {batch.seed}: {manifest_path}")
+    if not paths["raw"].is_file() or not paths["processed"].is_file():
+        raise FileNotFoundError(f"Checkpoint files missing for seed {batch.seed}: {manifest_path}")
+    if manifest["raw_response"]["sha256_gzip_file"] != _sha256_bytes(paths["raw"].read_bytes()):
+        raise ValueError(f"Raw checksum mismatch for seed {batch.seed}: {paths['raw']}")
+    if manifest["processed_profiles"]["sha256_file"] != _sha256_bytes(paths["processed"].read_bytes()):
+        raise ValueError(f"Processed checksum mismatch for seed {batch.seed}: {paths['processed']}")
+    if manifest.get("library_partition") != batch.partition:
+        _reclassify_checkpoint_manifest(
+            manifest_path=manifest_path,
+            manifest=manifest,
+            batch=batch,
+            reports_dir=reports_dir,
+        )
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    return manifest
+
+
+def _reclassify_checkpoint_manifest(
+    *,
+    manifest_path: Path,
+    manifest: dict[str, Any],
+    batch: ProfileBatch,
+    reports_dir: Path,
+) -> None:
+    manifest["library_partition"] = batch.partition
+    manifest["status"] = f"ev004-set-a-{batch.partition}-batch-retained"
+    manifest["bulk_generation_performed"] = not (batch.seed == 140001 and batch.partition == "candidate")
+    if batch.partition == "candidate":
+        policy_note = "Candidate batch available for downstream candidate-library construction; adequacy is not inferred here."
+        adequacy_use_allowed = True
+    elif batch.partition == "held_out":
+        policy_note = "Held-out batch archived and source-validated only; adequacy use blocked until E3.S2a criterion authorization exists."
+        adequacy_use_allowed = False
+    else:
+        policy_note = "Quarantined precriterion diagnostic batch retained transparently but excluded from candidate membership and held-out adequacy certification."
+        adequacy_use_allowed = False
+    manifest["held_out_policy"] = {
+        "partition": batch.partition,
+        "adequacy_use_allowed": adequacy_use_allowed,
+        "note": policy_note,
+    }
+    if batch.partition == "quarantined_precriterion_diagnostic":
+        manifest["quarantine"] = {
+            "decision": "EV-005 follow-up",
+            "reason": "PI-approved low-cost conservative replacement after source-level summaries were viewed before E3.S2a criterion freeze.",
+            "not_general_redo_rule": True,
+            "replacement_required_consultation_note": "Materially expensive repetition or evidence invalidation still requires PI consultation before repeating work.",
+        }
+    manifest_path.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    reports_dir.mkdir(parents=True, exist_ok=True)
+    report_path = reports_dir / f"elaad_e2_s2_ev004_home_cp_batchseed{batch.seed}_shape_report.md"
+    report_path.write_text(_shape_report(manifest, manifest_path), encoding="utf-8")
+
+
+def run_set_a_library_batch(
+    batch: ProfileBatch,
+    *,
+    metadata_dir: Path,
+    raw_dir: Path,
+    processed_dir: Path,
+    reports_dir: Path,
+    timeout_s: int,
+) -> Path:
+    """Generate one Set A batch or reuse a verified checkpoint.
+
+    A retry may skip a batch only when the manifest request and both file
+    checksums agree; otherwise the same seed could silently represent two
+    different local member archives.
+    """
+    checkpoint = _load_verified_checkpoint(
+        batch,
+        metadata_dir=metadata_dir,
+        raw_dir=raw_dir,
+        processed_dir=processed_dir,
+        reports_dir=reports_dir,
+    )
+    if checkpoint is not None:
+        return metadata_dir / f"{batch.storage_stem}_manifest.json"
+
+    paths = _batch_paths(batch, metadata_dir=metadata_dir, raw_dir=raw_dir, processed_dir=processed_dir)
+    if paths["raw"].is_file():
+        return write_authorized_set_a_artifacts_from_raw(
+            batch=batch,
+            raw_path=paths["raw"],
+            metadata_dir=metadata_dir,
+            processed_dir=processed_dir,
+            reports_dir=reports_dir,
+        )
+
+    body = build_batch_request(batch)
+    request_payload = json.dumps(body, indent=2, sort_keys=True).encode("utf-8")
+    retrieval_ts = datetime.now(UTC).isoformat().replace("+00:00", "Z")
+    req = request.Request(
+        API_URL,
+        data=request_payload,
+        headers={"Content-Type": "application/json", "Accept": "application/json"},
+        method="POST",
+    )
+    start = perf_counter()
+    with request.urlopen(req, timeout=timeout_s) as response:
+        response_payload = response.read()
+        status_code = response.status
+        response_headers = dict(response.headers.items())
+    api_runtime_s = perf_counter() - start
+    return write_authorized_set_a_artifacts_from_response(
+        batch=batch,
+        response_payload=response_payload,
+        metadata_dir=metadata_dir,
+        raw_dir=raw_dir,
+        processed_dir=processed_dir,
+        reports_dir=reports_dir,
+        api_runtime_s=api_runtime_s,
+        retrieval_ts=retrieval_ts,
+        status_code=status_code,
+        response_headers=response_headers,
+        reconstructed_from_saved_raw=False,
+    )
+
+
+def run_set_a_home_profile_library(
+    *,
+    metadata_dir: Path,
+    raw_dir: Path,
+    processed_dir: Path,
+    reports_dir: Path,
+    timeout_s: int,
+) -> Path:
+    """Generate remaining authorized Set A batches and write the library manifest."""
+    started = perf_counter()
+    generated_or_verified: list[Path] = []
+    for batch in build_library_plan():
+        # Seed 140001 was authorized and generated by the merged probe PR; this
+        # command verifies it as a checkpoint but never issues a second request.
+        generated_or_verified.append(
+            run_set_a_library_batch(
+                batch,
+                metadata_dir=metadata_dir,
+                raw_dir=raw_dir,
+                processed_dir=processed_dir,
+                reports_dir=reports_dir,
+                timeout_s=timeout_s,
+            )
+        )
+    return write_set_a_library_manifest(
+        metadata_dir=metadata_dir,
+        reports_dir=reports_dir,
+        command_wall_time_s=perf_counter() - started,
+        batch_manifest_paths=generated_or_verified,
+    )
+
+
+def write_set_a_library_manifest(
+    *,
+    metadata_dir: Path,
+    reports_dir: Path,
+    command_wall_time_s: float,
+    batch_manifest_paths: Sequence[Path],
+) -> Path:
+    """Write a commit-safe manifest summarizing the frozen local Set A archive."""
+    manifests = [json.loads(path.read_text(encoding="utf-8")) for path in batch_manifest_paths]
+    partitions_by_seed = {batch.seed: batch.partition for batch in build_library_plan()}
+    for item in manifests:
+        item.setdefault("library_partition", partitions_by_seed[item["request_json"]["seed"]])
+    candidate = [item for item in manifests if item["library_partition"] == "candidate"]
+    quarantined = [
+        item for item in manifests if item["library_partition"] == "quarantined_precriterion_diagnostic"
+    ]
+    held_out = [item for item in manifests if item["library_partition"] == "held_out"]
+    payload = {
+        "data_id": "D-002",
+        "task_id": "E2.S2",
+        "manifest_type": "elaad_set_a_home_cp_library",
+        "status": "candidate-quarantined-and-fresh-held-out-batches-archived-locally",
+        "created_timestamp_utc": datetime.now(UTC).isoformat().replace("+00:00", "Z"),
+        "command_wall_time_s": command_wall_time_s,
+        "summed_recorded_api_runtime_s": sum(
+            item.get("api_runtime_s") or 0.0 for item in manifests
+        ),
+        "api_runtime_note": "Sum excludes any batch whose HTTPS runtime was not recorded, including recovered seed 140001.",
+        "candidate_seed_range": "140001-140901 step 100",
+        "quarantined_diagnostic_seeds": [141001, 141101],
+        "held_out_seeds": [141201, 141301],
+        "candidate_member_count": sum(item["response_shape_summary"]["n_profiles"] for item in candidate),
+        "quarantined_diagnostic_member_count": sum(
+            item["response_shape_summary"]["n_profiles"] for item in quarantined
+        ),
+        "held_out_member_count": sum(item["response_shape_summary"]["n_profiles"] for item in held_out),
+        "library_adequacy_proven": False,
+        "held_out_unopened_for_adequacy": True,
+        "policy": {
+            "decisions": ["EV-003", "EV-004", "EV-005", "EV-006"],
+            "commit_generated_profiles": False,
+            "redistribute_generated_profiles": False,
+            "public_profiles_generated": False,
+            "smart_profiles_generated": False,
+        },
+        "checkpoint_recovery": {
+            "unit": "one 100-profile API batch",
+            "resume_procedure": "Re-run data/get_elaad_profiles.py --run-set-a-home-profile-library; verified checkpoints are skipped, saved raw gzip files are recovered without rewriting, and mismatched checksums stop the run.",
+            "retry_idempotence": "Retries reuse the identical request_json for a batch seed and cannot register a duplicate batch.",
+        },
+        "batches": [
+            {
+                "seed": item["request_json"]["seed"],
+                "partition": item["library_partition"],
+                "manifest_path": path.as_posix(),
+                "raw_path": item["raw_response"]["path"],
+                "raw_sha256_gzip_file": item["raw_response"]["sha256_gzip_file"],
+                "raw_sha256_uncompressed_json": item["raw_response"]["sha256_uncompressed_json"],
+                "processed_path": item["processed_profiles"]["path"],
+                "processed_sha256_file": item["processed_profiles"]["sha256_file"],
+                "n_timesteps": item["response_shape_summary"]["n_timesteps"],
+                "n_profiles": item["response_shape_summary"]["n_profiles"],
+                "distinct_member_count": item["response_shape_summary"]["distinct_member_count"],
+                "smart_pair_order_verified": item["seed_semantics_observed"]["smart_pair_order_verified"],
+            }
+            for path, item in zip(batch_manifest_paths, manifests, strict=True)
+        ],
+    }
+    metadata_dir.mkdir(parents=True, exist_ok=True)
+    path = metadata_dir / "A_home_vancar_cp_y2030_set_a_library_manifest.json"
+    path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    reports_dir.mkdir(parents=True, exist_ok=True)
+    report_path = reports_dir / "elaad_e2_s2_home_cp_library_report.md"
+    report_path.write_text(_library_report(payload, path), encoding="utf-8")
+    return path
+
+
 def _shape_report(metadata: dict[str, Any], metadata_path: Path) -> str:
     summary = metadata["response_shape_summary"]
-    energy = summary["annual_energy_kwh"]
-    peak = summary["peak_kw"]
     request_body = metadata["request_json"]
     request_json = json.dumps(metadata["request_json"], indent=2, sort_keys=True)
+    partition = metadata.get("library_partition", "candidate")
+    behavior_summary = ""
+    if "annual_energy_kwh" in summary and "peak_kw" in summary:
+        energy = summary["annual_energy_kwh"]
+        peak = summary["peak_kw"]
+        behavior_summary = (
+            "## Summary statistics\n\n"
+            f"- Annual energy kWh: min {energy['min']:.3f}, median {energy['median']:.3f}, "
+            f"mean {energy['mean']:.3f}, p95 {energy['p95']:.3f}, max {energy['max']:.3f}\n"
+            f"- Peak kW: min {peak['min']:.3f}, median {peak['median']:.3f}, "
+            f"mean {peak['mean']:.3f}, p95 {peak['p95']:.3f}, max {peak['max']:.3f}\n\n"
+        )
+    else:
+        behavior_summary = (
+            "## Summary statistics\n\n"
+            "Behavioral annual-energy, peak, and percentile summaries are intentionally omitted for fresh held-out batches until E3.S2a freezes the adequacy criterion.\n\n"
+        )
     return (
         "# E2.S2 ElaadNL Set A shape report\n\n"
         "## Scope\n\n"
-        "Single EV-004 Set A candidate probe only: home charge-point profiles "
+        f"EV-004 Set A `{partition}` batch: home charge-point profiles "
         f"with the native car/van mix, simulated_year {request_body['simulated_year']}, "
         f"batch seed {request_body['seed']}, n_profiles {request_body['n_profiles']}. Raw and processed "
         "generated profiles are ignored and not redistributed under EV-002.\n\n"
@@ -503,11 +834,7 @@ def _shape_report(metadata: dict[str, Any], metadata_path: Path) -> str:
         f"- Last local timestamp: `{summary['last_timestamp_local']}`\n"
         f"- Missing/nonfinite values: {summary['missing_or_nonfinite_values']}\n"
         f"- Negative values: {summary['negative_values']}\n\n"
-        "## Summary statistics\n\n"
-        f"- Annual energy kWh: min {energy['min']:.3f}, median {energy['median']:.3f}, "
-        f"mean {energy['mean']:.3f}, p95 {energy['p95']:.3f}, max {energy['max']:.3f}\n"
-        f"- Peak kW: min {peak['min']:.3f}, median {peak['median']:.3f}, "
-        f"mean {peak['mean']:.3f}, p95 {peak['p95']:.3f}, max {peak['max']:.3f}\n\n"
+        f"{behavior_summary}"
         "## Seed semantics\n\n"
         "Members are identified as `(batch seed, returned profile index)`. This "
         "report does not interpret a batch seed as a range of per-member seeds. "
@@ -550,6 +877,56 @@ def _raw_response_provenance_lines(metadata: dict[str, Any]) -> str:
         if value is not None:
             lines.append(f"  - {key}: `{value}`")
     return "\n".join(lines) + "\n"
+
+
+def _library_report(payload: dict[str, Any], manifest_path: Path) -> str:
+    batches = payload["batches"]
+    candidate = [item for item in batches if item["partition"] == "candidate"]
+    quarantined = [
+        item for item in batches if item["partition"] == "quarantined_precriterion_diagnostic"
+    ]
+    held_out = [item for item in batches if item["partition"] == "held_out"]
+    return (
+        "# E2.S2 ElaadNL Set A home charge-point library report\n\n"
+        "## Scope\n\n"
+        "Frozen EV-004 uncontrolled home charge-point library for the native "
+        "van/car mix, 11 kW charge points, simulated_year 2030. Raw API "
+        "responses and processed annual members stay in ignored data paths and "
+        "are not redistributed. This report records source integrity only; it "
+        "does not declare M=1000 sufficient.\n\n"
+        "## Generated batches\n\n"
+        f"- Candidate seeds: {payload['candidate_seed_range']} "
+        f"({len(candidate)} batches, {payload['candidate_member_count']} members)\n"
+        f"- Quarantined diagnostic seeds: {', '.join(str(seed) for seed in payload['quarantined_diagnostic_seeds'])} "
+        f"({len(quarantined)} batches, {payload['quarantined_diagnostic_member_count']} members)\n"
+        f"- Held-out seeds: {', '.join(str(seed) for seed in payload['held_out_seeds'])} "
+        f"({len(held_out)} batches, {payload['held_out_member_count']} members)\n"
+        "- Public Set B generated: False\n"
+        "- Smart Set D generated: False\n\n"
+        "## Checkpoint and recovery\n\n"
+        f"{payload['checkpoint_recovery']['resume_procedure']} "
+        f"{payload['checkpoint_recovery']['retry_idempotence']}\n\n"
+        "## Verification\n\n"
+        f"- Command wall time seconds: {_format_optional_seconds(payload['command_wall_time_s'])}\n"
+        f"- Summed recorded API runtime seconds: {_format_optional_seconds(payload['summed_recorded_api_runtime_s'])}\n"
+        f"- API runtime note: {payload['api_runtime_note']}\n"
+        f"- Every listed batch has 35,040 timesteps: {all(item['n_timesteps'] == 35040 for item in batches)}\n"
+        f"- Every listed batch has 100 profiles: {all(item['n_profiles'] == 100 for item in batches)}\n"
+        f"- Every listed batch has 100 distinct members: {all(item['distinct_member_count'] == 100 for item in batches)}\n"
+        f"- Smart pair order verified: {all(item['smart_pair_order_verified'] for item in batches)}\n"
+        "- Missing/nonfinite and negative-value checks are recorded in the per-batch manifests.\n\n"
+        "## Held-out isolation\n\n"
+        "Seeds 141001 and 141101 are retained as quarantined precriterion "
+        "diagnostics and may not certify held-out adequacy. Fresh held-out "
+        "batches 141201 and 141301 were generated, source-validated, "
+        "checksummed, and archived only. They were not opened for adequacy "
+        "analysis, and E3.S2a must freeze the criterion before any held-out "
+        "use. The low-cost replacement does not create a blanket requirement "
+        "to redo materially expensive work without PI consultation.\n\n"
+        "## Evidence\n\n"
+        f"- Library manifest: `{manifest_path.as_posix()}`\n"
+        "- Per-batch raw and processed checksums are listed in the manifest.\n"
+    )
 
 
 def _format_optional_seconds(value: Any) -> str:
@@ -625,6 +1002,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--probe-one-profile", action="store_true")
     parser.add_argument("--write-library-plan", action="store_true")
     parser.add_argument("--run-ev004-home-cp-probe", action="store_true")
+    parser.add_argument("--run-set-a-home-profile-library", action="store_true")
     parser.add_argument("--processed-dir", default="data/processed/elaad_profiles")
     parser.add_argument("--reports-dir", default="reports")
     parser.add_argument("--simulated-year", type=int, default=2033)
@@ -635,6 +1013,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         args.probe_one_profile,
         args.write_library_plan,
         args.run_ev004_home_cp_probe,
+        args.run_set_a_home_profile_library,
     ]
     if sum(bool(item) for item in actions) > 1:
         parser.error("ElaadNL actions are mutually exclusive")
@@ -650,6 +1029,14 @@ def main(argv: Sequence[str] | None = None) -> int:
         path = write_library_plan(Path(args.metadata_dir))
     elif args.run_ev004_home_cp_probe:
         path = run_authorized_set_a_batch(
+            metadata_dir=Path(args.metadata_dir),
+            raw_dir=Path(args.raw_dir),
+            processed_dir=Path(args.processed_dir),
+            reports_dir=Path(args.reports_dir),
+            timeout_s=args.timeout_s,
+        )
+    elif args.run_set_a_home_profile_library:
+        path = run_set_a_home_profile_library(
             metadata_dir=Path(args.metadata_dir),
             raw_dir=Path(args.raw_dir),
             processed_dir=Path(args.processed_dir),

@@ -2,7 +2,7 @@
 
 ## Scope
 
-EV-004 Set A `candidate` batch: home charge-point profiles with the native car/van mix, simulated_year 2030, batch seed 140001, n_profiles 100. Raw and processed generated profiles are ignored and not redistributed under EV-002.
+EV-004 Set A `quarantined_precriterion_diagnostic` batch: home charge-point profiles with the native car/van mix, simulated_year 2030, batch seed 141101, n_profiles 100. Raw and processed generated profiles are ignored and not redistributed under EV-002.
 
 ## Request JSON
 
@@ -12,7 +12,7 @@ EV-004 Set A `candidate` batch: home charge-point profiles with the native car/v
   "location_type": "home",
   "n_profiles": 100,
   "profile_type": "cp",
-  "seed": 140001,
+  "seed": 141101,
   "simulated_year": 2030,
   "start_datetime": "2025-01-01T00:00:00+01:00",
   "step_size_s": 900,
@@ -40,7 +40,7 @@ EV-004 Set A `candidate` batch: home charge-point profiles with the native car/v
 
 ## Summary statistics
 
-- Annual energy kWh: min 1443.600, median 2011.175, mean 2027.593, p95 2495.992, max 2691.699
+- Annual energy kWh: min 1421.650, median 2046.350, mean 2025.796, p95 2434.030, max 2760.700
 - Peak kW: min 11.000, median 11.000, mean 11.000, p95 11.000, max 11.000
 
 ## Seed semantics
@@ -49,19 +49,14 @@ Members are identified as `(batch seed, returned profile index)`. This report do
 
 ## Source-level verdict
 
-- API runtime seconds: not recorded
-- API runtime note: Exact HTTPS runtime was not captured because the first authorized call hit a post-response manifest bug; no second API call was made.
-- Observed failed command wall time seconds: 25.834
+- API runtime seconds: 17.947
+- API runtime note: Measured around the HTTPS POST only.
+- Observed failed command wall time seconds: not recorded
 - Supports proceeding to remaining candidate and held-out generation: True
 - Library adequacy proven: False. Adequacy is an EV-005 downstream net-load/evaluator question, not a component-profile statistic.
 
 ## Evidence
 
-- Manifest: `data/metadata/elaad_profiles/A_home_vancar_cp_y2030_batchseed140001_n100_manifest.json`
-- Raw response checksum: `7ea96ed8a113fd417957107926f4548b9f937dc1bd84703faefc0281e212d3df` (279552 bytes gzip)
-- Raw response provenance:
-  - initial_saved_wrapper_sha256_gzip_file: `723f72260517455d7981ef814012affb80c72a8b4935e11d661e77f4c6219924`
-  - recovery_rewritten_wrapper_sha256_gzip_file: `7ea96ed8a113fd417957107926f4548b9f937dc1bd84703faefc0281e212d3df`
-  - sha256_uncompressed_json: `d8dc58745311a772c171f3dee129d98b9c553833119f36e0d3a580dcb2cb7804`
-  - note: `The initial saved gzip wrapper came from the single authorized API retrieval at retrieval_timestamp_utc. A later local recovery bug rewrote the ignored gzip wrapper without changing the uncompressed JSON; the rewritten wrapper is the current local raw file, is recorded for audit, and is not a new retrieval.`
-- Processed local checksum: `e550931ead774e7a9c42a4ff06f221eb1d2c3337bc4f43e57e0ff00bd63a0f2c` (394116 bytes npz)
+- Manifest: `data/metadata/elaad_profiles/A_home_vancar_cp_y2030_batchseed141101_n100_manifest.json`
+- Raw response checksum: `08e0e7febb99aa3aa61c008cb62dcf1212fb4ff9e7d0dc4c4a8bb945a96f497c` (280367 bytes gzip)
+- Processed local checksum: `81cb968212ea633504f05b0cc8cd081f1813f3395b7170e23d8eaa2f3137c856` (394500 bytes npz)
