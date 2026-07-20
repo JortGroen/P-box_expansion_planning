@@ -14,6 +14,7 @@ import numpy as np
 EXPECTED_FULL_YEAR_STEPS = 35_040
 STEP_HOURS = 0.25
 LOCAL_TIMEZONE = "Europe/Amsterdam"
+ADOPTION_SCHEMA_VERSION = 1
 
 
 @dataclass(frozen=True)
@@ -348,6 +349,186 @@ class EVProfileLibrary:
         return tuple(views)
 
 
+@dataclass(frozen=True)
+class ChargePointScenario:
+    """Physical EV charge-point counts for one planning year and scenario.
+
+    Parameters
+    ----------
+    year:
+        Planning year of the external adoption layer.
+    scenario:
+        Outlook scenario label, e.g. ``"low"``, ``"middle"``, or ``"high"``.
+    home_charge_points:
+        Number of physical home charge points.
+    public_charge_points:
+        Number of public charge points. Public profile behavior remains blocked
+        until its separate source class is approved.
+    provenance:
+        Source and derivation labels for the two counts.
+    """
+
+    year: int
+    scenario: str
+    home_charge_points: int
+    public_charge_points: int
+    provenance: dict[str, str]
+
+
+@dataclass(frozen=True)
+class NodeChargePointAllocation:
+    """Integer nodal charge-point allocation for a scenario."""
+
+    year: int
+    scenario: str
+    home_by_node: dict[str, int]
+    public_by_node: dict[str, int]
+
+    @property
+    def total_home_charge_points(self) -> int:
+        return sum(self.home_by_node.values())
+
+    @property
+    def total_public_charge_points(self) -> int:
+        return sum(self.public_by_node.values())
+
+
+def load_adoption_scenarios_config(path: Path) -> dict[str, Any]:
+    """Load and validate the E2.S6 adoption scenario configuration."""
+
+    data = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(data, dict):
+        raise ValueError("Adoption scenario config must be a mapping")
+    validate_adoption_scenarios_config(data)
+    return data
+
+
+def validate_adoption_scenarios_config(config: dict[str, Any]) -> None:
+    """Validate the E2.S6 scenario schema and provenance links."""
+
+    if config.get("schema_version") != ADOPTION_SCHEMA_VERSION:
+        raise ValueError(f"Expected schema_version {ADOPTION_SCHEMA_VERSION}")
+    if config.get("task_id") != "E2.S6":
+        raise ValueError("Adoption scenario config must declare task_id E2.S6")
+    sources = config.get("sources")
+    if not isinstance(sources, dict) or not sources:
+        raise ValueError("Adoption scenario config must include source provenance")
+    outlook = sources.get("D-009")
+    if not isinstance(outlook, dict) or not outlook.get("url"):
+        raise ValueError("D-009 ElaadNL Outlook provenance is required")
+    allocation = config.get("allocation")
+    if not isinstance(allocation, dict):
+        raise ValueError("Adoption scenario config must include allocation settings")
+    if allocation.get("status") != "proposed":
+        raise ValueError("E2.S6 allocation remains proposed until PI sign-off")
+    weights = allocation.get("node_weights")
+    if weights is None:
+        source = allocation.get("node_weight_source")
+        if not isinstance(source, dict) or source.get("method_id") != "A-014":
+            raise ValueError("allocation must provide node_weights or an A-014 node_weight_source")
+    else:
+        _validate_node_weight_records(weights)
+    scenarios = config.get("scenarios")
+    if not isinstance(scenarios, list) or not scenarios:
+        raise ValueError("scenarios must be a non-empty list")
+    for item in scenarios:
+        _scenario_from_mapping(item)
+
+
+def adoption_scenarios(config: dict[str, Any]) -> tuple[ChargePointScenario, ...]:
+    """Return validated physical charge-point scenarios from config data."""
+
+    validate_adoption_scenarios_config(config)
+    return tuple(_scenario_from_mapping(item) for item in config["scenarios"])
+
+
+def allocate_charge_points_to_nodes(
+    total_count: int,
+    node_weights: Sequence[tuple[str, float]],
+) -> dict[str, int]:
+    """Allocate integer charge-point counts by deterministic largest remainder."""
+
+    if total_count < 0:
+        raise ValueError("total_count must be non-negative")
+    if not node_weights:
+        raise ValueError("node_weights must be non-empty")
+    total_weight = sum(weight for _, weight in node_weights)
+    if total_weight <= 0:
+        raise ValueError("At least one node weight must be positive")
+    raw = [(node_id, total_count * weight / total_weight) for node_id, weight in node_weights]
+    floors = {node_id: int(np.floor(value)) for node_id, value in raw}
+    remainder = total_count - sum(floors.values())
+    # Ties are resolved by node_id so reruns do not depend on source row order
+    # whenever two load nodes have equal fractional entitlement.
+    ranked = sorted(raw, key=lambda item: (-(item[1] - np.floor(item[1])), item[0]))
+    for node_id, _ in ranked[:remainder]:
+        floors[node_id] += 1
+    return floors
+
+
+def adoption_node_allocations(config: dict[str, Any]) -> tuple[NodeChargePointAllocation, ...]:
+    """Derive deterministic per-node home/public charge-point allocations."""
+
+    scenarios = adoption_scenarios(config)
+    weight_records = config["allocation"].get("node_weights")
+    if weight_records is None:
+        raise ValueError("adoption_node_allocations requires explicit node_weights")
+    weights = tuple((str(item["node_id"]), float(item["weight"])) for item in weight_records)
+    allocations = []
+    for scenario in scenarios:
+        allocations.append(
+            NodeChargePointAllocation(
+                year=scenario.year,
+                scenario=scenario.scenario,
+                home_by_node=allocate_charge_points_to_nodes(
+                    scenario.home_charge_points,
+                    weights,
+                ),
+                public_by_node=allocate_charge_points_to_nodes(
+                    scenario.public_charge_points,
+                    weights,
+                ),
+            )
+        )
+    return tuple(allocations)
+
+
+def charge_point_range_by_year(
+    scenarios: Sequence[ChargePointScenario],
+) -> dict[int, dict[str, int]]:
+    """Return low/high total count ranges by planning year."""
+
+    ranges: dict[int, dict[str, int]] = {}
+    for year in sorted({item.year for item in scenarios}):
+        subset = [item for item in scenarios if item.year == year]
+        ranges[year] = {
+            "home_min": min(item.home_charge_points for item in subset),
+            "home_max": max(item.home_charge_points for item in subset),
+            "public_min": min(item.public_charge_points for item in subset),
+            "public_max": max(item.public_charge_points for item in subset),
+        }
+    return ranges
+
+
+def node_charge_point_ranges(
+    allocations: Sequence[NodeChargePointAllocation],
+) -> dict[str, dict[str, int]]:
+    """Return per-node min/max ``K_r`` ranges across all configured scenarios."""
+
+    node_ids = sorted({node for allocation in allocations for node in allocation.home_by_node})
+    ranges: dict[str, dict[str, int]] = {}
+    for node_id in node_ids:
+        home_values = [allocation.home_by_node[node_id] for allocation in allocations]
+        public_values = [allocation.public_by_node[node_id] for allocation in allocations]
+        ranges[node_id] = {
+            "home_min": min(home_values),
+            "home_max": max(home_values),
+            "public_min": min(public_values),
+            "public_max": max(public_values),
+        }
+    return ranges
+
+
 def batch_summary(batch: ElaadProfileBatch) -> dict[str, Any]:
     """Return commit-safe shape and aggregate statistics for a generated batch."""
     annual = batch.annual_energy_kwh()
@@ -377,6 +558,54 @@ def read_gzip_json(path: Path) -> bytes:
 
 def _sha256_file(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def _scenario_from_mapping(item: Any) -> ChargePointScenario:
+    if not isinstance(item, dict):
+        raise ValueError("Each adoption scenario must be a mapping")
+    year = int(item.get("year"))
+    scenario = str(item.get("scenario", ""))
+    home = int(item.get("home_charge_points", -1))
+    public = int(item.get("public_charge_points", -1))
+    if year not in {2030, 2033, 2035}:
+        raise ValueError("E2.S6 scenarios must be for 2030, 2033, or 2035")
+    if scenario not in {"low", "middle", "high"}:
+        raise ValueError("Scenario must be low, middle, or high")
+    if home < 0 or public < 0:
+        raise ValueError("Charge-point counts must be non-negative integers")
+    provenance = item.get("provenance")
+    if not isinstance(provenance, dict):
+        raise ValueError("Each adoption scenario must include provenance")
+    if provenance.get("home_charge_points") != "D-009":
+        raise ValueError("Home charge-point count must trace to D-009")
+    if provenance.get("public_charge_points") != "D-009":
+        raise ValueError("Public charge-point count must trace to D-009")
+    return ChargePointScenario(
+        year=year,
+        scenario=scenario,
+        home_charge_points=home,
+        public_charge_points=public,
+        provenance={str(key): str(value) for key, value in provenance.items()},
+    )
+
+
+def _validate_node_weight_records(weights: Any) -> None:
+    if not isinstance(weights, list) or not weights:
+        raise ValueError("allocation.node_weights must be a non-empty list")
+    node_ids: set[str] = set()
+    for item in weights:
+        if not isinstance(item, dict):
+            raise ValueError("Each node weight must be a mapping")
+        node_id = str(item.get("node_id", ""))
+        if not node_id or node_id in node_ids:
+            raise ValueError("Node IDs must be present and unique")
+        node_ids.add(node_id)
+        weight = float(item.get("weight", -1.0))
+        if weight < 0:
+            raise ValueError("Node allocation weights must be non-negative")
+    total_weight = sum(float(item["weight"]) for item in weights)
+    if total_weight <= 0:
+        raise ValueError("At least one node allocation weight must be positive")
 
 
 def _load_response_payload(payload: bytes | str | dict[str, Any]) -> dict[str, Any]:

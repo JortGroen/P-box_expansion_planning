@@ -1,0 +1,144 @@
+{
+  "schema_version": 1,
+  "task_id": "E2.S6",
+  "status": "proposed",
+  "description": "EV adoption scenario inputs for the 2030, 2033, and 2035 planning layers. The residential behavior library remains the fixed EV-004 ElaadNL 2030 home charge-point class; this file controls physical adoption counts and the proposed nodal allocation rule only.",
+  "sources": {
+    "D-009": {
+      "item": "ElaadNL Outlook Mobility 2026 charging-infrastructure projections",
+      "url": "https://outlook.elaad.nl/scenariotool",
+      "api_base": "https://outlook.elaad.nl/api/proxy_v2",
+      "api_endpoints": {
+        "home": "/charging_infrastructure?area_type=country&scenario={scenario}&location=home",
+        "public": "/charging_infrastructure?area_type=country&scenario={scenario}&location=public"
+      },
+      "version": "Outlook Mobiliteit, last updated June 2026; dashboard validity note 24 months",
+      "license": "Creative Commons BY-NC-ND 4.0 as stated on https://outlook.elaad.nl/",
+      "accessed_utc": "2026-07-20T00:00:00Z",
+      "fields_used": {
+        "type": "charging_infrastructure",
+        "year_month": "December values for planning years 2030, 2033, and 2035",
+        "scenario": "low, middle, high",
+        "home_location": "location=home; variant=car_bev, car_phev",
+        "public_location": "location=public; variant=van, car_bev, car_phev"
+      }
+    },
+    "D-010": {
+      "item": "Netbeheer Nederland II3050 edition 2 scenario context",
+      "url": "https://www.netbeheernederland.nl/publicatie/ii3050-eindrapport",
+      "version": "Integrale Infrastructuurverkenning 2030-2050, edition 2, 11 October 2023",
+      "license": "Public web publication; no dataset redistributed",
+      "fields_used": "Scenario framing for 2030-2050 infrastructure planning only. Numerical charge-point counts in this config are from D-009, not from II3050."
+    }
+  },
+  "allocation": {
+    "status": "proposed",
+    "method_id": "A-014",
+    "node_weight_source": {
+      "method_id": "A-014",
+      "grid_key": "simbench_semiurb",
+      "grid_code": "1-MV-semiurb--0-sw",
+      "table": "net.load",
+      "include_rows": "in_service == true",
+      "node_id_template": "load_{source_load_index:03d}",
+      "weight_column": "p_mw",
+      "total_weight_p_mw": 31.64,
+      "node_count": 115
+    },
+    "integer_rounding": "largest_remainder_ties_by_node_id",
+    "scope_note": "This allocation distributes the sourced national charge-point counts across the benchmark grid's aggregated load nodes in proportion to their static SimBench active-load weights. It supplies EV-005 K_r ranges and remains a proposed local-scaling assumption pending PI sign-off.",
+    "public_profile_status": "Public charge-point counts are recorded for adoption provenance only. Public behavior profiles remain blocked by the separate Set B decision in reports/elaad_profile_generation_spec.md."
+  },
+  "scenarios": [
+    {
+      "year": 2030,
+      "scenario": "low",
+      "home_charge_points": 1634178,
+      "public_charge_points": 314336,
+      "provenance": {
+        "home_charge_points": "D-009",
+        "public_charge_points": "D-009"
+      }
+    },
+    {
+      "year": 2030,
+      "scenario": "middle",
+      "home_charge_points": 1767963,
+      "public_charge_points": 374749,
+      "provenance": {
+        "home_charge_points": "D-009",
+        "public_charge_points": "D-009"
+      }
+    },
+    {
+      "year": 2030,
+      "scenario": "high",
+      "home_charge_points": 1885471,
+      "public_charge_points": 433760,
+      "provenance": {
+        "home_charge_points": "D-009",
+        "public_charge_points": "D-009"
+      }
+    },
+    {
+      "year": 2033,
+      "scenario": "low",
+      "home_charge_points": 1870267,
+      "public_charge_points": 459410,
+      "provenance": {
+        "home_charge_points": "D-009",
+        "public_charge_points": "D-009"
+      }
+    },
+    {
+      "year": 2033,
+      "scenario": "middle",
+      "home_charge_points": 2014740,
+      "public_charge_points": 562418,
+      "provenance": {
+        "home_charge_points": "D-009",
+        "public_charge_points": "D-009"
+      }
+    },
+    {
+      "year": 2033,
+      "scenario": "high",
+      "home_charge_points": 2135098,
+      "public_charge_points": 649640,
+      "provenance": {
+        "home_charge_points": "D-009",
+        "public_charge_points": "D-009"
+      }
+    },
+    {
+      "year": 2035,
+      "scenario": "low",
+      "home_charge_points": 1984323,
+      "public_charge_points": 570314,
+      "provenance": {
+        "home_charge_points": "D-009",
+        "public_charge_points": "D-009"
+      }
+    },
+    {
+      "year": 2035,
+      "scenario": "middle",
+      "home_charge_points": 2138672,
+      "public_charge_points": 695942,
+      "provenance": {
+        "home_charge_points": "D-009",
+        "public_charge_points": "D-009"
+      }
+    },
+    {
+      "year": 2035,
+      "scenario": "high",
+      "home_charge_points": 2252661,
+      "public_charge_points": 808049,
+      "provenance": {
+        "home_charge_points": "D-009",
+        "public_charge_points": "D-009"
+      }
+    }
+  ]
+}

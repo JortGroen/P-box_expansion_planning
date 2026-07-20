@@ -12,10 +12,17 @@ from src.ev_model import (
     EVProfileLibrary,
     EVProfileBootstrapSampler,
     EXPECTED_FULL_YEAR_STEPS,
+    adoption_node_allocations,
+    adoption_scenarios,
+    allocate_charge_points_to_nodes,
+    charge_point_range_by_year,
     distinct_member_count,
+    load_adoption_scenarios_config,
     load_processed_batch_npz,
+    node_charge_point_ranges,
     parse_elaad_profile_response,
     save_processed_batch_npz,
+    validate_adoption_scenarios_config,
 )
 
 
@@ -231,3 +238,108 @@ def test_profile_library_loads_candidate_partitions_from_manifest(tmp_path: Path
     manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
     with pytest.raises(ValueError, match="checksum mismatch"):
         EVProfileLibrary.from_library_manifest(manifest_path, base_dir=tmp_path)
+
+
+def _adoption_config() -> dict:
+    return {
+        "schema_version": 1,
+        "task_id": "E2.S6",
+        "sources": {"D-009": {"url": "https://outlook.elaad.nl/scenariotool"}},
+        "allocation": {
+            "status": "proposed",
+            "node_weights": [
+                {"node_id": "load_a", "weight": 0.5},
+                {"node_id": "load_b", "weight": 0.3},
+                {"node_id": "load_c", "weight": 0.2},
+            ],
+        },
+        "scenarios": [
+            {
+                "year": 2030,
+                "scenario": "low",
+                "home_charge_points": 11,
+                "public_charge_points": 5,
+                "provenance": {
+                    "home_charge_points": "D-009",
+                    "public_charge_points": "D-009",
+                },
+            },
+            {
+                "year": 2030,
+                "scenario": "high",
+                "home_charge_points": 17,
+                "public_charge_points": 9,
+                "provenance": {
+                    "home_charge_points": "D-009",
+                    "public_charge_points": "D-009",
+                },
+            },
+        ],
+    }
+
+
+def test_adoption_config_validates_schema_and_provenance() -> None:
+    config = _adoption_config()
+
+    validate_adoption_scenarios_config(config)
+    scenarios = adoption_scenarios(config)
+
+    assert scenarios[0].home_charge_points == 11
+    assert scenarios[0].provenance["home_charge_points"] == "D-009"
+
+
+def test_committed_adoption_scenarios_config_validates() -> None:
+    config = load_adoption_scenarios_config(Path("configs/scenarios.yaml"))
+    scenarios = adoption_scenarios(config)
+
+    assert len(scenarios) == 9
+    assert {scenario.year for scenario in scenarios} == {2030, 2033, 2035}
+
+
+def test_adoption_config_rejects_unsigned_allocation_status() -> None:
+    config = _adoption_config()
+    config["allocation"]["status"] = "approved"
+
+    with pytest.raises(ValueError, match="proposed"):
+        validate_adoption_scenarios_config(config)
+
+
+def test_allocate_charge_points_conserves_integer_counts_deterministically() -> None:
+    weights = (("load_b", 1.0), ("load_a", 1.0), ("load_c", 1.0))
+
+    first = allocate_charge_points_to_nodes(5, weights)
+    second = allocate_charge_points_to_nodes(5, tuple(reversed(weights)))
+
+    assert first == second
+    assert first == {"load_a": 2, "load_b": 2, "load_c": 1}
+    assert sum(first.values()) == 5
+    assert all(isinstance(value, int) and value >= 0 for value in first.values())
+
+
+def test_adoption_node_allocations_conserve_home_and_public_counts() -> None:
+    allocations = adoption_node_allocations(_adoption_config())
+
+    assert allocations[0].total_home_charge_points == 11
+    assert allocations[0].total_public_charge_points == 5
+    assert allocations[0].home_by_node == {"load_a": 6, "load_b": 3, "load_c": 2}
+
+
+def test_charge_point_ranges_report_totals_and_per_node_kr() -> None:
+    config = _adoption_config()
+    scenarios = adoption_scenarios(config)
+    allocations = adoption_node_allocations(config)
+
+    assert charge_point_range_by_year(scenarios) == {
+        2030: {
+            "home_min": 11,
+            "home_max": 17,
+            "public_min": 5,
+            "public_max": 9,
+        }
+    }
+    assert node_charge_point_ranges(allocations)["load_a"] == {
+        "home_min": 6,
+        "home_max": 9,
+        "public_min": 3,
+        "public_max": 4,
+    }

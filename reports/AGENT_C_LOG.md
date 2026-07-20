@@ -89,3 +89,9 @@ DID: Fetched/pruned origin and merged latest `origin/main` into existing branch 
 VERIFIED: `.\scripts\task.ps1 ownership` passed for Agent C with 41 changed paths authorized. `.\scripts\task.ps1 test` passed 114 tests in 83.09 s after the merge, and `git diff --check` returned clean.
 OPEN: E2.S2 remains in progress. M=1000 is not declared sufficient; fresh held-out adequacy use awaits E3.S2a criterion freeze; within-realization replacement remains pending E2.S6 cohort sizes and EV-005.
 NEXT: Update PR #35 description with the OWN-001 checklist and wait for PI/downstream criterion before held-out adequacy analysis, public Set B, smart Set D, or E2.S6 work.
+
+## 2026-07-20 00:00 - E2.S6 - in-progress
+DID: Created E2.S6 adoption scenario config from the official ElaadNL Outlook Mobility country-level home/public charge-point API counts for 2030, 2033, and 2035, added deterministic integer allocation helpers, and documented the proposed SimBench load-weight allocation rule A-014. No held-out EV batches were opened or used.
+VERIFIED: Planned-path ownership preflight passed after keeping implementation in Agent C-owned `src/ev_model.py`; `.\scripts\task.ps1 ownership` passed for 10 changed paths; `.\scripts\task.ps1 test` passed 120 tests in 67.15 s.
+OPEN: Q-7 asks PI to approve or revise the national-count-to-SimBench allocation rule before integrated EV adoption use; D-009, D-010, and A-014 remain proposed.
+NEXT: Run focused EV tests, full ownership/test checks, merge latest `origin/main`, then prepare the PR with the blocked-use caveat.
