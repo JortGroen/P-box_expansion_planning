@@ -38,7 +38,7 @@ Format: `Story | Owner | status | tasks | blocked-by | PR`
 | E6.S3 Deferral horizon | B | todo | 0/1 | E6.S1 | -- |
 | E6.S4 VoI | B | todo | 0/2 | signed econ assumptions | -- |
 | E6.S5 Decision engine | B | todo | 0/2 | E6.S1-E6.S4 | -- |
-| E7.S1 DFMP transform | B | review | 2/2 | -- | pending PR |
+| E7.S1 DFMP transform | B | review | 2/2 | -- | #38 |
 | E7.S2 Factor worksheet | B/C | todo | 0/3 | signed data rows | -- |
 | E7.S3 GATE G4 | HUMAN | todo | 0/1 | E7.S2 | -- |
 | E7.S4 Shape sensitivity | B | todo | 0/1 | G4, E6 | -- |
