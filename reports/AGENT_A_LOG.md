@@ -82,3 +82,33 @@ DID: Corrected the PR #31 provenance follow-up. Runner-generated reports now lab
 VERIFIED: Focused `./.venv/Scripts/python.exe -m pytest tests/test_runner.py tests/test_evaluator_ac_benchmark.py` passed: 17 tests. Complete E0.S3b retrofit rerun completed from committed revision `97f4fb6cfee247fdea42a12004b3c9fbbf7f9f3d`; regenerated manifests/custom evidence under `experiments/e0_s3b_runner_retrofit` and `experiments/e1_*` record that commit. Final `./scripts/task.ps1 test` passed: 87 tests in 69.94 s. `git diff --check` passed.
 OPEN: This corrects the previous PR/log verification count and report-label wording; no scientific values, gate decisions, G0/G1/G2 status, epsilon values, or capacity-denominator decisions were changed.
 NEXT: PI reviews the updated PR #31 evidence commit; Agent A does not start new implementation from this branch.
+
+## 2026-07-17 17:05 - E3.S4 - review
+DID: Started fresh branch `agent-a/E3.S4-crn-harness` from latest `origin/main`. Added `src/rng.py` with a rooted seed tree, component streams, branch-invariant aleatory fingerprints, and manifestable component selections/source-member IDs/shared-driver IDs. Routed the existing p-box sample-seed helper through the canonical RNG module without changing public p-box interfaces.
+VERIFIED: Baseline `.\scripts\task.ps1 test` passed: 89 tests. Focused `.\.venv\Scripts\python.exe -m pytest tests\test_rng.py tests\test_pbox.py` passed: 13 tests. Final `.\scripts\task.ps1 test` passed: 95 tests in 74.15 s. `git diff --check` passed with line-ending notices only.
+OPEN: The harness implements ALEA-001 CRN plumbing only. It does not freeze IC-1/IC-2 schemas, choose event thresholds, set epsilon values, approve smart charging as a treatment, or change physical-dependence assumptions. No new methods paragraph was required because no registered decision, assumption, or data/protocol choice changed.
+NEXT: PI reviews the E3.S4 PR; downstream E3/E4/E5 work can consume `src/rng.py` for common random numbers after merge.
+
+## 2026-07-17 18:10 - E3.S4 PR #34 follow-up - review
+DID: Merged latest `origin/main` containing PR #33 into `agent-a/E3.S4-crn-harness`. Strengthened CRN provenance so component selections and shared-driver IDs belong to `AleatoryRealization` rather than individual branches, added `assert_crn_equivalent`, included root/sample seed identity in fingerprints and manifests, and validated that selected source members reference the realization's actual component stream.
+VERIFIED: Focused `.\.venv\Scripts\python.exe -m pytest tests\test_rng.py tests\test_pbox.py` passed: 16 tests. Final `.\scripts\task.ps1 test` passed: 103 tests in 82.03 s. `git diff --check` passed with line-ending notices only.
+OPEN: This follow-up tightens provenance invariants only. It does not change scientific values, gate decisions, event thresholds, IC schemas, or physical-dependence assumptions.
+NEXT: Rerun the full suite, push the PR #34 update, and wait for PI review.
+
+## 2026-07-20 16:09 - E3.S4 PR #34 RNG-001 follow-up - review
+DID: Merged latest origin/main into agent-a/E3.S4-crn-harness, restored src/pbox.py exactly to origin/main, and tightened src/rng.py so component stream IDs include root-derived stream identity. Added regression tests for cross-root selection rejection, negative root rejection, branch-label-invariant aleatory identity, and distinct component streams. Added proposed RNG-001 to the decision register and methods prose.
+VERIFIED: `.\scripts\task.ps1 ownership` passed: 6 changed paths authorized. Focused `.\.venv\Scripts\python.exe -m pytest tests\test_rng.py tests\test_pbox.py` passed: 20 tests. Final `.\scripts\task.ps1 test` passed: 127 tests in 81.96 s. `git diff --check` passed with line-ending warnings only.
+OPEN: RNG-001 is proposed only and PR #34 remains blocked pending PI approval. No Q-6 trajectory contract, scientific values, threshold semantics, capacity convention, G2 endpoints, or A-013 values were implemented or changed.
+NEXT: PI reviews PR #34 and proposed RNG-001; Agent A waits and does not start the Q-6 trajectory-contract task in this PR.
+
+## 2026-07-20 16:22 - E3.S4 PR #34 stream-root validation follow-up - review
+DID: Tightened AleatoryRealization validation so every supplied ComponentStream must match the stream derived from the realization's own SeedTree, sample index, and component. Added a regression test rejecting a stream created under a different root seed.
+VERIFIED: Focused .\.venv\Scripts\python.exe -m pytest tests\test_rng.py passed: 14 tests. .\scripts\task.ps1 ownership passed: 6 changed paths authorized. Final .\scripts\task.ps1 test passed: 128 tests in 96.48 s. git diff --check passed with line-ending warnings only.
+OPEN: RNG-001 remains proposed pending PI approval. No Q-6 trajectory contract, scientific values, threshold semantics, capacity convention, G2 endpoints, or A-013 values were implemented or changed.
+NEXT: PI reviews PR #34 and proposed RNG-001; Agent A waits and does not start the Q-6 trajectory-contract task in this PR.
+
+## 2026-07-20 16:43 - E3.S4 PR #34 RNG-001 approval update - review
+DID: Recorded PI approval of RNG-001 in `registers/DECISIONS.md` and updated the matching Methods paragraph from proposed to approved. No code, threshold, IC contract, capacity convention, G2 endpoint, or A-013 numerical value was changed.
+VERIFIED: Planned-path ownership preflight passed before editing. `.\scripts\task.ps1 ownership` passed: 6 changed paths authorized. Final `.\scripts\task.ps1 test` passed: 128 tests in 74.79 s. `git diff --check` passed with line-ending warnings only.
+OPEN: Q-5, Q-6 trajectory-contract implementation, total-versus-firm capacity, G2 endpoints, and numerical A-013 values remain separate unresolved items. PR #34 CI rerun passed after push.
+NEXT: PR #34 CI rerun passed; PI reviews the RNG-001-approved E3.S4 PR.
