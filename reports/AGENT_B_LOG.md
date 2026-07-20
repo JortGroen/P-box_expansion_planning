@@ -27,3 +27,9 @@ VERIFIED: `.\scripts\task.ps1 test` passed: 94 tests green in 73.12s. No interfa
 OPEN: Q-6 asks the PI to approve or amend E5-S3-T1. E5.S3 T2-T4 remain blocked by PI-approved schema, G2 Tier-1 endpoints, signed A-013 values, and Q-5 before paper event results.
 NEXT: Wait for PI schema decision and Agent A review; do not implement E5.S3 T2-T4 until approved.
 
+## 2026-07-20 15:44 — E5.S3 — in-progress
+DID: Refreshed PR #36 by merging latest `origin/main` into `agent-b/E5.S3-output-error-schema-proposal` after PR #35/#37 landed. Verified the proposal still preserves newer main decisions including EV-005A, G0-A4, OWN-001, and keeps E5-S3-T1 proposed with Q-6 open.
+VERIFIED: `.\scripts\task.ps1 ownership` passed for Agent B with 6 authorized changed paths. `.\scripts\task.ps1 test` passed: 107 tests green in 78.43s. `git diff --check` passed.
+OPEN: Q-6 remains the blocking PI/Agent A schema-review question; E5.S3 T2-T4 remain blocked and were not implemented.
+NEXT: Keep PR #36 open for review until the PI approves or amends E5-S3-T1.
+
