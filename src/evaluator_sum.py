@@ -9,12 +9,11 @@ episode detection without turning export or zero-flow steps into import events.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Literal, Sequence
+from typing import Sequence
 
 import numpy as np
 
-
-TimeDomain = Literal["full_year", "window_set"]
+from src.contracts.loading_trajectory import TimeDomain, validate_loading_trajectory_result
 
 # G0-A3 makes 1.1 the executable default but gates scientific use on Q-5;
 # keeping it centralized prevents callers from silently retaining 1.0.
@@ -152,7 +151,7 @@ def evaluate_tier1(
         threshold_pu=threshold_pu,
         min_consecutive_steps=min_consecutive_steps,
     )
-    return Tier1Evaluation(
+    result = Tier1Evaluation(
         p_net_kw=p_net,
         q_net_kvar=q_net,
         s_net_kva=s_net,
@@ -170,6 +169,8 @@ def evaluate_tier1(
         threshold_pu=float(threshold_pu),
         min_consecutive_steps=int(min_consecutive_steps),
     )
+    validate_loading_trajectory_result(result)
+    return result
 
 
 def radial_downstream_sum(

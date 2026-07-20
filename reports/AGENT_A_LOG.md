@@ -112,3 +112,9 @@ DID: Recorded PI approval of RNG-001 in `registers/DECISIONS.md` and updated the
 VERIFIED: Planned-path ownership preflight passed before editing. `.\scripts\task.ps1 ownership` passed: 6 changed paths authorized. Final `.\scripts\task.ps1 test` passed: 128 tests in 74.79 s. `git diff --check` passed with line-ending warnings only.
 OPEN: Q-5, Q-6 trajectory-contract implementation, total-versus-firm capacity, G2 endpoints, and numerical A-013 values remain separate unresolved items. PR #34 CI rerun passed after push.
 NEXT: PR #34 CI rerun passed; PI reviews the RNG-001-approved E3.S4 PR.
+
+## 2026-07-20 17:32 - E5-S3-T1 prerequisite - review
+DID: Started fresh branch `agent-a/E5.S3-loading-trajectory-contract` from latest `origin/main` after PR #34 merge and RNG-001 approval. Added the shared structural `LoadingTrajectoryResult` protocol and validator under `src/contracts/`, then routed `evaluate_tier1` through it while preserving the existing `Tier1Evaluation` return object.
+VERIFIED: Planned-path ownership preflight passed for 7 Agent A/shared paths. Focused `.\.venv\Scripts\python.exe -m pytest tests\test_evaluator_loading_trajectory.py tests\test_evaluator_sum.py` passed: 19 tests. `.\scripts\task.ps1 ownership` passed: 7 changed paths authorized. Final `.\scripts\task.ps1 test` passed: 136 tests in 103.19 s. `git diff --check` passed with line-ending warnings only.
+OPEN: This PR implements only the approved trajectory boundary. It does not implement `OutputErrorEnvelope` or IC-3 propagation, resolve Q-5, choose total versus firm capacity, set G2 endpoints, or add A-013 numerical values.
+NEXT: Open the E5-S3-T1 prerequisite PR for PI and Agent B review.
