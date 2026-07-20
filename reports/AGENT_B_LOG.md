@@ -21,3 +21,21 @@ VERIFIED: `.\scripts\task.ps1 test` passed: 94 tests green in 75.09s. No experim
 OPEN: No blocking questions for E6.S1. The never-satisfied case returns `math.inf`, following the mathematical `inf(empty)` convention rather than a project-specific sentinel.
 NEXT: Open the E6.S1 PR for review; do not resume E7.S1 or begin E6.S2.
 
+## 2026-07-17 17:01 — E5.S3 — in-progress
+DID: Completed T1 only by drafting `reports/E5_S3_OUTPUT_ERROR_SCHEMA_PROPOSAL.md`, proposing the smallest G1-A2-compliant IC-2/IC-3 schema for output-domain model-error propagation. Added proposed decision E5-S3-T1, matching methods prose, blocking Q-6 for PI approval and Agent A review, and updated STATUS to 1/4 with T2-T4 blocked.
+VERIFIED: `.\scripts\task.ps1 test` passed: 94 tests green in 73.12s. No interface implementation, experiments, or manuscript numbers were produced.
+OPEN: Q-6 asks the PI to approve or amend E5-S3-T1. E5.S3 T2-T4 remain blocked by PI-approved schema, G2 Tier-1 endpoints, signed A-013 values, and Q-5 before paper event results.
+NEXT: Wait for PI schema decision and Agent A review; do not implement E5.S3 T2-T4 until approved.
+
+## 2026-07-20 15:44 — E5.S3 — in-progress
+DID: Refreshed PR #36 by merging latest `origin/main` into `agent-b/E5.S3-output-error-schema-proposal` after PR #35/#37 landed. Verified the proposal still preserves newer main decisions including EV-005A, G0-A4, OWN-001, and keeps E5-S3-T1 proposed with Q-6 open.
+VERIFIED: `.\scripts\task.ps1 ownership` passed for Agent B with 6 authorized changed paths. `.\scripts\task.ps1 test` passed: 107 tests green in 78.43s. `git diff --check` passed.
+OPEN: Q-6 remains the blocking PI/Agent A schema-review question; E5.S3 T2-T4 remain blocked and were not implemented.
+NEXT: Keep PR #36 open for review until the PI approves or amends E5-S3-T1.
+
+## 2026-07-20 15:58 — E5.S3 — in-progress
+DID: Updated PR #36 after the PI's Q-6 decision. Marked E5-S3-T1 approved with conditions, resolved Q-6, and revised the schema report/methods prose to require Agent A's shared `LoadingTrajectoryResult` contract/validator before Agent B implements IC-3 propagation.
+VERIFIED: `.\scripts\task.ps1 ownership` passed for Agent B with 6 authorized changed paths. `.\scripts\task.ps1 test` passed: 114 tests green in 86.78s. `git diff --check` passed after removing one trailing-space issue. No IC-3 implementation, experiments, or manuscript numbers were produced.
+OPEN: E5.S3 T2-T4 remain blocked by the Agent A contract/validator, G2 error values, signed A-013 numerical grid-error values, Q-5, and total-versus-firm capacity/provenance decisions before paper-facing use.
+NEXT: Update PR #36 and await the remaining implementation prerequisites.
+
