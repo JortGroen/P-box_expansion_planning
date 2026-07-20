@@ -101,13 +101,12 @@ def probability_to_possibility(
 
     masses = _validate_probabilities(probabilities, tolerance=tolerance)
     labels = _validate_states(states, expected_length=len(masses))
-    order_scores = _validate_scores(scores, fallback=masses, tolerance=tolerance)
-
     normalized = _normalize(masses)
+    order_scores = _validate_scores(scores, fallback=normalized, tolerance=tolerance)
     # DFMP grades accumulate probability mass at no more plausible states. This
     # is what makes the resulting possibility measure dominate the probability
     # measure without adding an independent probabilistic layer.
-    possibilities = tuple(
+    raw_possibilities = tuple(
         min(
             1.0,
             math.fsum(
@@ -117,6 +116,13 @@ def probability_to_possibility(
             ),
         )
         for score in order_scores
+    )
+    max_score = max(order_scores)
+    possibilities = tuple(
+        # Normality is a mathematical property of the transform. Rounding in
+        # the accumulated masses must not make a valid PMF fail validation.
+        1.0 if score == max_score else possibility
+        for score, possibility in zip(order_scores, raw_possibilities)
     )
 
     return PossibilityDistribution(
@@ -177,22 +183,24 @@ def _validate_scores(
     if any(not math.isfinite(score) for score in order_scores):
         raise ValueError("scores must be finite")
 
-    # Collapse numerically indistinguishable ranks so tied states cannot receive
-    # different grades through floating-point dust.
-    return tuple(
-        canonical
-        for score in order_scores
-        for canonical in [_canonical_score(score, order_scores, tolerance)]
-    )
+    return _canonical_scores(order_scores, tolerance=tolerance)
 
 
-def _canonical_score(
-    score: float,
+def _canonical_scores(
     scores: tuple[float, ...],
+    *,
     tolerance: float,
-) -> float:
-    tied_scores = [other for other in scores if math.isclose(score, other, abs_tol=tolerance)]
-    return min(tied_scores)
+) -> tuple[float, ...]:
+    sorted_scores = sorted(scores)
+    canonical_by_score: dict[float, float] = {}
+    group_anchor = sorted_scores[0]
+    for score in sorted_scores:
+        # Absolute-only grouping avoids math.isclose's scale-dependent relative
+        # tolerance and keeps near-tie chains from merging distinct ranks.
+        if abs(score - group_anchor) > tolerance:
+            group_anchor = score
+        canonical_by_score[score] = group_anchor
+    return tuple(canonical_by_score[score] for score in scores)
 
 
 def _normalize(probabilities: tuple[float, ...]) -> tuple[float, ...]:

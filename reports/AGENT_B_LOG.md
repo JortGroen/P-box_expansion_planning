@@ -45,3 +45,9 @@ VERIFIED: `.\scripts\task.ps1 ownership` passed for Agent B with 6 authorized ch
 OPEN: No E7.S1 blocker known after implementation. D-009 remains a proposed citation/protocol source until PI sign-off, and E7.S2/G4 still own factor values and fuzzy corners.
 NEXT: Await PR #38 review; do not begin E7.S2 or choose fuzzy-factor values without PI direction.
 
+## 2026-07-20 16:32 — E7.S1 — in-progress
+DID: Updated PR #38 after review. Forced exact normality for valid normalized PMFs despite roundoff, made score-tie grouping absolute-only and deterministic, replaced "least-specific" with "maximally specific", and strengthened Example 4.1 by deriving the 0.075 and 0.225 tail areas from the documented piecewise-linear geometry.
+VERIFIED: Focused `.\.venv\Scripts\python.exe -m pytest tests/test_dfmp.py` passed: 17 tests green in 0.69s. `.\scripts\task.ps1 ownership` passed for Agent B with 6 authorized changed paths. Full `.\scripts\task.ps1 test` passed: 131 tests green in 56.90s. `git diff --check` passed.
+OPEN: No E7.S1 blocker known. D-009 remains proposed until PI sign-off; E7.S2/G4 still own factor values and fuzzy corners.
+NEXT: Push PR #38 update and await review.
+

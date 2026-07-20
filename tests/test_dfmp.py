@@ -12,19 +12,34 @@ def test_dfmp_matches_dubois_et_al_2004_example_4_1() -> None:
 
     Dubois et al. (2004), Reliable Computing 10(4), Example 4.1, use the
     density with breakpoints (-2, 0), (-1.5, 0.3), (0, 0.4), (2, 0) and report
-    the least-specific transform value pi(-1.5) = 0.3. At x = -1.5 the equal
+    the maximally specific transform value pi(-1.5) = 0.3. At x = -1.5 the equal
     density point on the right shoulder is 0.5, so the DFMP grade is the
     probability in the two tails [-2, -1.5] and [0.5, 2].
     """
 
-    left_tail_mass = 0.075
-    right_tail_mass = 0.225
+    target_density = 0.3
+    right_equal_density_x = _linear_x_at_y(
+        x0=0.0,
+        y0=0.4,
+        x1=2.0,
+        y1=0.0,
+        y=target_density,
+    )
+    left_tail_mass = _triangle_area(base=(-1.5 - -2.0), height=target_density)
+    right_tail_mass = _triangle_area(
+        base=(2.0 - right_equal_density_x),
+        height=target_density,
+    )
     higher_density_mass = 1.0 - left_tail_mass - right_tail_mass
+
+    assert right_equal_density_x == pytest.approx(0.5)
+    assert left_tail_mass == pytest.approx(0.075)
+    assert right_tail_mass == pytest.approx(0.225)
 
     result = probability_to_possibility(
         [left_tail_mass, higher_density_mass, right_tail_mass],
         states=["left_tail_at_or_below_0.3", "above_0.3", "right_tail_at_or_below_0.3"],
-        scores=[0.3, 0.4, 0.3],
+        scores=[target_density, 0.4, target_density],
     )
 
     assert result.possibilities == pytest.approx((0.3, 1.0, 0.3))
@@ -60,6 +75,15 @@ def test_dfmp_transform_is_normalized_and_probability_dominated() -> None:
             assert event_probability <= event_possibility + 1e-12
 
 
+def test_dfmp_transform_normalizes_rounding_sensitive_valid_pmf() -> None:
+    result = probability_to_possibility(
+        [0.20487287959367187, 0.7951271204063283]
+    )
+
+    assert max(result.possibilities) == 1.0
+    assert result.possibilities == pytest.approx((0.20487287959367184, 1.0))
+
+
 def test_dfmp_transform_orders_more_probable_states_as_more_possible() -> None:
     result = probability_to_possibility([0.1, 0.6, 0.3])
 
@@ -73,6 +97,30 @@ def test_dfmp_transform_assigns_equal_possibility_to_tied_probabilities() -> Non
 
     assert first.possibilities == pytest.approx((1.0, 0.6, 0.6))
     assert second.possibilities == pytest.approx((0.6, 1.0, 0.6))
+
+
+def test_score_ties_use_absolute_tolerance_for_large_magnitude_scores() -> None:
+    result = probability_to_possibility(
+        [0.2, 0.3, 0.5],
+        scores=[1_000_000_000_000.0, 1_000_000_000_000.25, 1_000_000_000_002.0],
+        tolerance=0.5,
+    )
+
+    assert result.scores == pytest.approx(
+        (1_000_000_000_000.0, 1_000_000_000_000.0, 1_000_000_000_002.0)
+    )
+    assert result.possibilities == pytest.approx((0.5, 0.5, 1.0))
+
+
+def test_score_tie_grouping_does_not_collapse_near_tie_chains() -> None:
+    result = probability_to_possibility(
+        [0.2, 0.3, 0.5],
+        scores=[0.0, 0.75, 1.5],
+        tolerance=1.0,
+    )
+
+    assert result.scores == pytest.approx((0.0, 0.0, 1.5))
+    assert result.possibilities == pytest.approx((0.5, 0.5, 1.0))
 
 
 def test_dfmp_transform_accepts_distinct_probability_weights_and_scores() -> None:
@@ -133,3 +181,12 @@ def test_dfmp_transform_is_deterministic() -> None:
     second = probability_to_possibility([0.55, 0.25, 0.15, 0.05])
 
     assert first == second
+
+
+def _linear_x_at_y(*, x0: float, y0: float, x1: float, y1: float, y: float) -> float:
+    slope = (y1 - y0) / (x1 - x0)
+    return x0 + (y - y0) / slope
+
+
+def _triangle_area(*, base: float, height: float) -> float:
+    return 0.5 * base * height
