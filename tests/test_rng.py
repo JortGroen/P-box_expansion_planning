@@ -182,6 +182,18 @@ def test_selection_created_under_one_root_is_rejected_under_another() -> None:
         second.realization(0, component_selections=(selection,))
 
 
+def test_supplied_stream_from_different_root_is_rejected() -> None:
+    first = SeedTree(root_seed=1)
+    second = SeedTree(root_seed=2)
+
+    with pytest.raises(ValueError, match="seed tree"):
+        AleatoryRealization(
+            tree=second,
+            sample_index=0,
+            streams={"ev_home": first.component_stream(0, "ev_home")},
+        )
+
+
 def test_alpha_endpoint_and_treatment_labels_do_not_affect_aleatory_identity() -> None:
     realization = SeedTree(root_seed=20260717).realization(
         8,

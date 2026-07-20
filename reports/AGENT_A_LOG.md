@@ -100,3 +100,9 @@ DID: Merged latest origin/main into agent-a/E3.S4-crn-harness, restored src/pbox
 VERIFIED: `.\scripts\task.ps1 ownership` passed: 6 changed paths authorized. Focused `.\.venv\Scripts\python.exe -m pytest tests\test_rng.py tests\test_pbox.py` passed: 20 tests. Final `.\scripts\task.ps1 test` passed: 127 tests in 81.96 s. `git diff --check` passed with line-ending warnings only.
 OPEN: RNG-001 is proposed only and PR #34 remains blocked pending PI approval. No Q-6 trajectory contract, scientific values, threshold semantics, capacity convention, G2 endpoints, or A-013 values were implemented or changed.
 NEXT: PI reviews PR #34 and proposed RNG-001; Agent A waits and does not start the Q-6 trajectory-contract task in this PR.
+
+## 2026-07-20 16:22 - E3.S4 PR #34 stream-root validation follow-up - review
+DID: Tightened AleatoryRealization validation so every supplied ComponentStream must match the stream derived from the realization's own SeedTree, sample index, and component. Added a regression test rejecting a stream created under a different root seed.
+VERIFIED: Focused .\.venv\Scripts\python.exe -m pytest tests\test_rng.py passed: 14 tests. .\scripts\task.ps1 ownership passed: 6 changed paths authorized. Final .\scripts\task.ps1 test passed: 128 tests in 96.48 s. git diff --check passed with line-ending warnings only.
+OPEN: RNG-001 remains proposed pending PI approval. No Q-6 trajectory contract, scientific values, threshold semantics, capacity convention, G2 endpoints, or A-013 values were implemented or changed.
+NEXT: PI reviews PR #34 and proposed RNG-001; Agent A waits and does not start the Q-6 trajectory-contract task in this PR.

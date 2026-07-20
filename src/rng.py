@@ -172,6 +172,14 @@ class AleatoryRealization:
                 raise ValueError("stream mapping key must match stream component")
             if stream.sample_index != self.sample_index:
                 raise ValueError("stream sample_index must match realization sample_index")
+            expected_stream = self.tree.component_stream(self.sample_index, component)
+            if (
+                stream.seed != expected_stream.seed
+                or stream.stream_id != expected_stream.stream_id
+            ):
+                raise ValueError(
+                    "component stream seed/identity must match realization seed tree"
+                )
         for selection in self.component_selections:
             stream = normalized_streams.get(selection.component)
             if stream is None:
