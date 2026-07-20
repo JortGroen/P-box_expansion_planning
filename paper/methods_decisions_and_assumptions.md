@@ -731,15 +731,17 @@ additional energy.
 ### D-004 - Weather and PV Inputs
 
 **Status: Proposed.** KNMI observations provide the Dutch weather ensemble,
-while PVGIS supplies the solar-generation reference used to construct PV
-profiles. Both sources are retrieved through scripts with file-level checksums
-and timezone-aware conversion. Per ALEA-001, a sampled temperature member and
-any supplementary irradiance series must cover the same historical timestamps;
-a PVGIS typical-year reference is used for calibration or validation, not as an
-independently sampled weather realization. Their combination provides Dutch
-climatic coherence for temperature- and irradiance-driven technologies, while
-seasonal energy and peak timing are checked against PVGIS output before
-integration.
+while PVGIS supplies the solar-generation reference used to construct or check
+PV profiles. The E2.S4 support code records official PVGIS/KNMI retrieval
+endpoints and checksum metadata without selecting a concrete external file in
+this proposal. Per ALEA-001, each usable weather member carries one
+timezone-aware, complete, chronological UTC/local calendar plus paired
+temperature and irradiance channels, so later heat-pump and PV integration can
+consume the same weather-member identity. PV conversion parameters and PVGIS
+sanity-check tolerances are supplied explicitly by the caller; a PVGIS
+typical-year reference is used for calibration or validation only, not as an
+independently sampled realized weather path. Seasonal energy and peak timing
+are checked against PVGIS output before integration.
 
 <!-- methods-id: D-005 -->
 ### D-005 - Flexibility Delivery Evidence

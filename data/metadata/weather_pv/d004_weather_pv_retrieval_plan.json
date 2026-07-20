@@ -1,0 +1,42 @@
+{
+  "alea_001": {
+    "common_calendar_required": true,
+    "complete_chronological_paths_required": true,
+    "hp_and_pv_same_weather_member_required": true,
+    "member_identity_fields": [
+      "member_id",
+      "source",
+      "timestamps_utc",
+      "timestamps_local",
+      "temperature_c",
+      "ghi_w_per_m2"
+    ]
+  },
+  "checksum_policy": {
+    "algorithm": "sha256",
+    "no_checksum_recorded_without_concrete_local_file": true,
+    "record_function": "record_local_file"
+  },
+  "created_utc": "2026-07-20T15:42:53+00:00",
+  "data_id": "D-004",
+  "download_performed": false,
+  "knmi": {
+    "api_base": "https://api.dataplatform.knmi.nl/open-data/v1",
+    "authorization_header_stored": false,
+    "dataset_name": "10-minute-in-situ-meteorological-observations",
+    "dataset_version_example": "1.0",
+    "file_list_endpoint_example": "https://api.dataplatform.knmi.nl/open-data/v1/datasets/10-minute-in-situ-meteorological-observations/versions/1.0/files",
+    "selected_dataset_version": null
+  },
+  "pvgis": {
+    "api_base": "https://re.jrc.ec.europa.eu/api/v5_3",
+    "realized_weather_path_use": false,
+    "tools": [
+      "seriescalc",
+      "tmy"
+    ],
+    "typical_year_use": "calibration_or_validation_only"
+  },
+  "raw_data_committed": false,
+  "status": "proposed; no concrete KNMI or PVGIS file selected in this manifest"
+}
