@@ -94,3 +94,9 @@ DID: Merged latest `origin/main` containing PR #33 into `agent-a/E3.S4-crn-harne
 VERIFIED: Focused `.\.venv\Scripts\python.exe -m pytest tests\test_rng.py tests\test_pbox.py` passed: 16 tests. Final `.\scripts\task.ps1 test` passed: 103 tests in 82.03 s. `git diff --check` passed with line-ending notices only.
 OPEN: This follow-up tightens provenance invariants only. It does not change scientific values, gate decisions, event thresholds, IC schemas, or physical-dependence assumptions.
 NEXT: Rerun the full suite, push the PR #34 update, and wait for PI review.
+
+## 2026-07-20 16:09 - E3.S4 PR #34 RNG-001 follow-up - review
+DID: Merged latest origin/main into agent-a/E3.S4-crn-harness, restored src/pbox.py exactly to origin/main, and tightened src/rng.py so component stream IDs include root-derived stream identity. Added regression tests for cross-root selection rejection, negative root rejection, branch-label-invariant aleatory identity, and distinct component streams. Added proposed RNG-001 to the decision register and methods prose.
+VERIFIED: `.\scripts\task.ps1 ownership` passed: 6 changed paths authorized. Focused `.\.venv\Scripts\python.exe -m pytest tests\test_rng.py tests\test_pbox.py` passed: 20 tests. Final `.\scripts\task.ps1 test` passed: 127 tests in 81.96 s. `git diff --check` passed with line-ending warnings only.
+OPEN: RNG-001 is proposed only and PR #34 remains blocked pending PI approval. No Q-6 trajectory contract, scientific values, threshold semantics, capacity convention, G2 endpoints, or A-013 values were implemented or changed.
+NEXT: PI reviews PR #34 and proposed RNG-001; Agent A waits and does not start the Q-6 trajectory-contract task in this PR.

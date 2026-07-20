@@ -21,6 +21,8 @@ UINT64_MODULUS = 2**64
 def sample_seed(root_seed: int, sample_index: int) -> int:
     """Return the stable root seed for one whole-system aleatory sample."""
 
+    if root_seed < 0:
+        raise ValueError("root_seed must be non-negative")
     if sample_index < 0:
         raise ValueError("sample_index must be non-negative")
     # Alpha, endpoint, and treatment are deliberately absent: CRN requires the
@@ -31,6 +33,8 @@ def sample_seed(root_seed: int, sample_index: int) -> int:
 def component_seed(root_seed: int, sample_index: int, component: str) -> int:
     """Return an independent component-stream seed inside one sample."""
 
+    if root_seed < 0:
+        raise ValueError("root_seed must be non-negative")
     component_name = _require_name(component, "component")
     # The component name is part of the derivation path so EV, baseline, HP,
     # PV, and future components do not silently consume one shared RNG stream.
@@ -45,9 +49,16 @@ class ComponentStream:
     component: str
     seed: int
 
+    def __post_init__(self) -> None:
+        if self.sample_index < 0:
+            raise ValueError("sample_index must be non-negative")
+        _require_name(self.component, "component")
+        if self.seed < 0:
+            raise ValueError("seed must be non-negative")
+
     @property
     def stream_id(self) -> str:
-        return f"sample_{self.sample_index}:{self.component}"
+        return f"sample_{self.sample_index}:{self.component}:seed_{self.seed:016x}"
 
     def rng(self) -> np.random.Generator:
         """Create a fresh NumPy generator positioned at the stream start."""
