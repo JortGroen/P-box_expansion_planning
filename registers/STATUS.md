@@ -30,7 +30,7 @@ Format: `Story | Owner | status | tasks | blocked-by | PR`
 | E4.S1 Dense rho sweep | B | todo | 0/3 | E3.S2, E3.S4, resolved Q-5 | -- |
 | E4.S2 Fallback stub | B | todo | 0/1 | E5 invariant skeleton | -- |
 | E5.S1 Fuzzy number class | B | done | 2/2 | -- | #1 |
-| E5.S2 Vertex propagation scaffold | B | done | 3/3 | G3 before scientific use | #6 |
+| E5.S2 Vertex propagation scaffold | B | done | 3/3 | G3 before scientific use | #6; RNG-001 follow-up in review |
 | E5.S3 Output-domain model-error propagation | B | in-progress | 1/4 | T2-T4: Agent A `LoadingTrajectoryResult` contract/validator, signed A-013, G2 envelope, resolved Q-5, and total-versus-firm capacity decision/provenance before paper use | #36; #13 closed |
 | E5.S4 Independent cross-check | B | todo | 0/2 | E5.S1-E5.S3 | -- |
 | E6.S1 alpha_star | B | review | 1/1 | E5.S2 | #33 |

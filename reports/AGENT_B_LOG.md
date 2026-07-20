@@ -39,3 +39,9 @@ VERIFIED: `.\scripts\task.ps1 ownership` passed for Agent B with 6 authorized ch
 OPEN: E5.S3 T2-T4 remain blocked by the Agent A contract/validator, G2 error values, signed A-013 numerical grid-error values, Q-5, and total-versus-firm capacity/provenance decisions before paper-facing use.
 NEXT: Update PR #36 and await the remaining implementation prerequisites.
 
+## 2026-07-20 19:10 — E5.S2 RNG-001 maintenance — review
+DID: Routed `src/pbox.py` sample derivation through the canonical `src.rng.sample_seed` tree, removed the former p-box-local hash helper, and kept the evaluator callback API unchanged. Added regression coverage that the evaluator receives canonical seeds, repeated runs replay the same identities, alpha/endpoint branches reuse those identities, distinct roots differ, and negative roots are rejected by the canonical RNG invariant.
+VERIFIED: Focused p-box tests passed: `.\.venv\Scripts\python.exe -m pytest tests/test_pbox.py` reported 11 tests green. `.\scripts\task.ps1 ownership` passed for Agent B with 4 authorized changed paths. `.\scripts\task.ps1 test` passed: 132 tests green in 149.14s. `git diff --check` passed.
+OPEN: No scientific values, confidence intervals, p-box mathematics, thresholds, or experiments changed. G3 remains required before E5.S2 can be used for paper results.
+NEXT: Open the scoped RNG-001 follow-up PR.
+

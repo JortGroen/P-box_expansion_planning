@@ -10,6 +10,7 @@ from src.pbox import (
     assert_nested,
     estimate_vertex_pbox,
 )
+from src.rng import sample_seed
 
 
 def _threshold_evaluator(rho: float, seed: int) -> bool:
@@ -45,15 +46,62 @@ def test_vertex_pbox_matches_hand_counted_endpoint_probabilities() -> None:
 
 def test_vertex_pbox_reuses_common_random_numbers_across_endpoints_and_alpha() -> None:
     fuzzy = TrapezoidalFuzzyNumber(0.0, 0.25, 0.75, 1.0)
-    calls = _recording_calls(fuzzy, [0.0, 0.5, 1.0], 12, 123)
+    sample_count = 12
+    root_seed = 123
+    calls = _recording_calls(fuzzy, [0.0, 0.5, 1.0], sample_count, root_seed)
 
     by_rho: dict[float, list[int]] = {}
     for rho, seed in calls:
         by_rho.setdefault(rho, []).append(seed)
 
     seed_sequences = list(by_rho.values())
+    expected = [sample_seed(root_seed, sample_index) for sample_index in range(sample_count)]
+
     assert len(seed_sequences) == 6
-    assert all(seeds == seed_sequences[0] for seeds in seed_sequences)
+    assert all(seeds == expected for seeds in seed_sequences)
+
+
+def test_vertex_pbox_passes_canonical_sample_seeds_to_evaluator() -> None:
+    fuzzy = TrapezoidalFuzzyNumber(0.0, 0.25, 0.75, 1.0)
+    sample_count = 5
+    root_seed = 20260720
+
+    calls = _recording_calls(fuzzy, [0.0], sample_count, root_seed)
+
+    expected = [sample_seed(root_seed, sample_index) for sample_index in range(sample_count)]
+    assert [seed for _rho, seed in calls] == expected + expected
+
+
+def test_vertex_pbox_repeated_runs_pass_identical_sample_seed_sequences() -> None:
+    fuzzy = TrapezoidalFuzzyNumber(0.0, 0.25, 0.75, 1.0)
+
+    first = _recording_calls(fuzzy, [0.0, 1.0], 8, 11)
+    second = _recording_calls(fuzzy, [0.0, 1.0], 8, 11)
+
+    assert [seed for _rho, seed in first] == [seed for _rho, seed in second]
+
+
+def test_vertex_pbox_distinct_root_seeds_pass_distinct_sample_identities() -> None:
+    fuzzy = TrapezoidalFuzzyNumber(0.0, 0.25, 0.75, 1.0)
+
+    first = _recording_calls(fuzzy, [0.0], 6, 1)
+    second = _recording_calls(fuzzy, [0.0], 6, 2)
+
+    assert [seed for _rho, seed in first[:6]] != [seed for _rho, seed in second[:6]]
+
+
+def test_vertex_pbox_rejects_negative_root_seed_via_canonical_rng() -> None:
+    fuzzy = TrapezoidalFuzzyNumber(0.0, 0.25, 0.75, 1.0)
+
+    with pytest.raises(ValueError, match="root_seed"):
+        estimate_vertex_pbox(
+            fuzzy_number=fuzzy,
+            alpha_grid=[0.0],
+            sample_count=2,
+            root_seed=-1,
+            evaluator=_threshold_evaluator,
+            use_mode=VertexUseMode.PRE_G3_SYNTHETIC,
+        )
 
 
 def test_vertex_pbox_is_deterministic_for_same_root_seed() -> None:
