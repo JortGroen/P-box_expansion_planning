@@ -1,0 +1,235 @@
+{
+  "policy_id": "OWN-001",
+  "version": 1,
+  "agent_branch_roles": {
+    "agent-a/": "agent-a",
+    "agent-b/": "agent-b",
+    "agent-c/": "agent-c"
+  },
+  "maintainer_branches": [
+    "main"
+  ],
+  "maintainer_branch_prefixes": [
+    "codex/",
+    "pi/"
+  ],
+  "maintainer_only_patterns": [
+    "configs/agent_ownership.json",
+    "registers/OWNERSHIP_EXCEPTIONS.json"
+  ],
+  "shared_patterns": [
+    "BACKLOG.md",
+    "paper/methods_decisions_and_assumptions.md",
+    "registers/ASSUMPTIONS.md",
+    "registers/DATA_REGISTER.md",
+    "registers/DECISIONS.md",
+    "registers/QUESTIONS.md",
+    "registers/RISKS.md",
+    "registers/STATUS.md",
+    "reports/**",
+    "tests/__init__.py",
+    "tests/conftest.py"
+  ],
+  "exclusive_rules": [
+    {
+      "pattern": "reports/AGENT_A_LOG.md",
+      "owners": ["agent-a"]
+    },
+    {
+      "pattern": "reports/AGENT_B_LOG.md",
+      "owners": ["agent-b"]
+    },
+    {
+      "pattern": "reports/AGENT_C_LOG.md",
+      "owners": ["agent-c"]
+    },
+    {
+      "pattern": "src/grid_loader.py",
+      "owners": ["agent-a"]
+    },
+    {
+      "pattern": "src/profiles.py",
+      "owners": ["agent-a"]
+    },
+    {
+      "pattern": "src/evaluator_*.py",
+      "owners": ["agent-a"]
+    },
+    {
+      "pattern": "src/flex_aggregator.py",
+      "owners": ["agent-a"]
+    },
+    {
+      "pattern": "src/contracts/**",
+      "owners": ["agent-a"]
+    },
+    {
+      "pattern": "src/rng.py",
+      "owners": ["agent-a"]
+    },
+    {
+      "pattern": "tests/test_grid_loader.py",
+      "owners": ["agent-a"]
+    },
+    {
+      "pattern": "tests/test_profiles.py",
+      "owners": ["agent-a"]
+    },
+    {
+      "pattern": "tests/test_evaluator_*.py",
+      "owners": ["agent-a"]
+    },
+    {
+      "pattern": "tests/test_flex_aggregator.py",
+      "owners": ["agent-a"]
+    },
+    {
+      "pattern": "tests/test_rng.py",
+      "owners": ["agent-a"]
+    },
+    {
+      "pattern": "data/critical_week*.csv",
+      "owners": ["agent-a"]
+    },
+    {
+      "pattern": "data/import_window*.csv",
+      "owners": ["agent-a"]
+    },
+    {
+      "pattern": "data/export_direction_exceedance.csv",
+      "owners": ["agent-a"]
+    },
+    {
+      "pattern": "data/transformer_headroom_diagnostic.csv",
+      "owners": ["agent-a"]
+    },
+    {
+      "pattern": "src/fuzzy.py",
+      "owners": ["agent-b"]
+    },
+    {
+      "pattern": "src/pbox*.py",
+      "owners": ["agent-b"]
+    },
+    {
+      "pattern": "src/decision.py",
+      "owners": ["agent-b"]
+    },
+    {
+      "pattern": "src/dfmp.py",
+      "owners": ["agent-b"]
+    },
+    {
+      "pattern": "tests/test_fuzzy.py",
+      "owners": ["agent-b"]
+    },
+    {
+      "pattern": "tests/test_pbox*.py",
+      "owners": ["agent-b"]
+    },
+    {
+      "pattern": "tests/test_decision.py",
+      "owners": ["agent-b"]
+    },
+    {
+      "pattern": "tests/test_dfmp.py",
+      "owners": ["agent-b"]
+    },
+    {
+      "pattern": "notebooks/elicitation.ipynb",
+      "owners": ["agent-b"]
+    },
+    {
+      "pattern": "data/get_*.py",
+      "owners": ["agent-c"]
+    },
+    {
+      "pattern": "data/sources.py",
+      "owners": ["agent-c"]
+    },
+    {
+      "pattern": "data/metadata/**",
+      "owners": ["agent-c"]
+    },
+    {
+      "pattern": "data/README.md",
+      "owners": ["agent-c"]
+    },
+    {
+      "pattern": "data/raw/README.md",
+      "owners": ["agent-c"]
+    },
+    {
+      "pattern": "src/ev_model.py",
+      "owners": ["agent-c"]
+    },
+    {
+      "pattern": "src/hp_model.py",
+      "owners": ["agent-c"]
+    },
+    {
+      "pattern": "src/pv_model.py",
+      "owners": ["agent-c"]
+    },
+    {
+      "pattern": "src/baseline_model.py",
+      "owners": ["agent-c"]
+    },
+    {
+      "pattern": "src/runner.py",
+      "owners": ["agent-c"]
+    },
+    {
+      "pattern": "src/manifest.py",
+      "owners": ["agent-c"]
+    },
+    {
+      "pattern": "configs/**",
+      "owners": ["agent-c"]
+    },
+    {
+      "pattern": "experiments/**",
+      "owners": ["agent-c"]
+    },
+    {
+      "pattern": "paper/figures/**",
+      "owners": ["agent-c"]
+    },
+    {
+      "pattern": "tests/test_data_sources.py",
+      "owners": ["agent-c"]
+    },
+    {
+      "pattern": "tests/test_ev_model.py",
+      "owners": ["agent-c"]
+    },
+    {
+      "pattern": "tests/test_hp_model.py",
+      "owners": ["agent-c"]
+    },
+    {
+      "pattern": "tests/test_pv_model.py",
+      "owners": ["agent-c"]
+    },
+    {
+      "pattern": "tests/test_baseline_model.py",
+      "owners": ["agent-c"]
+    },
+    {
+      "pattern": "tests/test_manifest.py",
+      "owners": ["agent-c"]
+    },
+    {
+      "pattern": "tests/test_methods_registry.py",
+      "owners": ["agent-c"]
+    },
+    {
+      "pattern": "tests/test_runner.py",
+      "owners": ["agent-a", "agent-c"]
+    },
+    {
+      "pattern": "tests/test_g1_a2_protocol.py",
+      "owners": ["agent-a", "agent-b"]
+    }
+  ]
+}

@@ -717,4 +717,25 @@ used as indicative planning inputs and subjected to economic sensitivity; they
 are not generalized beyond the documented Stedin/Eneco context or presented as
 current regulated prices.
 
+<!-- methods-id: OWN-001 -->
+### OWN-001 - Machine-Enforced Agent Ownership
+
+**Status: Approved project-governance protocol.** Role ownership is enforced
+from a versioned path policy through a planned-path preflight before editing,
+a complete worktree check before local tests, and a pull-request status check.
+Core implementation modules and their tests have exclusive
+owners, while registers, methods prose, and task reports retain the shared
+access needed for traceability. Unassigned paths fail closed. Cross-boundary
+work is normally split so the owning agent supplies its own change; an
+exception is accepted only when the PI has already merged an exact branch,
+role, task, and path authorization into the base branch. Loading policy and
+exceptions from that base revision prevents a pull request from granting
+itself additional access. This governance check reduces accidental module
+coupling and unreviewed interface changes but does not replace scientific,
+test, manifest, or PI-sign-off review. Maintainer branches are defined by the
+base policy as well. The sole code-level bootstrap exception is the initial
+`codex/ownership-enforcement` pull request when neither policy file exists on
+its base; after that first merge, the same branch is governed by the base
+policy like every other branch.
+
 

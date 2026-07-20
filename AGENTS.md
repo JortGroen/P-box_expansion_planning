@@ -19,6 +19,9 @@ Bootstrap rules:
 - Use `scripts/task.ps1`; it selects `.venv` and sets `NUMBA_CACHE_DIR=.tmp/numba_cache` for pandapower/numba imports.
 - Use one task ID from `actionable_project_plan_agentic.md` per session.
 - Work only in your owned paths.
+- Before editing, preflight the intended paths with `scripts/task.ps1 ownership -Paths path/one.py,path/two.py`; use repository-relative paths.
+- Run `scripts/task.ps1 ownership` before committing and before opening or updating a PR. The same check is enforced in CI from `configs/agent_ownership.json`.
+- A cross-boundary exception is valid only when the PI has already merged an exact branch-and-path entry into `registers/OWNERSHIP_EXCEPTIONS.json` on the PR base branch. An exception added in the agent PR itself never authorizes that PR.
 - Before launching any process expected to take more than about 15 minutes, send the PI a long-run notice stating its purpose, estimated wall time and resource use, checkpoint location/frequency, and exact resume procedure. Posting the notice is mandatory even when no separate approval is required.
 - Every process expected to exceed about 15 minutes must be durably resumable. Persist completed work units, config/code identity, seeds or member IDs, checksums, and the next unit so a restart skips verified work. If checkpointing is technically impossible, stop and obtain explicit PI approval for the restart-only plan before launch. If a run unexpectedly crosses 15 minutes, checkpoint at the next safe boundary and inform the PI before continuing.
 - Scientific values, dependency changes, interface changes, gate decisions, and manuscript numbers require PI approval.
@@ -61,3 +64,4 @@ Control registers:
 - `registers/RISKS.md`
 - `registers/STATUS.md`
 - `registers/QUESTIONS.md`
+- `registers/OWNERSHIP_EXCEPTIONS.json`
