@@ -778,6 +778,22 @@ used as indicative planning inputs and subjected to economic sensitivity; they
 are not generalized beyond the documented Stedin/Eneco context or presented as
 current regulated prices.
 
+<!-- methods-id: D-009 -->
+### D-009 - DFMP Probability-to-Possibility Transform
+
+**Status: Proposed citation/protocol source.** The elicitation workflow uses
+the probability-to-possibility transformation of Dubois, Foulloy, Mauris, and
+Prade as the reproducible bridge from finite probability weights or density
+ranks to possibility grades. For a normalized finite mass function, the
+implemented indifference-preserving convention assigns each state the total
+probability mass of states with no greater plausibility score; when no separate
+score is supplied, the probability masses themselves define the order. Equal
+probability masses therefore receive equal possibility grades rather than an
+arbitrary ordering. The implementation is checked against the paper's Example
+4.1, where the least-specific transform of the stated piecewise-linear density
+gives `pi(-1.5)=0.3`. This source supports the mathematical transform only; it
+does not choose flexibility-factor values, fuzzy corners, or any paper result.
+
 <!-- methods-id: OWN-001 -->
 ### OWN-001 - Machine-Enforced Agent Ownership
 

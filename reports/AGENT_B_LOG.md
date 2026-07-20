@@ -39,3 +39,9 @@ VERIFIED: `.\scripts\task.ps1 ownership` passed for Agent B with 6 authorized ch
 OPEN: E5.S3 T2-T4 remain blocked by the Agent A contract/validator, G2 error values, signed A-013 numerical grid-error values, Q-5, and total-versus-firm capacity/provenance decisions before paper-facing use.
 NEXT: Update PR #36 and await the remaining implementation prerequisites.
 
+## 2026-07-20 16:18 — E7.S1 — in-progress
+DID: Created clean branch `agent-b/E7.S1-dfmp-transform-clean` from current `origin/main` instead of extending stale PR #26. Inspected PR #26 only for useful Agent B-owned API/test ideas, then implemented `src/dfmp.py` and `tests/test_dfmp.py` with D-009 source provenance and matching methods prose.
+VERIFIED: `.\scripts\task.ps1 ownership` passed for Agent B with 6 authorized changed paths. Focused `.\.venv\Scripts\python.exe -m pytest tests/test_dfmp.py` passed: 14 tests green in 1.07s. Full `.\scripts\task.ps1 test` passed: 128 tests green in 95.14s. `git diff --check` passed. The acceptance fixture traces to Dubois et al. (2004) Example 4.1, `pi(-1.5)=0.3`; no flexibility-factor values or fuzzy corners were chosen.
+OPEN: No E7.S1 blocker known after implementation. D-009 remains a proposed citation/protocol source until PI sign-off, and E7.S2/G4 still own factor values and fuzzy corners.
+NEXT: Merge latest `origin/main` again, run validation, open the E7.S1 PR, then update STATUS with the PR number.
+
