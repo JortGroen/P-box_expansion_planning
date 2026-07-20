@@ -75,7 +75,7 @@ If your current directory, branch, or worktree does not match your role and assi
 7. Read `registers/STATUS.md`, your `reports/AGENT_<X>_LOG.md` last entry, and any PI answers in `registers/QUESTIONS.md`.
 8. Select **one** task by plan ID. Check its dependencies: if it sits behind an unpassed gate, pick a non-gated task or end the session — never "provisionally" do gated work.
 9. Open your log entry: session start time, task ID, intent.
-10. Run `.\scripts\task.ps1 ownership` after selecting the task. If the planned path set fails, escalate before editing.
+10. Before editing, run `.\scripts\task.ps1 ownership -Paths path/one.py,path/two.py` with every intended repository-relative path. The command checks the planned set plus any existing worktree changes. If it fails, escalate before editing.
 
 ### 3.2 During the session
 - One task at a time; scope = exactly the task's deliverable, nothing more. New ideas go to `BACKLOG.md`, not into code.

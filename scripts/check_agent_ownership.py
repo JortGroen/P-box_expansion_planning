@@ -18,8 +18,7 @@ from typing import Any, Mapping, Sequence
 
 POLICY_PATH = "configs/agent_ownership.json"
 EXCEPTIONS_PATH = "registers/OWNERSHIP_EXCEPTIONS.json"
-MAINTAINER_BRANCHES = {"main"}
-MAINTAINER_PREFIXES = ("codex/", "pi/")
+BOOTSTRAP_BRANCH = "codex/ownership-enforcement"
 
 
 class OwnershipCheckError(RuntimeError):
@@ -47,7 +46,10 @@ def normalize_path(path: str) -> str:
 def role_for_branch(policy: Mapping[str, Any], branch: str) -> str | None:
     """Return the agent role, or ``None`` for an approved maintainer branch."""
 
-    if branch in MAINTAINER_BRANCHES or branch.startswith(MAINTAINER_PREFIXES):
+    if branch in policy["maintainer_branches"] or any(
+        branch.startswith(prefix)
+        for prefix in policy["maintainer_branch_prefixes"]
+    ):
         return None
     matches = [
         role
@@ -124,17 +126,23 @@ def check_repository(
     base_ref: str,
     head_ref: str,
     head_revision: str = "HEAD",
+    additional_paths: Sequence[str] = (),
 ) -> tuple[str | None, list[str], list[Violation]]:
     """Load base policy, determine role, and evaluate the repository diff."""
 
-    if head_ref in MAINTAINER_BRANCHES or head_ref.startswith(MAINTAINER_PREFIXES):
+    if _is_initial_policy_bootstrap(repo_root, base_ref, head_ref):
         return None, [], []
     policy = _load_json_at_ref(repo_root, base_ref, POLICY_PATH)
     exception_register = _load_json_at_ref(repo_root, base_ref, EXCEPTIONS_PATH)
     role = role_for_branch(policy, head_ref)
     if role is None:
         return None, [], []
-    changed_paths = _changed_paths(repo_root, base_ref, head_revision)
+    changed_paths = sorted(
+        {
+            *_changed_paths(repo_root, base_ref, head_revision),
+            *(normalize_path(path) for path in additional_paths),
+        }
+    )
     violations = evaluate_changes(
         policy=policy,
         exception_register=exception_register,
@@ -143,6 +151,20 @@ def check_repository(
         changed_paths=changed_paths,
     )
     return role, changed_paths, violations
+
+
+def _is_initial_policy_bootstrap(
+    repo_root: Path, base_ref: str, head_ref: str
+) -> bool:
+    """Allow only the first policy PR when neither base policy file exists."""
+
+    if head_ref != BOOTSTRAP_BRANCH:
+        return False
+    policy_missing = not _git_object_exists(repo_root, f"{base_ref}:{POLICY_PATH}")
+    exceptions_missing = not _git_object_exists(
+        repo_root, f"{base_ref}:{EXCEPTIONS_PATH}"
+    )
+    return policy_missing and exceptions_missing
 
 
 def _has_base_exception(
@@ -171,6 +193,10 @@ def _validate_documents(
 ) -> None:
     if policy.get("policy_id") != "OWN-001" or policy.get("version") != 1:
         raise OwnershipCheckError("unsupported ownership policy identity or version")
+    if not isinstance(policy.get("maintainer_branches"), list):
+        raise OwnershipCheckError("maintainer branches must be a list")
+    if not isinstance(policy.get("maintainer_branch_prefixes"), list):
+        raise OwnershipCheckError("maintainer branch prefixes must be a list")
     if not isinstance(policy.get("maintainer_only_patterns"), list):
         raise OwnershipCheckError("maintainer-only patterns must be a list")
     if exception_register.get("policy_id") != policy["policy_id"]:
@@ -257,11 +283,27 @@ def _git_bytes(repo_root: Path, *args: str) -> bytes:
     return result.stdout
 
 
+def _git_object_exists(repo_root: Path, object_name: str) -> bool:
+    result = subprocess.run(
+        ["git", "cat-file", "-e", object_name],
+        cwd=repo_root,
+        check=False,
+        capture_output=True,
+    )
+    return result.returncode == 0
+
+
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--base-ref", default="origin/main")
     parser.add_argument("--head-ref")
     parser.add_argument("--head-revision", default="HEAD")
+    parser.add_argument(
+        "--paths",
+        nargs="+",
+        default=(),
+        help="repository-relative paths planned for editing; actual changes are also checked",
+    )
     parser.add_argument("--repo-root", type=Path, default=Path.cwd())
     return parser
 
@@ -276,6 +318,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             base_ref=args.base_ref,
             head_ref=head_ref,
             head_revision=args.head_revision,
+            additional_paths=args.paths,
         )
     except OwnershipCheckError as exc:
         print(f"OWNERSHIP CHECK ERROR: {exc}", file=sys.stderr)

@@ -1,7 +1,9 @@
 param(
     [Parameter(Mandatory = $true, Position = 0)]
     [ValidateSet("test", "run", "figures", "ownership")]
-    [string] $Task
+    [string] $Task,
+
+    [string[]] $Paths = @()
 )
 
 $ErrorActionPreference = "Stop"
@@ -37,7 +39,12 @@ switch ($Task) {
         exit $LASTEXITCODE
     }
     "ownership" {
-        & $VenvPython scripts/check_agent_ownership.py --base-ref origin/main
+        $OwnershipArgs = @("scripts/check_agent_ownership.py", "--base-ref", "origin/main")
+        if ($Paths.Count -gt 0) {
+            $OwnershipArgs += "--paths"
+            $OwnershipArgs += $Paths
+        }
+        & $VenvPython @OwnershipArgs
         exit $LASTEXITCODE
     }
 }

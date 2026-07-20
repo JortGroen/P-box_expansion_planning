@@ -6,6 +6,9 @@
     "agent-b/": "agent-b",
     "agent-c/": "agent-c"
   },
+  "maintainer_branches": [
+    "main"
+  ],
   "maintainer_branch_prefixes": [
     "codex/",
     "pi/"
