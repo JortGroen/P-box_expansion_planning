@@ -172,6 +172,8 @@ class EVProfileBootstrapSampler:
         component_stream: ComponentStream,
         replace: bool,
     ) -> EVBootstrapSelection:
+        if component_stream.component != EV_HOME_COMPONENT:
+            raise ValueError(f"Home EV profile sampling requires component stream {EV_HOME_COMPONENT!r}")
         if n_members < 0:
             raise ValueError("n_members must be non-negative")
         if not replace and n_members > self.batch.n_profiles:
@@ -556,8 +558,8 @@ def validate_adoption_scenarios_config(config: dict[str, Any]) -> None:
     scenarios = local.get("scenarios")
     if not isinstance(scenarios, list):
         raise ValueError("local_grid_scenarios.scenarios must be a list")
-    if local.get("status") == "blocked" and scenarios:
-        raise ValueError("Blocked local-grid scenarios must not contain counts")
+    if local.get("status") in {"blocked", "proposed"} and scenarios:
+        raise ValueError("Local-grid scenarios may contain counts only after their register status is approved")
     scenario_keys: set[tuple[int, str]] = set()
     for item in scenarios:
         scenario = _scenario_from_mapping(item, outlook_id=outlook_id)
@@ -582,6 +584,8 @@ def adoption_scenarios(config: dict[str, Any]) -> tuple[ChargePointScenario, ...
     """Return validated local-grid charge-point scenarios from config data."""
 
     validate_adoption_scenarios_config(config)
+    if config["local_grid_scenarios"].get("status") != "approved":
+        raise ValueError("Local-grid charge-point scenarios remain blocked until Q-7 is approved")
     outlook_id = str(config["source_ids"]["national_outlook_projection"])
     return tuple(
         _scenario_from_mapping(item, outlook_id=outlook_id)
@@ -595,14 +599,26 @@ def allocate_charge_points_to_nodes(
 ) -> dict[str, int]:
     """Allocate integer charge-point counts by deterministic largest remainder."""
 
+    total_count = _require_int(total_count, "total_count")
     if total_count < 0:
-        raise ValueError("total_count must be non-negative")
+        raise ValueError("total_count must be a non-negative integer")
     if not node_weights:
         raise ValueError("node_weights must be non-empty")
-    total_weight = sum(weight for _, weight in node_weights)
+    normalized_weights: list[tuple[str, float]] = []
+    seen_node_ids: set[str] = set()
+    for node_id_raw, weight_raw in node_weights:
+        node_id = str(node_id_raw)
+        if not node_id or node_id in seen_node_ids:
+            raise ValueError("node_weights must contain unique non-empty node IDs")
+        seen_node_ids.add(node_id)
+        weight = float(weight_raw)
+        if not np.isfinite(weight) or weight < 0.0:
+            raise ValueError("node_weights must contain finite non-negative weights")
+        normalized_weights.append((node_id, weight))
+    total_weight = sum(weight for _, weight in normalized_weights)
     if total_weight <= 0:
         raise ValueError("At least one node weight must be positive")
-    raw = [(node_id, total_count * weight / total_weight) for node_id, weight in node_weights]
+    raw = [(node_id, total_count * weight / total_weight) for node_id, weight in normalized_weights]
     floors = {node_id: int(np.floor(value)) for node_id, value in raw}
     remainder = total_count - sum(floors.values())
     # Ties are resolved by node_id so reruns do not depend on source row order
@@ -619,6 +635,8 @@ def adoption_node_allocations(config: dict[str, Any]) -> tuple[NodeChargePointAl
     scenarios = adoption_scenarios(config)
     if not scenarios:
         raise ValueError("Local-grid charge-point counts are blocked until Q-7 selects a scaling method")
+    if config["allocation"].get("status") != "approved":
+        raise ValueError("Node charge-point allocation remains blocked until A-014 is approved")
     weight_records = config["allocation"].get("node_weights")
     if weight_records is None:
         raise ValueError("adoption_node_allocations requires explicit node_weights")

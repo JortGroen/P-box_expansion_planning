@@ -661,7 +661,7 @@ rows in proportion to each row's static active load `p_mw`. Fractional
 allocations are converted to physical nonnegative integer counts by
 largest-remainder rounding, with ties resolved by node ID for deterministic
 reruns. The rule must not be applied directly to the national ElaadNL Outlook
-totals recorded under D-009. Home local totals, public local totals, and the
+totals recorded under D-010. Home local totals, public local totals, and the
 resulting EV-005 per-node `K_r` ranges remain blocked until the PI chooses a
 local scaling method, such as a predeclared CBS neighbourhood or cluster from
 ElaadNL local forecasts, or a sourced household/service-area denominator with
@@ -800,8 +800,8 @@ used as indicative planning inputs and subjected to economic sensitivity; they
 are not generalized beyond the documented Stedin/Eneco context or presented as
 current regulated prices.
 
-<!-- methods-id: D-009 -->
-### D-009 - ElaadNL Outlook Mobility Adoption Counts
+<!-- methods-id: D-010 -->
+### D-010 - ElaadNL Outlook Mobility Adoption Counts
 
 **Status: Proposed; national projections only.** E2.S6 records national EV
 charging-infrastructure projections from the official ElaadNL Outlook
@@ -820,15 +820,15 @@ checksums without redistributing raw dashboard data. Public behavior profiles
 remain separately blocked by the Elaad profile-generation specification, and
 public local-count scaling requires its own basis.
 
-<!-- methods-id: D-010 -->
-### D-010 - II3050 Scenario Framing
+<!-- methods-id: D-011 -->
+### D-011 - II3050 Scenario Framing
 
 **Status: Proposed.** Netbeheer Nederland's II3050 edition 2 eindrapport,
 published on 11 October 2023 according to the Netbeheer Nederland publication
 page, is recorded as scenario-framing evidence for 2030-2050 infrastructure
 planning. It justifies treating adoption pathways as scenario inputs relevant
 to network planning, but E2.S6 does not extract numerical EV charge-point
-counts from II3050. Keeping D-010 separate prevents a broad infrastructure-
+counts from II3050. Keeping D-011 separate prevents a broad infrastructure-
 scenario report from being mistaken for a numeric source of home or public
 charge-point counts, while still documenting the wider Dutch planning context
 in which the ElaadNL Outlook scenarios are considered.

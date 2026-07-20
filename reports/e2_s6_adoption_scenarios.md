@@ -6,19 +6,19 @@ Status: blocked for integrated EV adoption use until Q-7 selects and the PI sign
 
 Sourced national values:
 
-- D-009, ElaadNL Outlook Mobiliteit 2026 scenariotool/API, retrieved 2026-07-20T14:52:59Z through 2026-07-20T14:53:01Z.
+- D-010, ElaadNL Outlook Mobiliteit 2026 scenariotool/API, retrieved 2026-07-20T14:52:59Z through 2026-07-20T14:53:01Z.
   - Home endpoint: `https://outlook.elaad.nl/api/proxy_v2?endpoint=/charging_infrastructure?area_type=country&scenario={scenario}&location=home`
   - Public endpoint: `https://outlook.elaad.nl/api/proxy_v2?endpoint=/charging_infrastructure?area_type=country&scenario={scenario}&location=public`
   - Dashboard provenance: `https://outlook.elaad.nl/` states the scenariotool provides projections to CBS-neighbourhood level, links the full report/model background, flags the outlook as assumption-based/indicative with 24-month validity, and licenses the site as CC BY-NC-ND 4.0.
   - API fields used: `type=charging_infrastructure`, `year={2030,2033,2035}`, `month=12`, `scenario={low,middle,high}`, `location={home,public}`.
   - Rounding rule: the floating API field `number` is rounded to the nearest integer for provenance tables only.
-- D-010, Netbeheer Nederland II3050 edition 2, publication page dated 2023-10-11, `https://www.netbeheernederland.nl/publicatie/ii3050-eindrapport`.
+- D-011, Netbeheer Nederland II3050 edition 2, publication page dated 2023-10-11, `https://www.netbeheernederland.nl/publicatie/ii3050-eindrapport`.
   - Used for 2030-2050 infrastructure-scenario framing only.
   - No numeric charge-point counts are copied from II3050 in this E2.S6 config.
 
 Derived values:
 
-- `configs/scenarios.yaml` records national D-009 API values and their rounded integers as national Outlook projections.
+- `configs/scenarios.yaml` records national D-010 API values and their rounded integers as national Outlook projections.
 - These values are not physical charge-point counts for SimBench and must not enter nodal allocation directly.
 
 Blocked local values:

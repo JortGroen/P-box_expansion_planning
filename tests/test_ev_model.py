@@ -165,6 +165,15 @@ def test_sampler_requires_explicit_replacement_rule() -> None:
         sampler.sample_member_indices(1, component_stream=stream)
 
 
+def test_sampler_rejects_non_home_ev_component_stream() -> None:
+    batch = parse_elaad_profile_response(_payload(n_profiles=2), batch_seed=130001, expected_n_profiles=2)
+    sampler = EVProfileBootstrapSampler(batch)
+    stream = SeedTree(root_seed=1).component_stream(sample_index=0, component="ev_public")
+
+    with pytest.raises(ValueError, match="ev_home"):
+        sampler.sample_member_indices(1, component_stream=stream, replace=False)
+
+
 def test_ev_sampler_contains_no_independent_local_random_generator() -> None:
     sampler_source = inspect.getsource(ev_model.EVProfileBootstrapSampler)
 
@@ -310,10 +319,10 @@ def _adoption_config() -> dict:
         "schema_version": 1,
         "task_id": "E2.S6",
         "source_ids": {
-            "national_outlook_projection": "D-009",
+            "national_outlook_projection": "D-010",
             "local_allocation_assumption": "A-014",
         },
-        "sources": {"D-009": {"url": "https://outlook.elaad.nl/scenariotool"}},
+        "sources": {"D-010": {"url": "https://outlook.elaad.nl/scenariotool"}},
         "national_outlook_projections": [
             {
                 "year": 2030,
@@ -322,7 +331,7 @@ def _adoption_config() -> dict:
                 "value": 10.6,
                 "rounded_count": 11,
                 "provenance": {
-                    "source_id": "D-009",
+                    "source_id": "D-010",
                     "response_sha256": "a" * 64,
                 },
             }
@@ -376,17 +385,17 @@ def test_adoption_config_validates_schema_and_provenance() -> None:
     assert scenarios[0].home_charge_points == 11
     assert scenarios[0].provenance["source_type"] == "local_grid"
     assert national[0].rounded_count == 11
-    assert national[0].source_id == "D-009"
+    assert national[0].source_id == "D-010"
 
 
 def test_committed_adoption_scenarios_config_validates() -> None:
     config = load_adoption_scenarios_config(Path("configs/scenarios.yaml"))
     national = national_outlook_projections(config)
-    scenarios = adoption_scenarios(config)
 
     assert len(national) == 18
-    assert len(scenarios) == 0
     assert config["local_grid_scenarios"]["status"] == "blocked"
+    with pytest.raises(ValueError, match="remain blocked until Q-7"):
+        adoption_scenarios(config)
 
 
 def test_adoption_config_accepts_approved_status() -> None:
@@ -395,6 +404,24 @@ def test_adoption_config_accepts_approved_status() -> None:
     config["local_grid_scenarios"]["status"] = "approved"
 
     validate_adoption_scenarios_config(config)
+
+
+def test_local_scenarios_reject_counts_until_status_approved() -> None:
+    for status in ("blocked", "proposed"):
+        config = _adoption_config()
+        config["local_grid_scenarios"]["status"] = status
+
+        with pytest.raises(ValueError, match="only after their register status is approved"):
+            validate_adoption_scenarios_config(config)
+
+
+def test_adoption_scenarios_rejects_unapproved_empty_local_status() -> None:
+    config = _adoption_config()
+    config["local_grid_scenarios"]["status"] = "proposed"
+    config["local_grid_scenarios"]["scenarios"] = []
+
+    with pytest.raises(ValueError, match="remain blocked until Q-7"):
+        adoption_scenarios(config)
 
 
 def test_adoption_config_rejects_invalid_allocation_status() -> None:
@@ -407,7 +434,7 @@ def test_adoption_config_rejects_invalid_allocation_status() -> None:
 
 def test_national_projections_cannot_flow_into_local_allocation() -> None:
     config = _adoption_config()
-    config["local_grid_scenarios"]["scenarios"][0]["provenance"]["home_charge_points"] = "D-009"
+    config["local_grid_scenarios"]["scenarios"][0]["provenance"]["home_charge_points"] = "D-010"
 
     with pytest.raises(ValueError, match="National Outlook projections cannot be used directly"):
         validate_adoption_scenarios_config(config)
@@ -417,6 +444,14 @@ def test_blocked_committed_local_scenarios_cannot_allocate() -> None:
     config = load_adoption_scenarios_config(Path("configs/scenarios.yaml"))
 
     with pytest.raises(ValueError, match="blocked until Q-7"):
+        adoption_node_allocations(config)
+
+
+def test_unapproved_allocation_status_cannot_allocate() -> None:
+    config = _adoption_config()
+    config["allocation"]["status"] = "proposed"
+
+    with pytest.raises(ValueError, match="A-014 is approved"):
         adoption_node_allocations(config)
 
 
@@ -457,6 +492,19 @@ def test_allocate_charge_points_conserves_integer_counts_deterministically() -> 
     assert first == {"load_a": 2, "load_b": 2, "load_c": 1}
     assert sum(first.values()) == 5
     assert all(isinstance(value, int) and value >= 0 for value in first.values())
+
+
+def test_allocate_charge_points_validates_inputs_directly() -> None:
+    with pytest.raises(ValueError, match="true integer"):
+        allocate_charge_points_to_nodes(1.2, (("load_a", 1.0),))
+    with pytest.raises(ValueError, match="non-negative integer"):
+        allocate_charge_points_to_nodes(-1, (("load_a", 1.0),))
+    with pytest.raises(ValueError, match="unique non-empty"):
+        allocate_charge_points_to_nodes(2, (("load_a", 1.0), ("load_a", 2.0)))
+    with pytest.raises(ValueError, match="finite non-negative"):
+        allocate_charge_points_to_nodes(2, (("load_a", float("nan")),))
+    with pytest.raises(ValueError, match="positive"):
+        allocate_charge_points_to_nodes(2, (("load_a", 0.0),))
 
 
 def test_adoption_node_allocations_conserve_home_and_public_counts() -> None:
