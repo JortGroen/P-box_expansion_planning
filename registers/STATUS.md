@@ -18,7 +18,7 @@ Format: `Story | Owner | status | tasks | blocked-by | PR`
 | E2.S1 Data acquisition | C | done | 3/3 | -- | #14, #18 follow-up |
 | E2.S2 EV model | C | in-progress | 4/5 | EV-004 Set A candidate M=1000, quarantined diagnostic Q=200, and fresh held-out H=200 archived locally; M sufficiency, held-out adequacy use, and within-realization replacement remain blocked by E2.S6 and EV-005/E3.S2a criteria | #35 |
 | E2.S3 HP model | C | todo | 0/4 | E2.S1, ALEA-001 | -- |
-| E2.S4 PV model | C | review | 3/3 | -- | pending |
+| E2.S4 PV model | C | review | 3/3 | -- | #43 |
 | E2.S5 Baseline & diversity | C | todo | 0/2 | E1.S3, ALEA-001 | -- |
 | E2.S6 Adoption scenarios | C | todo | 0/3 | E2.S1, EV-004 | -- |
 | E3.S1 Flexibility aggregator | A | todo | 0/3 | E2 models | -- |
