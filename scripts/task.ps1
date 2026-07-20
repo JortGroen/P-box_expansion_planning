@@ -15,8 +15,11 @@ if (-not (Test-Path -LiteralPath $VenvPython)) {
     exit 1
 }
 
+$TmpRoot = Join-Path $RepoRoot ".tmp"
+New-Item -ItemType Directory -Force -Path $TmpRoot | Out-Null
+
 if (-not $env:NUMBA_CACHE_DIR) {
-    $NumbaCacheDir = Join-Path $RepoRoot ".tmp\numba_cache"
+    $NumbaCacheDir = Join-Path $TmpRoot "numba_cache"
     New-Item -ItemType Directory -Force -Path $NumbaCacheDir | Out-Null
     $env:NUMBA_CACHE_DIR = $NumbaCacheDir
 }
@@ -27,7 +30,7 @@ switch ($Task) {
         if ($LASTEXITCODE -ne 0) {
             exit $LASTEXITCODE
         }
-        $PytestBaseTemp = Join-Path $RepoRoot ".tmp\pytest-full"
+        $PytestBaseTemp = Join-Path $TmpRoot "pytest-full"
         & $VenvPython -m pytest --basetemp $PytestBaseTemp
         exit $LASTEXITCODE
     }
@@ -36,7 +39,7 @@ switch ($Task) {
         if ($LASTEXITCODE -ne 0) {
             exit $LASTEXITCODE
         }
-        $PytestBaseTemp = Join-Path $RepoRoot ".tmp\pytest-fast"
+        $PytestBaseTemp = Join-Path $TmpRoot "pytest-fast"
         & $VenvPython -m pytest -m "not slow" --basetemp $PytestBaseTemp
         exit $LASTEXITCODE
     }
