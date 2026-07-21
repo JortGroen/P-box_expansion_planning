@@ -250,6 +250,22 @@ event results.
 
 **Status: Approved.** The seed-tree protocol derives each whole-system aleatory sample from `(root_seed, sample_index)` and each component stream from that sample seed plus the component name. Component stream identities include root-derived stream information, currently the component seed, so a source-member selection made under one root seed cannot be replayed silently under another. Alpha levels, interval endpoints, and treatment labels are branch metadata only: they reuse the same complete aleatory realization and therefore do not enter the aleatory fingerprint. Manifests record the root seed, sample seed, component stream records, selected source-member IDs, and shared physical driver IDs. CRN reuse is a variance-control and pairing device across analysis branches; it is distinct from physical dependence, which is represented separately by shared drivers such as paired weather members. This approval covers the seed-tree and CRN identity policy only; it does not approve downstream scientific runs, Q-5 threshold semantics, IC schema changes, or any numerical uncertainty values.
 
+<!-- methods-id: FLEX-001 -->
+### FLEX-001 - Flexibility Aggregation Scaffold
+
+**Status: Proposed.** The E3.S1 flexibility scaffold treats controllability
+`rho` as a deterministic multiplier in `[0, 1]` applied only to positive
+import-side demand components that are explicitly marked as controllable. It
+preserves complete aligned 15-minute trajectories and optional timestamp
+sequences, leaves PV/export and non-controllable components unchanged, and
+records per-component metadata describing eligibility, reduction, rebound, and
+the reason for any unchanged trajectory. The optional adjacent-step rebound
+mode conserves reduced component energy within the supplied trajectory and is
+included to test the interface required by the project plan; it is not a
+signed behavioral model of flexibility delivery. This scaffold does not run
+event detection, estimate `P(E)`, resolve Q-5, select a capacity convention, or
+replace the later E2/E3 integration and manifested experiment path.
+
 <!-- methods-id: ALEA-001 -->
 ### ALEA-001 - Joint Aleatory Dependency Protocol
 
@@ -650,6 +666,23 @@ reported rather than silently extrapolated. Until A-013 is signed, Methods and
 results may describe the protocol and sensitivity scenarios but may not call
 5% a scientifically established grid-model error.
 
+<!-- methods-id: A-014 -->
+### A-014 - EV Adoption Allocation Across Benchmark Load Nodes
+
+**Status: Proposed; blocks integrated EV adoption use until PI resolution of
+Q-7.** A-014 is narrowed to a possible second-stage allocation rule only. After
+Q-7 establishes local SimBench-grid home and public charge-point totals, the
+project may distribute those local totals across the 115 in-service `net.load`
+rows in proportion to each row's static active load `p_mw`. Fractional
+allocations are converted to physical nonnegative integer counts by
+largest-remainder rounding, with ties resolved by node ID for deterministic
+reruns. The rule must not be applied directly to the national ElaadNL Outlook
+totals recorded under D-010. Home local totals, public local totals, and the
+resulting EV-005 per-node `K_r` ranges remain blocked until the PI chooses a
+local scaling method, such as a predeclared CBS neighbourhood or cluster from
+ElaadNL local forecasts, or a sourced household/service-area denominator with
+a separate public-charging basis.
+
 ## Data and Evidence Choices
 
 <!-- methods-id: D-001 -->
@@ -784,6 +817,63 @@ page and table reference, interpretation status, and PI approval. Values are
 used as indicative planning inputs and subjected to economic sensitivity; they
 are not generalized beyond the documented Stedin/Eneco context or presented as
 current regulated prices.
+
+<!-- methods-id: D-009 -->
+### D-009 - DFMP Probability-to-Possibility Transform
+
+**Status: Approved citation/protocol source for E7.S1.** The elicitation workflow uses
+the probability-to-possibility transformation of Dubois, Foulloy, Mauris, and
+Prade to convert finite probability evidence into a possibility, or fuzzy-
+membership, distribution. A possibility grade is not a probability and is not
+a percentile: grade 1 means that a state is among the most plausible and is not
+excluded by the evidence, not that the state is certain. The DFMP transform
+returns the tightest, maximally specific possibility distribution that still
+conservatively contains the original probability model, meaning that every
+event `A` satisfies `P(A) <= Pi(A)`, where `Pi(A)` is the maximum possibility
+grade among the states in `A`. For normalized finite masses `p_i`, the default
+formula is `pi_i = sum(p_j for p_j <= p_i)`; if separate plausibility scores are
+supplied, the same cumulative rule is applied over states with no greater
+score. Equal probability masses, or equal supplied scores, receive equal
+possibility grades rather than arbitrary rank-order splits. The implementation
+is checked against the paper's Example 4.1, where the maximally specific
+transform of the stated piecewise-linear density gives `pi(-1.5)=0.3`. This
+approval covers only the citation/protocol source and the implemented
+maximally specific finite DFMP convention; E7.S2 and G4 still determine the
+input probabilities, flexibility values, and fuzzy corners before any paper
+result uses them.
+
+<!-- methods-id: D-010 -->
+### D-010 - ElaadNL Outlook Mobility Adoption Counts
+
+**Status: Proposed; national projections only.** E2.S6 records national EV
+charging-infrastructure projections from the official ElaadNL Outlook
+Mobiliteit scenariotool/API, using December `charging_infrastructure` records
+for 2030, 2033, and 2035 under the low, middle, and high scenarios. The home
+layer uses `location=home`, while the public layer uses `location=public`.
+These records are not physical charge-point counts for the SimBench grid and
+must not flow into nodal allocation without a separately approved local
+scaling method. The source site identifies the scenariotool as providing
+forecasts down to CBS-neighbourhood level, supplies report and model
+background pages, states that the outlook is assumption-based and indicative
+with a 24-month validity note, and licenses the site under CC BY-NC-ND 4.0.
+The committed config records exact query strings, UTC retrieval time, raw
+floating API values, nearest-integer rounded national counts, and response
+checksums without redistributing raw dashboard data. Public behavior profiles
+remain separately blocked by the Elaad profile-generation specification, and
+public local-count scaling requires its own basis.
+
+<!-- methods-id: D-011 -->
+### D-011 - II3050 Scenario Framing
+
+**Status: Proposed.** Netbeheer Nederland's II3050 edition 2 eindrapport,
+published on 11 October 2023 according to the Netbeheer Nederland publication
+page, is recorded as scenario-framing evidence for 2030-2050 infrastructure
+planning. It justifies treating adoption pathways as scenario inputs relevant
+to network planning, but E2.S6 does not extract numerical EV charge-point
+counts from II3050. Keeping D-011 separate prevents a broad infrastructure-
+scenario report from being mistaken for a numeric source of home or public
+charge-point counts, while still documenting the wider Dutch planning context
+in which the ElaadNL Outlook scenarios are considered.
 
 <!-- methods-id: OWN-001 -->
 ### OWN-001 - Machine-Enforced Agent Ownership

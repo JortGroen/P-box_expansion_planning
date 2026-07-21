@@ -16,6 +16,8 @@ from src.evaluator_ac_benchmark import (
 from src.grid_loader import load_candidate_grid
 
 
+@pytest.mark.integration
+@pytest.mark.slow
 def test_materialize_topology_records_primary_switch_handling() -> None:
     net = load_candidate_grid("simbench_semiurb")
 
@@ -30,6 +32,8 @@ def test_materialize_topology_records_primary_switch_handling() -> None:
     assert not converted.line.loc[list(summary.disabled_lines), "in_service"].any()
 
 
+@pytest.mark.integration
+@pytest.mark.slow
 def test_materialize_topology_rejects_open_transformer_switch() -> None:
     net = load_candidate_grid("simbench_semiurb")
     switch_index = int(net.switch.index.max()) + 1
@@ -48,6 +52,8 @@ def test_materialize_topology_rejects_open_transformer_switch() -> None:
         materialize_topology_for_lightsim(net)
 
 
+@pytest.mark.integration
+@pytest.mark.slow
 def test_materialize_topology_rejects_impedance_bearing_closed_bus_switch() -> None:
     net = load_candidate_grid("simbench_semiurb")
     net.switch.loc[0, "z_ohm"] = 0.1
@@ -56,6 +62,8 @@ def test_materialize_topology_rejects_impedance_bearing_closed_bus_switch() -> N
         materialize_topology_for_lightsim(net)
 
 
+@pytest.mark.integration
+@pytest.mark.slow
 def test_materialization_discrepancy_reports_transformer_and_voltage_deltas() -> None:
     net = load_candidate_grid("simbench_semiurb")
 
@@ -79,6 +87,8 @@ def test_materialization_discrepancy_reports_transformer_and_voltage_deltas() ->
         assert row["delta"]["max_bus_vm_pu"] <= DEFAULT_MATERIALIZATION_ACCEPTANCE["max_abs_bus_vm_pu"]
 
 
+@pytest.mark.integration
+@pytest.mark.slow
 def test_timeseriescpp_inputs_match_converter_element_counts() -> None:
     adapter = build_timeseries_adapter(load_candidate_grid("simbench_semiurb"))
 
@@ -92,6 +102,8 @@ def test_timeseriescpp_inputs_match_converter_element_counts() -> None:
     assert np.iscomplexobj(inputs.vinit)
 
 
+@pytest.mark.integration
+@pytest.mark.slow
 def test_timeseriescpp_solves_small_batch() -> None:
     adapter = build_timeseries_adapter(load_candidate_grid("simbench_semiurb"))
     inputs = make_repeated_inputs(adapter, 2)
@@ -109,6 +121,7 @@ def test_timeseriescpp_solves_small_batch() -> None:
     assert solved == 1
     assert adapter.computer.nb_solved() == 2
     assert np.asarray(adapter.computer.get_voltages()).shape == (2, len(adapter.net.bus))
+
 
 def test_render_report_includes_timing_context_note() -> None:
     raw = {

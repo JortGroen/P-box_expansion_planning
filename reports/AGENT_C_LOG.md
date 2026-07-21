@@ -89,15 +89,3 @@ DID: Fetched/pruned origin and merged latest `origin/main` into existing branch 
 VERIFIED: `.\scripts\task.ps1 ownership` passed for Agent C with 41 changed paths authorized. `.\scripts\task.ps1 test` passed 114 tests in 83.09 s after the merge, and `git diff --check` returned clean.
 OPEN: E2.S2 remains in progress. M=1000 is not declared sufficient; fresh held-out adequacy use awaits E3.S2a criterion freeze; within-realization replacement remains pending E2.S6 cohort sizes and EV-005.
 NEXT: Update PR #35 description with the OWN-001 checklist and wait for PI/downstream criterion before held-out adequacy analysis, public Set B, smart Set D, or E2.S6 work.
-
-## 2026-07-20 17:41 - E2.S4 - review
-DID: Created a dedicated E2.S4 Agent C worktree on branch `agent-c/E2.S4-pv-weather-inputs`. Extended `data/get_weather_pv.py` with PVGIS/KNMI endpoint builders, checksum recording, an explicit download helper, and a metadata-only retrieval plan. Added `src/pv_model.py` with a paired `WeatherMember` representation, canonical 15-minute Europe/Amsterdam calendar validation, explicit PV conversion, seasonal summaries, and PVGIS-reference sanity checks. Wrote `reports/e2_s4_pv_weather_inputs.md` and D-004 metadata-only retrieval files without downloading raw PVGIS or KNMI data.
-VERIFIED: Focused `.venv` pytest for `tests/test_pv_model.py tests/test_data_sources.py::test_data_entrypoints_run_directly tests/test_methods_registry.py` passed 12 tests. Required `.\scripts\task.ps1 ownership` passed for Agent C with 9 changed paths authorized, and `.\scripts\task.ps1 test` passed 137 tests in 68.01 s.
-OPEN: No concrete KNMI/PVGIS file, station/year bundle, PVGIS radiation database, or checksum selection was made; D-004 remains proposed and not PI-signed. HP demand, net-load integration, congestion/event results, and EV held-out adequacy were not touched.
-NEXT: Await PI review of PR #43 before any concrete D-004 data selection, HP integration, or downstream PV/net-load analysis.
-
-## 2026-07-20 18:57 - E2.S4 - blocked
-DID: Re-read the required governance files and inspected HP PR #44 (`agent-c/E2.S3-hp-model`) for coordination. Confirmed PR #44 defines an HP-local `WeatherMember` while PR #43 defines a PV-local one, which is not the final ALEA-001 shape.
-VERIFIED: `.\scripts\task.ps1 ownership -Paths src/weather_model.py,tests/test_weather_model.py,...` failed because the neutral shared weather contract paths are unassigned. Governance/reporting ownership preflight passed before adding Q-7 and revising E2.S4 status/report language. Required `.\scripts\task.ps1 ownership` passed for Agent C with 10 changed paths authorized, and `.\scripts\task.ps1 test` passed 137 tests in 68.10 s.
-OPEN: Q-7 blocks final E2.S4/HP convergence on one shared paired weather-member contract. No real PVGIS/KNMI source acceptance evidence exists yet; current tests remain scaffold/synthetic checks only.
-NEXT: Await PI/maintainer resolution of Q-7 before implementing the neutral shared weather contract and updating PR #43/#44 to import it.
