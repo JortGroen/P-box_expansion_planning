@@ -249,9 +249,12 @@ The E5.S3 T2-T4 scaffold implements this approved endpoint propagation using
 synthetic loading trajectories only. It composes the additive Tier-1 and
 relative grid-error endpoints on complete loading trajectories, preserves the
 unwidened active-power direction gate, and counts lower and upper endpoint
-events before estimating probabilities and confidence intervals. The scaffold
-does not introduce a signed A-013 value or authorize integrated event results
-while Q-5, G2, A-013, and capacity-provenance dependencies remain unresolved.
+events before estimating probabilities and confidence intervals. Synthetic
+alpha-family estimates are returned as separate alpha-indexed lower/upper
+probability results; no alpha level is collapsed into a scalar or widened after
+estimation. The scaffold does not introduce a signed A-013 value or authorize
+integrated event results while Q-5, G2, A-013, and capacity-provenance
+dependencies remain unresolved.
 
 <!-- methods-id: RNG-001 -->
 ### RNG-001 - Seed-Tree and CRN Identity Protocol

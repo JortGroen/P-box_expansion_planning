@@ -9,7 +9,8 @@ capacity-denominator decisions allow paper-facing event analysis.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Sequence
+import math
+from typing import Mapping, Sequence
 
 import numpy as np
 
@@ -104,6 +105,18 @@ class OutputErrorProbabilityResult:
             raise ValueError("sample diagnostics must match the probability sample count")
         if self.upper.sample_count != self.lower.sample_count:
             raise ValueError("lower and upper estimates must use the same sample count")
+
+
+@dataclass(frozen=True)
+class OutputErrorAlphaResult:
+    """One alpha-indexed lower/upper probability result from endpoint counts."""
+
+    alpha: float
+    probability: OutputErrorProbabilityResult
+
+    def __post_init__(self) -> None:
+        if not math.isfinite(self.alpha) or not 0.0 <= self.alpha <= 1.0:
+            raise ValueError("alpha must be finite and in [0, 1]")
 
 
 def apply_output_error_envelope(
@@ -240,6 +253,48 @@ def estimate_output_error_probability(
         ),
         samples=sample_events,
     )
+
+
+def estimate_alpha_output_error_probability(
+    results_by_alpha: Mapping[float, Sequence[LoadingTrajectoryResult]],
+    envelope: OutputErrorEnvelope | Mapping[float, OutputErrorEnvelope],
+    *,
+    confidence_level: float = 0.95,
+) -> dict[float, OutputErrorAlphaResult]:
+    """Estimate endpoint probabilities separately for each synthetic alpha level.
+
+    ``envelope`` may be one common pure-interval model-error envelope or an
+    alpha-indexed mapping for synthetic tests. The result remains alpha-indexed
+    lower/upper counts; it never collapses or widens probabilities after
+    estimation.
+    """
+
+    if not results_by_alpha:
+        raise ValueError("results_by_alpha must contain at least one alpha level")
+
+    alpha_grid = tuple(sorted(results_by_alpha))
+    for alpha in alpha_grid:
+        if not math.isfinite(alpha) or not 0.0 <= alpha <= 1.0:
+            raise ValueError("alpha values must be finite and in [0, 1]")
+
+    if isinstance(envelope, Mapping):
+        if tuple(sorted(envelope)) != alpha_grid:
+            raise ValueError("envelope mapping must use the same alpha grid")
+        envelope_by_alpha = envelope
+    else:
+        envelope_by_alpha = {alpha: envelope for alpha in alpha_grid}
+
+    return {
+        alpha: OutputErrorAlphaResult(
+            alpha=alpha,
+            probability=estimate_output_error_probability(
+                results_by_alpha[alpha],
+                envelope_by_alpha[alpha],
+                confidence_level=confidence_level,
+            ),
+        )
+        for alpha in alpha_grid
+    }
 
 
 def _as_endpoint_array(
