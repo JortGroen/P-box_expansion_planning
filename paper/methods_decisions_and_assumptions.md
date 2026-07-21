@@ -827,12 +827,16 @@ facts are proposed for PI review and do not sign D-003 or authorize manuscript
 claims. The implemented E2.S3 parser treats
 selected When2Heat heat-profile columns as average MW per annual TWh and
 requires the annual TWh scaling for each component to be passed explicitly, so
-adoption or building-stock volumes are not hidden as defaults. Each component
-is divided by its matching When2Heat COP column before aggregation, preserving
-distinct COP treatment for space and water heating where those columns are
-selected. Hourly source values are downscaled to 15 minutes by repeating the
-average-power value into four quarter-hour intervals, which preserves energy
-and does not interpolate new peaks. The resulting profile must match the
+adoption or building-stock volumes are not hidden as defaults. The loader now
+uses the real OPSD single-index CSV dialect explicitly (`;` delimiter and comma
+decimals), reads the UTC timestamp column for the canonical calendar, records
+the local timestamp column for provenance, and preserves selected heat/COP
+column names plus OPSD unit metadata. Each component is divided by its matching
+When2Heat COP column before aggregation, preserving distinct COP treatment for
+space and water heating where those columns are selected. Hourly source values
+are downscaled to 15 minutes by repeating the average-power value into four
+quarter-hour intervals, which preserves energy and does not interpolate new
+peaks. The resulting profile must match the
 externally supplied shared weather/PV member on the canonical 15-minute UTC
 calendar, preserving `shared_weather_driver_id`, `member_id`, source, optional
 local calendar, and provenance or metadata so HP and PV outputs can be audited

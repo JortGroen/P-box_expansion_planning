@@ -1,18 +1,18 @@
 # E2.S3 Heat-Pump Model Report
 
-Status: scaffold/review-limited. No concrete external When2Heat file was
-downloaded in this PR, and no real paired-weather cold-spell acceptance
-evidence exists yet.
+Status: scaffold/review-limited. A concrete OPSD When2Heat file/checksum is
+now recorded as proposed D-003 evidence, and the HP loader can parse the real
+CSV dialect. No real paired-weather cold-spell acceptance evidence exists yet,
+and D-003 is not PI-signed.
 
 ## Scope Boundary
 
 - Implemented only E2.S3 heat-pump data/model support.
 - Did not implement PV, KNMI/PVGIS weather retrieval, net-load integration, congestion/event analysis, or EV adequacy.
-- D-003 remains proposed. The prepared source-selection workflow proposes OPSD
-  package `2023-07-27`, file `when2heat.csv` (listed by OPSD as 313 MB), and
-  documents the checksum workflow in
-  `reports/e2_s3_d003_source_readiness.md`. No concrete file checksum is
-  selected in this PR stack.
+- D-003 remains proposed. OPSD package `2023-07-27`, file `when2heat.csv`, is
+  recorded with concrete checksum metadata in
+  `data/metadata/when2heat/d003_when2heat_csv_metadata.json`; PI review and
+  sign-off remain pending.
 - Coordinated against the C.PV/weather branch `agent-c/E2.S4-pv-weather-inputs`
   at `74e686b`, which defines a paired weather member with temperature,
   irradiance, UTC/local timestamps, source, metadata, and
@@ -21,7 +21,10 @@ evidence exists yet.
 ## Implementation
 
 - `data/get_when2heat.py` now records OPSD When2Heat 2023-07-27 metadata by default, writes a no-download D-003 source-selection plan, and supports opt-in retrieval/checksum metadata for `datapackage`, `csv`, or `zip` files.
-- `src/hp_model.py` loads selected When2Heat hourly heat-demand/COP components, converts normalized heat profiles from MW/TWh to thermal kW with an explicit annual TWh scale, divides each component by its matching COP, and aggregates electric kW.
+- `src/hp_model.py` loads selected When2Heat hourly heat-demand/COP components from the real OPSD single-index CSV dialect (`;` delimiter, comma decimals), converts normalized heat profiles from MW/TWh to thermal kW with an explicit annual TWh scale, divides each component by its matching COP, and aggregates electric kW.
+- The loader records source metadata for the CSV dialect, timestamp columns,
+  selected heat/COP columns, units, row count loaded, and first/last UTC/local
+  timestamp values so later HP/PV audit has the D-003 source context.
 - Hourly data are downscaled to 15 minutes by zero-order hold. Because values are average power, repeating each hourly value four times preserves energy exactly.
 - The final heat-pump profile must align exactly to the externally supplied
   shared weather/PV member on a 15-minute UTC calendar. The model requires and
@@ -37,11 +40,10 @@ evidence exists yet.
 
 ## Cold-Week Sanity
 
-`cold_week_sanity_check` identifies the coldest rolling seven-day temperature window and reports whether maximum HP electric demand falls inside it. The committed test uses a synthetic design-cold week and verifies the peak coincides with the cold spell. This is scaffold evidence only; a real D-003/KNMI paired-weather cold-week check remains pending concrete weather and When2Heat file selection.
+`cold_week_sanity_check` identifies the coldest rolling seven-day temperature window and reports whether maximum HP electric demand falls inside it. The committed test uses a synthetic design-cold week and verifies the peak coincides with the cold spell. This is scaffold evidence only; a real D-003/shared-weather paired cold-week check remains pending Q-8/shared weather contract resolution and PI-reviewed source assumptions.
 
 ## Verification
 
-- Focused tests cover metadata-only and checksum retrieval paths without internet access, component-wise COP conversion, hourly-to-15-minute energy preservation, exact shared-weather/calendar alignment, preservation of audit identity fields including PV weather field names, rejection of temperature-only weather objects, and the cold-week sanity diagnostic.
-- `.\.venv\Scripts\python.exe -m pytest tests\test_hp_model.py tests\test_data_sources.py::test_data_entrypoints_run_directly tests\test_methods_registry.py` passed 15 tests after the shared-weather compatibility and D-003 source-readiness revisions.
-- Final `.\scripts\task.ps1 ownership` and `.\scripts\task.ps1 test` results are recorded in the PR #47 validation section.
+- Focused tests cover metadata-only and checksum retrieval paths without internet access, real When2Heat CSV dialect parsing via small fixtures, optional three-row local raw-file sampling when the ignored D-003 CSV is present, component-wise COP conversion, hourly-to-15-minute energy preservation, exact shared-weather/calendar alignment, preservation of audit identity fields including PV weather field names, rejection of temperature-only weather objects, and the cold-week sanity diagnostic.
+- Final `.\scripts\task.ps1 ownership` and `.\scripts\task.ps1 test` results are recorded in the PR validation section for this follow-up branch.
 - This report contains no manuscript result, no congestion probability, and no signed data-source claim.
