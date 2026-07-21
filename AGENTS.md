@@ -17,6 +17,7 @@ Bootstrap rules:
 - Never share one working directory across agents, and never `git switch` to another agent's branch inside a role worktree.
 - Use the project `.venv` in your assigned worktree; never install or run project dependencies from Anaconda `base`.
 - Use `scripts/task.ps1`; it selects `.venv` and sets `NUMBA_CACHE_DIR=.tmp/numba_cache` for pandapower/numba imports.
+- In Codex shell calls, use non-login PowerShell (`login:false`) for project commands so user shell-profile hooks such as Anaconda initialization do not run. If a login shell prints an Anaconda hook traceback before a command, treat it as environment noise only when the actual project command ran through `.venv`/`scripts/task.ps1` and exited successfully; otherwise diagnose the command failure.
 - Use one task ID from `actionable_project_plan_agentic.md` per session.
 - Work only in your owned paths.
 - Before editing, preflight the intended paths with `scripts/task.ps1 ownership -Paths path/one.py,path/two.py`; use repository-relative paths.
@@ -31,6 +32,7 @@ Bootstrap rules:
 - Add a succinct why-comment for non-obvious mathematical, physical, numerical, or governance logic where removing or simplifying it could silently change results. State the invariant or failure mode; do not narrate self-explanatory code.
 - Every new or changed decision, assumption, or data/protocol choice must add or update the same-ID standalone manuscript paragraph in `paper/methods_decisions_and_assumptions.md`. Preserve the register status in the prose; never write a proposed item as settled.
 - Write commit messages and PR titles/descriptions for human reviewers: concise, professional, specific about the outcome, and formatted according to the Git and PR protocol in `agent_instructions.md`. Do not submit raw agent narration or vague "update/fix work" summaries.
+- The PR `Summary` must be understandable without reading the diff: explain why the PR exists, what changes for the project, what it does not decide or claim, and what the reviewer should focus on.
 - Per G1-A1, model-error intervals are applied to loading trajectories before event detection; never widen probabilities after estimation or sample an interval error as if it were independent randomness.
 - Per G1-A2, compose relative grid error with additive Tier-1 endpoints as `(1-e_grid)*max(0,L_T1-e_minus)` and `(1+e_grid)*(L_T1+e_plus)`. A-013 numerical values remain proposed; never call 5% empirical or expert-signed.
 - Per ALEA-001, construct each aleatory sample on one common calendar, keep complete temporal paths, and drive HP/PV from the same paired weather member. Treat copulas or latent factors as evidence-triggered escalations, not defaults.
