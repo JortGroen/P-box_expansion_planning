@@ -6,6 +6,8 @@ from statistics import NormalDist
 import pytest
 
 from src.fuzzy import TrapezoidalFuzzyNumber
+from src.pbox import VertexUseMode, estimate_vertex_pbox
+from src.rng import sample_seed
 
 
 def _gaussian_tail_probability(
@@ -56,6 +58,48 @@ def test_gaussian_crosscheck_known_synthetic_tail_values_are_stable() -> None:
     )
 
 
+def test_gaussian_crosscheck_exercises_vertex_pbox_against_closed_form() -> None:
+    fuzzy = TrapezoidalFuzzyNumber(0.0, 0.25, 0.75, 1.0)
+    alpha_grid = [0.0, 0.5, 1.0]
+    sample_count = 4096
+    root_seed = 20260721
+    params = {"mu_0": 1.0, "beta": 0.4, "sigma": 0.2, "threshold": 1.1}
+    seed_to_index = {
+        sample_seed(root_seed, sample_index): sample_index
+        for sample_index in range(sample_count)
+    }
+    normal = NormalDist()
+
+    def evaluator(rho: float, seed: int) -> bool:
+        sample_index = seed_to_index[seed]
+        quantile = (sample_index + 0.5) / sample_count
+        z_value = normal.inv_cdf(quantile)
+        loading = params["mu_0"] - params["beta"] * rho + params["sigma"] * z_value
+        return loading > params["threshold"]
+
+    pbox = estimate_vertex_pbox(
+        fuzzy_number=fuzzy,
+        alpha_grid=alpha_grid,
+        sample_count=sample_count,
+        root_seed=root_seed,
+        evaluator=evaluator,
+        use_mode=VertexUseMode.PRE_G3_SYNTHETIC,
+    )
+
+    for alpha, result in pbox.items():
+        expected_lower = _gaussian_tail_probability(
+            rho=fuzzy.alpha_cut(alpha).upper,
+            **params,
+        )
+        expected_upper = _gaussian_tail_probability(
+            rho=fuzzy.alpha_cut(alpha).lower,
+            **params,
+        )
+        assert abs(result.lower.probability - expected_lower) < 0.01
+        assert abs(result.upper.probability - expected_upper) < 0.01
+        assert result.lower.probability <= result.upper.probability
+
+
 def test_crosscheck_report_records_scaffold_only_guardrails() -> None:
     report = Path("reports/crosscheck.md").read_text(encoding="utf-8")
 
@@ -66,6 +110,7 @@ def test_crosscheck_report_records_scaffold_only_guardrails() -> None:
         "1 - Phi",
         "absolute error below 0.01",
         "Baudrit-style hybrid propagation",
+        "executable synthetic scaffold",
         "no scalar defuzzified probability",
         "G3 remains pending",
         "Q-5 remains open",
