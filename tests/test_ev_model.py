@@ -25,6 +25,7 @@ from src.ev_model import (
     national_outlook_projections,
     node_charge_point_ranges,
     parse_elaad_profile_response,
+    proposed_local_charge_point_counts,
     save_processed_batch_npz,
     validate_adoption_scenarios_config,
 )
@@ -336,6 +337,50 @@ def _adoption_config() -> dict:
                 },
             }
         ],
+        "local_count_workflow": {
+            "status": "proposed_not_pi_signed",
+            "option": "EV-007 Option A",
+            "selected_cluster": {
+                "area_type": "municipalities",
+                "area_identifier": "GM1705",
+                "selection_status": "proposed_not_pi_signed",
+            },
+            "metadata": {
+                "path": "data/metadata/ev_adoption/example.json",
+                "sha256": "b" * 64,
+            },
+            "neighborhood_filter_attempt": {
+                "query": "/filters/municipalities/neighborhoods/GM1705",
+                "result": "failed_http_500",
+            },
+            "proposed_2035_counts": [
+                {
+                    "year": 2035,
+                    "scenario": scenario,
+                    "location": location,
+                    "value": float(value),
+                    "rounded_count": value,
+                    "status": "proposed_not_pi_signed",
+                    "provenance": {
+                        "source_id": "D-010",
+                        "source_type": "local_outlook_cluster",
+                        "area_type": "municipalities",
+                        "area_identifier": "GM1705",
+                        "query": (
+                            "/charging_infrastructure?area_type=municipalities"
+                            f"&area_identifier=GM1705&scenario={scenario}&location={location}"
+                        ),
+                        "response_sha256": "c" * 64,
+                    },
+                }
+                for scenario, home_value, public_value in (
+                    ("low", 8, 1),
+                    ("middle", 9, 2),
+                    ("high", 10, 3),
+                )
+                for location, value in (("home", home_value), ("public", public_value))
+            ],
+        },
         "allocation": {
             "status": "approved",
             "method_id": "A-014",
@@ -391,8 +436,21 @@ def test_adoption_config_validates_schema_and_provenance() -> None:
 def test_committed_adoption_scenarios_config_validates() -> None:
     config = load_adoption_scenarios_config(Path("configs/scenarios.yaml"))
     national = national_outlook_projections(config)
+    proposed_local = proposed_local_charge_point_counts(config)
+    import hashlib
+
+    metadata = config["local_count_workflow"]["metadata"]
+    metadata_path = Path(metadata["path"])
+    metadata_text = metadata_path.read_text(encoding="utf-8").replace("\r\n", "\n")
+    metadata_sha256 = hashlib.sha256(metadata_text.encode("utf-8")).hexdigest()
 
     assert len(national) == 18
+    assert len(proposed_local) == 6
+    assert metadata_sha256 == metadata["sha256"]
+    assert {item.location for item in proposed_local} == {"home", "public"}
+    assert {item.status for item in proposed_local} == {"proposed_not_pi_signed"}
+    assert all(item.area_identifier == "GM1705" for item in proposed_local)
+    assert any(item.scenario == "middle" and item.location == "home" and item.rounded_count == 8418 for item in proposed_local)
     assert config["local_grid_scenarios"]["status"] == "pending_local_cluster_selection"
     assert config["allocation"]["status"] == "approved_after_local_totals"
     with pytest.raises(ValueError, match="require EV-007 local totals"):
@@ -438,6 +496,32 @@ def test_national_projections_cannot_flow_into_local_allocation() -> None:
     config["local_grid_scenarios"]["scenarios"][0]["provenance"]["home_charge_points"] = "D-010"
 
     with pytest.raises(ValueError, match="National Outlook projections cannot be used directly"):
+        validate_adoption_scenarios_config(config)
+
+
+def test_proposed_local_counts_are_not_executable_adoption_scenarios() -> None:
+    config = _adoption_config()
+    config["local_grid_scenarios"]["status"] = "blocked"
+    config["local_grid_scenarios"]["scenarios"] = []
+
+    proposed = proposed_local_charge_point_counts(config)
+
+    assert [item.rounded_count for item in proposed if item.location == "home"] == [8, 9, 10]
+    with pytest.raises(ValueError, match="require EV-007 local totals"):
+        adoption_scenarios(config)
+
+
+def test_proposed_local_count_workflow_rejects_country_queries_and_bad_status() -> None:
+    config = _adoption_config()
+    config["local_count_workflow"]["proposed_2035_counts"][0]["provenance"]["query"] = (
+        "/charging_infrastructure?area_type=country&scenario=low&location=home"
+    )
+    with pytest.raises(ValueError, match="National Outlook projections cannot be used"):
+        validate_adoption_scenarios_config(config)
+
+    config = _adoption_config()
+    config["local_count_workflow"]["status"] = "approved"
+    with pytest.raises(ValueError, match="proposed_not_pi_signed"):
         validate_adoption_scenarios_config(config)
 
 
