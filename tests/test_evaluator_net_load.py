@@ -4,6 +4,7 @@ import numpy as np
 import pytest
 
 from src.contracts.net_load import (
+    AdapterBackedNetLoadProvider,
     ComponentAdapterOutput,
     ComponentProvenance,
     DEFAULT_REALIZATION_COMPONENTS,
@@ -189,6 +190,65 @@ class _SyntheticNetLoadProvider:
             ],
             metadata={"scenario": scenario, "year": year, "rho": rho, "seed": seed},
         )
+
+
+class _SyntheticComponentAdapter:
+    def __init__(
+        self,
+        *,
+        kind: str,
+        node_id: str,
+        p_kw: list[float],
+        component_id: str | None = None,
+        weather_id: str | None = None,
+        timestamps: np.ndarray | None = None,
+    ) -> None:
+        self.kind = kind
+        self.node_id = node_id
+        self.p_kw = p_kw
+        self.component_id = component_id or f"{kind}-{node_id}"
+        self.weather_id = weather_id
+        self.timestamps = timestamps
+
+    def get_component_outputs(self, context, node_ids) -> list[ComponentAdapterOutput]:
+        if self.node_id not in node_ids:
+            raise ValueError("synthetic adapter node_id must appear in node_ids")
+        weather_id = self.weather_id
+        if self.kind in {"hp", "pv"} and weather_id is None:
+            weather_id = context.shared_weather_driver_id
+        # Member IDs derive from the context to prove the provider passes one
+        # auditable sample identity to every adapter without changing IC-1.
+        return [
+            _adapter_output(
+                context,
+                self.component_id,
+                self.kind,
+                self.p_kw,
+                node_id=self.node_id,
+                member_id=f"{self.kind}-member-{context.root_seed}",
+                source_id=f"synthetic-{self.kind}-smoke",
+                shared_weather_driver_id=weather_id,
+                timestamps=self.timestamps,
+            )
+        ]
+
+
+def _smoke_provider(*, weather_id: str | None = None, timestamps: np.ndarray | None = None) -> AdapterBackedNetLoadProvider:
+    plan = NetLoadAssemblyPlan(node_ids=("node-a", "node-b"), metadata={"node_mapping": "smoke-v1"})
+    return AdapterBackedNetLoadProvider(
+        plan=plan,
+        adapters=(
+            _SyntheticComponentAdapter(kind="baseline", node_id="node-a", p_kw=[10.0, 11.0, 12.0, 13.0]),
+            _SyntheticComponentAdapter(kind="ev", node_id="node-a", p_kw=[1.0, 2.0, 3.0, 4.0]),
+            _SyntheticComponentAdapter(kind="hp", node_id="node-b", p_kw=[4.0, 5.0, 6.0, 7.0], weather_id=weather_id),
+            _SyntheticComponentAdapter(kind="pv", node_id="node-b", p_kw=[0.0, -2.0, -3.0, 0.0], weather_id=weather_id),
+            _SyntheticComponentAdapter(kind="adoption", node_id="node-a", p_kw=[0.0, 0.0, 0.0, 0.0]),
+            _SyntheticComponentAdapter(kind="flexibility", node_id="node-a", p_kw=[-0.2, -0.2, 0.0, 0.0], timestamps=timestamps),
+        ),
+        calendar_metadata={"calendar_id": "smoke-2035-15min"},
+        mapping_version_metadata={"node_mapping_version": "smoke-v1"},
+        metadata={"scaffold_only": True},
+    )
 
 
 def test_same_synthetic_inputs_give_deterministic_output() -> None:
@@ -679,3 +739,56 @@ def test_component_adapter_boundary_rejects_shared_non_context_weather_id() -> N
 
     with pytest.raises(ValueError, match="context shared_weather_driver_id"):
         assemble_net_load_from_adapter_outputs(plan, context, outputs)
+
+
+def test_adapter_backed_provider_smoke_harness_is_deterministic_for_same_seed() -> None:
+    provider: NetLoadProvider = _smoke_provider()
+
+    first = provider.get_net_load("smoke", 2035, "full_year", rho=0.25, seed=9001)
+    second = provider.get_net_load("smoke", 2035, "full_year", rho=0.25, seed=9001)
+    different_seed = provider.get_net_load("smoke", 2035, "full_year", rho=0.25, seed=9002)
+
+    np.testing.assert_array_equal(first.p_net_kw, second.p_net_kw)
+    np.testing.assert_array_equal(first.q_net_kvar, second.q_net_kvar)
+    np.testing.assert_array_equal(first.timestamps, second.timestamps)
+    assert first.component_provenance == second.component_provenance
+    assert first.metadata["provider"] == "adapter_backed_smoke_harness"
+    assert first.metadata["scaffold_only"] is True
+    assert first.metadata["realization_context"]["aleatory_identity"]["root_seed"] == 9001
+    assert first.metadata["realization_context"]["aleatory_identity"] != different_seed.metadata["realization_context"]["aleatory_identity"]
+
+
+def test_adapter_backed_provider_smoke_harness_preserves_calendar_and_provenance() -> None:
+    result = _smoke_provider().get_net_load("smoke", 2035, "full_year", rho=0.25, seed=9001)
+
+    assert result.node_ids == ("node-a", "node-b")
+    np.testing.assert_array_equal(result.timestamps, _calendar())
+    assert {item.kind for item in result.component_provenance} == set(DEFAULT_REALIZATION_COMPONENTS)
+    assert {item.member_id for item in result.component_provenance if item.kind == "ev"} == {"ev-member-9001"}
+    ev_provenance = next(item for item in result.component_provenance if item.kind == "ev")
+    assert ev_provenance.source_id == "synthetic-ev-smoke"
+    assert ev_provenance.metadata["realization_stream_id"].startswith("sample_0:ev:seed_")
+    np.testing.assert_array_equal(
+        result.p_net_kw,
+        np.array(
+            [
+                [10.8, 12.8, 15.0, 17.0],
+                [4.0, 3.0, 3.0, 7.0],
+            ]
+        ),
+    )
+
+
+def test_adapter_backed_provider_smoke_harness_rejects_calendar_mismatch() -> None:
+    shifted = _calendar() + np.timedelta64(15, "m")
+    provider = _smoke_provider(timestamps=shifted)
+
+    with pytest.raises(ValueError, match="same 15-minute calendar"):
+        provider.get_net_load("smoke", 2035, "full_year", rho=0.25, seed=9001)
+
+
+def test_adapter_backed_provider_smoke_harness_enforces_context_weather_identity() -> None:
+    provider = _smoke_provider(weather_id="same-but-not-context")
+
+    with pytest.raises(ValueError, match="context shared_weather_driver_id"):
+        provider.get_net_load("smoke", 2035, "full_year", rho=0.25, seed=9001)
