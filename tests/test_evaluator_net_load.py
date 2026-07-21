@@ -4,15 +4,18 @@ import numpy as np
 import pytest
 
 from src.contracts.net_load import (
+    ComponentAdapterOutput,
     ComponentProvenance,
     DEFAULT_REALIZATION_COMPONENTS,
     NetLoadAssemblyPlan,
     NetLoadComponent,
     NetLoadProvider,
     NetLoadResult,
+    assemble_net_load_from_adapter_outputs,
     assemble_net_load_from_components,
     build_realization_context,
     build_net_load_result,
+    net_load_component_from_adapter_output,
     validate_net_load_result,
 )
 from src.contracts.loading_trajectory import TimeDomain
@@ -65,6 +68,79 @@ def _integration_components() -> list[NetLoadComponent]:
         _component("pv-b", "pv", [0.0, -2.0, -3.0, 0.0], node_id="node-b", member_id="pv-3", shared_weather_driver_id="weather-1"),
         _component("adoption-a", "adoption", [0.5, 0.5, 0.5, 0.5], node_id="node-a", member_id="adoption-2035"),
         _component("flex-a", "flexibility", [-0.2, -0.2, 0.0, 0.0], node_id="node-a", member_id="rho-0.5"),
+    ]
+
+
+def _realization_context():
+    return build_realization_context(
+        scenario="scenario-a",
+        year=2035,
+        time_domain="full_year",
+        rho=0.5,
+        seed=7001,
+        calendar_metadata={"calendar_id": "synthetic-2035-15min"},
+        mapping_version_metadata={"node_mapping_version": "synthetic-v1"},
+    )
+
+
+def _stream_id(context, component: str) -> str:
+    return next(stream.stream_id for stream in context.component_streams if stream.component == component)
+
+
+def _adapter_output(
+    context,
+    component_id: str,
+    kind: str,
+    p_kw: list[float],
+    *,
+    node_id: str = "node-a",
+    q_kvar: list[float] | None = None,
+    member_id: str | None = None,
+    source_id: str | None = None,
+    shared_weather_driver_id: str | None = None,
+    timestamps: np.ndarray | None = None,
+    stream_id: str | None = None,
+) -> ComponentAdapterOutput:
+    return ComponentAdapterOutput(
+        component_id=component_id,
+        kind=kind,
+        node_id=node_id,
+        p_kw=np.array(p_kw, dtype=float),
+        q_kvar=np.zeros(4, dtype=float) if q_kvar is None else np.array(q_kvar, dtype=float),
+        timestamps=_calendar() if timestamps is None else timestamps,
+        member_id=member_id or f"{kind}-member",
+        source_id=source_id or f"synthetic-{kind}-adapter",
+        stream_id=stream_id or _stream_id(context, kind),
+        shared_weather_driver_id=shared_weather_driver_id,
+        metadata={"adapter": "synthetic"},
+    )
+
+
+def _adapter_outputs(context) -> list[ComponentAdapterOutput]:
+    weather_id = context.shared_weather_driver_id
+    return [
+        _adapter_output(context, "baseline-a", "baseline", [10.0, 11.0, 12.0, 13.0], member_id="base-1"),
+        _adapter_output(context, "ev-a", "ev", [1.0, 2.0, 3.0, 4.0], member_id="ev-1"),
+        _adapter_output(
+            context,
+            "hp-b",
+            "hp",
+            [4.0, 5.0, 6.0, 7.0],
+            node_id="node-b",
+            member_id="hp-1",
+            shared_weather_driver_id=weather_id,
+        ),
+        _adapter_output(
+            context,
+            "pv-b",
+            "pv",
+            [0.0, -2.0, -3.0, 0.0],
+            node_id="node-b",
+            member_id="pv-1",
+            shared_weather_driver_id=weather_id,
+        ),
+        _adapter_output(context, "adoption-a", "adoption", [0.0, 0.0, 0.0, 0.0], member_id="adoption-1"),
+        _adapter_output(context, "flex-a", "flexibility", [-0.2, -0.2, 0.0, 0.0], member_id="rho-0.5"),
     ]
 
 
@@ -456,3 +532,150 @@ def test_integration_harness_rejects_calendar_and_weather_mismatches() -> None:
     )
     with pytest.raises(ValueError, match="HP and PV components must share"):
         assemble_net_load_from_components(plan, components)
+
+
+def test_component_adapter_output_converts_through_realization_context() -> None:
+    context = _realization_context()
+    output = _adapter_output(
+        context,
+        "ev-a",
+        "ev",
+        [1.0, 2.0, 3.0, 4.0],
+        member_id="ev-member-1",
+        source_id="EV-004-synthetic",
+    )
+
+    component = net_load_component_from_adapter_output(output, context)
+
+    assert component.provenance.component_id == "ev-a"
+    assert component.provenance.kind == "ev"
+    assert component.provenance.member_id == "ev-member-1"
+    assert component.provenance.source_id == "EV-004-synthetic"
+    assert component.provenance.metadata["realization_stream_id"] == _stream_id(context, "ev")
+    assert isinstance(component.provenance.metadata["realization_component_seed"], int)
+    np.testing.assert_array_equal(component.p_kw, np.array([1.0, 2.0, 3.0, 4.0]))
+
+
+def test_component_adapter_boundary_assembles_synthetic_components_deterministically() -> None:
+    context = _realization_context()
+    plan = NetLoadAssemblyPlan(node_ids=("node-b", "node-a"), metadata={"mapping": "synthetic-v1"})
+
+    first = assemble_net_load_from_adapter_outputs(
+        plan,
+        context,
+        _adapter_outputs(context),
+        metadata={"scaffold_only": True},
+    )
+    second = assemble_net_load_from_adapter_outputs(
+        plan,
+        context,
+        _adapter_outputs(context),
+        metadata={"scaffold_only": True},
+    )
+
+    np.testing.assert_array_equal(first.p_net_kw, second.p_net_kw)
+    np.testing.assert_array_equal(first.q_net_kvar, second.q_net_kvar)
+    assert first.metadata["assembly"] == "component_adapter_boundary_scaffold"
+    assert first.metadata["scaffold_only"] is True
+    assert first.metadata["realization_context"]["aleatory_identity"] == context.aleatory_identity()
+    assert first.shared_weather_driver_ids == (context.shared_weather_driver_id,)
+    assert {item.kind for item in first.component_provenance} == set(DEFAULT_REALIZATION_COMPONENTS)
+    np.testing.assert_array_equal(
+        first.p_net_kw,
+        np.array(
+            [
+                [4.0, 3.0, 3.0, 7.0],
+                [10.8, 12.8, 15.0, 17.0],
+            ]
+        ),
+    )
+
+
+def test_component_adapter_boundary_rejects_wrong_context_stream() -> None:
+    context = _realization_context()
+    other_context = build_realization_context(
+        scenario="scenario-a",
+        year=2035,
+        time_domain="full_year",
+        rho=0.5,
+        seed=7002,
+    )
+    output = _adapter_output(
+        context,
+        "ev-a",
+        "ev",
+        [1.0, 2.0, 3.0, 4.0],
+        stream_id=_stream_id(other_context, "ev"),
+    )
+
+    with pytest.raises(ValueError, match="stream_id must match"):
+        net_load_component_from_adapter_output(output, context)
+
+
+def test_component_adapter_boundary_rejects_unknown_or_duplicate_outputs() -> None:
+    context = _realization_context()
+    plan = NetLoadAssemblyPlan(node_ids=("node-a", "node-b"))
+
+    with pytest.raises(ValueError, match="matching realization component stream"):
+        net_load_component_from_adapter_output(
+            _adapter_output(context, "other-a", "other", [1.0, 1.0, 1.0, 1.0], stream_id="other-stream"),
+            context,
+        )
+
+    outputs = _adapter_outputs(context)
+    outputs[1] = _adapter_output(context, "baseline-a", "ev", [1.0, 2.0, 3.0, 4.0])
+    with pytest.raises(ValueError, match="component_id values must be unique"):
+        assemble_net_load_from_adapter_outputs(plan, context, outputs)
+
+
+def test_component_adapter_boundary_preserves_calendar_node_and_weather_failures() -> None:
+    context = _realization_context()
+    plan = NetLoadAssemblyPlan(node_ids=("node-a", "node-b"))
+    shifted = _calendar() + np.timedelta64(15, "m")
+    outputs = _adapter_outputs(context)
+    outputs[1] = _adapter_output(context, "ev-shifted", "ev", [1.0, 2.0, 3.0, 4.0], timestamps=shifted)
+
+    with pytest.raises(ValueError, match="same 15-minute calendar"):
+        assemble_net_load_from_adapter_outputs(plan, context, outputs)
+
+    outputs = _adapter_outputs(context)
+    outputs[0] = _adapter_output(context, "baseline-z", "baseline", [1.0, 1.0, 1.0, 1.0], node_id="node-z")
+    with pytest.raises(ValueError, match="component node_id must appear"):
+        assemble_net_load_from_adapter_outputs(plan, context, outputs)
+
+    outputs = _adapter_outputs(context)
+    outputs[3] = _adapter_output(
+        context,
+        "pv-b",
+        "pv",
+        [0.0, -2.0, -3.0, 0.0],
+        node_id="node-b",
+        shared_weather_driver_id="different-weather",
+    )
+    with pytest.raises(ValueError, match="context shared_weather_driver_id"):
+        assemble_net_load_from_adapter_outputs(plan, context, outputs)
+
+
+def test_component_adapter_boundary_rejects_shared_non_context_weather_id() -> None:
+    context = _realization_context()
+    plan = NetLoadAssemblyPlan(node_ids=("node-a", "node-b"))
+    outputs = _adapter_outputs(context)
+    outputs[2] = _adapter_output(
+        context,
+        "hp-b",
+        "hp",
+        [4.0, 5.0, 6.0, 7.0],
+        node_id="node-b",
+        shared_weather_driver_id="same-but-not-context",
+    )
+    outputs[3] = _adapter_output(
+        context,
+        "pv-b",
+        "pv",
+        [0.0, -2.0, -3.0, 0.0],
+        node_id="node-b",
+        shared_weather_driver_id="same-but-not-context",
+    )
+
+    with pytest.raises(ValueError, match="context shared_weather_driver_id"):
+        assemble_net_load_from_adapter_outputs(plan, context, outputs)

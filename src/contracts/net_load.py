@@ -191,6 +191,54 @@ class NetLoadAssemblyPlan:
 
 
 @dataclass(frozen=True)
+class ComponentAdapterOutput:
+    """Normalized output from a future E2 component adapter.
+
+    Real baseline, EV, HP, PV, adoption, and flexibility implementations can
+    emit this narrow payload before IC-1 converts it into a ``NetLoadComponent``.
+    The scaffold intentionally carries trajectories and provenance only.
+    """
+
+    component_id: str
+    kind: ComponentKind
+    node_id: str
+    p_kw: np.ndarray
+    q_kvar: np.ndarray
+    timestamps: np.ndarray
+    member_id: str
+    source_id: str
+    stream_id: str
+    shared_weather_driver_id: str | None = None
+    metadata: Mapping[str, object] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        component_id = _require_nonempty(self.component_id, name="component_id")
+        node_id = _require_nonempty(self.node_id, name="node_id")
+        member_id = _require_nonempty(self.member_id, name="member_id")
+        source_id = _require_nonempty(self.source_id, name="source_id")
+        stream_id = _require_nonempty(self.stream_id, name="stream_id")
+        if self.kind not in _VALID_COMPONENT_KINDS:
+            raise ValueError("kind must be a valid net-load component kind")
+        p_kw = _as_power_vector(self.p_kw, name="p_kw")
+        q_kvar = _as_power_vector(self.q_kvar, name="q_kvar")
+        timestamps = _as_15_minute_calendar(self.timestamps)
+        if p_kw.shape != timestamps.shape or q_kvar.shape != timestamps.shape:
+            raise ValueError("adapter trajectories and timestamps must have identical shapes")
+        if self.shared_weather_driver_id is not None:
+            _require_nonempty(self.shared_weather_driver_id, name="shared_weather_driver_id")
+        _validate_nonempty_mapping_values(self.metadata, name="metadata")
+        object.__setattr__(self, "component_id", component_id)
+        object.__setattr__(self, "node_id", node_id)
+        object.__setattr__(self, "member_id", member_id)
+        object.__setattr__(self, "source_id", source_id)
+        object.__setattr__(self, "stream_id", stream_id)
+        object.__setattr__(self, "p_kw", p_kw)
+        object.__setattr__(self, "q_kvar", q_kvar)
+        object.__setattr__(self, "timestamps", timestamps)
+        object.__setattr__(self, "metadata", MappingProxyType(dict(self.metadata)))
+
+
+@dataclass(frozen=True)
 class NetLoadComponent:
     """One complete component trajectory before IC-1 aggregation.
 
@@ -287,6 +335,17 @@ class NetLoadProvider(Protocol):
         """Return one deterministic, traceable net-load realization."""
 
 
+class NetLoadComponentAdapter(Protocol):
+    """Structural boundary for future real E2 component adapters."""
+
+    def get_component_outputs(
+        self,
+        context: NetLoadRealizationContext,
+        node_ids: Sequence[str],
+    ) -> Sequence[ComponentAdapterOutput]:
+        """Return complete component trajectories for one IC-1 realization."""
+
+
 def build_realization_context(
     *,
     scenario: str,
@@ -340,6 +399,83 @@ def build_realization_context(
         mapping_version_metadata={} if mapping_version_metadata is None else mapping_version_metadata,
         component_member_placeholders=placeholders,
     )
+
+
+def net_load_component_from_adapter_output(
+    output: ComponentAdapterOutput,
+    context: NetLoadRealizationContext,
+) -> NetLoadComponent:
+    """Convert one normalized adapter output into an IC-1 component."""
+
+    stream_by_component = _component_streams_by_name(context)
+    if output.kind not in stream_by_component:
+        raise ValueError("adapter output kind must have a matching realization component stream")
+    expected_stream = stream_by_component[output.kind]
+    # The stream check keeps future source-member choices tied to the manifest
+    # context; otherwise a component could be replayed under the wrong CRN seed.
+    if output.stream_id != expected_stream.stream_id:
+        raise ValueError("adapter output stream_id must match the realization context")
+    # ALEA-001 makes the context's paired weather member part of the sample
+    # identity; HP/PV may not substitute a different shared-but-wrong driver.
+    if (
+        output.kind in {"hp", "pv"}
+        and output.shared_weather_driver_id != context.shared_weather_driver_id
+    ):
+        raise ValueError("weather-dependent adapter outputs must use the context shared_weather_driver_id")
+
+    provenance_metadata = dict(output.metadata)
+    provenance_metadata.update(
+        {
+            "realization_stream_id": expected_stream.stream_id,
+            "realization_component_seed": expected_stream.seed,
+        }
+    )
+    return NetLoadComponent(
+        provenance=ComponentProvenance(
+            component_id=output.component_id,
+            kind=output.kind,
+            node_id=output.node_id,
+            member_id=output.member_id,
+            source_id=output.source_id,
+            shared_weather_driver_id=output.shared_weather_driver_id,
+            metadata=provenance_metadata,
+        ),
+        p_kw=output.p_kw,
+        q_kvar=output.q_kvar,
+        timestamps=output.timestamps,
+    )
+
+
+def assemble_net_load_from_adapter_outputs(
+    plan: NetLoadAssemblyPlan,
+    context: NetLoadRealizationContext,
+    adapter_outputs: Sequence[ComponentAdapterOutput],
+    *,
+    metadata: Mapping[str, object] | None = None,
+) -> NetLoadResult:
+    """Assemble IC-1 net load from future component-adapter outputs.
+
+    This scaffold defines the real-component join point while still using only
+    precomputed/synthetic adapter outputs. It performs no IC-2 evaluation,
+    threshold screening, adequacy check, or probability calculation.
+    """
+
+    if not adapter_outputs:
+        raise ValueError("adapter_outputs must not be empty")
+    component_ids = [output.component_id for output in adapter_outputs]
+    if len(set(component_ids)) != len(component_ids):
+        raise ValueError("adapter output component_id values must be unique")
+    components = tuple(
+        net_load_component_from_adapter_output(output, context)
+        for output in adapter_outputs
+    )
+    combined_metadata = {
+        "assembly": "component_adapter_boundary_scaffold",
+        "realization_context": context.manifest_metadata(),
+    }
+    if metadata is not None:
+        combined_metadata.update(metadata)
+    return assemble_net_load_from_components(plan, components, metadata=combined_metadata)
 
 
 def build_net_load_result(
@@ -466,6 +602,10 @@ def validate_net_load_result(result: NetLoadResult) -> None:
 
 
 _VALID_COMPONENT_KINDS = frozenset(ComponentKind.__args__)
+
+
+def _component_streams_by_name(context: NetLoadRealizationContext) -> dict[str, ComponentStream]:
+    return {stream.component: stream for stream in context.component_streams}
 
 
 def _as_power_vector(values: np.ndarray, *, name: str) -> np.ndarray:
