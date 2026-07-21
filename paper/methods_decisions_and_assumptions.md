@@ -793,26 +793,30 @@ prohibition of this research use stops profile use pending PI escalation.
 When2Heat dataset so heating behavior is tied to an openly documented empirical
 profile source rather than invented load shapes. Source retrieval, checksum,
 hourly-to-15-minute conversion, and COP treatment must be manifested before
-use. The implemented E2.S3 parser treats selected When2Heat heat-profile
-columns as average MW per annual TWh and requires the annual TWh scaling for
-each component to be passed explicitly, so adoption or building-stock volumes
-are not hidden as defaults. Each component is divided by its matching When2Heat
-COP column before aggregation, preserving distinct COP treatment for space and
-water heating where those columns are selected. Hourly source values are
-downscaled to 15 minutes by repeating the average-power value into four
-quarter-hour intervals, which preserves energy and does not interpolate new
-peaks. The resulting profile must match the externally supplied shared
-weather/PV member on the canonical 15-minute UTC calendar, preserving
-`shared_weather_driver_id`, `member_id`, source, optional local calendar, and
-provenance or metadata so HP and PV outputs can be audited as products of the
-same weather realization. The HP scaffold also rejects weather inputs that lack
-an aligned PV/irradiance weather field and records the PV weather field names
-in the heat-pump identity record; this is compatibility scaffolding for the
-future shared weather contract, not a final contract implementation. The heat-pump module does not sample weather
-independently or shuffle timesteps. Cold-period validation currently has only
-synthetic scaffold coverage; real D-003/paired-weather cold-spell acceptance
-remains pending concrete file selection, shared weather contract resolution,
-and PI review.
+use. The proposed concrete source file is OPSD When2Heat package version
+`2023-07-27`, single-index `when2heat.csv`, because that file contains the
+hourly heat-profile, heat-demand, and COP columns consumed by the E2.S3 loader
+without requiring the larger full archive. The implemented E2.S3 parser treats
+selected When2Heat heat-profile columns as average MW per annual TWh and
+requires the annual TWh scaling for each component to be passed explicitly, so
+adoption or building-stock volumes are not hidden as defaults. Each component
+is divided by its matching When2Heat COP column before aggregation, preserving
+distinct COP treatment for space and water heating where those columns are
+selected. Hourly source values are downscaled to 15 minutes by repeating the
+average-power value into four quarter-hour intervals, which preserves energy
+and does not interpolate new peaks. The resulting profile must match the
+externally supplied shared weather/PV member on the canonical 15-minute UTC
+calendar, preserving `shared_weather_driver_id`, `member_id`, source, optional
+local calendar, and provenance or metadata so HP and PV outputs can be audited
+as products of the same weather realization. The HP scaffold also rejects
+weather inputs that lack an aligned PV/irradiance weather field and records the
+PV weather field names in the heat-pump identity record; this is compatibility
+scaffolding for the future shared weather contract, not a final contract
+implementation. The heat-pump module does not sample weather independently or
+shuffle timesteps. Cold-period validation currently has only synthetic scaffold
+coverage; real D-003/paired-weather cold-spell acceptance remains pending
+concrete file checksum selection, shared weather contract resolution, and PI
+review.
 
 <!-- methods-id: D-004 -->
 ### D-004 - Weather and PV Inputs
