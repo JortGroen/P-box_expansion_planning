@@ -346,6 +346,65 @@ class NetLoadComponentAdapter(Protocol):
         """Return complete component trajectories for one IC-1 realization."""
 
 
+@dataclass(frozen=True)
+class AdapterBackedNetLoadProvider:
+    """Smoke-harness IC-1 provider backed by component adapters.
+
+    This is a scaffold for contract/integration tests: callers keep the public
+    ``get_net_load(...)`` signature while adapters receive the internal
+    ALEA-001 realization context.
+    """
+
+    plan: NetLoadAssemblyPlan
+    adapters: tuple[NetLoadComponentAdapter, ...]
+    calendar_metadata: Mapping[str, object] = field(default_factory=dict)
+    mapping_version_metadata: Mapping[str, object] = field(default_factory=dict)
+    metadata: Mapping[str, object] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        if not self.adapters:
+            raise ValueError("adapters must not be empty")
+        _validate_nonempty_mapping_values(self.calendar_metadata, name="calendar_metadata")
+        _validate_nonempty_mapping_values(self.mapping_version_metadata, name="mapping_version_metadata")
+        _validate_nonempty_mapping_values(self.metadata, name="metadata")
+        object.__setattr__(self, "adapters", tuple(self.adapters))
+        object.__setattr__(self, "calendar_metadata", MappingProxyType(dict(self.calendar_metadata)))
+        object.__setattr__(self, "mapping_version_metadata", MappingProxyType(dict(self.mapping_version_metadata)))
+        object.__setattr__(self, "metadata", MappingProxyType(dict(self.metadata)))
+
+    def get_net_load(
+        self,
+        scenario: str,
+        year: int,
+        time_domain: TimeDomain,
+        rho: float,
+        seed: int,
+    ) -> NetLoadResult:
+        """Return one deterministic synthetic adapter-backed IC-1 realization."""
+
+        context = build_realization_context(
+            scenario=scenario,
+            year=year,
+            time_domain=time_domain,
+            rho=rho,
+            seed=seed,
+            calendar_metadata=self.calendar_metadata,
+            mapping_version_metadata=self.mapping_version_metadata,
+        )
+        outputs: list[ComponentAdapterOutput] = []
+        for adapter in self.adapters:
+            outputs.extend(adapter.get_component_outputs(context, self.plan.node_ids))
+        # The provider smoke harness must not hide adapter omissions or extras:
+        # every output still passes through the same boundary real E2 adapters
+        # will use later.
+        return assemble_net_load_from_adapter_outputs(
+            self.plan,
+            context,
+            outputs,
+            metadata={"provider": "adapter_backed_smoke_harness", **dict(self.metadata)},
+        )
+
+
 def build_realization_context(
     *,
     scenario: str,
