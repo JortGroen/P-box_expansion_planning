@@ -15,7 +15,11 @@
   ],
   "maintainer_only_patterns": [
     "configs/agent_ownership.json",
-    "registers/OWNERSHIP_EXCEPTIONS.json"
+    "registers/OWNERSHIP_EXCEPTIONS.json",
+    "registers/STATUS.md",
+    "reports/AGENT_A_LOG.md",
+    "reports/AGENT_B_LOG.md",
+    "reports/AGENT_C_LOG.md"
   ],
   "shared_patterns": [
     "BACKLOG.md",
@@ -25,22 +29,21 @@
     "registers/DECISIONS.md",
     "registers/QUESTIONS.md",
     "registers/RISKS.md",
-    "registers/STATUS.md",
     "reports/**",
     "tests/__init__.py",
     "tests/conftest.py"
   ],
   "exclusive_rules": [
     {
-      "pattern": "reports/AGENT_A_LOG.md",
+      "pattern": "reports/agent_logs/agent-a/**",
       "owners": ["agent-a"]
     },
     {
-      "pattern": "reports/AGENT_B_LOG.md",
+      "pattern": "reports/agent_logs/agent-b/**",
       "owners": ["agent-b"]
     },
     {
-      "pattern": "reports/AGENT_C_LOG.md",
+      "pattern": "reports/agent_logs/agent-c/**",
       "owners": ["agent-c"]
     },
     {
