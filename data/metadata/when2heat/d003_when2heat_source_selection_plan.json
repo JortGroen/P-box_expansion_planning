@@ -1,7 +1,7 @@
 {
   "acceptance_blockers": [
     "Concrete when2heat.csv checksum is not selected.",
-    "Shared weather contract path remains unresolved until Q-7/maintainer action.",
+    "Shared weather contract path remains unresolved until PI/maintainer action.",
     "Real paired-weather cold-spell sanity evidence is not available."
   ],
   "alternatives_not_selected": {
@@ -26,12 +26,13 @@
   },
   "checksum_workflow": [
     "Request normal network approval before any real download.",
-    "Run data/get_when2heat.py --download csv so the file streams into data/raw/when2heat/when2heat.csv.tmp.",
-    "Compute SHA-256 while streaming and atomically replace data/raw/when2heat/when2heat.csv after completion.",
+    "Run data/get_when2heat.py --download csv --resume so the file streams into data/raw/when2heat/when2heat.csv.tmp.",
+    "Persist download checkpoint metadata under data/metadata/when2heat while streaming.",
+    "Compute SHA-256 after completion and atomically replace data/raw/when2heat/when2heat.csv.",
     "Record metadata at data/metadata/when2heat/d003_when2heat_csv_metadata.json.",
     "Update DATA_REGISTER D-003 only after a concrete local file/version/checksum is selected for PI review."
   ],
-  "created_utc": "2026-07-21T07:07:07Z",
+  "created_utc": "2026-07-21T08:55:28Z",
   "data_id": "D-003",
   "data_register_status": "proposed",
   "dataset_page": "https://data.open-power-system-data.org/when2heat/2023-07-27",

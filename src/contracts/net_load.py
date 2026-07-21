@@ -28,6 +28,16 @@ ComponentKind = Literal[
 ]
 
 
+REQUIRED_INTEGRATION_COMPONENT_KINDS: tuple[ComponentKind, ...] = (
+    "baseline",
+    "ev",
+    "hp",
+    "pv",
+    "adoption",
+    "flexibility",
+)
+
+
 @dataclass(frozen=True)
 class ComponentProvenance:
     """Traceable source identity for one net-load component trajectory."""
@@ -45,6 +55,35 @@ class ComponentProvenance:
         _require_nonempty(self.node_id, name="node_id")
         if self.kind not in _VALID_COMPONENT_KINDS:
             raise ValueError("kind must be a valid net-load component kind")
+        object.__setattr__(self, "metadata", MappingProxyType(dict(self.metadata)))
+
+
+@dataclass(frozen=True)
+class NetLoadAssemblyPlan:
+    """Synthetic IC-1 integration plan for wiring real E2 components later.
+
+    The plan records the output node order and required component families. It
+    carries no event threshold or congestion setting.
+    """
+
+    node_ids: tuple[str, ...]
+    required_component_kinds: tuple[ComponentKind, ...] = REQUIRED_INTEGRATION_COMPONENT_KINDS
+    metadata: Mapping[str, object] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        if not self.node_ids:
+            raise ValueError("node_ids must not be empty")
+        for node_id in self.node_ids:
+            _require_nonempty(node_id, name="node_id")
+        if len(set(self.node_ids)) != len(self.node_ids):
+            raise ValueError("node_ids must not contain duplicates")
+        if not self.required_component_kinds:
+            raise ValueError("required_component_kinds must not be empty")
+        for kind in self.required_component_kinds:
+            if kind not in _VALID_COMPONENT_KINDS:
+                raise ValueError("required_component_kinds must contain valid component kinds")
+        object.__setattr__(self, "node_ids", tuple(self.node_ids))
+        object.__setattr__(self, "required_component_kinds", tuple(self.required_component_kinds))
         object.__setattr__(self, "metadata", MappingProxyType(dict(self.metadata)))
 
 
@@ -194,6 +233,66 @@ def build_net_load_result(
     )
 
 
+def assemble_net_load_from_components(
+    plan: NetLoadAssemblyPlan,
+    components: Sequence[NetLoadComponent],
+    *,
+    metadata: Mapping[str, object] | None = None,
+) -> NetLoadResult:
+    """Assemble the synthetic IC-1 integration harness output.
+
+    This is the planned join point for baseline, EV, HP, PV, adoption, and
+    flexibility components. It validates the integration invariants and sums
+    P/Q by the plan's declared node order, but intentionally stops before IC-2
+    loading, threshold, event, or adequacy analysis.
+    """
+
+    if not components:
+        raise ValueError("components must not be empty")
+    _validate_required_components(plan, components)
+    node_index = {node_id: index for index, node_id in enumerate(plan.node_ids)}
+    for component in components:
+        if component.provenance.node_id not in node_index:
+            raise ValueError("component node_id must appear in the assembly plan node_ids")
+
+    reference_calendar = components[0].timestamps
+    for component in components[1:]:
+        if not np.array_equal(component.timestamps, reference_calendar):
+            raise ValueError("all components must use the same 15-minute calendar")
+    _validate_shared_weather_identity(components)
+
+    p_net_kw = np.zeros((len(plan.node_ids), reference_calendar.size), dtype=float)
+    q_net_kvar = np.zeros_like(p_net_kw)
+    for component in components:
+        row = node_index[component.provenance.node_id]
+        p_net_kw[row] += component.p_kw
+        q_net_kvar[row] += component.q_kvar
+
+    combined_metadata = dict(plan.metadata)
+    if metadata is not None:
+        combined_metadata.update(metadata)
+    combined_metadata.setdefault("assembly", "synthetic_ic1_harness")
+
+    weather_ids = tuple(
+        sorted(
+            {
+                component.provenance.shared_weather_driver_id
+                for component in components
+                if component.provenance.shared_weather_driver_id is not None
+            }
+        )
+    )
+    return NetLoadResult(
+        p_net_kw=p_net_kw,
+        q_net_kvar=q_net_kvar,
+        timestamps=reference_calendar,
+        node_ids=plan.node_ids,
+        component_provenance=tuple(component.provenance for component in components),
+        shared_weather_driver_ids=weather_ids,
+        metadata=combined_metadata,
+    )
+
+
 def validate_net_load_result(result: NetLoadResult) -> None:
     """Validate an IC-1 result and raise on contract violations."""
 
@@ -258,3 +357,13 @@ def _validate_shared_weather_identity(components: Sequence[NetLoadComponent]) ->
     # are present; accepting missing or divergent IDs would hide a broken sample.
     if None in ids or len(ids) != 1:
         raise ValueError("HP and PV components must share one shared_weather_driver_id")
+
+
+def _validate_required_components(
+    plan: NetLoadAssemblyPlan,
+    components: Sequence[NetLoadComponent],
+) -> None:
+    present = {component.provenance.kind for component in components}
+    missing = [kind for kind in plan.required_component_kinds if kind not in present]
+    if missing:
+        raise ValueError(f"missing required component kind(s): {', '.join(missing)}")

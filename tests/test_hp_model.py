@@ -2,9 +2,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import hashlib
 import json
 from pathlib import Path
+import threading
 from zoneinfo import ZoneInfo
 
 import numpy as np
@@ -133,6 +135,62 @@ def test_when2heat_retrieval_records_checksum_with_local_url(tmp_path: Path) -> 
     assert payload["sha256_file"] == hashlib.sha256(source.read_bytes()).hexdigest()
     assert payload["data_register_update_required"] is True
     assert payload["license"] == "Creative Commons Attribution 4.0"
+
+
+def test_when2heat_retrieval_resumes_with_checkpoint(tmp_path: Path) -> None:
+    content = b"when2heat-resume-test-content"
+
+    class RangeHandler(BaseHTTPRequestHandler):
+        def do_GET(self) -> None:  # noqa: N802 - stdlib handler API
+            start = 0
+            range_header = self.headers.get("Range")
+            if range_header:
+                start = int(range_header.removeprefix("bytes=").split("-", maxsplit=1)[0])
+                self.send_response(206)
+                self.send_header("Content-Range", f"bytes {start}-{len(content) - 1}/{len(content)}")
+            else:
+                self.send_response(200)
+            body = content[start:]
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+        def log_message(self, format: str, *args: object) -> None:
+            return
+
+    server = ThreadingHTTPServer(("127.0.0.1", 0), RangeHandler)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    raw_dir = tmp_path / "raw"
+    raw_dir.mkdir()
+    temp_path = raw_dir / f"{WHEN2HEAT_FILES['datapackage'].filename}.tmp"
+    temp_path.write_bytes(content[:10])
+
+    try:
+        metadata_path = retrieve_when2heat_file(
+            "datapackage",
+            raw_dir=raw_dir,
+            metadata_dir=tmp_path / "metadata",
+            url_override=f"http://127.0.0.1:{server.server_port}/datapackage.json",
+            resume=True,
+        )
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=5)
+
+    payload = json.loads(metadata_path.read_text(encoding="utf-8"))
+    checkpoint = json.loads(Path(payload["checkpoint_path"]).read_text(encoding="utf-8"))
+    raw_path = raw_dir / WHEN2HEAT_FILES["datapackage"].filename
+
+    assert raw_path.read_bytes() == content
+    assert payload["sha256_file"] == hashlib.sha256(content).hexdigest()
+    assert payload["resume"]["enabled"] is True
+    assert payload["resume"]["resumed_from_bytes"] == 10
+    assert payload["resume"]["server_range_status"] == "partial_content_206"
+    assert checkpoint["status"] == "complete"
+    assert checkpoint["bytes_downloaded"] == len(content)
+    assert checkpoint["partial_sha256"] == payload["sha256_file"]
 
 
 def test_load_when2heat_csv_uses_component_cop_columns(tmp_path: Path) -> None:

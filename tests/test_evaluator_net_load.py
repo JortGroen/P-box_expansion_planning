@@ -5,7 +5,9 @@ import pytest
 
 from src.contracts.net_load import (
     ComponentProvenance,
+    NetLoadAssemblyPlan,
     NetLoadComponent,
+    assemble_net_load_from_components,
     build_net_load_result,
     validate_net_load_result,
 )
@@ -48,6 +50,17 @@ def _component(
         q_kvar=np.zeros(4, dtype=float),
         timestamps=_calendar() if timestamps is None else timestamps,
     )
+
+
+def _integration_components() -> list[NetLoadComponent]:
+    return [
+        _component("base-a", "baseline", [10.0, 11.0, 12.0, 13.0], node_id="node-a", member_id="simbench-a"),
+        _component("ev-a", "ev", [1.0, 2.0, 3.0, 4.0], node_id="node-a", member_id="ev-7"),
+        _component("hp-b", "hp", [4.0, 5.0, 6.0, 7.0], node_id="node-b", member_id="hp-3", shared_weather_driver_id="weather-1"),
+        _component("pv-b", "pv", [0.0, -2.0, -3.0, 0.0], node_id="node-b", member_id="pv-3", shared_weather_driver_id="weather-1"),
+        _component("adoption-a", "adoption", [0.5, 0.5, 0.5, 0.5], node_id="node-a", member_id="adoption-2035"),
+        _component("flex-a", "flexibility", [-0.2, -0.2, 0.0, 0.0], node_id="node-a", member_id="rho-0.5"),
+    ]
 
 
 def test_same_synthetic_inputs_give_deterministic_output() -> None:
@@ -159,3 +172,74 @@ def test_component_member_metadata_remains_traceable() -> None:
     assert ev_provenance.source_id == "EV-004-home-cp"
     assert ev_provenance.metadata["synthetic"] is True
     np.testing.assert_array_equal(result.p_net_kw, np.array([[0.8, 1.3, 2.0, 2.5]]))
+
+
+def test_integration_harness_assembles_all_component_families_in_plan_node_order() -> None:
+    plan = NetLoadAssemblyPlan(node_ids=("node-b", "node-a"), metadata={"scenario": "synthetic-2035"})
+
+    result = assemble_net_load_from_components(
+        plan,
+        _integration_components(),
+        metadata={"rho": 0.5},
+    )
+
+    assert result.node_ids == ("node-b", "node-a")
+    assert result.metadata["assembly"] == "synthetic_ic1_harness"
+    assert result.metadata["scenario"] == "synthetic-2035"
+    assert result.metadata["rho"] == 0.5
+    assert result.shared_weather_driver_ids == ("weather-1",)
+    np.testing.assert_array_equal(result.timestamps, _calendar())
+    np.testing.assert_array_equal(
+        result.p_net_kw,
+        np.array(
+            [
+                [4.0, 3.0, 3.0, 7.0],
+                [11.3, 13.3, 15.5, 17.5],
+            ]
+        ),
+    )
+
+
+def test_integration_harness_rejects_missing_required_component_family() -> None:
+    plan = NetLoadAssemblyPlan(node_ids=("node-a", "node-b"))
+    components = [
+        component
+        for component in _integration_components()
+        if component.provenance.kind != "adoption"
+    ]
+
+    with pytest.raises(ValueError, match="missing required component kind\\(s\\): adoption"):
+        assemble_net_load_from_components(plan, components)
+
+
+def test_integration_harness_rejects_duplicate_or_unknown_nodes() -> None:
+    with pytest.raises(ValueError, match="node_ids must not contain duplicates"):
+        NetLoadAssemblyPlan(node_ids=("node-a", "node-a"))
+
+    plan = NetLoadAssemblyPlan(node_ids=("node-a", "node-b"))
+    components = _integration_components()
+    components[0] = _component("base-z", "baseline", [1.0, 1.0, 1.0, 1.0], node_id="node-z")
+
+    with pytest.raises(ValueError, match="component node_id must appear"):
+        assemble_net_load_from_components(plan, components)
+
+
+def test_integration_harness_rejects_calendar_and_weather_mismatches() -> None:
+    plan = NetLoadAssemblyPlan(node_ids=("node-a", "node-b"))
+    shifted = _calendar() + np.timedelta64(15, "m")
+    components = _integration_components()
+    components[1] = _component("ev-shifted", "ev", [1.0, 2.0, 3.0, 4.0], node_id="node-a", timestamps=shifted)
+
+    with pytest.raises(ValueError, match="same 15-minute calendar"):
+        assemble_net_load_from_components(plan, components)
+
+    components = _integration_components()
+    components[3] = _component(
+        "pv-b",
+        "pv",
+        [0.0, -2.0, -3.0, 0.0],
+        node_id="node-b",
+        shared_weather_driver_id="weather-2",
+    )
+    with pytest.raises(ValueError, match="HP and PV components must share"):
+        assemble_net_load_from_components(plan, components)

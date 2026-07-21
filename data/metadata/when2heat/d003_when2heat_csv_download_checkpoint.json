@@ -1,0 +1,22 @@
+{
+  "bytes_downloaded": 328400976,
+  "data_id": "D-003",
+  "package_version": "2023-07-27",
+  "partial_sha256": "f1f71790158d1de08403eea32dea7a2732050870c499938135606d9d7faac0fa",
+  "raw_path": "data/raw/when2heat/when2heat.csv",
+  "resume_command": "data/get_when2heat.py --download csv --resume",
+  "resume_from_bytes": 0,
+  "retrieved_url": "https://data.open-power-system-data.org/when2heat/2023-07-27/when2heat.csv",
+  "selected_file": {
+    "description": "Single-index hourly When2Heat heat-demand and COP time series.",
+    "expected_size_note": "large profile file; OPSD page lists about 313 MB",
+    "filename": "when2heat.csv",
+    "hp_readiness_role": "proposed_primary_hp_profile_source",
+    "key": "csv",
+    "listed_size_mb": 313,
+    "url": "https://data.open-power-system-data.org/when2heat/2023-07-27/when2heat.csv"
+  },
+  "status": "complete",
+  "temp_path": "data/raw/when2heat/when2heat.csv.tmp",
+  "updated_at_utc": "2026-07-21T09:12:33.127322Z"
+}
