@@ -1,0 +1,159 @@
+{
+  "created_utc": "2026-07-21T12:02:27.200674Z",
+  "data_id": "D-012",
+  "download_performed_by_script": true,
+  "geojson_bbox_response": {
+    "content_type": "application/geo+json",
+    "feature_count": 774,
+    "note": "Small Alkmaar-area bbox response; used as a GeoJSON cross-check, not as an official GM0361 boundary.",
+    "retrieved_utc": "2026-07-21T13:19:00Z",
+    "sha256": "3a82997602afe6aaecf63d6cd9d694817cba0429b3e0c09aab1dd48110a4dc89",
+    "size_bytes": 394263,
+    "status_code": 200,
+    "url": "https://dotnl.ndw.nu/api/rest/geojson/dynamic-road-status/charge-point-data/v1/features?bbox=4.68,52.59,4.82,52.68"
+  },
+  "non_actions": [
+    "No ElaadNL public Set B profile was generated.",
+    "No EV held-out batch was opened.",
+    "No integrated net-load, congestion, event, adequacy, P(E), or manuscript-result analysis was run."
+  ],
+  "ocpi_full_dataset": {
+    "location_count_netherlands": 66473,
+    "path_used_locally": "C:\\Users\\JORTGR~1\\AppData\\Local\\Temp\\ndw_charging_point_locations_ocpi.json.gz",
+    "sha256_gzip": "a91ccea2d2bb03400437c9dc73aade71725b04129e0d6c3599cab09d91374047",
+    "size_bytes": 15218242
+  },
+  "schema_version": 1,
+  "selection": {
+    "bbox_min_lon_min_lat_max_lon_max_lat": [
+      4.68,
+      52.59,
+      4.82,
+      52.68
+    ],
+    "city_exact_match": "Alkmaar",
+    "municipality_boundary_note": "The NDW OCPI file exposes city strings and coordinates but no CBS municipality code; exact GM0361 counts require an external boundary join."
+  },
+  "source": {
+    "docs_url": "https://docs.ndw.nu/data-uitwisseling/interface-beschrijvingen/dafne-api/dafne_api_consumer_pull/",
+    "geojson_bbox_url": "https://dotnl.ndw.nu/api/rest/geojson/dynamic-road-status/charge-point-data/v1/features?bbox=4.68,52.59,4.82,52.68",
+    "license_note": "NDW copyright page states CC0 applies to website content unless otherwise stated; this packet commits only metadata and parser code, not the raw live dataset.",
+    "name": "NDW/DOT-NL laadpunten open data",
+    "ocpi_full_dataset_url": "https://opendata.ndw.nu/charging_point_locations_ocpi.json.gz"
+  },
+  "status": "proposed_not_pi_signed",
+  "summaries": {
+    "bbox": {
+      "bin_around_11kw_10000_12500": 443,
+      "bin_around_17kw_16500_17500": 94,
+      "bin_around_22kw_21500_22500": 369,
+      "connector_standard_counts": {
+        "CHADEMO": 59,
+        "IEC_62196_T2": 1697,
+        "IEC_62196_T2_COMBO": 43
+      },
+      "connectors": 1799,
+      "connectors_missing_power": 24,
+      "dc_connectors_ge_30kw": 48,
+      "evses": 1799,
+      "locations": 774,
+      "locations_with_evses": 774,
+      "max_electric_power_w_counts": {
+        "0": 54,
+        "100000": 4,
+        "11000": 282,
+        "11040": 156,
+        "11085": 4,
+        "12420": 1,
+        "13000": 444,
+        "13800": 7,
+        "14000": 68,
+        "15000": 242,
+        "150000": 8,
+        "17000": 88,
+        "17300": 6,
+        "200000": 5,
+        "20700": 1,
+        "22000": 226,
+        "22080": 143,
+        "250000": 2,
+        "30000": 1,
+        "300000": 6,
+        "322000": 1,
+        "360000": 3,
+        "396000": 2,
+        "4140": 2,
+        "50000": 10,
+        "60000": 2,
+        "7360": 3,
+        "80000": 2,
+        "90000": 2
+      },
+      "power_type_counts": {
+        "AC_1_PHASE": 55,
+        "AC_3_PHASE": 1696,
+        "DC": 48
+      },
+      "selector": "bbox == 4.68,52.59,4.82,52.68"
+    },
+    "city_exact_match": {
+      "bin_around_11kw_10000_12500": 274,
+      "bin_around_17kw_16500_17500": 32,
+      "bin_around_22kw_21500_22500": 261,
+      "connector_standard_counts": {
+        "CHADEMO": 59,
+        "IEC_62196_T2": 1094,
+        "IEC_62196_T2_COMBO": 37
+      },
+      "connectors": 1190,
+      "connectors_missing_power": 22,
+      "dc_connectors_ge_30kw": 42,
+      "evses": 1190,
+      "locations": 479,
+      "locations_with_evses": 479,
+      "max_electric_power_w_counts": {
+        "0": 54,
+        "100000": 4,
+        "11000": 183,
+        "11040": 88,
+        "11085": 2,
+        "12420": 1,
+        "13000": 290,
+        "13800": 2,
+        "14000": 42,
+        "15000": 166,
+        "150000": 6,
+        "17000": 30,
+        "17300": 2,
+        "200000": 1,
+        "20700": 1,
+        "22000": 158,
+        "22080": 103,
+        "250000": 2,
+        "30000": 1,
+        "300000": 6,
+        "322000": 1,
+        "360000": 3,
+        "396000": 2,
+        "4140": 2,
+        "50000": 10,
+        "60000": 2,
+        "7360": 2,
+        "80000": 2,
+        "90000": 2
+      },
+      "power_type_counts": {
+        "AC_1_PHASE": 55,
+        "AC_3_PHASE": 1093,
+        "DC": 42
+      },
+      "selector": "city == Alkmaar"
+    },
+    "overlap": {
+      "bbox_locations_outside_city_exact_match": 299,
+      "city_locations_inside_bbox": 475,
+      "city_locations_outside_bbox": 4
+    }
+  },
+  "task": "E2.S2"
+}

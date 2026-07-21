@@ -12,6 +12,7 @@ import numpy as np
 import pytest
 
 import data.get_elaad_profiles as elaad
+import data.get_ndw_charging_inventory as ndw
 from data.get_elaad_profiles import (
     ProfileBatch,
     _shape_report,
@@ -33,7 +34,7 @@ def _case_dir(name: str) -> Path:
 
 
 def test_e2_s1_sources_have_existing_retrieval_scripts() -> None:
-    expected_ids = {"D-001", "D-002", "D-003", "D-004", "D-008"}
+    expected_ids = {"D-001", "D-002", "D-003", "D-004", "D-008", "D-012"}
     specs = source_specs()
 
     assert {spec.data_id for spec in specs} == expected_ids
@@ -60,6 +61,102 @@ def test_data_register_references_e2_s1_retrieval_scripts() -> None:
     for spec in source_specs():
         assert spec.data_id in register
         assert f"`{spec.retrieval_script}`" in register
+
+
+def test_ndw_inventory_counts_ocpi_units_and_power_bins() -> None:
+    locations = [
+        {
+            "id": "alk-1",
+            "city": "Alkmaar",
+            "coordinates": {"longitude": "4.75", "latitude": "52.63"},
+            "evses": [
+                {
+                    "uid": "evse-1",
+                    "connectors": [
+                        {
+                            "standard": "IEC_62196_T2",
+                            "power_type": "AC_3_PHASE",
+                            "max_electric_power": 11000,
+                        }
+                    ],
+                },
+                {
+                    "uid": "evse-2",
+                    "connectors": [
+                        {
+                            "standard": "IEC_62196_T2",
+                            "power_type": "AC_3_PHASE",
+                            "max_electric_power": 22000,
+                        }
+                    ],
+                },
+            ],
+        },
+        {
+            "id": "alk-2",
+            "city": "ALKMAAR",
+            "coordinates": {"longitude": "4.76", "latitude": "52.64"},
+            "evses": [
+                {
+                    "uid": "evse-3",
+                    "connectors": [
+                        {
+                            "standard": "IEC_62196_T2_COMBO",
+                            "power_type": "DC",
+                            "max_electric_power": 50000,
+                        },
+                        {
+                            "standard": "CHADEMO",
+                            "power_type": "DC",
+                            "max_electric_power": None,
+                        },
+                    ],
+                }
+            ],
+        },
+        {
+            "id": "outside",
+            "city": "Heiloo",
+            "coordinates": {"longitude": "4.74", "latitude": "52.61"},
+            "evses": [],
+        },
+    ]
+
+    city = ndw.filter_locations_by_city(locations, "Alkmaar")
+    bbox = ndw.filter_locations_by_bbox(locations, ndw.ALKMAAR_BBOX)
+    summary = ndw.summarize_ocpi_locations(city, selector="city == Alkmaar")
+
+    assert [location["id"] for location in city] == ["alk-1", "alk-2"]
+    assert [location["id"] for location in bbox] == ["alk-1", "alk-2", "outside"]
+    assert summary.locations == 2
+    assert summary.evses == 3
+    assert summary.connectors == 4
+    assert summary.connectors_missing_power == 1
+    assert summary.power_type_counts == {"AC_3_PHASE": 2, "DC": 2}
+    assert summary.bin_around_11kw_10000_12500 == 1
+    assert summary.bin_around_22kw_21500_22500 == 1
+    assert summary.dc_connectors_ge_30kw == 1
+
+
+def test_ndw_inventory_rejects_malformed_bbox() -> None:
+    with pytest.raises(ValueError, match="bbox must contain"):
+        ndw.filter_locations_by_bbox([], (4.7, 52.6))
+
+    with pytest.raises(ValueError, match="bbox min values"):
+        ndw.filter_locations_by_bbox([], (4.8, 52.6, 4.7, 52.7))
+
+
+def test_ndw_metadata_default_is_metadata_only(tmp_path: Path) -> None:
+    path = ndw.write_metadata(tmp_path)
+    payload = json.loads(path.read_text(encoding="utf-8"))
+
+    assert payload["data_id"] == "D-012"
+    assert payload["download_performed_by_script"] is False
+    assert payload["status"] == "proposed_not_pi_signed"
+    assert "summaries" not in payload
+    assert payload["selection"]["municipality_boundary_note"].startswith(
+        "The NDW OCPI file exposes city strings"
+    )
 
 
 def test_data_register_has_no_e2_s1_placeholders() -> None:
