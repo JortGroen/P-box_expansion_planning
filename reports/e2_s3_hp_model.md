@@ -26,8 +26,13 @@ evidence exists yet.
 - The final heat-pump profile must align exactly to the externally supplied
   shared weather/PV member on a 15-minute UTC calendar. The model requires and
   preserves `shared_weather_driver_id`, `member_id`, source, UTC timestamps,
-  optional local timestamps, and metadata/provenance, and records them in
-  `HeatPumpProfile.weather_identity_record()` for direct HP/PV audit.
+  optional local timestamps, and metadata/provenance. It also requires at least
+  one aligned PV/irradiance weather field on the supplied member and records the
+  PV weather field names in `HeatPumpProfile.weather_identity_record()` for
+  direct HP/PV audit.
+- The neutral shared weather contract module is still not imported here because
+  PR #43 does not yet provide `src/weather_model.py`; C.PV/weather should own
+  that implementation once Q-7/path ownership is resolved.
 
 ## Cold-Week Sanity
 
@@ -35,7 +40,7 @@ evidence exists yet.
 
 ## Verification
 
-- Focused tests cover metadata-only source selection, checksum retrieval paths without internet access, component-wise COP conversion, hourly-to-15-minute energy preservation, exact shared-weather/calendar alignment, preservation of audit identity fields, rejection of temperature-only weather objects, and the cold-week sanity diagnostic.
-- `.\.venv\Scripts\python.exe -m pytest tests\test_hp_model.py` passed 10 tests after the shared-weather revision.
+- Focused tests cover metadata-only and checksum retrieval paths without internet access, component-wise COP conversion, hourly-to-15-minute energy preservation, exact shared-weather/calendar alignment, preservation of audit identity fields including PV weather field names, rejection of temperature-only weather objects, and the cold-week sanity diagnostic.
+- `.\.venv\Scripts\python.exe -m pytest tests\test_hp_model.py tests\test_data_sources.py::test_data_entrypoints_run_directly tests\test_methods_registry.py` passed 15 tests after the shared-weather compatibility and D-003 source-readiness revisions.
 - Final `.\scripts\task.ps1 ownership` and `.\scripts\task.ps1 test` results are recorded in `reports/AGENT_C_LOG.md`.
 - This report contains no manuscript result, no congestion probability, and no signed data-source claim.

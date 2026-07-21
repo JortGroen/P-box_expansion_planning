@@ -738,11 +738,15 @@ and does not interpolate new peaks. The resulting profile must match the
 externally supplied shared weather/PV member on the canonical 15-minute UTC
 calendar, preserving `shared_weather_driver_id`, `member_id`, source, optional
 local calendar, and provenance or metadata so HP and PV outputs can be audited
-as products of the same weather realization. The heat-pump module does not
-sample weather independently or shuffle timesteps. Cold-period validation
-currently has only synthetic scaffold coverage; real D-003/paired-weather
-cold-spell acceptance remains pending concrete file checksum selection, shared
-weather contract resolution, and PI review.
+as products of the same weather realization. The HP scaffold also rejects
+weather inputs that lack an aligned PV/irradiance weather field and records the
+PV weather field names in the heat-pump identity record; this is compatibility
+scaffolding for the future shared weather contract, not a final contract
+implementation. The heat-pump module does not sample weather independently or
+shuffle timesteps. Cold-period validation currently has only synthetic scaffold
+coverage; real D-003/paired-weather cold-spell acceptance remains pending
+concrete file checksum selection, shared weather contract resolution, and PI
+review.
 
 <!-- methods-id: D-004 -->
 ### D-004 - Weather and PV Inputs
