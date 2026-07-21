@@ -129,6 +129,36 @@ def test_capacity_metadata_is_validated_and_manifestable() -> None:
         )
 
 
+def test_transformer_indices_must_be_exact_integral_values() -> None:
+    with pytest.raises(TypeError, match="exact nonnegative integers"):
+        TransformerPQSeries(1.2, [1.0], [0.0])
+
+    with pytest.raises(TypeError, match="exact nonnegative integers"):
+        TransformerPQSeries("1", [1.0], [0.0])
+
+    with pytest.raises(TypeError, match="exact nonnegative integers"):
+        TransformerPQSeries(True, [1.0], [0.0])
+
+    with pytest.raises(TypeError, match="exact nonnegative integers"):
+        TransformerCapacityMetadata(
+            s_nom_agg_kva=40_000.0,
+            convention="custom",
+            transformer_indices=(1.2,),
+            unit_nameplate_kva=(40_000.0,),
+        )
+
+    capacity = TransformerCapacityMetadata(
+        s_nom_agg_kva=40_000.0,
+        convention="custom",
+        transformer_indices=(np.int64(3),),
+        unit_nameplate_kva=(40_000.0,),
+    )
+    series = TransformerPQSeries(np.int64(3), [1.0], [0.0])
+
+    assert capacity.transformer_indices == (3,)
+    assert series.transformer_index == 3
+
+
 def test_ac_provenance_and_result_metadata_are_manifestable() -> None:
     result = build_ac_loading_trajectory(
         [1.0, 2.0, 3.0, 4.0],

@@ -9,6 +9,7 @@ contract used by output-error propagation.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from numbers import Integral
 from types import MappingProxyType
 from typing import Literal, Mapping, Sequence
 
@@ -55,14 +56,14 @@ class TransformerCapacityMetadata:
             raise ValueError("transformer_indices must not contain duplicates")
         if len(self.transformer_indices) != len(self.unit_nameplate_kva):
             raise ValueError("unit_nameplate_kva must match transformer_indices")
-        for index in self.transformer_indices:
-            if isinstance(index, bool) or int(index) < 0:
-                raise ValueError("transformer_indices must be nonnegative integers")
+        normalized_indices = tuple(
+            _as_nonnegative_integer(index, name="transformer_indices") for index in self.transformer_indices
+        )
         for nameplate in self.unit_nameplate_kva:
             if not np.isfinite(float(nameplate)) or nameplate <= 0.0:
                 raise ValueError("unit_nameplate_kva values must be finite and positive")
         object.__setattr__(self, "s_nom_agg_kva", float(self.s_nom_agg_kva))
-        object.__setattr__(self, "transformer_indices", tuple(int(index) for index in self.transformer_indices))
+        object.__setattr__(self, "transformer_indices", normalized_indices)
         object.__setattr__(self, "unit_nameplate_kva", tuple(float(value) for value in self.unit_nameplate_kva))
 
     def manifest_metadata(self) -> dict[str, object]:
@@ -120,13 +121,12 @@ class TransformerPQSeries:
     metadata: Mapping[str, object] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
-        if isinstance(self.transformer_index, bool) or int(self.transformer_index) < 0:
-            raise ValueError("transformer_index must be a nonnegative integer")
+        transformer_index = _as_nonnegative_integer(self.transformer_index, name="transformer_index")
         p = _as_vector(self.p_kw, name="p_kw")
         q = _as_vector(self.q_kvar, name="q_kvar")
         if p.shape != q.shape:
             raise ValueError("p_kw and q_kvar must have identical shapes")
-        object.__setattr__(self, "transformer_index", int(self.transformer_index))
+        object.__setattr__(self, "transformer_index", transformer_index)
         object.__setattr__(self, "p_kw", p)
         object.__setattr__(self, "q_kvar", q)
         object.__setattr__(self, "metadata", MappingProxyType(dict(self.metadata)))
@@ -324,6 +324,15 @@ def _as_vector(values: Sequence[float] | np.ndarray, *, name: str) -> np.ndarray
     if not np.isfinite(array).all():
         raise ValueError(f"{name} must contain only finite values")
     return array
+
+
+def _as_nonnegative_integer(value: object, *, name: str) -> int:
+    if isinstance(value, bool) or not isinstance(value, Integral):
+        raise TypeError(f"{name} must contain exact nonnegative integers")
+    integer = int(value)
+    if integer < 0:
+        raise ValueError(f"{name} must contain exact nonnegative integers")
+    return integer
 
 
 def _as_15_minute_calendar(values: Sequence[np.datetime64] | np.ndarray) -> np.ndarray:
