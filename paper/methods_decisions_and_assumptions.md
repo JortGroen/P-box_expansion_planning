@@ -510,6 +510,21 @@ charging the primary flexibility model or determine its base capacity, ramp
 speed, pooling option, or mapping to the uncertain controllability factor; those
 choices require separate approval and monotonicity testing.
 
+<!-- methods-id: EV-007 -->
+### EV-007 - Local EV Adoption Scaling Route
+
+**Status: Approved.** Local SimBench-grid home and public charge-point totals
+are derived from a predeclared representative CBS neighbourhood cluster using
+ElaadNL local forecast outputs, not by applying national Outlook totals
+directly to the benchmark grid. The cluster is selected by exogenous area and
+feeder-scale criteria before congestion results are inspected, so the adoption
+layer cannot be tuned after seeing whether the case overloads. National D-010
+values remain provenance and scenario context only. A-014 is used only after
+local totals exist, as the second-stage rule that distributes those totals
+across benchmark load nodes. If local forecast retrieval or justification
+fails, a national-adoption-rate scaling with separately sourced local
+denominators remains a fallback or sensitivity rather than the primary route.
+
 <!-- methods-id: COST-001 -->
 ### COST-001 - Indicative Reinforcement Costs
 
@@ -684,19 +699,16 @@ results may describe the protocol and sensitivity scenarios but may not call
 <!-- methods-id: A-014 -->
 ### A-014 - EV Adoption Allocation Across Benchmark Load Nodes
 
-**Status: Proposed; blocks integrated EV adoption use until PI resolution of
-Q-7.** A-014 is narrowed to a possible second-stage allocation rule only. After
-Q-7 establishes local SimBench-grid home and public charge-point totals, the
-project may distribute those local totals across the 115 in-service `net.load`
-rows in proportion to each row's static active load `p_mw`. Fractional
-allocations are converted to physical nonnegative integer counts by
-largest-remainder rounding, with ties resolved by node ID for deterministic
-reruns. The rule must not be applied directly to the national ElaadNL Outlook
-totals recorded under D-010. Home local totals, public local totals, and the
-resulting EV-005 per-node `K_r` ranges remain blocked until the PI chooses a
-local scaling method, such as a predeclared CBS neighbourhood or cluster from
-ElaadNL local forecasts, or a sourced household/service-area denominator with
-a separate public-charging basis.
+**Status: Approved for second-stage use after EV-007 local totals are
+established.** A-014 is a within-grid allocation rule only. Once E2.S6 derives
+approved local SimBench-grid home and public charge-point totals from the
+EV-007 CBS neighbourhood-cluster route, the project distributes each local
+total across the 115 in-service `net.load` rows in proportion to each row's
+static active load `p_mw`. Fractional allocations are converted to physical
+nonnegative integer counts by largest-remainder rounding, with ties resolved by
+node ID for deterministic reruns. The rule must not be applied directly to the
+national ElaadNL Outlook totals recorded under D-010, and it does not itself
+select the local cluster or approve public-charging behavior profiles.
 
 ## Data and Evidence Choices
 
