@@ -89,15 +89,3 @@ DID: Fetched/pruned origin and merged latest `origin/main` into existing branch 
 VERIFIED: `.\scripts\task.ps1 ownership` passed for Agent C with 41 changed paths authorized. `.\scripts\task.ps1 test` passed 114 tests in 83.09 s after the merge, and `git diff --check` returned clean.
 OPEN: E2.S2 remains in progress. M=1000 is not declared sufficient; fresh held-out adequacy use awaits E3.S2a criterion freeze; within-realization replacement remains pending E2.S6 cohort sizes and EV-005.
 NEXT: Update PR #35 description with the OWN-001 checklist and wait for PI/downstream criterion before held-out adequacy analysis, public Set B, smart Set D, or E2.S6 work.
-
-## 2026-07-20 17:29 - E2.S3 - done
-DID: Created a dedicated `agent-c/E2.S3-hp-model` worktree under `.tmp/worktrees/agent-c-e2s3-hp-model` to avoid touching the dirty E2.S6 worktree. Implemented OPSD When2Heat retrieval/checksum support, `src/hp_model.py`, focused HP tests, methods/report traceability, explicit hourly-to-15-minute downscaling, externally supplied weather-member alignment, and a cold-week sanity diagnostic.
-VERIFIED: Planned-path ownership preflight passed for the E2.S3 source, test, report, log, status, and methods paths. Focused `.venv` pytest for `tests/test_hp_model.py tests/test_data_sources.py` passed 24 tests; final `.\scripts\task.ps1 test` passed 138 tests. No concrete When2Heat file was downloaded.
-OPEN: D-003 remains proposed and no concrete When2Heat checksum is selected in this PR.
-NEXT: PR #44 is open; wait for PI review.
-
-## 2026-07-20 19:05 - E2.S3 - in-progress
-DID: Re-read the required governance files and coordinated against C.PV/weather branch `agent-c/E2.S4-pv-weather-inputs` at `74e686b`. Revised HP to consume the shared weather/PV member interface by requiring `shared_weather_driver_id`, preserving member/source/provenance and UTC/local calendar identity on `HeatPumpProfile`, and rejecting temperature-only weather objects.
-VERIFIED: Planned-path ownership preflight passed for the revised E2.S3 source, test, report, log, status, and methods paths. Focused `.venv` pytest for `tests/test_hp_model.py tests/test_methods_registry.py` passed 12 tests; `.\scripts\task.ps1 test` passed 138 tests in 57.30 s.
-OPEN: E2.S3 remains scaffold/in-progress. No concrete When2Heat file/checksum was selected, and no real paired-weather cold-spell acceptance evidence exists.
-NEXT: Update PR #44 text and wait for PI/maintainer review or concrete D-003/weather-file authorization.
