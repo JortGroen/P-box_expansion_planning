@@ -918,12 +918,12 @@ prohibition of this research use stops profile use pending PI escalation.
 <!-- methods-id: D-003 -->
 ### D-003 - Heat-Pump Profiles
 
-**Status: Proposed for HP-001 internal shape/COP source use; final integrated
+**Status: Approved for HP-001 internal shape/COP source use; final integrated
 HP acceptance pending.** Temperature-dependent heat-pump demand is based on the
 When2Heat dataset so heating behavior is tied to an openly documented empirical
 profile source rather than invented load shapes. Source retrieval, checksum,
 hourly-to-15-minute conversion, and COP treatment must be manifested before
-use. The proposed concrete source file is OPSD When2Heat package version
+use. The concrete source file is OPSD When2Heat package version
 `2023-07-27`, single-index `when2heat.csv`, because that file contains the
 hourly heat-profile, heat-demand, and COP columns consumed by the E2.S3 loader
 without requiring the larger full archive. The prepared retrieval workflow
@@ -933,11 +933,13 @@ after the download has completed. After PI approval to run the retrieval, Agent
 C downloaded `when2heat.csv` from the OPSD package URL on
 2026-07-21T09:12:33Z, producing a 328400976-byte local raw file with SHA-256
 `f1f71790158d1de08403eea32dea7a2732050870c499938135606d9d7faac0fa`. HP-001
-proposes this source for the first-pass Dutch residential space-heat shape and
-COP boundary, using `NL_heat_profile_space_SFH`,
-`NL_heat_profile_space_MFH`, and `NL_COP_ASHP_radiator`. The implemented
-E2.S3 parser treats
-selected When2Heat heat-profile columns as average MW per annual TWh and
+approves this source for the first-pass Dutch residential space-heat and
+domestic-hot-water shape/COP boundary. Space heating uses
+`NL_heat_profile_space_SFH` and `NL_heat_profile_space_MFH` with
+`NL_COP_ASHP_radiator`; domestic hot water uses
+`NL_heat_profile_water_SFH` and `NL_heat_profile_water_MFH` with
+`NL_COP_ASHP_water`. The implemented E2.S3 parser treats selected When2Heat
+heat-profile columns as average MW per annual TWh and
 requires the annual TWh scaling for each component to be passed explicitly, so
 adoption or building-stock volumes are not hidden as defaults. The loader now
 uses the real OPSD single-index CSV dialect explicitly (`;` delimiter and comma
@@ -957,10 +959,11 @@ weather inputs that lack an aligned PV/irradiance weather field and records the
 PV weather field names in the heat-pump identity record; this is compatibility
 scaffolding for the future shared weather contract, not a final contract
 implementation. The heat-pump module does not sample weather independently or
-shuffle timesteps. Commercial heat, domestic hot-water heat, local annual HP
-scaling, D-004/Q-8 paired-weather implementation, numerical cold-spell
-tolerances, real paired-weather acceptance, integrated event analysis,
-capacity-screen evidence, and manuscript results remain separately blocked.
+shuffle timesteps. Commercial heat, local annual HP scaling for both space and
+domestic hot water, D-004/Q-8 paired-weather implementation, numerical
+cold-spell tolerances, real paired-weather acceptance, integrated event
+analysis, capacity-screen evidence, and manuscript results remain separately
+blocked.
 
 <!-- methods-id: E2-S3-COLD-SPELL-ACCEPTANCE-DESIGN -->
 ### E2-S3-COLD-SPELL-ACCEPTANCE-DESIGN - Heat-Pump Cold-Spell And Paired-Weather Acceptance Design
@@ -977,60 +980,61 @@ must produce: complete 15-minute UTC/local calendar checks, coldest rolling
 seven-day and three-day temperature windows, HP peak and COP timing, HP load
 inside and outside cold windows, winter/top-load overlap, and paired plots and
 tables linking temperature, HP load, COP, and PV irradiance. This paragraph and
-the design packet do not sign D-003, do not approve D-004, do not set numerical
-acceptance tolerances, do not run the check, and do not authorize net-load
-integration, event analysis, `P(E)`, capacity-screen evidence, manuscript
-claims, or any probability result. Final integrated D-003/D-004 acceptance
-remains pending until Q-8 is resolved, real D-004 weather members and checksums
-exist, PI-signed tolerances are recorded before inspection, the predeclared
-acceptance report is generated from committed code and source metadata, and the
-PI explicitly accepts or escalates the resulting evidence.
+the design packet do not approve D-004, do not set numerical acceptance
+tolerances, do not run the check, and do not authorize net-load integration,
+event analysis, `P(E)`, capacity-screen evidence, manuscript claims, or any
+probability result. Final integrated D-003/D-004 acceptance remains pending
+until Q-8 is resolved, real D-004 weather members and checksums exist,
+PI-signed tolerances are recorded before inspection, the predeclared acceptance
+report is generated from committed code and source metadata, and the PI
+explicitly accepts or escalates the resulting evidence.
 
 <!-- methods-id: E2-S3-HP-TECH-SCALING-DECISION-PACKET -->
 ### E2-S3-HP-TECH-SCALING-DECISION-PACKET - Heat-Pump Technology And Scaling Decision Packet
 
-**Status: Proposed PI decision packet.** The E2.S3 heat-pump technology
-and scaling packet organizes the unresolved choices that must be decided before
-real heat-pump integration: which Dutch When2Heat normalized shape columns are
-used for space and optional water heat, which COP columns define the HP
-technology and sink assumptions, whether SFH/MFH/COM classes remain separate,
-whether domestic water heating is included, and whether annual thermal scaling
+**Status: Proposed decision packet; HP-001 boundary approved separately.** The
+E2.S3 heat-pump technology and scaling packet organizes the unresolved choices
+that remain before real heat-pump integration: whether SFH/MFH/COM classes
+remain separate through every downstream stage, whether annual thermal scaling
 comes from When2Heat `heat_demand_*` evidence or from another registered
-source. The packet frames ASHP radiator and ASHP water COP columns as review
-defaults only, not as signed technology scenarios, and it keeps all
-annual TWh candidates as source-backed proposals rather than approved 2035,
-local, electric-demand, or manuscript values. It also records that Q-8 shared
-weather, concrete D-004 members, final D-004 signoff, PI-signed cold-spell
-tolerances, local annual HP scaling, and a real paired-weather acceptance
-report remain blocking before final E2.S3 acceptance. This paragraph and packet
-leave D-004 unsigned, do not set final numerical tolerances, do not run
-paired-weather acceptance, and do not authorize net-load integration, event
-analysis, `P(E)`,
+source, and how local 2035 heat-pump adoption volumes are derived. HP-001 now
+approves the first-pass residential source/technology boundary: SFH/MFH space
+heat with ASHP radiator COP plus SFH/MFH domestic hot water with ASHP water COP.
+Commercial heat remains outside the primary run. The packet keeps all annual
+TWh candidates as source-backed proposals rather than approved 2035, local,
+electric-demand, or manuscript values. It also records that Q-8 shared weather,
+concrete D-004 members, final D-004 signoff, PI-signed cold-spell tolerances,
+local annual HP scaling, and a real paired-weather acceptance report remain
+blocking before final E2.S3 acceptance. This paragraph and packet leave D-004
+unsigned, do not set final numerical tolerances, do not run paired-weather
+acceptance, and do not authorize net-load integration, event analysis, `P(E)`,
 capacity-screen evidence, probability analysis, or manuscript-result claims.
 
 <!-- methods-id: HP-001 -->
-### HP-001 - Proposed First-Pass HP Source And Technology Boundary
+### HP-001 - First-Pass Residential HP Source And Technology Boundary
 
-**Status: Proposed; pending explicit PI approval.** The recommended first full-analysis HP build uses a
-residential space-heating boundary rather than all heat represented in
-When2Heat. The proposed source/technology route uses Dutch normalized
+**Status: Approved.** The first full-analysis heat-pump boundary represents
+residential electrification as space heating plus domestic hot water. This
+matches the household story more closely than space heating alone: a home that
+fully moves away from gas must also supply hot water electrically or through an
+equivalent non-gas route. The source/technology route uses Dutch normalized
 When2Heat space-heat profiles for single-family and multi-family houses
-(`NL_heat_profile_space_SFH` and `NL_heat_profile_space_MFH`) and converts
-thermal demand to electric demand using the air-source heat-pump radiator COP
-series (`NL_COP_ASHP_radiator`). SFH and MFH remain separate components until
-aggregation so their provenance, annual scaling, and any later omission or
-sensitivity remain visible. Commercial heat and domestic hot water are excluded
-from the primary run because they represent different service boundaries and
-would require separate annual-volume and COP decisions; they may be added later
-only as signed sensitivities. The national When2Heat `heat_demand_*` columns
+(`NL_heat_profile_space_SFH` and `NL_heat_profile_space_MFH`) converted with
+the air-source heat-pump radiator COP series (`NL_COP_ASHP_radiator`), plus
+Dutch residential water-heat profiles (`NL_heat_profile_water_SFH` and
+`NL_heat_profile_water_MFH`) converted with the ASHP water COP series
+(`NL_COP_ASHP_water`). SFH/MFH and space/water remain separate components until
+aggregation so their provenance, annual scaling, and any later sensitivity
+remain visible. Commercial heat is excluded from the primary run because its
+building-stock boundary, adoption route, and service-area interpretation are
+less aligned with the residential neighbourhood case; it may enter later only
+through a signed sensitivity. The national When2Heat `heat_demand_*` columns
 are retained as diagnostic/source anchors but are not adopted as the local 2035
-annual HP scaling by default. This keeps the first implementation aligned with
-the neighbourhood consumption-congestion story while preventing a country-level
-historical heat total from becoming an unreviewed local adoption assumption.
-If the PI approves HP-001, Agent C must still propose a local annual HP scaling
-or adoption route before real integrated HP load is used, and D-004/Q-8
-paired-weather acceptance, cold-spell tolerances, event analysis, `P(E)`, and
-manuscript results remain blocked.
+annual HP scaling by default. Agent C must still propose a local annual HP
+scaling or adoption route for both residential space heat and domestic hot
+water before real integrated HP load is used, and D-004/Q-8 paired-weather
+acceptance, cold-spell tolerances, event analysis, `P(E)`, and manuscript
+results remain blocked.
 
 <!-- methods-id: D-004 -->
 ### D-004 - Weather and PV Inputs
