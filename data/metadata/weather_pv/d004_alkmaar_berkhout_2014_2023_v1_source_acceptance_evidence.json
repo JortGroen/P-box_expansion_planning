@@ -1,0 +1,212 @@
+{
+  "acceptance_recommendation": "recommend PI accept the D-004 source bundle for source-file completeness and WEATHER-001-compatible member construction, while keeping D-004 proposed until PI review",
+  "calendar_interpretation": {
+    "knmi_hour_field": "HH is UT; KNMI documents hourly division 05 as 04:00-05:00 UT and 12 UT as 13 MET / 14 MEZT",
+    "knmi_slot_model": "hour-ending UTC instant; HH=24 maps to 00:00 UTC on the following date",
+    "weather_001_requirement": "accepted members must emit one canonical UTC axis with Europe/Amsterdam local timestamps derived from the same instants"
+  },
+  "data_id": "D-004",
+  "evidence_created_utc": "2026-07-21T00:00:00Z",
+  "evidence_scope": [
+    "local checksum verification for the four approved raw files",
+    "KNMI station 249 annual completeness check for 2014-2023",
+    "PVGIS-SARAH3 Alkmaar hourly-series coverage check for 2014-2023",
+    "WEATHER-001 compatibility review at the source/readiness level"
+  ],
+  "knmi_station_249_hourly_coverage": {
+    "fields_checked": [
+      "T",
+      "Q"
+    ],
+    "negative_q_rows": 0,
+    "years": {
+      "2014": {
+        "complete": true,
+        "duplicate_slots": 0,
+        "expected_rows": 8760,
+        "first_utc": "2014-01-01T01:00:00+00:00",
+        "last_utc": "2015-01-01T00:00:00+00:00",
+        "missing_q": 0,
+        "missing_t": 0,
+        "observed_rows": 8760,
+        "unique_slots": 8760
+      },
+      "2015": {
+        "complete": true,
+        "duplicate_slots": 0,
+        "expected_rows": 8760,
+        "first_utc": "2015-01-01T01:00:00+00:00",
+        "last_utc": "2016-01-01T00:00:00+00:00",
+        "missing_q": 0,
+        "missing_t": 0,
+        "observed_rows": 8760,
+        "unique_slots": 8760
+      },
+      "2016": {
+        "complete": true,
+        "duplicate_slots": 0,
+        "expected_rows": 8784,
+        "first_utc": "2016-01-01T01:00:00+00:00",
+        "last_utc": "2017-01-01T00:00:00+00:00",
+        "missing_q": 0,
+        "missing_t": 0,
+        "observed_rows": 8784,
+        "unique_slots": 8784
+      },
+      "2017": {
+        "complete": true,
+        "duplicate_slots": 0,
+        "expected_rows": 8760,
+        "first_utc": "2017-01-01T01:00:00+00:00",
+        "last_utc": "2018-01-01T00:00:00+00:00",
+        "missing_q": 0,
+        "missing_t": 0,
+        "observed_rows": 8760,
+        "unique_slots": 8760
+      },
+      "2018": {
+        "complete": true,
+        "duplicate_slots": 0,
+        "expected_rows": 8760,
+        "first_utc": "2018-01-01T01:00:00+00:00",
+        "last_utc": "2019-01-01T00:00:00+00:00",
+        "missing_q": 0,
+        "missing_t": 0,
+        "observed_rows": 8760,
+        "unique_slots": 8760
+      },
+      "2019": {
+        "complete": true,
+        "duplicate_slots": 0,
+        "expected_rows": 8760,
+        "first_utc": "2019-01-01T01:00:00+00:00",
+        "last_utc": "2020-01-01T00:00:00+00:00",
+        "missing_q": 0,
+        "missing_t": 0,
+        "observed_rows": 8760,
+        "unique_slots": 8760
+      },
+      "2020": {
+        "complete": true,
+        "duplicate_slots": 0,
+        "expected_rows": 8784,
+        "first_utc": "2020-01-01T01:00:00+00:00",
+        "last_utc": "2021-01-01T00:00:00+00:00",
+        "missing_q": 0,
+        "missing_t": 0,
+        "observed_rows": 8784,
+        "unique_slots": 8784
+      },
+      "2021": {
+        "complete": true,
+        "duplicate_slots": 0,
+        "expected_rows": 8760,
+        "first_utc": "2021-01-01T01:00:00+00:00",
+        "last_utc": "2022-01-01T00:00:00+00:00",
+        "missing_q": 0,
+        "missing_t": 0,
+        "observed_rows": 8760,
+        "unique_slots": 8760
+      },
+      "2022": {
+        "complete": true,
+        "duplicate_slots": 0,
+        "expected_rows": 8760,
+        "first_utc": "2022-01-01T01:00:00+00:00",
+        "last_utc": "2023-01-01T00:00:00+00:00",
+        "missing_q": 0,
+        "missing_t": 0,
+        "observed_rows": 8760,
+        "unique_slots": 8760
+      },
+      "2023": {
+        "complete": true,
+        "duplicate_slots": 0,
+        "expected_rows": 8760,
+        "first_utc": "2023-01-01T01:00:00+00:00",
+        "last_utc": "2024-01-01T00:00:00+00:00",
+        "missing_q": 0,
+        "missing_t": 0,
+        "observed_rows": 8760,
+        "unique_slots": 8760
+      }
+    }
+  },
+  "no_analysis_performed": true,
+  "pvgis_sarah3_hourly_series_coverage": {
+    "first_time": "20140101:0011",
+    "hourly_fields": [
+      "G(i)",
+      "H_sun",
+      "Int",
+      "P",
+      "T2m",
+      "WS10m",
+      "time"
+    ],
+    "last_time": "20231231:2311",
+    "rows": 87648,
+    "rows_by_year": {
+      "2014": 8760,
+      "2015": 8760,
+      "2016": 8784,
+      "2017": 8760,
+      "2018": 8760,
+      "2019": 8760,
+      "2020": 8784,
+      "2021": 8760,
+      "2022": 8760,
+      "2023": 8760
+    }
+  },
+  "raw_files": [
+    {
+      "path": "data/raw/weather_pv/pvgis/d004_alkmaar_berkhout_2014_2023_v1/pvgis_seriescalc_d004_alkmaar_berkhout_2014_2023_v1.json",
+      "sha256_file": "dca94839809cefd165edd964ddd269fbf6cc9fde7c5875905a84eb0ae830e2dc",
+      "sha256_matches_manifest": true,
+      "size_bytes": 8212761,
+      "size_matches_manifest": true,
+      "source_kind": "pvgis"
+    },
+    {
+      "path": "data/raw/weather_pv/pvgis/d004_alkmaar_berkhout_2014_2023_v1/pvgis_tmy_d004_alkmaar_berkhout_2014_2023_v1.json",
+      "sha256_file": "54af286aad35a675c9993eafe122ad2d742dc28fac71608052b02c47387cdc34",
+      "sha256_matches_manifest": true,
+      "size_bytes": 1269604,
+      "size_matches_manifest": true,
+      "source_kind": "pvgis"
+    },
+    {
+      "path": "data/raw/weather_pv/knmi/d004_alkmaar_berkhout_2014_2023_v1/uurgeg_249_2011-2020.zip",
+      "sha256_file": "f83f255b4f1b7a1f48dba935f8396a99989fa600364425e3a45b6b5218dd4f0e",
+      "sha256_matches_manifest": true,
+      "size_bytes": 1536802,
+      "size_matches_manifest": true,
+      "source_kind": "knmi"
+    },
+    {
+      "path": "data/raw/weather_pv/knmi/d004_alkmaar_berkhout_2014_2023_v1/uurgeg_249_2021-2030.zip",
+      "sha256_file": "f68e3797217a91a4121d7aab7146da7f989f96d561c92cb613b70a77d8ed9ef2",
+      "sha256_matches_manifest": true,
+      "size_bytes": 838086,
+      "size_matches_manifest": true,
+      "source_kind": "knmi"
+    }
+  ],
+  "remaining_before_final_d004_acceptance": [
+    "PI review/sign-off of this source completeness evidence",
+    "approved hourly-to-15-minute member construction rule for KNMI and PVGIS/PV-weather fields",
+    "construction of concrete WEATHER-001 WeatherMember records with member_id, shared_weather_driver_id, provenance, metadata, UTC/local calendar, temperature, and PV weather fields",
+    "PV seasonal total and peak-timing sanity checks on the constructed members",
+    "paired HP/PV acceptance evidence using the same WeatherMember identity"
+  ],
+  "selection_id": "d004_alkmaar_berkhout_2014_2023_v1",
+  "status": "proposed_pending_pi_review",
+  "weather_001_compatibility": {
+    "contract_module": "src/weather_model.py",
+    "d004_source_can_supply_temperature": true,
+    "d004_source_can_supply_pv_weather_fields": true,
+    "hp_pv_shared_driver_required": true,
+    "pv_model_consumes_neutral_weather_member": true
+  }
+}
