@@ -1,5 +1,21 @@
 {
   "policy_id": "OWN-001",
   "version": 1,
-  "exceptions": []
+  "exceptions": [
+    {
+      "id": "OWN-EX-2026-07-21-D004-RAW-RETRIEVAL",
+      "branch": "agent-c/E2.S4-d004-retrieval-checksums",
+      "role": "agent-c",
+      "task_id": "E2.S4",
+      "paths": [
+        "data/raw/weather_pv/pvgis/d004_alkmaar_berkhout_2014_2023_v1/pvgis_seriescalc_d004_alkmaar_berkhout_2014_2023_v1.json",
+        "data/raw/weather_pv/pvgis/d004_alkmaar_berkhout_2014_2023_v1/pvgis_tmy_d004_alkmaar_berkhout_2014_2023_v1.json",
+        "data/raw/weather_pv/knmi/d004_alkmaar_berkhout_2014_2023_v1/uurgeg_249_2011-2020.zip",
+        "data/raw/weather_pv/knmi/d004_alkmaar_berkhout_2014_2023_v1/uurgeg_249_2021-2030.zip"
+      ],
+      "reason": "PI approved narrow D-004 source retrieval for checksum recording only; raw files remain uncommitted and D-004 remains proposed until PI review.",
+      "approved_by": "PI",
+      "approved_on": "2026-07-21"
+    }
+  ]
 }
