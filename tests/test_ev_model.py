@@ -15,6 +15,7 @@ from src.ev_model import (
     EVProfileLibrary,
     EVProfileBootstrapSampler,
     EXPECTED_FULL_YEAR_STEPS,
+    a014_node_weights_from_load_table,
     adoption_node_allocations,
     adoption_scenarios,
     allocate_charge_points_to_nodes,
@@ -25,6 +26,7 @@ from src.ev_model import (
     national_outlook_projections,
     node_charge_point_ranges,
     parse_elaad_profile_response,
+    proposed_a014_allocation_preview,
     proposed_local_charge_point_counts,
     save_processed_batch_npz,
     validate_adoption_scenarios_config,
@@ -598,6 +600,85 @@ def test_adoption_node_allocations_conserve_home_and_public_counts() -> None:
     assert allocations[0].total_home_charge_points == 11
     assert allocations[0].total_public_charge_points == 5
     assert allocations[0].home_by_node == {"load_a": 6, "load_b": 3, "load_c": 2}
+
+
+def test_a014_node_weights_from_load_table_filters_and_validates() -> None:
+    import pandas as pd
+
+    load_table = pd.DataFrame(
+        {
+            "p_mw": [1.0, 0.5, 99.0],
+            "in_service": [True, True, False],
+        },
+        index=[0, 2, 3],
+    )
+
+    assert a014_node_weights_from_load_table(load_table) == (
+        ("load_000", 1.0),
+        ("load_002", 0.5),
+    )
+
+    bad = load_table.copy()
+    bad.loc[2, "p_mw"] = float("nan")
+    with pytest.raises(ValueError, match="finite and non-negative"):
+        a014_node_weights_from_load_table(bad)
+
+
+def test_proposed_a014_preview_uses_alkmaar_counts_without_executing_scenarios() -> None:
+    config = load_adoption_scenarios_config(Path("configs/scenarios.yaml"))
+    weights = (("load_a", 2.0), ("load_b", 1.0))
+
+    preview = proposed_a014_allocation_preview(config, weights)
+
+    assert [item.scenario for item in preview] == ["high", "low", "middle"]
+    totals = {
+        item.scenario: (item.total_home_charge_points, item.total_public_charge_points)
+        for item in preview
+    }
+    assert totals == {
+        "low": (7992, 4183),
+        "middle": (9386, 5127),
+        "high": (10343, 6138),
+    }
+    assert preview[1].home_by_node == {"load_a": 5328, "load_b": 2664}
+    with pytest.raises(ValueError, match="require EV-007 local totals"):
+        adoption_node_allocations(config)
+
+
+def test_committed_a014_alkmaar_preview_preserves_totals_and_status() -> None:
+    config = load_adoption_scenarios_config(Path("configs/scenarios.yaml"))
+    artifact = json.loads(
+        Path("data/metadata/ev_adoption/e2_s6_a014_alkmaar_allocation_preview.json").read_text(
+            encoding="utf-8"
+        )
+    )
+
+    assert artifact["status"] == "proposed_not_pi_signed"
+    assert artifact["selected_cluster"]["area_identifier"] == "GM0361"
+    assert artifact["node_weight_summary"]["node_count"] == 115
+    assert artifact["node_weight_summary"]["unique_node_ids"] is True
+    assert artifact["node_weight_summary"]["nonnegative_finite"] is True
+    assert artifact["total_conservation_verified"] is True
+    assert artifact["scenario_totals"] == artifact["expected_source_totals"]
+    assert artifact["scenario_totals"] == {
+        "low": {"home": 7992, "public": 4183},
+        "middle": {"home": 9386, "public": 5127},
+        "high": {"home": 10343, "public": 6138},
+    }
+    assert len(artifact["allocations_by_node"]) == 115
+    assert {
+        row["node_id"]
+        for row in artifact["allocations_by_node"]
+    } == set(artifact["per_node_ranges"])
+    for scenario in ("low", "middle", "high"):
+        assert sum(row[f"home_{scenario}"] for row in artifact["allocations_by_node"]) == artifact[
+            "scenario_totals"
+        ][scenario]["home"]
+        assert sum(row[f"public_{scenario}"] for row in artifact["allocations_by_node"]) == artifact[
+            "scenario_totals"
+        ][scenario]["public"]
+    with pytest.raises(ValueError, match="require EV-007 local totals"):
+        adoption_node_allocations(config)
 
 
 def test_charge_point_ranges_report_totals_and_per_node_kr() -> None:
