@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass
+from enum import Enum
 from typing import Mapping, Sequence
 
 from src.fuzzy import (
@@ -84,6 +85,51 @@ class RhoStarMembershipResult:
             raise ValueError("alpha must be finite and in [0, 1]")
         if not 0.0 <= self.mu_lower <= self.mu_upper <= 1.0:
             raise ValueError("expected 0 <= mu_lower <= mu_upper <= 1")
+
+
+class ProcurementTargetClassification(str, Enum):
+    """Synthetic geometric comparison between rho target and delivery envelope."""
+
+    INSIDE_ENVELOPE = "inside-envelope"
+    OVERLAPPING_MONITOR = "overlapping-monitor"
+    OUTSIDE_ENVELOPE = "outside-envelope"
+    NEVER_SATISFIED = "never-satisfied"
+
+
+@dataclass(frozen=True)
+class ProcurementTargetResult:
+    """Alpha-indexed procurement-target framing for synthetic rho intervals."""
+
+    alpha: float
+    rho_lower: float
+    rho_upper: float
+    envelope_lower: float
+    envelope_upper: float
+    classification: ProcurementTargetClassification
+
+    def __post_init__(self) -> None:
+        if not math.isfinite(self.alpha) or not 0.0 <= self.alpha <= 1.0:
+            raise ValueError("alpha must be finite and in [0, 1]")
+        for name, value in (
+            ("rho_lower", self.rho_lower),
+            ("rho_upper", self.rho_upper),
+        ):
+            if value != math.inf and (
+                not math.isfinite(value) or not 0.0 <= value <= 1.0
+            ):
+                raise ValueError(f"{name} must be in [0, 1] or math.inf")
+        for name, value in (
+            ("envelope_lower", self.envelope_lower),
+            ("envelope_upper", self.envelope_upper),
+        ):
+            if not math.isfinite(value) or not 0.0 <= value <= 1.0:
+                raise ValueError(f"{name} must be finite and in [0, 1]")
+        if self.rho_lower > self.rho_upper:
+            raise ValueError("rho_lower must be <= rho_upper")
+        if self.envelope_lower > self.envelope_upper:
+            raise ValueError("envelope_lower must be <= envelope_upper")
+        if not isinstance(self.classification, ProcurementTargetClassification):
+            raise TypeError("classification must be a ProcurementTargetClassification")
 
 
 RhoProbabilityCurves = Mapping[float, Sequence[RhoProbabilityPoint]]
@@ -201,6 +247,41 @@ def rho_star_membership(
     return dict(sorted(results.items()))
 
 
+def classify_procurement_target(
+    rho_star_family: RhoStarFamily,
+    delivery_envelope: FuzzyNumber,
+) -> dict[float, ProcurementTargetResult]:
+    """Compare synthetic ``rho_star`` intervals with a delivery envelope.
+
+    The comparison is alpha-indexed and geometric: each finite target interval
+    is compared with the delivery-envelope alpha-cut at the same alpha level.
+    It is scaffold-only and does not convert the classification into a project
+    decision or manuscript number.
+    """
+
+    if not rho_star_family:
+        raise ValueError("rho_star_family must contain at least one alpha level")
+
+    results: dict[float, ProcurementTargetResult] = {}
+    for alpha, rho_star in rho_star_family.items():
+        cut = delivery_envelope.alpha_cut(alpha)
+        classification = _classify_interval_against_envelope(
+            rho_star.rho_lower,
+            rho_star.rho_upper,
+            cut.lower,
+            cut.upper,
+        )
+        results[alpha] = ProcurementTargetResult(
+            alpha=alpha,
+            rho_lower=rho_star.rho_lower,
+            rho_upper=rho_star.rho_upper,
+            envelope_lower=cut.lower,
+            envelope_upper=cut.upper,
+            classification=classification,
+        )
+    return dict(sorted(results.items()))
+
+
 def _validate_rho_curve(
     alpha: float,
     points: Sequence[RhoProbabilityPoint],
@@ -265,6 +346,23 @@ def _membership_bounds(
     if rho_lower <= core_right and core_left <= rho_upper:
         mu_upper = 1.0
     return mu_lower, mu_upper
+
+
+def _classify_interval_against_envelope(
+    rho_lower: float,
+    rho_upper: float,
+    envelope_lower: float,
+    envelope_upper: float,
+) -> ProcurementTargetClassification:
+    if not math.isfinite(rho_lower) or not math.isfinite(rho_upper):
+        return ProcurementTargetClassification.NEVER_SATISFIED
+    if envelope_lower <= rho_lower and rho_upper <= envelope_upper:
+        return ProcurementTargetClassification.INSIDE_ENVELOPE
+    # This scaffold is a geometric comparison only; "monitor" marks partial
+    # overlap without assuming procurement success or failure before G3/G4.
+    if rho_lower <= envelope_upper and envelope_lower <= rho_upper:
+        return ProcurementTargetClassification.OVERLAPPING_MONITOR
+    return ProcurementTargetClassification.OUTSIDE_ENVELOPE
 
 
 def _core_interval(fuzzy_number: FuzzyNumber) -> tuple[float, float]:
