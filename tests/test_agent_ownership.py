@@ -59,36 +59,38 @@ def test_cross_boundary_source_edit_is_rejected(
     ]
 
 
-def test_shared_governance_paths_are_allowed_but_logs_remain_exclusive(
+def test_status_and_legacy_logs_are_maintainer_dashboard_files(
     policy: dict[str, object], empty_exceptions: dict[str, object]
 ) -> None:
-    shared = ownership.evaluate_changes(
+    allowed = ownership.evaluate_changes(
         policy=policy,
         exception_register=empty_exceptions,
         role="agent-b",
         branch="agent-b/E5.S3-schema",
         changed_paths=(
-            "registers/STATUS.md",
             "paper/methods_decisions_and_assumptions.md",
             "reports/E5_S3_SCHEMA.md",
-            "reports/AGENT_B_LOG.md",
+            "reports/agent_logs/agent-b/E5.S3-schema.md",
         ),
     )
-    wrong_log = ownership.evaluate_changes(
+    reserved = ownership.evaluate_changes(
         policy=policy,
         exception_register=empty_exceptions,
         role="agent-b",
         branch="agent-b/E5.S3-schema",
-        changed_paths=("reports/AGENT_A_LOG.md",),
+        changed_paths=("registers/STATUS.md", "reports/AGENT_B_LOG.md"),
     )
 
-    assert shared == []
-    assert wrong_log == [
+    assert allowed == []
+    assert reserved == [
         ownership.Violation(
-            path="reports/AGENT_A_LOG.md",
-            reason="owned by another role",
-            owners=("agent-a",),
-        )
+            path="registers/STATUS.md",
+            reason="reserved for a maintainer PR",
+        ),
+        ownership.Violation(
+            path="reports/AGENT_B_LOG.md",
+            reason="reserved for a maintainer PR",
+        ),
     ]
 
 
