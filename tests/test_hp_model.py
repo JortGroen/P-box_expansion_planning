@@ -12,8 +12,10 @@ import pandas as pd
 import pytest
 
 from data.get_when2heat import (
+    PRIMARY_WHEN2HEAT_FILE_KEY,
     WHEN2HEAT_FILES,
     retrieve_when2heat_file,
+    write_when2heat_source_selection_plan,
     write_when2heat_source_metadata,
 )
 from src.hp_model import (
@@ -85,7 +87,32 @@ def test_when2heat_metadata_default_is_no_download(tmp_path: Path) -> None:
     assert payload["data_id"] == "D-003"
     assert payload["download_performed"] is False
     assert payload["extra"]["package_version"] == "2023-07-27"
+    assert payload["extra"]["proposed_primary_file_key"] == "csv"
     assert payload["extra"]["downloadable_files"]["csv"]["filename"] == "when2heat.csv"
+    assert payload["extra"]["downloadable_files"]["csv"]["listed_size_mb"] == 313
+
+
+def test_when2heat_source_selection_plan_identifies_primary_csv(tmp_path: Path) -> None:
+    path = write_when2heat_source_selection_plan(tmp_path)
+
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    base_metadata = tmp_path / "d-003_when2heat.json"
+
+    assert path == tmp_path / "when2heat" / "d003_when2heat_source_selection_plan.json"
+    assert base_metadata.is_file()
+    assert payload["data_id"] == "D-003"
+    assert payload["download_performed"] is False
+    assert payload["data_register_status"] == "proposed"
+    assert payload["package_version"] == "2023-07-27"
+    assert payload["selected_file_key"] == PRIMARY_WHEN2HEAT_FILE_KEY
+    assert payload["selected_file"]["filename"] == "when2heat.csv"
+    assert payload["selected_file"]["url"].endswith("/2023-07-27/when2heat.csv")
+    assert payload["selected_file"]["listed_size_mb"] == 313
+    assert payload["runtime_assessment"]["likely_exceeds_15_minutes_by_default"] is False
+    assert payload["runtime_assessment"]["minimum_average_network_mbps_for_15_min"] == 2.78
+    assert payload["alternatives_not_selected"]["zip"]["listed_size_mb"] == 497
+    assert "Concrete when2heat.csv checksum is not selected." in payload["acceptance_blockers"]
+    assert any("--download csv" in step for step in payload["checksum_workflow"])
 
 
 def test_when2heat_retrieval_records_checksum_with_local_url(tmp_path: Path) -> None:
@@ -105,6 +132,7 @@ def test_when2heat_retrieval_records_checksum_with_local_url(tmp_path: Path) -> 
     assert payload["download_performed"] is True
     assert payload["sha256_file"] == hashlib.sha256(source.read_bytes()).hexdigest()
     assert payload["data_register_update_required"] is True
+    assert payload["license"] == "Creative Commons Attribution 4.0"
 
 
 def test_load_when2heat_csv_uses_component_cop_columns(tmp_path: Path) -> None:
