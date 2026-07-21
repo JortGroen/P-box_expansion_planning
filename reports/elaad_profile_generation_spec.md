@@ -100,18 +100,40 @@ Dashboard alternative: charging.elaad.nl → profile type *charge point*, locati
 
 **Source checks:** 35,040 steps × 100 series per batch; all demands ≥ 0; returned profiles are not identical. Candidate and quarantined diagnostic batches may retain annual-energy and seasonal-shape summaries as diagnostics without hard-coded acceptance values. Fresh held-out batches commit only request/provenance, checksums, structural validation, calendar/shape integrity, finite/nonnegative checks, and distinct-member count until E3.S2a freezes its criterion. Scientific adequacy is decided only downstream under EV-005. EV-005A's low-cost replacement does not create a blanket requirement to redo materially expensive work without PI consultation. The already retrieved `A_home_car_ev_y2030` probe remains a diagnostic artifact and is not part of this primary `cp` library.
 
-### Set B — Public CP library (BLOCKED pending separate PI decision)
+### Set B — Public CP library (PROPOSED by EV-008; do not generate before PI sign-off)
 
-Charge-point-level profiles for neighbourhood public chargers; the car/van ratio is applied automatically by the tool.
+Charge-point-level profiles for neighbourhood public chargers; the car/van ratio is applied automatically by the tool. The profile member remains one public charge point, not a pole. The documentation states that at public locations two charge points share one pole connection, which affects simultaneous maximum power; any pole-level reporting or asset-count conversion must preserve that convention instead of relabelling one generated member as one pole.
 
 | Field | Value |
 |---|---|
-| Volume | Pending; the former `M = 200` proposal is not approved |
-| Generator year | Pending; do not automatically inherit EV-004 |
-| Body deltas vs Set A | `"location_type": "public"`; capacity and station/pole convention pending |
-| Storage | `B_public_vancar_cp_y{Y}_*.npz` after approval |
+| Volume | Proposed initial candidate **M = 1,000** and held-out **H = 200**; sufficiency decided only by EV-005/E3.S2a |
+| Generator year | Proposed `2030`, matching EV-004 behavior-year discipline so external adoption counts carry planning-year growth |
+| Candidate batch seeds | Proposed `150001, 150101, ..., 150901` |
+| Held-out batch seeds | Proposed `151201` and `151301`; unopened for adequacy analysis until the E3.S2a design is frozen |
+| Body deltas vs Set A | `"location_type": "public"` and proposed `"cp_capacity_kw": 22`; keep `profile_type = "cp"`, `vehicle_types = ["van", "car"]`, uncontrolled, 100 profiles per batch |
+| Storage | `data/processed/elaad_profiles/B_public_vancar_cp_y2030_*.npz` after approval |
 
-No Set B bulk request is authorized until the public capacity, station/pole unit, generator year, candidate `M`, and adoption count `K_public` are signed.
+Proposed API body (first candidate batch; repeat only after PI approval with the listed batch seeds):
+
+```json
+{
+    "start_datetime": "2025-01-01T00:00:00+01:00",
+    "stop_datetime": "2026-01-01T00:00:00+01:00",
+    "step_size_s": 900,
+    "timezone": "CET",
+    "simulated_year": 2030,
+    "profile_type": "cp",
+    "n_profiles": 100,
+    "vehicle_types": ["van", "car"],
+    "location_type": "public",
+    "cp_capacity_kw": 22,
+    "seed": 150001
+}
+```
+
+The 22 kW capacity is a recommendation, not a signed value. It should be accepted only if the PI agrees that the local public count unit in D-010/EV-007 represents public charge points compatible with a 22 kW AC charge-point profile. If the count unit is poles or connectors, or if a different public-capacity convention is required, amend EV-008 before any API call.
+
+No Set B bulk request is authorized until EV-008 is signed, including public capacity, profile unit/count-unit alignment, generator year, candidate `M`, held-out `H`, and seed ranges. Public smart charging is out of Set B scope and would require a separate EV-006-style paired-control decision.
 
 ### Set C — Calibration subset (purpose P1; no new generation)
 
@@ -142,7 +164,7 @@ C is defined as candidate Set A batch `140001`. It is used only to exercise and 
 | A candidate | 2030 | batch seeds 140001–140901 in steps of 100 | 1000 | primary residential library after EV-005 acceptance |
 | A quarantined diagnostic | 2030 | batch seeds 141001, 141101 | 200 | diagnostic history only; excluded from candidate membership and held-out adequacy certification |
 | A held-out | 2030 | batch seeds 141201, 141301 | 200 | validation only after E3.S2a freezes the criterion unless a failed test triggers a new candidate cycle |
-| B | pending | pending | pending | not authorized |
+| B proposed | 2030 | candidate batch seeds 150001-150901 in steps of 100; held-out seeds 151201 and 151301 | candidate 1000; held-out 200 | not authorized until EV-008 is signed; later public library after EV-005 acceptance |
 | C | 2030 | subset: A batch 140001 | 100 | fallback analysis only; not held out |
 | D | 2030 | batch seed 140001 reused from A | 100 matched counterparts | compare/substitute only; never aggregate with its A counterparts as independent chargers |
 | E | 2025 | batch seed 525001 | 100 | optional sensitivity only |
@@ -171,6 +193,7 @@ Rules: (1) unrelated stochastic batches use distinct ElaadNL seeds; (2) EV-006 s
 5. **Terms of use / license** — EV-002 approves internal project computation through the public API and requires regenerate-script-only data availability. Generated profiles must not be described as openly licensed or redistributable. If explicit terms later prohibit this research use, stop and escalate.
 6. **`statistics` field** — currently `null` in examples; check whether a populated mode exists (session-level metadata would improve Set C's calibration power).
 7. **Smart-pair reproducibility** — before any Set D analysis, verify that repeating Set A batch seed `140001` with only the declared smart-control fields changed returns the same member count and pairable member order; compare annual energy and document any unmet-session energy rather than assuming exact conservation.
+8. **Public Set B sign-off** — PI must accept or amend EV-008 before public profile generation. In particular, resolve the 22 kW public charge-point capacity recommendation and confirm that the local public count unit is compatible with one generated public charge-point member despite the documentation's two-charge-points-per-pole convention.
 
 ---
 
@@ -188,11 +211,12 @@ Rules: (1) unrelated stochastic batches use distinct ElaadNL seeds; (2) EV-006 s
 
 ## 9. Acceptance checklist (spec is "done" when)
 
-- [ ] Open items §7.1–.7 resolved and recorded here.
+- [ ] Open items §7.1–.8 resolved and recorded here.
 - [ ] Set A candidate and held-out batches generated, archived, checksummed, and registered; Set B remains blocked; Sets D/E remain optional.
 - [ ] Library summary reports produced; Set C calibration deltas reported in the E2.S2 fit report.
 - [x] EV-004 fixes the primary residential charge-point class and 2030 generator year.
 - [x] EV-005 requires separate finite-library and Monte Carlo uncertainty evidence.
-- [ ] E2.S6 records signed 2030/2033/2035 home charge-point counts and nodal allocation.
+- [ ] E2.S6 records signed 2030/2033/2035 home/public charge-point counts and nodal allocation.
+- [ ] EV-008 signs or amends the public Set B profile class before any public API generation.
 - [ ] E3.S2a predeclares the numerical downstream adequacy tolerance before held-out results are opened.
 - [x] EV-003 records P2 direct empirical bootstrapping as the primary EV layer; P1 remains an explicit fallback if seed, cohort-size, or downstream-adequacy conditions fail.

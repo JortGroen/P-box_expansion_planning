@@ -1,0 +1,108 @@
+{
+  "schema_version": 1,
+  "task": "E2.S2",
+  "packet": "public_profile_decision_packet",
+  "status": "proposed_not_pi_signed",
+  "created_utc": "2026-07-21T10:24:15.860204Z",
+  "source": {
+    "name": "ElaadNL Laadprofielengenerator",
+    "dashboard_url": "https://charging.elaad.nl/",
+    "api_url": "https://api.charging.data.elaad.nl",
+    "endpoint": "profile/simulate",
+    "api_docs_url": "https://api.charging.data.elaad.nl/docs#",
+    "documentation": {
+      "title": "Documentatie Laadprofielengenerator",
+      "version_date": "2025-11-10",
+      "local_pdf_consulted_read_only": "data/raw/elaadnl/Documentatie Laadprofielengenerator.pdf",
+      "page_evidence": {
+        "interfaces_and_batch_limits": "pp. 5, 7",
+        "profile_type_and_location_type": "pp. 5-6, 10",
+        "public_native_car_van_mix": "pp. 5-6, 10",
+        "seed_warning": "pp. 6-7",
+        "public_two_charge_points_per_pole": "p. 13",
+        "model_basis_and_outlook_editions": "pp. 4, 11-13",
+        "smart_charging": "pp. 6, 14",
+        "v2g_absent": "p. 14"
+      }
+    },
+    "redistribution_boundary": "EV-002: generated profiles may be used for internal computations but raw API responses and generated libraries must not be committed or redistributed."
+  },
+  "recommended_uncontrolled_public_profile_request_template": {
+    "start_datetime": "2025-01-01T00:00:00+01:00",
+    "stop_datetime": "2026-01-01T00:00:00+01:00",
+    "step_size_s": 900,
+    "timezone": "CET",
+    "simulated_year": 2030,
+    "profile_type": "cp",
+    "n_profiles": 100,
+    "vehicle_types": [
+      "van",
+      "car"
+    ],
+    "location_type": "public",
+    "cp_capacity_kw": 22,
+    "seed": "<batch_seed>"
+  },
+  "recommendation": {
+    "profile_type": "cp",
+    "profile_unit": "one public charge point profile; documentation states that public locations model two charge points sharing one pole connection, so pole-level aggregation must preserve the charge-point member unit and record the two-per-pole convention separately.",
+    "location_type": "public",
+    "vehicle_types": [
+      "van",
+      "car"
+    ],
+    "vehicle_mix": "native ElaadNL public car/van mixture; do not reweight outside the generator",
+    "cp_capacity_kw": 22,
+    "capacity_rationale": "Proposed because public AC street charging in Dutch outlook/count data is normally expressed as public charge points and ElaadNL exposes cp_capacity_kw per charge point; 22 kW should be PI-confirmed against the local-count unit before generation.",
+    "simulated_year": 2030,
+    "simulated_year_rationale": "Match EV-004 behavior-year discipline so external 2035 adoption counts, not generator-year changes, carry growth.",
+    "control_mode": "uncontrolled only",
+    "smart_charging_status": "not authorized for public Set B; any public smart counterfactual needs a separate EV-006-style same-seed pairing decision and control parameters",
+    "profiles_per_batch": 100,
+    "candidate_M": 1000,
+    "held_out_H": 200,
+    "candidate_seed_range": {
+      "start": 150001,
+      "stop": 150901,
+      "step": 100,
+      "seeds": [
+        150001,
+        150101,
+        150201,
+        150301,
+        150401,
+        150501,
+        150601,
+        150701,
+        150801,
+        150901
+      ]
+    },
+    "held_out_seed_range": {
+      "seeds": [
+        151201,
+        151301
+      ]
+    },
+    "quarantined_seed_range": {
+      "seeds": []
+    },
+    "storage_pattern_raw": "data/raw/elaad_profiles/B_public_vancar_cp_y2030_batchseed{seed}_n100.json.gz",
+    "storage_pattern_processed": "data/processed/elaad_profiles/B_public_vancar_cp_y2030_batchseed{seed}_n100.npz",
+    "storage_pattern_manifest": "data/metadata/elaad_profiles/B_public_vancar_cp_y2030_batchseed{seed}_n100_manifest.json"
+  },
+  "open_pi_decisions_before_generation": [
+    "Approve or amend EV-008, especially whether 22 kW is the correct public charge-point capacity for the local public count unit.",
+    "Confirm that the public adoption counts in D-010/EV-007 represent charge points rather than poles or connectors, or define the conversion if they do not.",
+    "Confirm that public profiles should use the fixed 2030 generator year rather than a public-specific sensitivity year.",
+    "Confirm candidate M=1000 and held-out H=200 as the initial public finite-library design.",
+    "Confirm that no public smart-charging batch is part of Set B."
+  ],
+  "future_long_run_notice_template": "LONG-RUN NOTICE\nTask: E2.S2 public Set B generation under proposed EV-008\nProcess: run data/get_elaad_profiles.py for public uncontrolled batches B_public_vancar_cp_y2030 seeds 150001-150901 and 151201-151301, 100 profiles per batch\nEstimated wall time: <pilot runtime per batch> x 12 batches plus conversion/checksum overhead; send this notice if the estimate exceeds about 15 minutes\nResource impact: network API calls, local gzip/NPZ writes under ignored data/raw and data/processed paths, CPU for validation and checksums\nCheckpoint plan: one durable batch manifest per seed under data/metadata/elaad_profiles; raw gzip and processed NPZ checksums recorded after each successful batch; completed seeds are validated before the next request\nResume procedure: rerun the same command/config; the script must validate existing request/config/checksums for completed seeds, skip verified seeds, retry only the next incomplete seed with the identical JSON body, and never register a retry as a duplicate batch",
+  "non_actions": [
+    "No public API request was made in this packet.",
+    "No raw or processed public profile file was generated.",
+    "No held-out EV batch was opened.",
+    "No integrated net-load, congestion, event, P(E), adequacy, or manuscript result was produced."
+  ]
+}
