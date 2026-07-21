@@ -73,3 +73,17 @@ Leave PI Lite and inspect broader context when:
   instead of pasting the full governance bundle.
 - Archive or stop using completed implementation/review tasks after the PR is
   merged or closed so future context starts small.
+
+## Current Decision Notes
+
+- `EV-008` is superseded. `EV-008A` approves equal-mix capacity-stratified
+  public Set B source generation only: uncontrolled ElaadNL public `cp`, fixed
+  generator year 2030, native public car/van mix, 25% each for AC capacity
+  classes 11/13/15/22 kW, candidate `M=1200`, held-out `H=400`, no public smart
+  charging, no held-out adequacy use, and no integrated analysis.
+- `HP-001` is proposed, not approved. It recommends D-003 When2Heat for
+  first-pass internal Dutch residential space-heat shape/COP use only: SFH and
+  MFH space profiles with ASHP radiator COP. Commercial heat, domestic hot
+  water, local annual HP scaling, D-004/Q-8 paired-weather acceptance,
+  cold-spell tolerances, event analysis, and manuscript results remain separate
+  blockers.
