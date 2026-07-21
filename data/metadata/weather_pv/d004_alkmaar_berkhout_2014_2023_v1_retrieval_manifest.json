@@ -1,0 +1,56 @@
+{
+  "data_id": "D-004",
+  "download_performed": true,
+  "d004_status": "proposed_pending_pi_review",
+  "no_analysis_performed": true,
+  "pi_approval_scope": "PI approved narrow checksum-recording retrieval in chat on 2026-07-21 for source bundle d004_alkmaar_berkhout_2014_2023_v1 only.",
+  "q8_shared_weather_implementation": "not implemented; Q-8 remains open",
+  "raw_data_committed": false,
+  "retrieval_scope": "four approved files only: two PVGIS-SARAH3 JSON reference files and two KNMI station 249 validated hourly ZIP files",
+  "selection_id": "d004_alkmaar_berkhout_2014_2023_v1",
+  "source_files": [
+    {
+      "file_role": "hourly_series_calibration_or_validation_reference",
+      "metadata_path": "data/metadata/weather_pv/d004_pvgis_pvgis_seriescalc_d004_alkmaar_berkhout_2014_2023_v1_metadata.json",
+      "path": "data/raw/weather_pv/pvgis/d004_alkmaar_berkhout_2014_2023_v1/pvgis_seriescalc_d004_alkmaar_berkhout_2014_2023_v1.json",
+      "sha256_file": "dca94839809cefd165edd964ddd269fbf6cc9fde7c5875905a84eb0ae830e2dc",
+      "size_bytes": 8212761,
+      "source_kind": "pvgis",
+      "source_url": "https://re.jrc.ec.europa.eu/api/v5_3/seriescalc?lat=52.63167&lon=4.74861&startyear=2014&endyear=2023&pvcalculation=1&peakpower=1.0&loss=14.0&angle=35.0&aspect=0.0&fixed=1&outputformat=json&browser=0&raddatabase=PVGIS-SARAH3"
+    },
+    {
+      "file_role": "typical_year_calibration_or_validation_only",
+      "metadata_path": "data/metadata/weather_pv/d004_pvgis_pvgis_tmy_d004_alkmaar_berkhout_2014_2023_v1_metadata.json",
+      "path": "data/raw/weather_pv/pvgis/d004_alkmaar_berkhout_2014_2023_v1/pvgis_tmy_d004_alkmaar_berkhout_2014_2023_v1.json",
+      "sha256_file": "54af286aad35a675c9993eafe122ad2d742dc28fac71608052b02c47387cdc34",
+      "size_bytes": 1269604,
+      "source_kind": "pvgis",
+      "source_url": "https://re.jrc.ec.europa.eu/api/v5_3/tmy?lat=52.63167&lon=4.74861&outputformat=json&browser=0&raddatabase=PVGIS-SARAH3"
+    },
+    {
+      "file_role": "validated_hourly_station_249_zip_2011_2020",
+      "metadata_path": "data/metadata/weather_pv/d004_knmi_uurgeg_249_2011-2020_metadata.json",
+      "path": "data/raw/weather_pv/knmi/d004_alkmaar_berkhout_2014_2023_v1/uurgeg_249_2011-2020.zip",
+      "sha256_file": "f83f255b4f1b7a1f48dba935f8396a99989fa600364425e3a45b6b5218dd4f0e",
+      "size_bytes": 1536802,
+      "source_kind": "knmi",
+      "source_url": "https://cdn.knmi.nl/knmi/map/page/klimatologie/gegevens/uurgegevens/uurgeg_249_2011-2020.zip"
+    },
+    {
+      "file_role": "validated_hourly_station_249_zip_2021_2030",
+      "metadata_path": "data/metadata/weather_pv/d004_knmi_uurgeg_249_2021-2030_metadata.json",
+      "path": "data/raw/weather_pv/knmi/d004_alkmaar_berkhout_2014_2023_v1/uurgeg_249_2021-2030.zip",
+      "sha256_file": "f68e3797217a91a4121d7aab7146da7f989f96d561c92cb613b70a77d8ed9ef2",
+      "size_bytes": 838086,
+      "source_kind": "knmi",
+      "source_url": "https://cdn.knmi.nl/knmi/map/page/klimatologie/gegevens/uurgegevens/uurgeg_249_2021-2030.zip"
+    }
+  ],
+  "validation_boundary": [
+    "checksums and file sizes are recorded for PI review",
+    "D-004 remains proposed and not PI-signed",
+    "PVGIS TMY remains calibration/validation reference only, not a realized sampled weather path",
+    "no Q-8 shared-weather contract implementation",
+    "no net-load, congestion, event, P(E), or manuscript-result analysis"
+  ]
+}
