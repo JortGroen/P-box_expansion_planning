@@ -245,6 +245,14 @@ not resolve Q-5, total-versus-firm capacity, G2 error values, or numerical
 A-013 grid-error values; those remain blocking dependencies for paper-facing
 event results.
 
+The E5.S3 T2-T4 scaffold implements this approved endpoint propagation using
+synthetic loading trajectories only. It composes the additive Tier-1 and
+relative grid-error endpoints on complete loading trajectories, preserves the
+unwidened active-power direction gate, and counts lower and upper endpoint
+events before estimating probabilities and confidence intervals. The scaffold
+does not introduce a signed A-013 value or authorize integrated event results
+while Q-5, G2, A-013, and capacity-provenance dependencies remain unresolved.
+
 <!-- methods-id: RNG-001 -->
 ### RNG-001 - Seed-Tree and CRN Identity Protocol
 
