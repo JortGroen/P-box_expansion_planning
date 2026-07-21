@@ -8,7 +8,11 @@ evidence exists yet.
 
 - Implemented only E2.S3 heat-pump data/model support.
 - Did not implement PV, KNMI/PVGIS weather retrieval, net-load integration, congestion/event analysis, or EV adequacy.
-- D-003 remains proposed. `data/get_when2heat.py --download ...` can retrieve a concrete OPSD file and write checksum metadata, but the DATA_REGISTER row is not updated here because no concrete file checksum is selected in this PR.
+- D-003 remains proposed. The prepared source-selection workflow proposes OPSD
+  package `2023-07-27`, file `when2heat.csv` (listed by OPSD as 313 MB), and
+  documents the checksum workflow in
+  `reports/e2_s3_d003_source_readiness.md`. No concrete file checksum is
+  selected in this PR stack.
 - Coordinated against the C.PV/weather branch `agent-c/E2.S4-pv-weather-inputs`
   at `74e686b`, which defines a paired weather member with temperature,
   irradiance, UTC/local timestamps, source, metadata, and
@@ -16,7 +20,7 @@ evidence exists yet.
 
 ## Implementation
 
-- `data/get_when2heat.py` now records OPSD When2Heat 2023-07-27 metadata by default and supports opt-in retrieval/checksum metadata for `datapackage`, `csv`, or `zip` files.
+- `data/get_when2heat.py` now records OPSD When2Heat 2023-07-27 metadata by default, writes a no-download D-003 source-selection plan, and supports opt-in retrieval/checksum metadata for `datapackage`, `csv`, or `zip` files.
 - `src/hp_model.py` loads selected When2Heat hourly heat-demand/COP components, converts normalized heat profiles from MW/TWh to thermal kW with an explicit annual TWh scale, divides each component by its matching COP, and aggregates electric kW.
 - Hourly data are downscaled to 15 minutes by zero-order hold. Because values are average power, repeating each hourly value four times preserves energy exactly.
 - The final heat-pump profile must align exactly to the externally supplied
@@ -31,7 +35,7 @@ evidence exists yet.
 
 ## Verification
 
-- Focused tests cover metadata-only and checksum retrieval paths without internet access, component-wise COP conversion, hourly-to-15-minute energy preservation, exact shared-weather/calendar alignment, preservation of audit identity fields, rejection of temperature-only weather objects, and the cold-week sanity diagnostic.
+- Focused tests cover metadata-only source selection, checksum retrieval paths without internet access, component-wise COP conversion, hourly-to-15-minute energy preservation, exact shared-weather/calendar alignment, preservation of audit identity fields, rejection of temperature-only weather objects, and the cold-week sanity diagnostic.
 - `.\.venv\Scripts\python.exe -m pytest tests\test_hp_model.py` passed 10 tests after the shared-weather revision.
 - Final `.\scripts\task.ps1 ownership` and `.\scripts\task.ps1 test` results are recorded in `reports/AGENT_C_LOG.md`.
 - This report contains no manuscript result, no congestion probability, and no signed data-source claim.

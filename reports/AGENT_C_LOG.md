@@ -101,3 +101,9 @@ DID: Re-read the required governance files and coordinated against C.PV/weather 
 VERIFIED: Planned-path ownership preflight passed for the revised E2.S3 source, test, report, log, status, and methods paths. Focused `.venv` pytest for `tests/test_hp_model.py tests/test_methods_registry.py` passed 12 tests; `.\scripts\task.ps1 test` passed 138 tests in 57.30 s.
 OPEN: E2.S3 remains scaffold/in-progress. No concrete When2Heat file/checksum was selected, and no real paired-weather cold-spell acceptance evidence exists.
 NEXT: Update PR #44 text and wait for PI/maintainer review or concrete D-003/weather-file authorization.
+
+## 2026-07-21 09:07 - E2.S3 - in-progress
+DID: Created stacked branch `agent-c/E2.S3-d003-source-readiness` on top of PR #44. Prepared D-003 source-readiness by proposing OPSD When2Heat `2023-07-27` `when2heat.csv` as the primary file, adding a no-download source-selection plan, documenting file size/runtime/license/provenance, and keeping HP status scaffold-only.
+VERIFIED: Ownership preflight passed for the planned Agent C paths. Focused `.venv` pytest for `tests/test_hp_model.py tests/test_data_sources.py::test_data_entrypoints_run_directly tests/test_methods_registry.py` passed 14 tests. Final `.\scripts\task.ps1 ownership` passed, and final `.\scripts\task.ps1 test` passed 139 tests with repo-local pytest temp and Numba cache paths. No external data download was performed.
+OPEN: D-003 remains proposed with no concrete checksum. Real paired-weather cold-spell acceptance and the neutral shared weather contract path remain pending; PV/weather branch `agent-c/E2.S4-shared-weather-contract-plan` records Q-7.
+NEXT: Push the stacked branch and open/update a draft stacked PR against PR #44 only.
