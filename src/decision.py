@@ -291,6 +291,12 @@ class ValueOfInformationResult:
             raise ValueError("deferral_benefit_lower must be <= deferral_benefit_upper")
         if self.information_cost_lower > self.information_cost_upper:
             raise ValueError("information_cost_lower must be <= information_cost_upper")
+        for name, value in (
+            ("net_value_lower", self.net_value_lower),
+            ("net_value_upper", self.net_value_upper),
+        ):
+            if not math.isfinite(value):
+                raise ValueError(f"{name} must be finite")
         if self.net_value_lower > self.net_value_upper:
             raise ValueError("net_value_lower must be <= net_value_upper")
         if not self.unit.strip():

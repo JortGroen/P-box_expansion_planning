@@ -586,6 +586,29 @@ def test_value_of_information_rejects_invalid_inputs() -> None:
     with pytest.raises(ValueError, match="decision_width_lower"):
         _voi_input(alpha=0.0, width=(0.4, 0.2))
 
+    for name, lower, upper in (
+        ("net_value_lower", math.nan, 1.0),
+        ("net_value_lower", -math.inf, 1.0),
+        ("net_value_upper", -1.0, math.inf),
+        ("net_value_upper", -1.0, math.nan),
+    ):
+        with pytest.raises(ValueError, match=name):
+            ValueOfInformationResult(
+                alpha=0.0,
+                lower_horizon_year=2030,
+                upper_horizon_year=2033,
+                decision_width_lower=0.1,
+                decision_width_upper=0.2,
+                deferral_benefit_lower=10.0,
+                deferral_benefit_upper=20.0,
+                information_cost_lower=1.0,
+                information_cost_upper=2.0,
+                net_value_lower=lower,
+                net_value_upper=upper,
+                unit="synthetic-eur",
+                classification=ValueOfInformationClassification.NET_POSITIVE,
+            )
+
     with pytest.raises(TypeError, match="classification"):
         ValueOfInformationResult(
             alpha=0.0,
