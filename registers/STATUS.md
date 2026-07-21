@@ -19,8 +19,8 @@ Format: `Story | Owner | status | tasks | blocked-by | PR`
 | E2.S2 EV model | C | in-progress | 4/5 | EV-004 Set A candidate M=1000, quarantined diagnostic Q=200, and fresh held-out H=200 archived locally; M sufficiency, held-out adequacy use, and within-realization replacement remain blocked by E2.S6 and EV-005/E3.S2a criteria | #35 |
 | E2.S3 HP model | C | todo | 0/4 | E2.S1, ALEA-001 | -- |
 | E2.S4 PV model | C | todo | 0/3 | E2.S1, G0, ALEA-001 | -- |
-| E2.S5 Baseline & diversity | C | in-progress | 1/2 | Baseline complete-calendar scaffold added; diversity calibration/source binding still pending; no congestion or event analysis before Q-5 | stacked on #39 |
-| E2.S6 Adoption scenarios | C | blocked | 1/3 | National D-010 projections recorded; local counts, public basis, and K_r ranges blocked by Q-7; A-014 narrowed to possible second-stage allocation | #39 |
+| E2.S5 Baseline & diversity | C | todo | 0/2 | E1.S3, ALEA-001 | -- |
+| E2.S6 Adoption scenarios | C | todo | 0/3 | E2.S1, EV-004 | -- |
 | E3.S1 Flexibility aggregator | A | todo | 0/3 | E2 models | -- |
 | E3.S2 IC-1 NetLoadProvider | A | todo | 0/4 | E3.S1, ALEA-001 | -- |
 | E3.S2a Integrated library adequacy | C | todo | 0/5 | E2.S2-E2.S6, E3.S2, ALEA-002, EV-005; resolve Q-5 before opening event-based held-out results | -- |
@@ -31,14 +31,14 @@ Format: `Story | Owner | status | tasks | blocked-by | PR`
 | E4.S2 Fallback stub | B | todo | 0/1 | E5 invariant skeleton | -- |
 | E5.S1 Fuzzy number class | B | done | 2/2 | -- | #1 |
 | E5.S2 Vertex propagation scaffold | B | done | 3/3 | G3 before scientific use | #6 |
-| E5.S3 Output-domain model-error propagation | B | in-progress | 1/4 | T2-T4: Agent A `LoadingTrajectoryResult` contract/validator, signed A-013, G2 envelope, resolved Q-5, and total-versus-firm capacity decision/provenance before paper use | #36; #13 closed |
+| E5.S3 Output-domain model-error propagation | B | in-progress | 1/4 + Agent A contract in review | T2-T4: signed A-013, G2 envelope, resolved Q-5, and total-versus-firm capacity decision/provenance before paper use | #36; #13 closed; Agent A contract #42 |
 | E5.S4 Independent cross-check | B | todo | 0/2 | E5.S1-E5.S3 | -- |
 | E6.S1 alpha_star | B | review | 1/1 | E5.S2 | #33 |
 | E6.S2 rho_star and membership | B | todo | 0/3 | E6.S1, G3 | -- |
 | E6.S3 Deferral horizon | B | todo | 0/1 | E6.S1 | -- |
 | E6.S4 VoI | B | todo | 0/2 | signed econ assumptions | -- |
 | E6.S5 Decision engine | B | todo | 0/2 | E6.S1-E6.S4 | -- |
-| E7.S1 DFMP transform | B | todo | 0/2 | -- | -- |
+| E7.S1 DFMP transform | B | review | 2/2 | -- | #38 |
 | E7.S2 Factor worksheet | B/C | todo | 0/3 | signed data rows | -- |
 | E7.S3 GATE G4 | HUMAN | todo | 0/1 | E7.S2 | -- |
 | E7.S4 Shape sensitivity | B | todo | 0/1 | G4, E6 | -- |

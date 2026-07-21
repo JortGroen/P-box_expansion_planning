@@ -27,3 +27,8 @@ dev = [
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]
+markers = [
+  "integration: tests that exercise external runtime stacks or full adapter paths",
+  "slow: tests that are intentionally excluded from the fast local suite",
+]
+norecursedirs = [".git", ".tmp", ".venv"]

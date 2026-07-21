@@ -800,6 +800,30 @@ used as indicative planning inputs and subjected to economic sensitivity; they
 are not generalized beyond the documented Stedin/Eneco context or presented as
 current regulated prices.
 
+<!-- methods-id: D-009 -->
+### D-009 - DFMP Probability-to-Possibility Transform
+
+**Status: Approved citation/protocol source for E7.S1.** The elicitation workflow uses
+the probability-to-possibility transformation of Dubois, Foulloy, Mauris, and
+Prade to convert finite probability evidence into a possibility, or fuzzy-
+membership, distribution. A possibility grade is not a probability and is not
+a percentile: grade 1 means that a state is among the most plausible and is not
+excluded by the evidence, not that the state is certain. The DFMP transform
+returns the tightest, maximally specific possibility distribution that still
+conservatively contains the original probability model, meaning that every
+event `A` satisfies `P(A) <= Pi(A)`, where `Pi(A)` is the maximum possibility
+grade among the states in `A`. For normalized finite masses `p_i`, the default
+formula is `pi_i = sum(p_j for p_j <= p_i)`; if separate plausibility scores are
+supplied, the same cumulative rule is applied over states with no greater
+score. Equal probability masses, or equal supplied scores, receive equal
+possibility grades rather than arbitrary rank-order splits. The implementation
+is checked against the paper's Example 4.1, where the maximally specific
+transform of the stated piecewise-linear density gives `pi(-1.5)=0.3`. This
+approval covers only the citation/protocol source and the implemented
+maximally specific finite DFMP convention; E7.S2 and G4 still determine the
+input probabilities, flexibility values, and fuzzy corners before any paper
+result uses them.
+
 <!-- methods-id: D-010 -->
 ### D-010 - ElaadNL Outlook Mobility Adoption Counts
 

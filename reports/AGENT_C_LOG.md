@@ -89,33 +89,3 @@ DID: Fetched/pruned origin and merged latest `origin/main` into existing branch 
 VERIFIED: `.\scripts\task.ps1 ownership` passed for Agent C with 41 changed paths authorized. `.\scripts\task.ps1 test` passed 114 tests in 83.09 s after the merge, and `git diff --check` returned clean.
 OPEN: E2.S2 remains in progress. M=1000 is not declared sufficient; fresh held-out adequacy use awaits E3.S2a criterion freeze; within-realization replacement remains pending E2.S6 cohort sizes and EV-005.
 NEXT: Update PR #35 description with the OWN-001 checklist and wait for PI/downstream criterion before held-out adequacy analysis, public Set B, smart Set D, or E2.S6 work.
-
-## 2026-07-20 00:00 - E2.S6 - in-progress
-DID: Created E2.S6 adoption scenario config from the official ElaadNL Outlook Mobility country-level home/public charge-point API counts for 2030, 2033, and 2035, added deterministic integer allocation helpers, and documented the proposed SimBench load-weight allocation rule A-014. No held-out EV batches were opened or used.
-VERIFIED: Planned-path ownership preflight passed after keeping implementation in Agent C-owned `src/ev_model.py`; `.\scripts\task.ps1 ownership` passed for 10 changed paths; `.\scripts\task.ps1 test` passed 120 tests in 67.15 s.
-OPEN: Q-7 asks PI to approve or revise the national-count-to-SimBench allocation rule before integrated EV adoption use; D-010, D-011, and A-014 remain proposed.
-NEXT: PR #39 is open with the blocked-use caveat; await PI review and Q-7 resolution before integrated EV adoption use.
-
-## 2026-07-20 16:55 - E2.S6 - blocked
-DID: Revised PR #39 so D-010 national Outlook projections are provenance-only and cannot flow into SimBench local allocation. Narrowed A-014 to possible second-stage within-grid allocation after Q-7 establishes local totals, added response checksums/timestamps/query provenance, and corrected the II3050 publication date.
-VERIFIED: Planned-path ownership preflight passed for the revised Agent C paths; `.\scripts\task.ps1 ownership` passed for 10 changed paths before and after merging latest `origin/main`; focused `.\.venv\Scripts\python.exe -m pytest tests\test_ev_model.py` passed 23 tests; post-merge full `.\scripts\task.ps1 test` passed 139 tests in 86.69 s.
-OPEN: Q-7 remains blocking: local home/public totals and EV-005 `K_r` ranges are not established until PI chooses a local scaling method and public-charging basis.
-NEXT: Update PR #39 and await Q-7 resolution before any integrated EV adoption use.
-
-## 2026-07-20 18:10 - E2.S6 RNG-001 follow-up - blocked
-DID: Updated PR #39's EV bootstrap sampler so member draws use `src.rng.ComponentStream.rng()` instead of a raw integer seed and local `np.random.default_rng` call. Added traceable `EVBootstrapSelection` records containing selected member indices, source member IDs, stream identity, and replacement setting for later manifests. No ElaadNL API calls, held-out inspection, scientific experiments, replacement-policy choice, or STATUS cleanup were performed.
-VERIFIED: Worktree started clean and already pushed; `git fetch origin --prune` and `git merge origin/main` left the branch up to date. Planned-path ownership preflight passed for `src/ev_model.py`, `tests/test_ev_model.py`, and this log. Focused `.\.venv\Scripts\python.exe -m pytest tests\test_ev_model.py tests\test_rng.py` passed 40 tests. `.\scripts\task.ps1 ownership` passed for 10 changed paths. Full `.\scripts\task.ps1 test` passed 142 tests in 149.85 s. `git diff --check` returned clean.
-OPEN: Q-7 remains blocking: local home/public totals and EV-005 `K_r` ranges are not established until PI chooses a local scaling method and public-charging basis.
-NEXT: Update PR #39 with the RNG-001 compliance note and await Q-7 resolution before any integrated EV adoption use.
-
-## 2026-07-20 19:05 - E2.S6 PR #39 corrections - blocked
-DID: Merged latest `origin/main`, renumbered E2.S6 source rows so ElaadNL Outlook is D-010 and II3050 is D-011, and kept local-count assumptions blocked under Q-7. Tightened EV adoption guards so proposed/blocked local scenarios cannot be used, node allocation requires approved A-014 status, allocation inputs validate directly, and home EV profile bootstrapping rejects non-`ev_home` component streams.
-VERIFIED: Planned-path ownership preflight passed for the Agent C/shared paths. Focused `.\.venv\Scripts\python.exe -m pytest tests\test_ev_model.py tests\test_methods_registry.py` passed 33 tests. `.\scripts\task.ps1 ownership` passed for 10 changed paths. Full `.\scripts\task.ps1 test` passed 147 tests in 75.21 s.
-OPEN: Q-7 remains blocking: local home/public totals and EV-005 `K_r` ranges are not established until PI chooses a local scaling method and public-charging basis.
-NEXT: Update PR #39 and await Q-7 resolution before any integrated EV adoption use.
-
-## 2026-07-20 20:10 - E2.S5 baseline scaffold - in-progress
-DID: Created stacked branch `agent-c/E2.S5-baseline-diversity-scaffold` on top of PR #39 and added `src/baseline_model.py`. The scaffold validates complete timezone-aware 15-minute baseline trajectories, preserves timestep order plus weekday/weekend and seasonal labels, and exposes ALEA-001/ALEA-002 metadata without congestion or adequacy claims.
-VERIFIED: Planned-path ownership preflight passed for the Agent C/shared paths. Focused `.\.venv\Scripts\python.exe -m pytest tests\test_baseline_model.py` passed 6 tests. `.\scripts\task.ps1 ownership` passed for 12 changed paths, `.\scripts\task.ps1 test` passed 153 tests in 42.25 s, and `git diff --check` returned clean.
-OPEN: E2.S5 remains in progress. Diversity calibration/source binding is not implemented, no EV held-out batches were opened, and no E3.S2a or Q-5-blocked event-based analysis was run.
-NEXT: Push this as a stacked draft PR against `agent-c/E2.S6-adoption-scenarios`; wait for PR #39 merge/refreshed base before making it merge-ready against `main`.
