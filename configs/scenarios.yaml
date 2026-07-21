@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "task_id": "E2.S6",
-  "status": "local_scaling_method_approved",
-  "description": "EV adoption inputs for 2030, 2033, and 2035. National ElaadNL Outlook projections are retained as source provenance only; EV-007 selects the local scaling route. Local SimBench-grid charge-point totals still require a predeclared CBS neighbourhood cluster and ElaadNL local forecast retrieval. EV-004 remains intact: the residential behavior library is the fixed ElaadNL 2030 home charge-point class.",
+  "status": "local_grid_adoption_totals_approved",
+  "description": "EV adoption inputs for 2030, 2033, and 2035. National ElaadNL Outlook projections are retained as source provenance only; EV-007 selects the local scaling route and EV-007A approves Alkmaar GM0361 2035 low/middle/high home/public local-grid totals. EV-004 remains intact: the residential behavior library is the fixed ElaadNL 2030 home charge-point class.",
   "source_ids": {
     "national_outlook_projection": "D-010",
     "scenario_context": "D-011",
@@ -391,10 +391,66 @@
     ]
   },
   "local_grid_scenarios": {
-    "status": "pending_local_cluster_selection",
-    "governing_decision": "EV-007",
-    "reason": "National Outlook totals are not physical counts for the SimBench grid. EV-007 approves deriving local home and public charge-point totals from a predeclared representative CBS neighbourhood cluster using ElaadNL local forecast outputs.",
-    "scenarios": []
+    "status": "approved",
+    "governing_decision": "EV-007A",
+    "reason": "EV-007A approves Alkmaar GM0361 as the representative municipality-level local adoption proxy and signs the 2035 low/middle/high home/public Outlook counts as local-grid scenario inputs. National Outlook totals remain provenance only and are not used directly as SimBench physical counts.",
+    "scenario_selection_status": "low/middle/high are executable declared branches; final paper branch selection is deferred to G5 after the predeclared capacity screen",
+    "scenarios": [
+      {
+        "year": 2035,
+        "scenario": "low",
+        "home_charge_points": 7992,
+        "public_charge_points": 4183,
+        "provenance": {
+          "source_type": "local_grid",
+          "governing_decision": "EV-007A",
+          "source_id": "D-010",
+          "area_type": "municipalities",
+          "area_identifier": "GM0361",
+          "home_charge_points": "D-010-local-GM0361-home-low-2035",
+          "public_charge_points": "D-010-local-GM0361-public-low-2035",
+          "home_response_sha256": "2b91de9e67c0ccddffa5c11293571391886b7a59414ae4549f5a0aad868e9bd4",
+          "public_response_sha256": "b97e7883c719e726b349ae16f8438d16308762125684d6b871772fac1dcef169",
+          "rounding_rule": "nearest_integer_api_number"
+        }
+      },
+      {
+        "year": 2035,
+        "scenario": "middle",
+        "home_charge_points": 9386,
+        "public_charge_points": 5127,
+        "provenance": {
+          "source_type": "local_grid",
+          "governing_decision": "EV-007A",
+          "source_id": "D-010",
+          "area_type": "municipalities",
+          "area_identifier": "GM0361",
+          "home_charge_points": "D-010-local-GM0361-home-middle-2035",
+          "public_charge_points": "D-010-local-GM0361-public-middle-2035",
+          "home_response_sha256": "7f5e22504bdf98a36b407c2e861d4583dec040ead7d93e29958b625f3b48de46",
+          "public_response_sha256": "108956322a7a9ef6872aa02bcd6605bbc2aacfc0840c1a4d07974c44364b9243",
+          "rounding_rule": "nearest_integer_api_number"
+        }
+      },
+      {
+        "year": 2035,
+        "scenario": "high",
+        "home_charge_points": 10343,
+        "public_charge_points": 6138,
+        "provenance": {
+          "source_type": "local_grid",
+          "governing_decision": "EV-007A",
+          "source_id": "D-010",
+          "area_type": "municipalities",
+          "area_identifier": "GM0361",
+          "home_charge_points": "D-010-local-GM0361-home-high-2035",
+          "public_charge_points": "D-010-local-GM0361-public-high-2035",
+          "home_response_sha256": "3f16acac00eb389bca0105ed1b7ecc899c4cf5a0983d76450ab4bcf8dd519224",
+          "public_response_sha256": "b6c2d52a8baf9f41719fbe4449554a12f06fa292d5ab716781aac5ee15ad0b07",
+          "rounding_rule": "nearest_integer_api_number"
+        }
+      }
+    ]
   },
   "allocation": {
     "status": "approved_after_local_totals",

@@ -1,20 +1,21 @@
 # E2.S6 A-014 Alkmaar Allocation Preview
 
-Status: proposed preview only; not PI-signed and not executable for integrated
-EV adoption use.
+Status: historical preview. EV-007A now approves the local totals; this preview
+still is not the executable per-node allocation source until A-014 node weights
+are materialized in `configs/scenarios.yaml`.
 
 ## Purpose
 
 This report applies the approved A-014 second-stage allocation rule to the
-proposed Alkmaar (`GM0361`) 2035 home/public charge-point totals from PR #66.
-It is a nodal allocation preview only. No EV held-out profiles were opened, no
-net-load integration was run, and no congestion/event, `P(E)`, adequacy, or
-manuscript result was produced.
+Alkmaar (`GM0361`) 2035 home/public charge-point totals later approved by
+EV-007A. It remains a nodal allocation preview only. No EV held-out profiles
+were opened, no net-load integration was run, and no congestion/event, `P(E)`,
+adequacy, or manuscript result was produced.
 
 ## Inputs
 
 - Local-count source: `configs/scenarios.yaml` / D-010 local Outlook workflow.
-- Selected cluster: Alkmaar (`GM0361`), status `proposed_not_pi_signed`.
+- Selected cluster: Alkmaar (`GM0361`), local totals approved by EV-007A.
 - Counts: low 7992 home / 4183 public; middle 9386 home / 5127 public; high 10343 home / 6138 public.
 - Allocation rule: A-014 static `p_mw` weights over in-service SimBench `net.load` rows, deterministic largest-remainder rounding with ties by node ID.
 - Grid: `simbench_semiurb`, code `1-MV-semiurb--0-sw`.
@@ -55,9 +56,8 @@ manuscript result was produced.
 
 ## Guardrails
 
-- The committed `local_grid_scenarios` block remains pending and empty.
-- This preview does not authorize `adoption_scenarios()` or
-  `adoption_node_allocations(config)` for the committed config.
-- The proposed Alkmaar local totals still require PI acceptance before they can
-  become executable local scenarios.
-- Public charging behavior profiles remain separately unresolved.
+- The committed `local_grid_scenarios` block now carries approved Alkmaar
+  total-count branches.
+- This preview does not by itself authorize `adoption_node_allocations(config)`;
+  A-014 node weights must still be materialized explicitly in the config.
+- Public charging behavior profiles are separately governed by EV-008A.

@@ -439,6 +439,7 @@ def test_committed_adoption_scenarios_config_validates() -> None:
     config = load_adoption_scenarios_config(Path("configs/scenarios.yaml"))
     national = national_outlook_projections(config)
     proposed_local = proposed_local_charge_point_counts(config)
+    scenarios = adoption_scenarios(config)
     import hashlib
 
     metadata = config["local_count_workflow"]["metadata"]
@@ -453,10 +454,19 @@ def test_committed_adoption_scenarios_config_validates() -> None:
     assert {item.status for item in proposed_local} == {"proposed_not_pi_signed"}
     assert all(item.area_identifier == "GM0361" for item in proposed_local)
     assert any(item.scenario == "middle" and item.location == "home" and item.rounded_count == 9386 for item in proposed_local)
-    assert config["local_grid_scenarios"]["status"] == "pending_local_cluster_selection"
+    assert config["local_grid_scenarios"]["status"] == "approved"
     assert config["allocation"]["status"] == "approved_after_local_totals"
-    with pytest.raises(ValueError, match="require EV-007 local totals"):
-        adoption_scenarios(config)
+    assert [(item.scenario, item.home_charge_points, item.public_charge_points) for item in scenarios] == [
+        ("low", 7992, 4183),
+        ("middle", 9386, 5127),
+        ("high", 10343, 6138),
+    ]
+    assert charge_point_range_by_year(scenarios)[2035] == {
+        "home_min": 7992,
+        "home_max": 10343,
+        "public_min": 4183,
+        "public_max": 6138,
+    }
 
 
 def test_adoption_config_accepts_approved_status() -> None:
@@ -527,10 +537,11 @@ def test_proposed_local_count_workflow_rejects_country_queries_and_bad_status() 
         validate_adoption_scenarios_config(config)
 
 
-def test_blocked_committed_local_scenarios_cannot_allocate() -> None:
+def test_committed_local_scenarios_wait_for_materialized_node_weights() -> None:
     config = load_adoption_scenarios_config(Path("configs/scenarios.yaml"))
 
-    with pytest.raises(ValueError, match="require EV-007 local totals"):
+    assert len(adoption_scenarios(config)) == 3
+    with pytest.raises(ValueError, match="approved A-014 allocation"):
         adoption_node_allocations(config)
 
 
@@ -641,7 +652,7 @@ def test_proposed_a014_preview_uses_alkmaar_counts_without_executing_scenarios()
         "high": (10343, 6138),
     }
     assert preview[1].home_by_node == {"load_a": 5328, "load_b": 2664}
-    with pytest.raises(ValueError, match="require EV-007 local totals"):
+    with pytest.raises(ValueError, match="approved A-014 allocation"):
         adoption_node_allocations(config)
 
 
@@ -677,7 +688,7 @@ def test_committed_a014_alkmaar_preview_preserves_totals_and_status() -> None:
         assert sum(row[f"public_{scenario}"] for row in artifact["allocations_by_node"]) == artifact[
             "scenario_totals"
         ][scenario]["public"]
-    with pytest.raises(ValueError, match="require EV-007 local totals"):
+    with pytest.raises(ValueError, match="approved A-014 allocation"):
         adoption_node_allocations(config)
 
 
