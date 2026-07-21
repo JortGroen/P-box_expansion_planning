@@ -359,6 +359,25 @@ scaffold does not authorize real net-load/event analysis, paper-facing
 `rho_star` values, delivery-envelope claims, or case-selection claims until
 G3, Q-5, G2, A-013, and integrated E3 outputs are resolved.
 
+<!-- methods-id: E6.S3 -->
+### E6.S3 - Deferral-Horizon Scaffold
+
+**Status: Scaffold-only; no scientific result.** The deferral-horizon scaffold
+accepts synthetic year-indexed procurement-target results and summarizes them
+separately at each alpha level. For a given alpha, the lower horizon is the
+latest supplied year whose `rho_star` interval is fully inside the synthetic
+delivery envelope, while the upper or monitoring horizon is the latest supplied
+year whose interval is either fully inside or overlaps the envelope. Years
+classified as outside the envelope or never satisfied are reported explicitly,
+including the first unmet year and the first never-satisfied year when present.
+The scaffold preserves the underlying lower and upper `rho_star` endpoints,
+delivery-envelope endpoints, and per-year classifications; it does not
+interpolate unevaluated years, defuzzify alpha levels, or turn the framing into
+a reinforcement decision. Real deferral-horizon use remains blocked until the
+primary 2035 p-box and supporting 2030/2033 p-boxes are produced through the
+frozen manifested pipeline, and until G3, Q-5, G2, A-013, integrated E3 outputs,
+and the G4/flexibility-envelope decision permit paper-facing interpretation.
+
 <!-- methods-id: G4 -->
 ### G4 - Fuzzy Controllability Elicitation
 

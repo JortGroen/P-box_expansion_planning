@@ -5,12 +5,15 @@ import math
 import pytest
 
 from src.decision import (
+    DeferralHorizonResult,
+    DeferralYearResult,
     ProcurementTargetClassification,
     ProcurementTargetResult,
     RhoProbabilityPoint,
     RhoStarAlphaResult,
     alpha_star,
     classify_procurement_target,
+    deferral_horizon_from_procurement_targets,
     rho_star_from_probability_curves,
     rho_star_membership,
 )
@@ -273,6 +276,202 @@ def test_procurement_target_rejects_empty_family_and_invalid_results() -> None:
         )
 
 
+def test_deferral_horizon_reports_alpha_indexed_synthetic_year_bounds() -> None:
+    yearly_targets = {
+        2030: {
+            0.0: _procurement_result(
+                alpha=0.0,
+                rho_lower=0.30,
+                rho_upper=0.50,
+                classification=ProcurementTargetClassification.INSIDE_ENVELOPE,
+            ),
+            0.5: _procurement_result(
+                alpha=0.5,
+                rho_lower=0.40,
+                rho_upper=0.50,
+                classification=ProcurementTargetClassification.INSIDE_ENVELOPE,
+            ),
+        },
+        2033: {
+            0.0: _procurement_result(
+                alpha=0.0,
+                rho_lower=0.55,
+                rho_upper=0.85,
+                classification=ProcurementTargetClassification.OVERLAPPING_MONITOR,
+            ),
+            0.5: _procurement_result(
+                alpha=0.5,
+                rho_lower=0.55,
+                rho_upper=0.70,
+                classification=ProcurementTargetClassification.INSIDE_ENVELOPE,
+            ),
+        },
+        2035: {
+            0.0: _procurement_result(
+                alpha=0.0,
+                rho_lower=0.95,
+                rho_upper=1.0,
+                classification=ProcurementTargetClassification.OUTSIDE_ENVELOPE,
+            ),
+            0.5: _procurement_result(
+                alpha=0.5,
+                rho_lower=0.8,
+                rho_upper=math.inf,
+                classification=ProcurementTargetClassification.NEVER_SATISFIED,
+            ),
+        },
+    }
+
+    result = deferral_horizon_from_procurement_targets(yearly_targets)
+
+    assert list(result) == [0.0, 0.5]
+    assert result[0.0].lower_year == 2030
+    assert result[0.0].upper_year == 2033
+    assert result[0.0].first_unmet_year == 2035
+    assert result[0.0].first_never_satisfied_year is None
+    assert result[0.0].monotone_in_year is True
+    assert [year.year for year in result[0.0].yearly_results] == [2030, 2033, 2035]
+    assert result[0.0].yearly_results[1].rho_upper == pytest.approx(0.85)
+
+    assert result[0.5].lower_year == 2033
+    assert result[0.5].upper_year == 2033
+    assert result[0.5].first_unmet_year == 2035
+    assert result[0.5].first_never_satisfied_year == 2035
+    assert result[0.5].yearly_results[2].classification is (
+        ProcurementTargetClassification.NEVER_SATISFIED
+    )
+
+
+def test_deferral_horizon_handles_no_safe_or_monitoring_year() -> None:
+    result = deferral_horizon_from_procurement_targets(
+        {
+            2030: {
+                0.0: _procurement_result(
+                    alpha=0.0,
+                    rho_lower=0.91,
+                    rho_upper=1.0,
+                    classification=ProcurementTargetClassification.OUTSIDE_ENVELOPE,
+                )
+            },
+            2033: {
+                0.0: _procurement_result(
+                    alpha=0.0,
+                    rho_lower=0.8,
+                    rho_upper=math.inf,
+                    classification=ProcurementTargetClassification.NEVER_SATISFIED,
+                )
+            },
+        }
+    )
+
+    assert result[0.0].lower_year is None
+    assert result[0.0].upper_year is None
+    assert result[0.0].first_unmet_year == 2030
+    assert result[0.0].first_never_satisfied_year == 2033
+
+
+def test_deferral_horizon_flags_nonmonotone_synthetic_year_sequence() -> None:
+    result = deferral_horizon_from_procurement_targets(
+        {
+            2030: {
+                0.0: _procurement_result(
+                    alpha=0.0,
+                    classification=ProcurementTargetClassification.OUTSIDE_ENVELOPE,
+                )
+            },
+            2033: {
+                0.0: _procurement_result(
+                    alpha=0.0,
+                    classification=ProcurementTargetClassification.INSIDE_ENVELOPE,
+                )
+            },
+        }
+    )
+
+    assert result[0.0].monotone_in_year is False
+    assert result[0.0].lower_year == 2033
+    assert result[0.0].upper_year == 2033
+
+
+def test_deferral_horizon_rejects_invalid_inputs() -> None:
+    with pytest.raises(ValueError, match="at least one year"):
+        deferral_horizon_from_procurement_targets({})
+
+    with pytest.raises(ValueError, match="positive"):
+        deferral_horizon_from_procurement_targets(
+            {
+                0: {
+                    0.0: _procurement_result(
+                        alpha=0.0,
+                        classification=ProcurementTargetClassification.INSIDE_ENVELOPE,
+                    )
+                }
+            }
+        )
+
+    with pytest.raises(ValueError, match="same alpha grid"):
+        deferral_horizon_from_procurement_targets(
+            {
+                2030: {
+                    0.0: _procurement_result(
+                        alpha=0.0,
+                        classification=ProcurementTargetClassification.INSIDE_ENVELOPE,
+                    )
+                },
+                2033: {
+                    0.5: _procurement_result(
+                        alpha=0.5,
+                        classification=ProcurementTargetClassification.INSIDE_ENVELOPE,
+                    )
+                },
+            }
+        )
+
+    with pytest.raises(ValueError, match="mapping key"):
+        deferral_horizon_from_procurement_targets(
+            {
+                2030: {
+                    0.0: _procurement_result(
+                        alpha=0.5,
+                        classification=ProcurementTargetClassification.INSIDE_ENVELOPE,
+                    )
+                }
+            }
+        )
+
+    with pytest.raises(ValueError, match="yearly_results"):
+        DeferralHorizonResult(
+            alpha=0.0,
+            lower_year=None,
+            upper_year=None,
+            first_unmet_year=None,
+            first_never_satisfied_year=None,
+            monotone_in_year=True,
+            yearly_results=(),
+        )
+
+    with pytest.raises(ValueError, match="must match result alpha"):
+        DeferralHorizonResult(
+            alpha=0.5,
+            lower_year=2030,
+            upper_year=2030,
+            first_unmet_year=None,
+            first_never_satisfied_year=None,
+            monotone_in_year=True,
+            yearly_results=(
+                DeferralYearResult(
+                    year=2030,
+                    alpha=0.0,
+                    rho_lower=0.2,
+                    rho_upper=0.4,
+                    envelope_lower=0.1,
+                    envelope_upper=0.6,
+                    classification=ProcurementTargetClassification.INSIDE_ENVELOPE,
+                ),
+            ),
+        )
+
+
 def _pbox_family(rows: list[tuple[float, float]]) -> dict[float, PBoxAlphaResult]:
     return {
         alpha: PBoxAlphaResult(
@@ -295,4 +494,23 @@ def _estimate(probability: float) -> ProbabilityEstimate:
         ci_upper=min(1.0, probability + 0.001),
         successes=successes,
         sample_count=1000,
+    )
+
+
+def _procurement_result(
+    *,
+    alpha: float,
+    classification: ProcurementTargetClassification,
+    rho_lower: float = 0.3,
+    rho_upper: float = 0.6,
+    envelope_lower: float = 0.2,
+    envelope_upper: float = 0.8,
+) -> ProcurementTargetResult:
+    return ProcurementTargetResult(
+        alpha=alpha,
+        rho_lower=rho_lower,
+        rho_upper=rho_upper,
+        envelope_lower=envelope_lower,
+        envelope_upper=envelope_upper,
+        classification=classification,
     )
