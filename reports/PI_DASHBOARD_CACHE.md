@@ -1,11 +1,16 @@
 # PI Dashboard Cache
 
-Status: maintainer convenience cache; not an authority source.
+Status: maintainer convenience cache; explicitly non-authoritative.
 Last protocol update: 2026-07-21.
 
 Use this file to reduce repeated Codex context and tool-output costs during PI
 coordination. If this cache conflicts with live GitHub state, `registers/*`, or
 the project plans, the live authoritative source wins.
+
+Never use this cache alone to approve gates, settle scientific decisions,
+resolve PR conflicts, or quote manuscript numbers. In those cases it is only an
+index: inspect the current authoritative registers, plans, PR evidence, and
+manifests before advising the PI.
 
 ## PI Lite Default
 
@@ -52,7 +57,7 @@ audit.
 Leave PI Lite and inspect broader context when:
 
 - The PI is about to approve or reject a scientific decision, gate, assumption,
-  data source, or manuscript claim.
+  data source, manuscript claim, or manuscript number.
 - A PR changes contracts, scientific semantics, dependency versions, manifests,
   or ownership boundaries.
 - Live PR/check status conflicts with a register, task report, or handoff.
