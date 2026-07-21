@@ -541,8 +541,13 @@ def validate_adoption_scenarios_config(config: dict[str, Any]) -> None:
         raise ValueError("Adoption scenario config must include allocation settings")
     if allocation.get("method_id") != allocation_id:
         raise ValueError("allocation.method_id must match source_ids.local_allocation_assumption")
-    if allocation.get("status") not in {"blocked", "proposed", "approved"}:
-        raise ValueError("allocation status must be blocked, proposed, or approved")
+    if allocation.get("status") not in {
+        "blocked",
+        "proposed",
+        "approved",
+        "approved_after_local_totals",
+    }:
+        raise ValueError("allocation status is not recognized")
     weights = allocation.get("node_weights")
     if weights is None:
         source = allocation.get("node_weight_source")
@@ -553,13 +558,18 @@ def validate_adoption_scenarios_config(config: dict[str, Any]) -> None:
     local = config.get("local_grid_scenarios")
     if not isinstance(local, dict):
         raise ValueError("local_grid_scenarios must be present")
-    if local.get("status") not in {"blocked", "proposed", "approved"}:
-        raise ValueError("local_grid_scenarios status must be blocked, proposed, or approved")
+    if local.get("status") not in {
+        "blocked",
+        "proposed",
+        "approved",
+        "pending_local_cluster_selection",
+    }:
+        raise ValueError("local_grid_scenarios status is not recognized")
     scenarios = local.get("scenarios")
     if not isinstance(scenarios, list):
         raise ValueError("local_grid_scenarios.scenarios must be a list")
-    if local.get("status") in {"blocked", "proposed"} and scenarios:
-        raise ValueError("Local-grid scenarios may contain counts only after their register status is approved")
+    if local.get("status") != "approved" and scenarios:
+        raise ValueError("Local-grid scenarios may contain counts only after local totals are approved")
     scenario_keys: set[tuple[int, str]] = set()
     for item in scenarios:
         scenario = _scenario_from_mapping(item, outlook_id=outlook_id)
@@ -585,7 +595,7 @@ def adoption_scenarios(config: dict[str, Any]) -> tuple[ChargePointScenario, ...
 
     validate_adoption_scenarios_config(config)
     if config["local_grid_scenarios"].get("status") != "approved":
-        raise ValueError("Local-grid charge-point scenarios remain blocked until Q-7 is approved")
+        raise ValueError("Local-grid charge-point scenarios require EV-007 local totals before use")
     outlook_id = str(config["source_ids"]["national_outlook_projection"])
     return tuple(
         _scenario_from_mapping(item, outlook_id=outlook_id)
@@ -634,9 +644,9 @@ def adoption_node_allocations(config: dict[str, Any]) -> tuple[NodeChargePointAl
 
     scenarios = adoption_scenarios(config)
     if not scenarios:
-        raise ValueError("Local-grid charge-point counts are blocked until Q-7 selects a scaling method")
+        raise ValueError("Local-grid charge-point counts require EV-007 local totals before allocation")
     if config["allocation"].get("status") != "approved":
-        raise ValueError("Node charge-point allocation remains blocked until A-014 is approved")
+        raise ValueError("Node charge-point allocation requires approved A-014 allocation settings")
     weight_records = config["allocation"].get("node_weights")
     if weight_records is None:
         raise ValueError("adoption_node_allocations requires explicit node_weights")

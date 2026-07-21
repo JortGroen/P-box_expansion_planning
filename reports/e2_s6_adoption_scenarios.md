@@ -1,6 +1,6 @@
 # E2.S6 Adoption Scenarios
 
-Status: blocked for integrated EV adoption use until Q-7 selects and the PI signs a local scaling method.
+Status: local scaling method approved by EV-007; integrated EV adoption use still waits for Agent C to predeclare a representative CBS neighbourhood cluster, retrieve ElaadNL local forecast outputs, and derive local home/public charge-point totals.
 
 ## Source Evidence
 
@@ -21,11 +21,11 @@ Derived values:
 - `configs/scenarios.yaml` records national D-010 API values and their rounded integers as national Outlook projections.
 - These values are not physical charge-point counts for SimBench and must not enter nodal allocation directly.
 
-Blocked local values:
+Pending local values:
 
-- Local SimBench-grid home and public charge-point totals are not selected in this PR.
+- Local SimBench-grid home and public charge-point totals are not selected in this report.
 - Public charging requires its own local basis and is not inferred from the home-charge-point scaling.
-- E2.S6 T2/T3 remain incomplete for integrated use because Q-7 has not selected a local scaling method.
+- E2.S6 T2/T3 remain incomplete for integrated use until the EV-007 cluster route produces local totals and A-014 per-node allocations.
 
 ## National Outlook Projections
 
@@ -54,14 +54,14 @@ These national values are retained as source provenance only.
 
 ## Local-Grid Scaling Options
 
-Q-7 asks the PI to choose a local scaling method. Two defensible options are:
+EV-007 resolves Q-7 by selecting Option A as the primary local scaling method:
 
 - Option A: select a predeclared representative CBS neighbourhood or cluster using ElaadNL's local forecasts. This directly uses the source's local projection capability and avoids interpreting national totals as feeder counts.
-- Option B: derive local counts from national adoption rates multiplied by a sourced SimBench-equivalent household or service-area denominator. Home and public charging need separate denominators; public charging cannot simply inherit the home basis.
+- Option B: derive local counts from national adoption rates multiplied by a sourced SimBench-equivalent household or service-area denominator. Home and public charging need separate denominators; public charging cannot simply inherit the home basis. EV-007 keeps this only as a fallback or sensitivity if local forecast retrieval or justification fails.
 
 ## Possible Second-Stage Allocation
 
-A-014 is narrowed to a possible second-stage allocation only. After a local total is established, the project may allocate that local total across the 115 in-service SimBench `net.load` rows using static `p_mw` weights and deterministic largest-remainder rounding. This PR records the machinery and validation for that step, but no national-total-derived `K_r` table is reported.
+A-014 is approved only as a second-stage allocation after EV-007 local totals exist. The project may allocate each approved local total across the 115 in-service SimBench `net.load` rows using static `p_mw` weights and deterministic largest-remainder rounding. No national-total-derived `K_r` table is reported or permitted.
 
 ## Governance Notes
 

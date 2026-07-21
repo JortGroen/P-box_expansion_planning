@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "task_id": "E2.S6",
-  "status": "blocked",
-  "description": "EV adoption inputs for 2030, 2033, and 2035. National ElaadNL Outlook projections are retained as source provenance only; local SimBench-grid charge-point totals remain blocked until Q-7 selects a scaling method. EV-004 remains intact: the residential behavior library is the fixed ElaadNL 2030 home charge-point class.",
+  "status": "local_scaling_method_approved",
+  "description": "EV adoption inputs for 2030, 2033, and 2035. National ElaadNL Outlook projections are retained as source provenance only; EV-007 selects the local scaling route. Local SimBench-grid charge-point totals still require a predeclared CBS neighbourhood cluster and ElaadNL local forecast retrieval. EV-004 remains intact: the residential behavior library is the fixed ElaadNL 2030 home charge-point class.",
   "source_ids": {
     "national_outlook_projection": "D-010",
     "scenario_context": "D-011",
@@ -59,15 +59,15 @@
     {"year": 2035, "scenario": "high", "location": "public", "value": 808048.9252578203, "rounded_count": 808049, "provenance": {"source_id": "D-010", "query": "/charging_infrastructure?area_type=country&scenario=high&location=public", "response_sha256": "c8357fbdf99dc0606c671969994a8aa931d8969192dea0a78c4fa688ae1eed4c"}}
   ],
   "local_grid_scenarios": {
-    "status": "blocked",
-    "blocking_question": "Q-7",
-    "reason": "National Outlook totals are not physical counts for the SimBench grid. Local home and public charge-point totals require a PI-selected scaling method and a public-charging local basis.",
+    "status": "pending_local_cluster_selection",
+    "governing_decision": "EV-007",
+    "reason": "National Outlook totals are not physical counts for the SimBench grid. EV-007 approves deriving local home and public charge-point totals from a predeclared representative CBS neighbourhood cluster using ElaadNL local forecast outputs.",
     "scenarios": []
   },
   "allocation": {
-    "status": "blocked",
+    "status": "approved_after_local_totals",
     "method_id": "A-014",
-    "stage": "possible_second_stage_after_local_totals",
+    "stage": "second_stage_after_ev007_local_totals",
     "node_weight_source": {
       "method_id": "A-014",
       "grid_key": "simbench_semiurb",
@@ -80,7 +80,7 @@
       "node_count": 115
     },
     "integer_rounding": "largest_remainder_ties_by_node_id",
-    "scope_note": "Within-grid p_mw weighting and largest-remainder rounding are retained only as a possible second-stage allocation after a local total is established and approved.",
+    "scope_note": "Within-grid p_mw weighting and largest-remainder rounding are approved only as the second-stage allocation after EV-007 local totals are established.",
     "public_profile_status": "Public charge-point counts need their own local basis. Public behavior profiles remain blocked by the separate Set B decision in reports/elaad_profile_generation_spec.md."
   }
 }
