@@ -14,6 +14,7 @@ from typing import Sequence
 import numpy as np
 
 from src.contracts.loading_trajectory import TimeDomain, validate_loading_trajectory_result
+from src.contracts.net_load import NetLoadResult, validate_net_load_result
 
 # G0-A3 makes 1.1 the executable default but gates scientific use on Q-5;
 # keeping it centralized prevents callers from silently retaining 1.0.
@@ -171,6 +172,48 @@ def evaluate_tier1(
     )
     validate_loading_trajectory_result(result)
     return result
+
+
+def evaluate_net_load_tier1(
+    net_load: NetLoadResult,
+    *,
+    s_nom_agg_kva: float,
+    parent_index: Sequence[int | None] | None = None,
+    decision_node: int = 0,
+    time_domain: TimeDomain = "full_year",
+    window_indices: Sequence[int] | np.ndarray | None = None,
+    threshold_pu: float = DEFAULT_THRESHOLD_PU,
+    min_consecutive_steps: int = DEFAULT_MIN_CONSECUTIVE_STEPS,
+) -> Tier1Evaluation:
+    """Evaluate a validated IC-1 result through the Tier-1 IC-2 boundary.
+
+    Parameters
+    ----------
+    net_load:
+        Validated IC-1 aggregate nodal net-load result. Active and reactive
+        power are in kW/kvar with shape ``(nodes, timesteps)``.
+    s_nom_agg_kva:
+        Aggregate transformer denominator in kVA. The caller supplies the
+        total or firm convention; this helper only routes the IC-1 trajectories.
+    parent_index, decision_node, time_domain, window_indices, threshold_pu,
+    min_consecutive_steps:
+        Passed through to :func:`evaluate_tier1`.
+    """
+
+    # Validate at the IC-1 edge so future real component adapters cannot bypass
+    # common-calendar/provenance checks before producing an IC-2 trajectory.
+    validate_net_load_result(net_load)
+    return evaluate_tier1(
+        net_load.p_net_kw,
+        net_load.q_net_kvar,
+        s_nom_agg_kva=s_nom_agg_kva,
+        parent_index=parent_index,
+        decision_node=decision_node,
+        time_domain=time_domain,
+        window_indices=window_indices,
+        threshold_pu=threshold_pu,
+        min_consecutive_steps=min_consecutive_steps,
+    )
 
 
 def radial_downstream_sum(
