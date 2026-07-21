@@ -7,6 +7,7 @@ from src.evaluator_sum import Tier1Evaluation, count_import_overload_episodes
 from src.pbox_error import (
     OutputErrorEnvelope,
     apply_output_error_envelope,
+    estimate_alpha_output_error_probability,
     estimate_output_error_probability,
     evaluate_output_error_endpoint_event,
 )
@@ -102,6 +103,55 @@ def test_output_error_probability_counts_endpoint_events_not_shifted_margins() -
     assert [event.sample_index for event in estimate.samples] == [0, 1, 2]
 
 
+def test_output_error_alpha_estimator_keeps_separate_endpoint_counts() -> None:
+    envelope = OutputErrorEnvelope(
+        epsilon_grid=0.0,
+        epsilon_tier1_minus=0.1,
+        epsilon_tier1_plus=0.1,
+    )
+    estimates = estimate_alpha_output_error_probability(
+        {
+            0.5: [
+                _trajectory([1.05, 1.05, 1.05, 1.05], p_signs=[1, 1, 1, 1]),
+                _trajectory([1.3, 1.3, 1.3, 1.3], p_signs=[1, 1, 1, 1]),
+            ],
+            0.0: [
+                _trajectory([1.0, 1.0, 1.0, 1.0], p_signs=[1, 1, 1, 1]),
+                _trajectory([1.3, 1.3, 1.3, 1.3], p_signs=[1, 1, 1, 1]),
+            ],
+        },
+        envelope,
+    )
+
+    assert list(estimates) == [0.0, 0.5]
+    assert estimates[0.0].alpha == 0.0
+    assert estimates[0.0].probability.lower.successes == 1
+    assert estimates[0.0].probability.upper.successes == 1
+    assert estimates[0.5].probability.lower.successes == 1
+    assert estimates[0.5].probability.upper.successes == 2
+    assert [event.sample_index for event in estimates[0.5].probability.samples] == [0, 1]
+
+
+def test_output_error_alpha_estimator_accepts_alpha_indexed_envelopes() -> None:
+    estimates = estimate_alpha_output_error_probability(
+        {
+            0.0: [
+                _trajectory([1.0, 1.0, 1.0, 1.0], p_signs=[1, 1, 1, 1]),
+            ],
+            1.0: [
+                _trajectory([1.0, 1.0, 1.0, 1.0], p_signs=[1, 1, 1, 1]),
+            ],
+        },
+        {
+            0.0: OutputErrorEnvelope(0.0, 0.0, 0.0),
+            1.0: OutputErrorEnvelope(0.0, 0.0, 0.2),
+        },
+    )
+
+    assert estimates[0.0].probability.upper.successes == 0
+    assert estimates[1.0].probability.upper.successes == 1
+
+
 def test_output_error_rejects_invalid_envelopes_and_shape_mismatches() -> None:
     result = _trajectory([1.0, 1.0], p_signs=[1, 1])
 
@@ -129,6 +179,25 @@ def test_output_error_empty_probability_input_is_rejected() -> None:
         estimate_output_error_probability(
             [],
             OutputErrorEnvelope(0.0, 0.0, 0.0),
+        )
+
+
+def test_output_error_alpha_estimator_rejects_invalid_alpha_inputs() -> None:
+    envelope = OutputErrorEnvelope(0.0, 0.0, 0.0)
+
+    with pytest.raises(ValueError, match="results_by_alpha"):
+        estimate_alpha_output_error_probability({}, envelope)
+
+    with pytest.raises(ValueError, match="alpha values"):
+        estimate_alpha_output_error_probability(
+            {np.nan: [_trajectory([1.0], p_signs=[1])]},
+            envelope,
+        )
+
+    with pytest.raises(ValueError, match="same alpha grid"):
+        estimate_alpha_output_error_probability(
+            {0.0: [_trajectory([1.0], p_signs=[1])]},
+            {0.5: envelope},
         )
 
 
