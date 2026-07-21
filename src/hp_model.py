@@ -27,6 +27,13 @@ PV_WEATHER_FIELD_CANDIDATES = (
     "poa_global_w_per_m2",
     "irradiance_w_per_m2",
 )
+WHEN2HEAT_CSV_SEPARATOR = ";"
+WHEN2HEAT_CSV_DECIMAL = ","
+WHEN2HEAT_UTC_TIMESTAMP_COLUMN = "utc_timestamp"
+WHEN2HEAT_LOCAL_TIMESTAMP_COLUMN = "cet_cest_timestamp"
+WHEN2HEAT_HEAT_DEMAND_UNIT = "MW"
+WHEN2HEAT_HEAT_PROFILE_UNIT = "MW_per_annual_TWh"
+WHEN2HEAT_COP_UNIT = "dimensionless"
 
 
 class SharedWeatherMember(Protocol):
@@ -78,6 +85,47 @@ class When2HeatComponent:
 
 
 @dataclass(frozen=True)
+class When2HeatCsvMetadata:
+    """Auditable CSV dialect, unit, and column metadata for D-003."""
+
+    source_path: str
+    csv_separator: str
+    decimal: str
+    timestamp_column: str
+    local_timestamp_column: str | None
+    heat_demand_unit: str
+    heat_profile_unit: str
+    cop_unit: str
+    selected_heat_columns: tuple[str, ...]
+    selected_cop_columns: tuple[str, ...]
+    first_timestamp_utc: str | None
+    last_timestamp_utc: str | None
+    first_timestamp_local: str | None
+    last_timestamp_local: str | None
+    n_rows_loaded: int
+
+    def as_record(self) -> dict[str, object]:
+        """Return JSON-serializable source metadata for audit reports."""
+        return {
+            "source_path": self.source_path,
+            "csv_separator": self.csv_separator,
+            "decimal": self.decimal,
+            "timestamp_column": self.timestamp_column,
+            "local_timestamp_column": self.local_timestamp_column,
+            "heat_demand_unit": self.heat_demand_unit,
+            "heat_profile_unit": self.heat_profile_unit,
+            "cop_unit": self.cop_unit,
+            "selected_heat_columns": self.selected_heat_columns,
+            "selected_cop_columns": self.selected_cop_columns,
+            "first_timestamp_utc": self.first_timestamp_utc,
+            "last_timestamp_utc": self.last_timestamp_utc,
+            "first_timestamp_local": self.first_timestamp_local,
+            "last_timestamp_local": self.last_timestamp_local,
+            "n_rows_loaded": self.n_rows_loaded,
+        }
+
+
+@dataclass(frozen=True)
 class When2HeatHourlyProfile:
     """Hourly thermal and electric heat-pump demand from When2Heat.
 
@@ -90,6 +138,7 @@ class When2HeatHourlyProfile:
     cop: np.ndarray
     components: tuple[When2HeatComponent, ...]
     source_path: str | None = None
+    source_metadata: When2HeatCsvMetadata | None = None
 
     def __post_init__(self) -> None:
         timestamps = tuple(_as_utc_timestamp(item) for item in self.timestamps_utc)
@@ -114,6 +163,7 @@ class When2HeatQuarterHourProfile:
     components: tuple[When2HeatComponent, ...]
     source_path: str | None
     downscaling_method: str
+    source_metadata: When2HeatCsvMetadata | None = None
 
     def __post_init__(self) -> None:
         timestamps = tuple(_as_utc_timestamp(item) for item in self.timestamps_utc)
@@ -151,6 +201,7 @@ class HeatPumpProfile:
     pv_weather_field_names: tuple[str, ...]
     timestamps_local: tuple[datetime, ...] | None = None
     weather_provenance: Mapping[str, Any] = field(default_factory=dict)
+    source_metadata: Mapping[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         if not self.shared_weather_driver_id:
@@ -167,6 +218,7 @@ class HeatPumpProfile:
         temperature = np.asarray(self.temperature_c, dtype=np.float64)
         pv_weather_field_names = _coerce_field_names(self.pv_weather_field_names, "pv_weather_field_names")
         provenance = _as_provenance_mapping(self.weather_provenance, "weather_provenance")
+        source_metadata = _as_provenance_mapping(self.source_metadata, "source_metadata")
         _validate_profile_arrays(
             timestamps,
             thermal,
@@ -186,6 +238,7 @@ class HeatPumpProfile:
         object.__setattr__(self, "pv_weather_field_names", pv_weather_field_names)
         object.__setattr__(self, "timestamps_local", timestamps_local)
         object.__setattr__(self, "weather_provenance", provenance)
+        object.__setattr__(self, "source_metadata", source_metadata)
 
     @property
     def n_timesteps(self) -> int:
@@ -210,6 +263,8 @@ class HeatPumpProfile:
             "pv_weather_field_names": self.pv_weather_field_names,
             "provenance": dict(self.weather_provenance),
         }
+        if self.source_metadata:
+            record["when2heat_source"] = dict(self.source_metadata)
         if self.timestamps_local is not None:
             record.update(
                 {
@@ -276,7 +331,11 @@ def load_when2heat_hourly_csv(
     path: str | Path,
     *,
     components: Sequence[When2HeatComponent],
-    timestamp_column: str = "utc_timestamp",
+    timestamp_column: str = WHEN2HEAT_UTC_TIMESTAMP_COLUMN,
+    local_timestamp_column: str | None = WHEN2HEAT_LOCAL_TIMESTAMP_COLUMN,
+    csv_separator: str = WHEN2HEAT_CSV_SEPARATOR,
+    decimal: str = WHEN2HEAT_CSV_DECIMAL,
+    nrows: int | None = None,
 ) -> When2HeatHourlyProfile:
     """Load selected When2Heat components from the single-index hourly CSV.
 
@@ -286,9 +345,30 @@ def load_when2heat_hourly_csv(
     if not components:
         raise ValueError("At least one When2Heat component is required")
     source_path = Path(path)
-    frame = pd.read_csv(source_path)
+    if len(csv_separator) != 1:
+        raise ValueError("csv_separator must be exactly one character")
+    if len(decimal) != 1:
+        raise ValueError("decimal must be exactly one character")
+    if nrows is not None and nrows <= 0:
+        raise ValueError("nrows must be positive when provided")
+    use_columns = _when2heat_use_columns(
+        components,
+        timestamp_column=timestamp_column,
+        local_timestamp_column=local_timestamp_column,
+    )
+    # The OPSD 2023-07-27 single-index CSV is semicolon-delimited with comma
+    # decimals; using the explicit dialect prevents silent one-column parsing.
+    frame = pd.read_csv(
+        source_path,
+        sep=csv_separator,
+        decimal=decimal,
+        usecols=lambda column: column in use_columns,
+        nrows=nrows,
+    )
     if timestamp_column not in frame.columns:
         raise ValueError(f"When2Heat CSV lacks timestamp column {timestamp_column!r}")
+    if local_timestamp_column is not None and local_timestamp_column not in frame.columns:
+        raise ValueError(f"When2Heat CSV lacks local timestamp column {local_timestamp_column!r}")
 
     timestamps = tuple(_parse_utc_timestamp(value) for value in frame[timestamp_column])
     total_thermal_kw = np.zeros(len(frame), dtype=np.float64)
@@ -318,6 +398,11 @@ def load_when2heat_hourly_csv(
         total_electric_kw += thermal_kw / cop
         cop_stack.append(cop)
 
+    local_values = (
+        tuple(str(value) for value in frame[local_timestamp_column])
+        if local_timestamp_column is not None
+        else ()
+    )
     fallback_cop = np.mean(np.vstack(cop_stack), axis=0)
     equivalent_cop = np.divide(
         total_thermal_kw,
@@ -332,6 +417,23 @@ def load_when2heat_hourly_csv(
         cop=equivalent_cop,
         components=tuple(components),
         source_path=source_path.as_posix(),
+        source_metadata=When2HeatCsvMetadata(
+            source_path=source_path.as_posix(),
+            csv_separator=csv_separator,
+            decimal=decimal,
+            timestamp_column=timestamp_column,
+            local_timestamp_column=local_timestamp_column,
+            heat_demand_unit=WHEN2HEAT_HEAT_DEMAND_UNIT,
+            heat_profile_unit=WHEN2HEAT_HEAT_PROFILE_UNIT,
+            cop_unit=WHEN2HEAT_COP_UNIT,
+            selected_heat_columns=tuple(component.heat_column for component in components),
+            selected_cop_columns=tuple(component.cop_column for component in components),
+            first_timestamp_utc=timestamps[0].isoformat() if timestamps else None,
+            last_timestamp_utc=timestamps[-1].isoformat() if timestamps else None,
+            first_timestamp_local=local_values[0] if local_values else None,
+            last_timestamp_local=local_values[-1] if local_values else None,
+            n_rows_loaded=len(frame),
+        ),
     )
 
 
@@ -356,6 +458,7 @@ def downscale_hourly_to_15min(hourly: When2HeatHourlyProfile) -> When2HeatQuarte
         components=hourly.components,
         source_path=hourly.source_path,
         downscaling_method="hourly_zero_order_hold_to_15min_energy_preserving",
+        source_metadata=hourly.source_metadata,
     )
 
 
@@ -405,6 +508,11 @@ def align_heat_pump_profile(
         pv_weather_field_names=pv_weather_field_names,
         timestamps_local=timestamps_local,
         weather_provenance=_weather_provenance(weather),
+        source_metadata=(
+            when2heat_15min.source_metadata.as_record()
+            if when2heat_15min.source_metadata is not None
+            else {}
+        ),
     )
 
 
@@ -413,13 +521,21 @@ def build_heat_pump_profile_from_when2heat_csv(
     *,
     weather: SharedWeatherMember,
     components: Sequence[When2HeatComponent],
-    timestamp_column: str = "utc_timestamp",
+    timestamp_column: str = WHEN2HEAT_UTC_TIMESTAMP_COLUMN,
+    local_timestamp_column: str | None = WHEN2HEAT_LOCAL_TIMESTAMP_COLUMN,
+    csv_separator: str = WHEN2HEAT_CSV_SEPARATOR,
+    decimal: str = WHEN2HEAT_CSV_DECIMAL,
+    nrows: int | None = None,
 ) -> HeatPumpProfile:
     """Load, downscale, and align a When2Heat profile to supplied weather."""
     hourly = load_when2heat_hourly_csv(
         path,
         components=components,
         timestamp_column=timestamp_column,
+        local_timestamp_column=local_timestamp_column,
+        csv_separator=csv_separator,
+        decimal=decimal,
+        nrows=nrows,
     )
     return align_heat_pump_profile(downscale_hourly_to_15min(hourly), weather)
 
@@ -483,6 +599,21 @@ def _weather_provenance(weather: object) -> dict[str, Any]:
             continue
         provenance.update(_as_provenance_mapping(raw, f"weather {attribute}"))
     return dict(sorted(provenance.items()))
+
+
+def _when2heat_use_columns(
+    components: Sequence[When2HeatComponent],
+    *,
+    timestamp_column: str,
+    local_timestamp_column: str | None,
+) -> set[str]:
+    columns = {timestamp_column}
+    if local_timestamp_column is not None:
+        columns.add(local_timestamp_column)
+    for component in components:
+        columns.add(component.heat_column)
+        columns.add(component.cop_column)
+    return columns
 
 
 def _paired_pv_weather_field_names(weather: object, *, expected_shape: tuple[int, ...]) -> tuple[str, ...]:

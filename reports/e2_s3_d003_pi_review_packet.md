@@ -135,11 +135,10 @@ TWh scaling so adoption/building-stock volume is not hidden in D-003.
   as 2008-2022; this is consistent with local-time coverage crossing UTC
   boundaries but should be acknowledged.
 - CSV dialect: the real file is semicolon-delimited and uses comma decimals.
-  The current `load_when2heat_hourly_csv` implementation uses pandas defaults,
-  so it will not parse the real file correctly until the loader is updated or
-  explicitly called with the real dialect. This is an implementation blocker
-  before real D-003 parsing/cold-spell acceptance, not a source signoff blocker
-  by itself.
+  `load_when2heat_hourly_csv` now uses that dialect explicitly by default and
+  records the selected dialect, timestamp columns, heat/COP columns, and source
+  units in profile metadata. This resolves the parser-readiness blocker but not
+  D-003 signoff or cold-spell acceptance.
 - Heat demand units: OPSD field documentation defines `heat_demand_*` as MW and
   `heat_profile_*` as normalized MW/TWh. The scaffold's normalized-profile
   route is consistent with the latter, but annual TWh scaling remains a separate
@@ -161,12 +160,15 @@ Evidence that appears ready for PI review:
 - The recorded local byte size and SHA-256 match the committed metadata.
 - The Dutch normalized heat-profile and COP columns needed by the scaffold are
   present.
+- The HP loader can parse small real-dialect fixtures and an optional three-row
+  sample of the ignored retrieved file using semicolon separators and comma
+  decimals.
 - The raw file remains ignored and uncommitted.
 
 Evidence still missing before final E2.S3 acceptance:
 
-- Loader support or invocation for the real semicolon/comma CSV dialect.
-- A real parse over the retrieved file using the intended Dutch columns.
+- A full intended-year parse over the retrieved file using the signed Dutch
+  columns, technology defaults, and annual TWh scaling.
 - A real paired-weather cold-spell sanity check using the same weather
   realization as PV.
 - PI decision on geography, technology/COP defaults, citation wording, and
@@ -174,6 +176,7 @@ Evidence still missing before final E2.S3 acceptance:
 
 ## Validation
 
-- `.\scripts\task.ps1 ownership`: passed with 1 changed path authorized.
-- No code changes were made in this packet branch; focused HP/data-source tests
-  are not required unless code changes are added.
+- `.\.venv\Scripts\python.exe -m pytest tests\test_hp_model.py`: passed 14
+  tests after real CSV dialect support was added.
+- `.\scripts\task.ps1 ownership`: final result is recorded in the PR for this
+  follow-up branch.
