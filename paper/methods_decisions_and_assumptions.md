@@ -250,6 +250,22 @@ event results.
 
 **Status: Approved.** The seed-tree protocol derives each whole-system aleatory sample from `(root_seed, sample_index)` and each component stream from that sample seed plus the component name. Component stream identities include root-derived stream information, currently the component seed, so a source-member selection made under one root seed cannot be replayed silently under another. Alpha levels, interval endpoints, and treatment labels are branch metadata only: they reuse the same complete aleatory realization and therefore do not enter the aleatory fingerprint. Manifests record the root seed, sample seed, component stream records, selected source-member IDs, and shared physical driver IDs. CRN reuse is a variance-control and pairing device across analysis branches; it is distinct from physical dependence, which is represented separately by shared drivers such as paired weather members. This approval covers the seed-tree and CRN identity policy only; it does not approve downstream scientific runs, Q-5 threshold semantics, IC schema changes, or any numerical uncertainty values.
 
+<!-- methods-id: FLEX-001 -->
+### FLEX-001 - Flexibility Aggregation Scaffold
+
+**Status: Proposed.** The E3.S1 flexibility scaffold treats controllability
+`rho` as a deterministic multiplier in `[0, 1]` applied only to positive
+import-side demand components that are explicitly marked as controllable. It
+preserves complete aligned 15-minute trajectories and optional timestamp
+sequences, leaves PV/export and non-controllable components unchanged, and
+records per-component metadata describing eligibility, reduction, rebound, and
+the reason for any unchanged trajectory. The optional adjacent-step rebound
+mode conserves reduced component energy within the supplied trajectory and is
+included to test the interface required by the project plan; it is not a
+signed behavioral model of flexibility delivery. This scaffold does not run
+event detection, estimate `P(E)`, resolve Q-5, select a capacity convention, or
+replace the later E2/E3 integration and manifested experiment path.
+
 <!-- methods-id: ALEA-001 -->
 ### ALEA-001 - Joint Aleatory Dependency Protocol
 
