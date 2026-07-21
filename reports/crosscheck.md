@@ -106,6 +106,17 @@ qualitative scaffold, not a citation claim.
 | Baudrit-style reporting discipline | Qualitative hybrid fixture | Alpha-indexed lower/upper bounds only; no defuzzified answer | yes |
 | Output-error ordering | Synthetic loading trajectories with endpoint envelopes | Error endpoints act before event detection; probabilities are not shifted | yes |
 
+## Executable Synthetic Scaffold
+
+The first executable synthetic scaffold implements only the Gaussian toy comparison. It
+uses deterministic normal quantiles indexed by canonical `sample_seed(root_seed,
+sample_index)` identities, then routes those synthetic event indicators through
+the existing p-box endpoint pathway. The acceptance criterion is the planned
+0.01 absolute-error tolerance against the closed-form endpoint values. This is
+still synthetic trust-certificate machinery only: it does not use real net-load
+data, the project overload event, Q-5 threshold evidence, signed A-013 values,
+or manuscript numbers.
+
 ## Remaining Dependencies
 
 - G3 remains pending; vertex propagation is not authorized for paper-facing
