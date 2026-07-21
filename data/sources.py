@@ -78,6 +78,16 @@ _SOURCE_SPECS: tuple[SourceSpec, ...] = (
         raw_subdir="unit_costs",
         notes="Source access resolved by COST-001; extraction may proceed only into a traceable unit-cost table with exact thesis citation details.",
     ),
+    SourceSpec(
+        data_id="D-012",
+        item="Current public charging infrastructure inventory",
+        source="NDW/DOT-NL laadpunten open data",
+        doi_url="Docs https://docs.ndw.nu/data-uitwisseling/interface-beschrijvingen/dafne-api/dafne_api_consumer_pull/; OCPI https://opendata.ndw.nu/charging_point_locations_ocpi.json.gz",
+        license="NDW copyright page states CC0 applies unless otherwise stated; commit metadata and parser code only, not the live raw dataset",
+        retrieval_script="data/get_ndw_charging_inventory.py",
+        raw_subdir="ev_adoption",
+        notes="Proposed evidence source for public charge-point/EVSE/connector unit interpretation and the EV-008 public-capacity decision; exact municipality counts require boundary joins because OCPI lacks CBS municipality codes.",
+    ),
 )
 
 
