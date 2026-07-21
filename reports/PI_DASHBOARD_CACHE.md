@@ -81,9 +81,9 @@ Leave PI Lite and inspect broader context when:
   generator year 2030, native public car/van mix, 25% each for AC capacity
   classes 11/13/15/22 kW, candidate `M=1200`, held-out `H=400`, no public smart
   charging, no held-out adequacy use, and no integrated analysis.
-- `HP-001` is proposed, not approved. It recommends D-003 When2Heat for
-  first-pass internal Dutch residential space-heat shape/COP use only: SFH and
-  MFH space profiles with ASHP radiator COP. Commercial heat, domestic hot
-  water, local annual HP scaling, D-004/Q-8 paired-weather acceptance,
-  cold-spell tolerances, event analysis, and manuscript results remain separate
-  blockers.
+- `HP-001` is approved. D-003 When2Heat is approved for first-pass internal
+  Dutch residential HP shape/COP source use covering SFH/MFH space heat with
+  ASHP radiator COP plus SFH/MFH domestic hot water with ASHP water COP.
+  Commercial heat, local annual HP scaling, D-004/Q-8 paired-weather
+  acceptance, cold-spell tolerances, event analysis, and manuscript results
+  remain separate blockers.
