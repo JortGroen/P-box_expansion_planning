@@ -1,0 +1,12 @@
+{
+  "created_utc": "2026-07-21T12:00:30+00:00",
+  "data_id": "D-004",
+  "file_role": "validated_hourly_station_249_zip_2011_2020",
+  "path": "data/raw/weather_pv/knmi/d004_alkmaar_berkhout_2014_2023_v1/uurgeg_249_2011-2020.zip",
+  "raw_data_committed": false,
+  "sha256_file": "f83f255b4f1b7a1f48dba935f8396a99989fa600364425e3a45b6b5218dd4f0e",
+  "size_bytes": 1536802,
+  "source_kind": "knmi",
+  "source_url": "https://cdn.knmi.nl/knmi/map/page/klimatologie/gegevens/uurgegevens/uurgeg_249_2011-2020.zip",
+  "status": "local file checksum recorded; DATA_REGISTER must be updated only after PI accepts the concrete selection"
+}

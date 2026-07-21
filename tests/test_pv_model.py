@@ -357,3 +357,28 @@ def test_record_local_weather_pv_file_records_checksum_without_register_update(t
     assert payload["sha256_file"] == hashlib.sha256(b"sample weather bytes").hexdigest()
     assert payload["raw_data_committed"] is False
     assert "PI accepts" in payload["status"]
+
+
+def test_committed_d004_retrieval_manifest_records_only_approved_four_file_route() -> None:
+    manifest_path = Path("data/metadata/weather_pv/d004_alkmaar_berkhout_2014_2023_v1_retrieval_manifest.json")
+    payload = json.loads(manifest_path.read_text(encoding="utf-8"))
+    files = payload["source_files"]
+
+    assert payload["selection_id"] == "d004_alkmaar_berkhout_2014_2023_v1"
+    assert payload["download_performed"] is True
+    assert payload["d004_status"] == "proposed_pending_pi_review"
+    assert payload["raw_data_committed"] is False
+    assert payload["no_analysis_performed"] is True
+    assert payload["q8_shared_weather_implementation"].startswith("not implemented")
+    assert len(files) == 4
+    assert {item["source_kind"] for item in files} == {"pvgis", "knmi"}
+    assert {item["file_role"] for item in files} == {
+        "hourly_series_calibration_or_validation_reference",
+        "typical_year_calibration_or_validation_only",
+        "validated_hourly_station_249_zip_2011_2020",
+        "validated_hourly_station_249_zip_2021_2030",
+    }
+    assert all(len(item["sha256_file"]) == 64 for item in files)
+    assert all(item["size_bytes"] > 0 for item in files)
+    assert any("not a realized sampled weather path" in item for item in payload["validation_boundary"])
+    assert any("no net-load" in item for item in payload["validation_boundary"])

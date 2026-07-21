@@ -1,0 +1,12 @@
+{
+  "created_utc": "2026-07-21T12:00:30+00:00",
+  "data_id": "D-004",
+  "file_role": "hourly_series_calibration_or_validation_reference",
+  "path": "data/raw/weather_pv/pvgis/d004_alkmaar_berkhout_2014_2023_v1/pvgis_seriescalc_d004_alkmaar_berkhout_2014_2023_v1.json",
+  "raw_data_committed": false,
+  "sha256_file": "dca94839809cefd165edd964ddd269fbf6cc9fde7c5875905a84eb0ae830e2dc",
+  "size_bytes": 8212761,
+  "source_kind": "pvgis",
+  "source_url": "https://re.jrc.ec.europa.eu/api/v5_3/seriescalc?lat=52.63167&lon=4.74861&startyear=2014&endyear=2023&pvcalculation=1&peakpower=1.0&loss=14.0&angle=35.0&aspect=0.0&fixed=1&outputformat=json&browser=0&raddatabase=PVGIS-SARAH3",
+  "status": "local file checksum recorded; DATA_REGISTER must be updated only after PI accepts the concrete selection"
+}
