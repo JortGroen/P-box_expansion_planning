@@ -342,7 +342,7 @@ def _adoption_config() -> dict:
             "option": "EV-007 Option A",
             "selected_cluster": {
                 "area_type": "municipalities",
-                "area_identifier": "GM1705",
+                "area_identifier": "GM0361",
                 "selection_status": "proposed_not_pi_signed",
             },
             "metadata": {
@@ -350,7 +350,7 @@ def _adoption_config() -> dict:
                 "sha256": "b" * 64,
             },
             "neighborhood_filter_attempt": {
-                "query": "/filters/municipalities/neighborhoods/GM1705",
+                "query": "/filters/municipalities/neighborhoods/GM0361",
                 "result": "failed_http_500",
             },
             "proposed_2035_counts": [
@@ -365,10 +365,10 @@ def _adoption_config() -> dict:
                         "source_id": "D-010",
                         "source_type": "local_outlook_cluster",
                         "area_type": "municipalities",
-                        "area_identifier": "GM1705",
+                        "area_identifier": "GM0361",
                         "query": (
                             "/charging_infrastructure?area_type=municipalities"
-                            f"&area_identifier=GM1705&scenario={scenario}&location={location}"
+                            f"&area_identifier=GM0361&scenario={scenario}&location={location}"
                         ),
                         "response_sha256": "c" * 64,
                     },
@@ -449,8 +449,8 @@ def test_committed_adoption_scenarios_config_validates() -> None:
     assert metadata_sha256 == metadata["sha256"]
     assert {item.location for item in proposed_local} == {"home", "public"}
     assert {item.status for item in proposed_local} == {"proposed_not_pi_signed"}
-    assert all(item.area_identifier == "GM1705" for item in proposed_local)
-    assert any(item.scenario == "middle" and item.location == "home" and item.rounded_count == 8418 for item in proposed_local)
+    assert all(item.area_identifier == "GM0361" for item in proposed_local)
+    assert any(item.scenario == "middle" and item.location == "home" and item.rounded_count == 9386 for item in proposed_local)
     assert config["local_grid_scenarios"]["status"] == "pending_local_cluster_selection"
     assert config["allocation"]["status"] == "approved_after_local_totals"
     with pytest.raises(ValueError, match="require EV-007 local totals"):

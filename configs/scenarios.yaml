@@ -39,24 +39,222 @@
     }
   },
   "national_outlook_projections": [
-    {"year": 2030, "scenario": "low", "location": "home", "value": 1634177.7449595847, "rounded_count": 1634178, "provenance": {"source_id": "D-010", "query": "/charging_infrastructure?area_type=country&scenario=low&location=home", "response_sha256": "cdcdf135240c32cdb8cfa542cc6d71ee41876b429377e48e19c38678c82d2cb9"}},
-    {"year": 2033, "scenario": "low", "location": "home", "value": 1870266.7429415546, "rounded_count": 1870267, "provenance": {"source_id": "D-010", "query": "/charging_infrastructure?area_type=country&scenario=low&location=home", "response_sha256": "cdcdf135240c32cdb8cfa542cc6d71ee41876b429377e48e19c38678c82d2cb9"}},
-    {"year": 2035, "scenario": "low", "location": "home", "value": 1984323.4950302262, "rounded_count": 1984323, "provenance": {"source_id": "D-010", "query": "/charging_infrastructure?area_type=country&scenario=low&location=home", "response_sha256": "cdcdf135240c32cdb8cfa542cc6d71ee41876b429377e48e19c38678c82d2cb9"}},
-    {"year": 2030, "scenario": "low", "location": "public", "value": 314335.9035997926, "rounded_count": 314336, "provenance": {"source_id": "D-010", "query": "/charging_infrastructure?area_type=country&scenario=low&location=public", "response_sha256": "22af52bec13d927d485d2b496bf4931fc30612b037cf48435f46183bb1b000c0"}},
-    {"year": 2033, "scenario": "low", "location": "public", "value": 459410.09530765587, "rounded_count": 459410, "provenance": {"source_id": "D-010", "query": "/charging_infrastructure?area_type=country&scenario=low&location=public", "response_sha256": "22af52bec13d927d485d2b496bf4931fc30612b037cf48435f46183bb1b000c0"}},
-    {"year": 2035, "scenario": "low", "location": "public", "value": 570314.1329274195, "rounded_count": 570314, "provenance": {"source_id": "D-010", "query": "/charging_infrastructure?area_type=country&scenario=low&location=public", "response_sha256": "22af52bec13d927d485d2b496bf4931fc30612b037cf48435f46183bb1b000c0"}},
-    {"year": 2030, "scenario": "middle", "location": "home", "value": 1767963.1122278408, "rounded_count": 1767963, "provenance": {"source_id": "D-010", "query": "/charging_infrastructure?area_type=country&scenario=middle&location=home", "response_sha256": "777423434d9e0f5963137e4e66ab7481fe4368dee4580d83b64a705630a02ec2"}},
-    {"year": 2033, "scenario": "middle", "location": "home", "value": 2014739.6849298074, "rounded_count": 2014740, "provenance": {"source_id": "D-010", "query": "/charging_infrastructure?area_type=country&scenario=middle&location=home", "response_sha256": "777423434d9e0f5963137e4e66ab7481fe4368dee4580d83b64a705630a02ec2"}},
-    {"year": 2035, "scenario": "middle", "location": "home", "value": 2138671.7452869583, "rounded_count": 2138672, "provenance": {"source_id": "D-010", "query": "/charging_infrastructure?area_type=country&scenario=middle&location=home", "response_sha256": "777423434d9e0f5963137e4e66ab7481fe4368dee4580d83b64a705630a02ec2"}},
-    {"year": 2030, "scenario": "middle", "location": "public", "value": 374749.2559221372, "rounded_count": 374749, "provenance": {"source_id": "D-010", "query": "/charging_infrastructure?area_type=country&scenario=middle&location=public", "response_sha256": "de3f28a73a6261a87c9aaa54edbe64544ff2656ba4086f33c323695ee6763546"}},
-    {"year": 2033, "scenario": "middle", "location": "public", "value": 562418.2211790042, "rounded_count": 562418, "provenance": {"source_id": "D-010", "query": "/charging_infrastructure?area_type=country&scenario=middle&location=public", "response_sha256": "de3f28a73a6261a87c9aaa54edbe64544ff2656ba4086f33c323695ee6763546"}},
-    {"year": 2035, "scenario": "middle", "location": "public", "value": 695942.1030282071, "rounded_count": 695942, "provenance": {"source_id": "D-010", "query": "/charging_infrastructure?area_type=country&scenario=middle&location=public", "response_sha256": "de3f28a73a6261a87c9aaa54edbe64544ff2656ba4086f33c323695ee6763546"}},
-    {"year": 2030, "scenario": "high", "location": "home", "value": 1885470.9511492967, "rounded_count": 1885471, "provenance": {"source_id": "D-010", "query": "/charging_infrastructure?area_type=country&scenario=high&location=home", "response_sha256": "c789b73c05d330dc539bd8c104c44566e552f576de59f53dfdce10b472faa2d9"}},
-    {"year": 2033, "scenario": "high", "location": "home", "value": 2135097.773705465, "rounded_count": 2135098, "provenance": {"source_id": "D-010", "query": "/charging_infrastructure?area_type=country&scenario=high&location=home", "response_sha256": "c789b73c05d330dc539bd8c104c44566e552f576de59f53dfdce10b472faa2d9"}},
-    {"year": 2035, "scenario": "high", "location": "home", "value": 2252661.058461302, "rounded_count": 2252661, "provenance": {"source_id": "D-010", "query": "/charging_infrastructure?area_type=country&scenario=high&location=home", "response_sha256": "c789b73c05d330dc539bd8c104c44566e552f576de59f53dfdce10b472faa2d9"}},
-    {"year": 2030, "scenario": "high", "location": "public", "value": 433759.695192586, "rounded_count": 433760, "provenance": {"source_id": "D-010", "query": "/charging_infrastructure?area_type=country&scenario=high&location=public", "response_sha256": "c8357fbdf99dc0606c671969994a8aa931d8969192dea0a78c4fa688ae1eed4c"}},
-    {"year": 2033, "scenario": "high", "location": "public", "value": 649640.3622993053, "rounded_count": 649640, "provenance": {"source_id": "D-010", "query": "/charging_infrastructure?area_type=country&scenario=high&location=public", "response_sha256": "c8357fbdf99dc0606c671969994a8aa931d8969192dea0a78c4fa688ae1eed4c"}},
-    {"year": 2035, "scenario": "high", "location": "public", "value": 808048.9252578203, "rounded_count": 808049, "provenance": {"source_id": "D-010", "query": "/charging_infrastructure?area_type=country&scenario=high&location=public", "response_sha256": "c8357fbdf99dc0606c671969994a8aa931d8969192dea0a78c4fa688ae1eed4c"}}
+    {
+      "year": 2030,
+      "scenario": "low",
+      "location": "home",
+      "value": 1634177.7449595847,
+      "rounded_count": 1634178,
+      "provenance": {
+        "source_id": "D-010",
+        "query": "/charging_infrastructure?area_type=country&scenario=low&location=home",
+        "response_sha256": "cdcdf135240c32cdb8cfa542cc6d71ee41876b429377e48e19c38678c82d2cb9"
+      }
+    },
+    {
+      "year": 2033,
+      "scenario": "low",
+      "location": "home",
+      "value": 1870266.7429415546,
+      "rounded_count": 1870267,
+      "provenance": {
+        "source_id": "D-010",
+        "query": "/charging_infrastructure?area_type=country&scenario=low&location=home",
+        "response_sha256": "cdcdf135240c32cdb8cfa542cc6d71ee41876b429377e48e19c38678c82d2cb9"
+      }
+    },
+    {
+      "year": 2035,
+      "scenario": "low",
+      "location": "home",
+      "value": 1984323.4950302262,
+      "rounded_count": 1984323,
+      "provenance": {
+        "source_id": "D-010",
+        "query": "/charging_infrastructure?area_type=country&scenario=low&location=home",
+        "response_sha256": "cdcdf135240c32cdb8cfa542cc6d71ee41876b429377e48e19c38678c82d2cb9"
+      }
+    },
+    {
+      "year": 2030,
+      "scenario": "low",
+      "location": "public",
+      "value": 314335.9035997926,
+      "rounded_count": 314336,
+      "provenance": {
+        "source_id": "D-010",
+        "query": "/charging_infrastructure?area_type=country&scenario=low&location=public",
+        "response_sha256": "22af52bec13d927d485d2b496bf4931fc30612b037cf48435f46183bb1b000c0"
+      }
+    },
+    {
+      "year": 2033,
+      "scenario": "low",
+      "location": "public",
+      "value": 459410.09530765587,
+      "rounded_count": 459410,
+      "provenance": {
+        "source_id": "D-010",
+        "query": "/charging_infrastructure?area_type=country&scenario=low&location=public",
+        "response_sha256": "22af52bec13d927d485d2b496bf4931fc30612b037cf48435f46183bb1b000c0"
+      }
+    },
+    {
+      "year": 2035,
+      "scenario": "low",
+      "location": "public",
+      "value": 570314.1329274195,
+      "rounded_count": 570314,
+      "provenance": {
+        "source_id": "D-010",
+        "query": "/charging_infrastructure?area_type=country&scenario=low&location=public",
+        "response_sha256": "22af52bec13d927d485d2b496bf4931fc30612b037cf48435f46183bb1b000c0"
+      }
+    },
+    {
+      "year": 2030,
+      "scenario": "middle",
+      "location": "home",
+      "value": 1767963.1122278408,
+      "rounded_count": 1767963,
+      "provenance": {
+        "source_id": "D-010",
+        "query": "/charging_infrastructure?area_type=country&scenario=middle&location=home",
+        "response_sha256": "777423434d9e0f5963137e4e66ab7481fe4368dee4580d83b64a705630a02ec2"
+      }
+    },
+    {
+      "year": 2033,
+      "scenario": "middle",
+      "location": "home",
+      "value": 2014739.6849298074,
+      "rounded_count": 2014740,
+      "provenance": {
+        "source_id": "D-010",
+        "query": "/charging_infrastructure?area_type=country&scenario=middle&location=home",
+        "response_sha256": "777423434d9e0f5963137e4e66ab7481fe4368dee4580d83b64a705630a02ec2"
+      }
+    },
+    {
+      "year": 2035,
+      "scenario": "middle",
+      "location": "home",
+      "value": 2138671.7452869583,
+      "rounded_count": 2138672,
+      "provenance": {
+        "source_id": "D-010",
+        "query": "/charging_infrastructure?area_type=country&scenario=middle&location=home",
+        "response_sha256": "777423434d9e0f5963137e4e66ab7481fe4368dee4580d83b64a705630a02ec2"
+      }
+    },
+    {
+      "year": 2030,
+      "scenario": "middle",
+      "location": "public",
+      "value": 374749.2559221372,
+      "rounded_count": 374749,
+      "provenance": {
+        "source_id": "D-010",
+        "query": "/charging_infrastructure?area_type=country&scenario=middle&location=public",
+        "response_sha256": "de3f28a73a6261a87c9aaa54edbe64544ff2656ba4086f33c323695ee6763546"
+      }
+    },
+    {
+      "year": 2033,
+      "scenario": "middle",
+      "location": "public",
+      "value": 562418.2211790042,
+      "rounded_count": 562418,
+      "provenance": {
+        "source_id": "D-010",
+        "query": "/charging_infrastructure?area_type=country&scenario=middle&location=public",
+        "response_sha256": "de3f28a73a6261a87c9aaa54edbe64544ff2656ba4086f33c323695ee6763546"
+      }
+    },
+    {
+      "year": 2035,
+      "scenario": "middle",
+      "location": "public",
+      "value": 695942.1030282071,
+      "rounded_count": 695942,
+      "provenance": {
+        "source_id": "D-010",
+        "query": "/charging_infrastructure?area_type=country&scenario=middle&location=public",
+        "response_sha256": "de3f28a73a6261a87c9aaa54edbe64544ff2656ba4086f33c323695ee6763546"
+      }
+    },
+    {
+      "year": 2030,
+      "scenario": "high",
+      "location": "home",
+      "value": 1885470.9511492967,
+      "rounded_count": 1885471,
+      "provenance": {
+        "source_id": "D-010",
+        "query": "/charging_infrastructure?area_type=country&scenario=high&location=home",
+        "response_sha256": "c789b73c05d330dc539bd8c104c44566e552f576de59f53dfdce10b472faa2d9"
+      }
+    },
+    {
+      "year": 2033,
+      "scenario": "high",
+      "location": "home",
+      "value": 2135097.773705465,
+      "rounded_count": 2135098,
+      "provenance": {
+        "source_id": "D-010",
+        "query": "/charging_infrastructure?area_type=country&scenario=high&location=home",
+        "response_sha256": "c789b73c05d330dc539bd8c104c44566e552f576de59f53dfdce10b472faa2d9"
+      }
+    },
+    {
+      "year": 2035,
+      "scenario": "high",
+      "location": "home",
+      "value": 2252661.058461302,
+      "rounded_count": 2252661,
+      "provenance": {
+        "source_id": "D-010",
+        "query": "/charging_infrastructure?area_type=country&scenario=high&location=home",
+        "response_sha256": "c789b73c05d330dc539bd8c104c44566e552f576de59f53dfdce10b472faa2d9"
+      }
+    },
+    {
+      "year": 2030,
+      "scenario": "high",
+      "location": "public",
+      "value": 433759.695192586,
+      "rounded_count": 433760,
+      "provenance": {
+        "source_id": "D-010",
+        "query": "/charging_infrastructure?area_type=country&scenario=high&location=public",
+        "response_sha256": "c8357fbdf99dc0606c671969994a8aa931d8969192dea0a78c4fa688ae1eed4c"
+      }
+    },
+    {
+      "year": 2033,
+      "scenario": "high",
+      "location": "public",
+      "value": 649640.3622993053,
+      "rounded_count": 649640,
+      "provenance": {
+        "source_id": "D-010",
+        "query": "/charging_infrastructure?area_type=country&scenario=high&location=public",
+        "response_sha256": "c8357fbdf99dc0606c671969994a8aa931d8969192dea0a78c4fa688ae1eed4c"
+      }
+    },
+    {
+      "year": 2035,
+      "scenario": "high",
+      "location": "public",
+      "value": 808048.9252578203,
+      "rounded_count": 808049,
+      "provenance": {
+        "source_id": "D-010",
+        "query": "/charging_infrastructure?area_type=country&scenario=high&location=public",
+        "response_sha256": "c8357fbdf99dc0606c671969994a8aa931d8969192dea0a78c4fa688ae1eed4c"
+      }
+    }
   ],
   "local_count_workflow": {
     "status": "proposed_not_pi_signed",
@@ -64,33 +262,133 @@
     "source_id": "D-010",
     "metadata": {
       "path": "data/metadata/ev_adoption/e2_s6_local_adoption_counts_metadata.json",
-      "sha256": "3f29419f89d4fa643108f594d89c07a9cda3654dfae6a71900aa0236b2aeebad"
+      "sha256": "fa4af429fd3da6f017c873801aa08064e2c2220d60ea896c1a4a8d5fd5201daa"
     },
     "selected_cluster": {
       "area_type": "municipalities",
-      "area_identifier": "GM1705",
-      "name": "Lingewaard",
-      "province": "Gelderland",
-      "network_operator": "Liander",
-      "nal_region": "Oost",
+      "area_identifier": "GM0361",
+      "name": "Alkmaar",
+      "province": "Noord-Holland",
+      "network_operator": null,
+      "nal_region": null,
       "selection_status": "proposed_not_pi_signed",
-      "selection_basis": "Exogenous EV-007 Option A municipality cluster selected before integrated congestion results: non-G4 Liander/Oost municipality with documented prior use of ElaadNL neighbourhood forecasts in local public-charging policy."
+      "selection_basis": "Exogenous EV-007 Option A municipality cluster selected by PI first preference before integrated congestion results; current Outlook municipality endpoint returned complete 2035 home/public low/middle/high values."
     },
     "neighborhood_filter_attempt": {
-      "query": "/filters/municipalities/neighborhoods/GM1705",
+      "query": "/filters/municipalities/neighborhoods/GM0361",
       "result": "failed_http_500",
-      "retrieved_utc": "2026-07-21T08:34:16.0537604Z",
-      "consequence": "Individual CBS-neighbourhood rows were not accessible through the live proxy during this session; the proposed Option A basis is therefore the municipality as a CBS-area cluster."
+      "retrieved_utc": "2026-07-21T09:32:50.1236021Z",
+      "consequence": "Individual CBS-neighbourhood rows were not accessible through the live API during this session; the proposed Option A basis is therefore the municipality as a CBS-area cluster."
     },
     "proposed_2035_counts": [
-      {"year": 2035, "scenario": "low", "location": "home", "value": 8042.550122943402, "rounded_count": 8043, "status": "proposed_not_pi_signed", "provenance": {"source_id": "D-010", "source_type": "local_outlook_cluster", "area_type": "municipalities", "area_identifier": "GM1705", "query": "/charging_infrastructure?area_type=municipalities&area_identifier=GM1705&scenario=low&location=home", "response_sha256": "850cdbd618ddf9b12b8f48166c26c215ee8c0a8e4299bcf7ebda1f5ea403649d"}},
-      {"year": 2035, "scenario": "low", "location": "public", "value": 1372.8223658557333, "rounded_count": 1373, "status": "proposed_not_pi_signed", "provenance": {"source_id": "D-010", "source_type": "local_outlook_cluster", "area_type": "municipalities", "area_identifier": "GM1705", "query": "/charging_infrastructure?area_type=municipalities&area_identifier=GM1705&scenario=low&location=public", "response_sha256": "2ba1848017676748c4bc28f082b6d0659e3dbbbefda4ad7cb50fd86400d23fd2"}},
-      {"year": 2035, "scenario": "middle", "location": "home", "value": 8417.687927695493, "rounded_count": 8418, "status": "proposed_not_pi_signed", "provenance": {"source_id": "D-010", "source_type": "local_outlook_cluster", "area_type": "municipalities", "area_identifier": "GM1705", "query": "/charging_infrastructure?area_type=municipalities&area_identifier=GM1705&scenario=middle&location=home", "response_sha256": "a74e8d1d2e3f774cc3b3da99afbd4b2676ac4d0c49e89746a70b5317de882b74"}},
-      {"year": 2035, "scenario": "middle", "location": "public", "value": 1624.801030181807, "rounded_count": 1625, "status": "proposed_not_pi_signed", "provenance": {"source_id": "D-010", "source_type": "local_outlook_cluster", "area_type": "municipalities", "area_identifier": "GM1705", "query": "/charging_infrastructure?area_type=municipalities&area_identifier=GM1705&scenario=middle&location=public", "response_sha256": "0d3bc6c9eb5050e51e21700e8d77943e4fe6f78516ac560af84d68e231bda107"}},
-      {"year": 2035, "scenario": "high", "location": "home", "value": 8607.135281697223, "rounded_count": 8607, "status": "proposed_not_pi_signed", "provenance": {"source_id": "D-010", "source_type": "local_outlook_cluster", "area_type": "municipalities", "area_identifier": "GM1705", "query": "/charging_infrastructure?area_type=municipalities&area_identifier=GM1705&scenario=high&location=home", "response_sha256": "4f7e1107035dd153f658214d06fc49e682d514eb1dffdf3627a025d4a66c4364"}},
-      {"year": 2035, "scenario": "high", "location": "public", "value": 1828.6489056790774, "rounded_count": 1829, "status": "proposed_not_pi_signed", "provenance": {"source_id": "D-010", "source_type": "local_outlook_cluster", "area_type": "municipalities", "area_identifier": "GM1705", "query": "/charging_infrastructure?area_type=municipalities&area_identifier=GM1705&scenario=high&location=public", "response_sha256": "58112ea08ec4c6085e9f25496e7e929f346dea5f5bf0e2839ef4431cb950a61f"}}
+      {
+        "year": 2035,
+        "scenario": "low",
+        "location": "home",
+        "value": 7991.80830348258,
+        "rounded_count": 7992,
+        "status": "proposed_not_pi_signed",
+        "provenance": {
+          "source_id": "D-010",
+          "source_type": "local_outlook_cluster",
+          "area_type": "municipalities",
+          "area_identifier": "GM0361",
+          "query": "/charging_infrastructure?area_type=municipalities&area_identifier=GM0361&scenario=low&location=home",
+          "response_sha256": "2b91de9e67c0ccddffa5c11293571391886b7a59414ae4549f5a0aad868e9bd4"
+        }
+      },
+      {
+        "year": 2035,
+        "scenario": "low",
+        "location": "public",
+        "value": 4182.6860541073265,
+        "rounded_count": 4183,
+        "status": "proposed_not_pi_signed",
+        "provenance": {
+          "source_id": "D-010",
+          "source_type": "local_outlook_cluster",
+          "area_type": "municipalities",
+          "area_identifier": "GM0361",
+          "query": "/charging_infrastructure?area_type=municipalities&area_identifier=GM0361&scenario=low&location=public",
+          "response_sha256": "b97e7883c719e726b349ae16f8438d16308762125684d6b871772fac1dcef169"
+        }
+      },
+      {
+        "year": 2035,
+        "scenario": "middle",
+        "location": "home",
+        "value": 9386.406999563205,
+        "rounded_count": 9386,
+        "status": "proposed_not_pi_signed",
+        "provenance": {
+          "source_id": "D-010",
+          "source_type": "local_outlook_cluster",
+          "area_type": "municipalities",
+          "area_identifier": "GM0361",
+          "query": "/charging_infrastructure?area_type=municipalities&area_identifier=GM0361&scenario=middle&location=home",
+          "response_sha256": "7f5e22504bdf98a36b407c2e861d4583dec040ead7d93e29958b625f3b48de46"
+        }
+      },
+      {
+        "year": 2035,
+        "scenario": "middle",
+        "location": "public",
+        "value": 5127.01005454311,
+        "rounded_count": 5127,
+        "status": "proposed_not_pi_signed",
+        "provenance": {
+          "source_id": "D-010",
+          "source_type": "local_outlook_cluster",
+          "area_type": "municipalities",
+          "area_identifier": "GM0361",
+          "query": "/charging_infrastructure?area_type=municipalities&area_identifier=GM0361&scenario=middle&location=public",
+          "response_sha256": "108956322a7a9ef6872aa02bcd6605bbc2aacfc0840c1a4d07974c44364b9243"
+        }
+      },
+      {
+        "year": 2035,
+        "scenario": "high",
+        "location": "home",
+        "value": 10343.304477753807,
+        "rounded_count": 10343,
+        "status": "proposed_not_pi_signed",
+        "provenance": {
+          "source_id": "D-010",
+          "source_type": "local_outlook_cluster",
+          "area_type": "municipalities",
+          "area_identifier": "GM0361",
+          "query": "/charging_infrastructure?area_type=municipalities&area_identifier=GM0361&scenario=high&location=home",
+          "response_sha256": "3f16acac00eb389bca0105ed1b7ecc899c4cf5a0983d76450ab4bcf8dd519224"
+        }
+      },
+      {
+        "year": 2035,
+        "scenario": "high",
+        "location": "public",
+        "value": 6137.847745988891,
+        "rounded_count": 6138,
+        "status": "proposed_not_pi_signed",
+        "provenance": {
+          "source_id": "D-010",
+          "source_type": "local_outlook_cluster",
+          "area_type": "municipalities",
+          "area_identifier": "GM0361",
+          "query": "/charging_infrastructure?area_type=municipalities&area_identifier=GM0361&scenario=high&location=public",
+          "response_sha256": "b6c2d52a8baf9f41719fbe4449554a12f06fa292d5ab716781aac5ee15ad0b07"
+        }
+      }
     ],
-    "use_status": "review_only_not_executable"
+    "use_status": "review_only_not_executable",
+    "alternative_cluster_checks": [
+      {
+        "area_type": "municipalities",
+        "area_identifier": "GM0503",
+        "name": "Delft",
+        "province": "Zuid-Holland",
+        "status": "checked_available_not_selected",
+        "reason": "PI fallback preference; complete 2035 home/public low/middle/high municipality values were available, but Alkmaar is selected by first preference."
+      }
+    ]
   },
   "local_grid_scenarios": {
     "status": "pending_local_cluster_selection",
