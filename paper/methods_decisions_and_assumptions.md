@@ -928,6 +928,30 @@ coverage; real D-003/paired-weather cold-spell acceptance remains pending
 shared weather contract resolution, a real paired-weather cold-spell check, and
 PI review.
 
+<!-- methods-id: E2-S3-COLD-SPELL-ACCEPTANCE-DESIGN -->
+### E2-S3-COLD-SPELL-ACCEPTANCE-DESIGN - Heat-Pump Cold-Spell And Paired-Weather Acceptance Design
+
+**Status: Proposed predeclared acceptance design only.** The E2.S3 cold-spell
+and paired-weather acceptance design specifies how the project will later
+evaluate whether When2Heat-derived heat-pump profiles are acceptable for use
+with the ALEA-001 shared weather construction. The design requires HP and PV
+outputs to preserve matching `member_id`, `shared_weather_driver_id`,
+source/provenance, calendar records, and a future weather-content identity from
+the same shared weather realization. It also predeclares the calendar,
+cold-spell, and temperature-response diagnostics that a later acceptance report
+must produce: complete 15-minute UTC/local calendar checks, coldest rolling
+seven-day and three-day temperature windows, HP peak and COP timing, HP load
+inside and outside cold windows, winter/top-load overlap, and paired plots and
+tables linking temperature, HP load, COP, and PV irradiance. This paragraph and
+the design packet do not sign D-003, do not approve D-004, do not set numerical
+acceptance tolerances, do not run the check, and do not authorize net-load
+integration, event analysis, `P(E)`, capacity-screen evidence, manuscript
+claims, or any probability result. D-003 remains proposed until Q-8 is resolved,
+real D-004 weather members and checksums exist, PI-signed tolerances are
+recorded before inspection, the predeclared acceptance report is generated from
+committed code and source metadata, and the PI explicitly accepts or escalates
+the resulting evidence.
+
 <!-- methods-id: D-004 -->
 ### D-004 - Weather and PV Inputs
 
