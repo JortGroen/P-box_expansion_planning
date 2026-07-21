@@ -1,0 +1,86 @@
+{
+  "schema_version": 1,
+  "task_id": "E2.S6",
+  "status": "blocked",
+  "description": "EV adoption inputs for 2030, 2033, and 2035. National ElaadNL Outlook projections are retained as source provenance only; local SimBench-grid charge-point totals remain blocked until Q-7 selects a scaling method. EV-004 remains intact: the residential behavior library is the fixed ElaadNL 2030 home charge-point class.",
+  "source_ids": {
+    "national_outlook_projection": "D-010",
+    "scenario_context": "D-011",
+    "local_allocation_assumption": "A-014"
+  },
+  "sources": {
+    "D-010": {
+      "item": "ElaadNL Outlook Mobility 2026 national charging-infrastructure projections",
+      "url": "https://outlook.elaad.nl/scenariotool",
+      "api_base": "https://outlook.elaad.nl/api/proxy_v2",
+      "api_endpoints": {
+        "home": "/charging_infrastructure?area_type=country&scenario={scenario}&location=home",
+        "public": "/charging_infrastructure?area_type=country&scenario={scenario}&location=public"
+      },
+      "version": "Outlook Mobiliteit, last updated June 2026; dashboard validity note 24 months",
+      "license": "Creative Commons BY-NC-ND 4.0 as stated on https://outlook.elaad.nl/",
+      "retrieved_utc": "2026-07-20T14:52:59Z/2026-07-20T14:53:01Z",
+      "rounding_rule": "round floating API field `number` to nearest integer charge-point count for provenance tables only",
+      "raw_data_policy": "No raw API response files are committed; response sha256 values below identify the retrieved JSON payloads.",
+      "fields_used": {
+        "type": "charging_infrastructure",
+        "year_month": "December values for planning years 2030, 2033, and 2035",
+        "scenario": "low, middle, high",
+        "home_location": "location=home; variant=car_bev, car_phev",
+        "public_location": "location=public; variant=van, car_bev, car_phev"
+      }
+    },
+    "D-011": {
+      "item": "Netbeheer Nederland II3050 edition 2 scenario context",
+      "url": "https://www.netbeheernederland.nl/publicatie/ii3050-eindrapport",
+      "version": "Integrale Infrastructuurverkenning 2030-2050, edition 2, publication page dated 11 October 2023",
+      "license": "Public web publication; no dataset redistributed",
+      "fields_used": "Scenario framing for 2030-2050 infrastructure planning only. No numerical charge-point counts are copied from II3050 in this E2.S6 config."
+    }
+  },
+  "national_outlook_projections": [
+    {"year": 2030, "scenario": "low", "location": "home", "value": 1634177.7449595847, "rounded_count": 1634178, "provenance": {"source_id": "D-010", "query": "/charging_infrastructure?area_type=country&scenario=low&location=home", "response_sha256": "cdcdf135240c32cdb8cfa542cc6d71ee41876b429377e48e19c38678c82d2cb9"}},
+    {"year": 2033, "scenario": "low", "location": "home", "value": 1870266.7429415546, "rounded_count": 1870267, "provenance": {"source_id": "D-010", "query": "/charging_infrastructure?area_type=country&scenario=low&location=home", "response_sha256": "cdcdf135240c32cdb8cfa542cc6d71ee41876b429377e48e19c38678c82d2cb9"}},
+    {"year": 2035, "scenario": "low", "location": "home", "value": 1984323.4950302262, "rounded_count": 1984323, "provenance": {"source_id": "D-010", "query": "/charging_infrastructure?area_type=country&scenario=low&location=home", "response_sha256": "cdcdf135240c32cdb8cfa542cc6d71ee41876b429377e48e19c38678c82d2cb9"}},
+    {"year": 2030, "scenario": "low", "location": "public", "value": 314335.9035997926, "rounded_count": 314336, "provenance": {"source_id": "D-010", "query": "/charging_infrastructure?area_type=country&scenario=low&location=public", "response_sha256": "22af52bec13d927d485d2b496bf4931fc30612b037cf48435f46183bb1b000c0"}},
+    {"year": 2033, "scenario": "low", "location": "public", "value": 459410.09530765587, "rounded_count": 459410, "provenance": {"source_id": "D-010", "query": "/charging_infrastructure?area_type=country&scenario=low&location=public", "response_sha256": "22af52bec13d927d485d2b496bf4931fc30612b037cf48435f46183bb1b000c0"}},
+    {"year": 2035, "scenario": "low", "location": "public", "value": 570314.1329274195, "rounded_count": 570314, "provenance": {"source_id": "D-010", "query": "/charging_infrastructure?area_type=country&scenario=low&location=public", "response_sha256": "22af52bec13d927d485d2b496bf4931fc30612b037cf48435f46183bb1b000c0"}},
+    {"year": 2030, "scenario": "middle", "location": "home", "value": 1767963.1122278408, "rounded_count": 1767963, "provenance": {"source_id": "D-010", "query": "/charging_infrastructure?area_type=country&scenario=middle&location=home", "response_sha256": "777423434d9e0f5963137e4e66ab7481fe4368dee4580d83b64a705630a02ec2"}},
+    {"year": 2033, "scenario": "middle", "location": "home", "value": 2014739.6849298074, "rounded_count": 2014740, "provenance": {"source_id": "D-010", "query": "/charging_infrastructure?area_type=country&scenario=middle&location=home", "response_sha256": "777423434d9e0f5963137e4e66ab7481fe4368dee4580d83b64a705630a02ec2"}},
+    {"year": 2035, "scenario": "middle", "location": "home", "value": 2138671.7452869583, "rounded_count": 2138672, "provenance": {"source_id": "D-010", "query": "/charging_infrastructure?area_type=country&scenario=middle&location=home", "response_sha256": "777423434d9e0f5963137e4e66ab7481fe4368dee4580d83b64a705630a02ec2"}},
+    {"year": 2030, "scenario": "middle", "location": "public", "value": 374749.2559221372, "rounded_count": 374749, "provenance": {"source_id": "D-010", "query": "/charging_infrastructure?area_type=country&scenario=middle&location=public", "response_sha256": "de3f28a73a6261a87c9aaa54edbe64544ff2656ba4086f33c323695ee6763546"}},
+    {"year": 2033, "scenario": "middle", "location": "public", "value": 562418.2211790042, "rounded_count": 562418, "provenance": {"source_id": "D-010", "query": "/charging_infrastructure?area_type=country&scenario=middle&location=public", "response_sha256": "de3f28a73a6261a87c9aaa54edbe64544ff2656ba4086f33c323695ee6763546"}},
+    {"year": 2035, "scenario": "middle", "location": "public", "value": 695942.1030282071, "rounded_count": 695942, "provenance": {"source_id": "D-010", "query": "/charging_infrastructure?area_type=country&scenario=middle&location=public", "response_sha256": "de3f28a73a6261a87c9aaa54edbe64544ff2656ba4086f33c323695ee6763546"}},
+    {"year": 2030, "scenario": "high", "location": "home", "value": 1885470.9511492967, "rounded_count": 1885471, "provenance": {"source_id": "D-010", "query": "/charging_infrastructure?area_type=country&scenario=high&location=home", "response_sha256": "c789b73c05d330dc539bd8c104c44566e552f576de59f53dfdce10b472faa2d9"}},
+    {"year": 2033, "scenario": "high", "location": "home", "value": 2135097.773705465, "rounded_count": 2135098, "provenance": {"source_id": "D-010", "query": "/charging_infrastructure?area_type=country&scenario=high&location=home", "response_sha256": "c789b73c05d330dc539bd8c104c44566e552f576de59f53dfdce10b472faa2d9"}},
+    {"year": 2035, "scenario": "high", "location": "home", "value": 2252661.058461302, "rounded_count": 2252661, "provenance": {"source_id": "D-010", "query": "/charging_infrastructure?area_type=country&scenario=high&location=home", "response_sha256": "c789b73c05d330dc539bd8c104c44566e552f576de59f53dfdce10b472faa2d9"}},
+    {"year": 2030, "scenario": "high", "location": "public", "value": 433759.695192586, "rounded_count": 433760, "provenance": {"source_id": "D-010", "query": "/charging_infrastructure?area_type=country&scenario=high&location=public", "response_sha256": "c8357fbdf99dc0606c671969994a8aa931d8969192dea0a78c4fa688ae1eed4c"}},
+    {"year": 2033, "scenario": "high", "location": "public", "value": 649640.3622993053, "rounded_count": 649640, "provenance": {"source_id": "D-010", "query": "/charging_infrastructure?area_type=country&scenario=high&location=public", "response_sha256": "c8357fbdf99dc0606c671969994a8aa931d8969192dea0a78c4fa688ae1eed4c"}},
+    {"year": 2035, "scenario": "high", "location": "public", "value": 808048.9252578203, "rounded_count": 808049, "provenance": {"source_id": "D-010", "query": "/charging_infrastructure?area_type=country&scenario=high&location=public", "response_sha256": "c8357fbdf99dc0606c671969994a8aa931d8969192dea0a78c4fa688ae1eed4c"}}
+  ],
+  "local_grid_scenarios": {
+    "status": "blocked",
+    "blocking_question": "Q-7",
+    "reason": "National Outlook totals are not physical counts for the SimBench grid. Local home and public charge-point totals require a PI-selected scaling method and a public-charging local basis.",
+    "scenarios": []
+  },
+  "allocation": {
+    "status": "blocked",
+    "method_id": "A-014",
+    "stage": "possible_second_stage_after_local_totals",
+    "node_weight_source": {
+      "method_id": "A-014",
+      "grid_key": "simbench_semiurb",
+      "grid_code": "1-MV-semiurb--0-sw",
+      "table": "net.load",
+      "include_rows": "in_service == true",
+      "node_id_template": "load_{source_load_index:03d}",
+      "weight_column": "p_mw",
+      "total_weight_p_mw": 31.64,
+      "node_count": 115
+    },
+    "integer_rounding": "largest_remainder_ties_by_node_id",
+    "scope_note": "Within-grid p_mw weighting and largest-remainder rounding are retained only as a possible second-stage allocation after a local total is established and approved.",
+    "public_profile_status": "Public charge-point counts need their own local basis. Public behavior profiles remain blocked by the separate Set B decision in reports/elaad_profile_generation_spec.md."
+  }
+}
