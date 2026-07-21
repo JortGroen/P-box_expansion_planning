@@ -789,8 +789,12 @@ hourly heat-profile, heat-demand, and COP columns consumed by the E2.S3 loader
 without requiring the larger full archive. The prepared retrieval workflow
 streams to a temporary raw file, records resumable checkpoint metadata, computes
 the concrete SHA-256 after completion, and atomically promotes the file only
-after the download has completed; no concrete checksum is selected until the PI
-approves and reviews an actual retrieval. The implemented E2.S3 parser treats
+after the download has completed. After PI approval to run the retrieval, Agent
+C downloaded `when2heat.csv` from the OPSD package URL on
+2026-07-21T09:12:33Z, producing a 328400976-byte local raw file with SHA-256
+`f1f71790158d1de08403eea32dea7a2732050870c499938135606d9d7faac0fa`; these
+facts are proposed for PI review and do not sign D-003 or authorize manuscript
+claims. The implemented E2.S3 parser treats
 selected When2Heat heat-profile columns as average MW per annual TWh and
 requires the annual TWh scaling for each component to be passed explicitly, so
 adoption or building-stock volumes are not hidden as defaults. Each component
@@ -809,8 +813,8 @@ scaffolding for the future shared weather contract, not a final contract
 implementation. The heat-pump module does not sample weather independently or
 shuffle timesteps. Cold-period validation currently has only synthetic scaffold
 coverage; real D-003/paired-weather cold-spell acceptance remains pending
-concrete file checksum selection, shared weather contract resolution, and PI
-review.
+shared weather contract resolution, a real paired-weather cold-spell check, and
+PI review.
 
 <!-- methods-id: D-004 -->
 ### D-004 - Weather and PV Inputs

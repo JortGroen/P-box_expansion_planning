@@ -1,0 +1,31 @@
+{
+  "checkpoint_path": "data/metadata/when2heat/d003_when2heat_csv_download_checkpoint.json",
+  "data_id": "D-003",
+  "data_register_update_required": true,
+  "dataset_page": "https://data.open-power-system-data.org/when2heat/2023-07-27",
+  "doi": "https://doi.org/10.25832/when2heat/2023-07-27",
+  "download_performed": true,
+  "license": "Creative Commons Attribution 4.0",
+  "package_version": "2023-07-27",
+  "raw_path": "data/raw/when2heat/when2heat.csv",
+  "resume": {
+    "enabled": true,
+    "resumed_from_bytes": 0,
+    "server_range_status": "not_resumed_or_restarted"
+  },
+  "retrieved_at_utc": "2026-07-21T09:12:33.006594Z",
+  "retrieved_url": "https://data.open-power-system-data.org/when2heat/2023-07-27/when2heat.csv",
+  "selected_file": {
+    "description": "Single-index hourly When2Heat heat-demand and COP time series.",
+    "expected_size_note": "large profile file; OPSD page lists about 313 MB",
+    "filename": "when2heat.csv",
+    "hp_readiness_role": "proposed_primary_hp_profile_source",
+    "key": "csv",
+    "listed_size_mb": 313,
+    "url": "https://data.open-power-system-data.org/when2heat/2023-07-27/when2heat.csv"
+  },
+  "sha256_file": "f1f71790158d1de08403eea32dea7a2732050870c499938135606d9d7faac0fa",
+  "size_bytes": 328400976,
+  "source": "When2Heat, Open Power System Data",
+  "status": "concrete file retrieved; D-003 remains proposed until PI sign-off"
+}

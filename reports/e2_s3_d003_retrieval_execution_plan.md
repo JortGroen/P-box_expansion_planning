@@ -1,7 +1,8 @@
 # E2.S3 D-003 When2Heat Retrieval Execution Plan
 
-Status: execution plan only. No raw When2Heat file was downloaded for this
-report, no concrete checksum is selected, and D-003 remains proposed.
+Status: concrete retrieval/checksum completed after PI approval. D-003 remains
+proposed pending PI review/sign-off, and this report does not claim final E2.S3
+acceptance.
 
 ## Verified Source Facts
 
@@ -86,9 +87,46 @@ concrete file checksum. After retrieval, Agent C should compare:
 - `sha256_file` is nonempty and copied exactly into a proposed D-003 register
   update for PI review.
 
+## Retrieval Result
+
+After the PI approved the long-run notice, Agent C ran:
+
+```powershell
+.\.venv\Scripts\python.exe data/get_when2heat.py --download csv --resume
+```
+
+The run completed successfully without needing to resume from an existing
+partial file.
+
+- Raw path: `data/raw/when2heat/when2heat.csv`.
+- Retrieved URL:
+  https://data.open-power-system-data.org/when2heat/2023-07-27/when2heat.csv.
+- Retrieved UTC timestamp: `2026-07-21T09:12:33.006594Z`.
+- Byte size: `328400976`.
+- SHA-256:
+  `f1f71790158d1de08403eea32dea7a2732050870c499938135606d9d7faac0fa`.
+- Metadata path:
+  `data/metadata/when2heat/d003_when2heat_csv_metadata.json`.
+- Checkpoint path:
+  `data/metadata/when2heat/d003_when2heat_csv_download_checkpoint.json`.
+- Resume status: enabled, resumed from `0` bytes; checkpoint status `complete`.
+- Raw-file policy: `data/raw/when2heat/when2heat.csv` remains ignored by
+  `.gitignore` and must not be committed.
+
+## Validation After Retrieval
+
+- Focused tests:
+  `.\.venv\Scripts\python.exe -m pytest tests\test_hp_model.py tests\test_data_sources.py::test_data_entrypoints_run_directly`
+  passed 14 tests.
+- Ownership:
+  `.\scripts\task.ps1 ownership` passed with 5 changed paths authorized.
+- Raw-file ignore check:
+  `git check-ignore -v data/raw/when2heat/when2heat.csv data/raw/when2heat/when2heat.csv.tmp`
+  confirmed both raw paths are ignored by `.gitignore`.
+
 ## Acceptance Boundary
 
-This plan does not prove real D-003 acceptance. Final HP acceptance still
-requires concrete checksum review, PI sign-off where applicable, and a real
+This retrieval does not prove final D-003 or E2.S3 acceptance. Final HP
+acceptance still requires PI review/sign-off where applicable and a real
 paired-weather cold-spell sanity check using the same weather realization as
 PV. No event, probability, net-load, or manuscript result is claimed here.
