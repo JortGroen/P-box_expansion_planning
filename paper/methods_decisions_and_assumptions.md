@@ -627,11 +627,10 @@ public charge points, and high `10343` home and `6138` public charge points.
 These branches are used as scenario inputs, not as probabilities and not as a
 post-hoc tuning device. The final paper branch is selected later at G5 after
 the predeclared capacity screen, within the already frozen 2035 planning year.
-National Outlook values remain provenance and scale context only. A-014 remains
-the approved within-grid allocation rule that distributes accepted totals across
-the benchmark load nodes, but this decision does not itself choose the final
-case-study branch or produce congestion, adequacy, `P(E)`, or manuscript
-results.
+National Outlook values remain provenance and scale context only. A-014
+materializes these accepted totals across the benchmark load nodes, but this
+decision does not itself choose the final case-study branch or produce
+congestion, adequacy, `P(E)`, or manuscript results.
 
 <!-- methods-id: EV-008 -->
 ### EV-008 - Superseded Public Charge-Point Profile Protocol
@@ -857,12 +856,14 @@ nonnegative integer counts by largest-remainder rounding, with ties resolved by
 node ID for deterministic reruns. The rule must not be applied directly to the
 national ElaadNL Outlook totals recorded under D-010, and it does not itself
 select the local cluster or approve public-charging behavior profiles. The
-current A-014 preview applies this deterministic rounding rule to the Alkmaar
-values that EV-007A later accepted. The preview remains an audit artifact rather
-than the executable allocation source: per-node A-014 weights must still be
-materialized in `configs/scenarios.yaml` before `adoption_node_allocations`
-can drive net-load integration, EV held-out adequacy, event analysis, or
-manuscript results.
+current A-014 preview applied this deterministic rounding rule to the Alkmaar
+values that EV-007A later accepted. The same 115 node weights are now
+materialized in `configs/scenarios.yaml`, so `adoption_node_allocations` can
+return deterministic home/public per-node counts for each declared
+low/middle/high branch. This is still an adoption-layer input only: the
+materialized allocation does not choose the final paper branch, open EV
+held-out adequacy data, run net-load integration, perform event analysis, or
+produce manuscript results.
 
 ## Data and Evidence Choices
 

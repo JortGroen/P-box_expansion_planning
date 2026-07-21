@@ -100,8 +100,9 @@ selected local-count proposal.
 A-014 is approved as the second-stage allocation rule after EV-007A local
 totals. The local totals may be allocated across the 115 in-service SimBench
 `net.load` rows using static `p_mw` weights and deterministic largest-remainder
-rounding. This report records the total-count decision only; per-node `K_r`
-materialization remains the next implementation step.
+rounding. The per-node `K_r` materialization is now recorded in
+`configs/scenarios.yaml` as explicit A-014 `node_weights` copied from the
+allocation preview artifact.
 
 ## Guardrails
 
@@ -110,16 +111,16 @@ materialization remains the next implementation step.
   executable `local_grid_scenarios`.
 - `src.ev_model.adoption_scenarios()` may now return the three declared 2035
   Alkmaar branches.
-- `adoption_node_allocations(config)` remains blocked until A-014 node weights
-  are explicitly materialized in the config.
+- `adoption_node_allocations(config)` may now return deterministic home/public
+  per-node allocations for all three declared branches.
 - Country-level D-010 Outlook queries are rejected if supplied as proposed
   local-count provenance.
 
 ## Remaining Work
 
-- A-014 per-node allocation must still be materialized for executable nodal
-  counts.
 - Low/middle/high are declared branches; G5 selects the final paper branch
   after the predeclared capacity screen and without changing the frozen 2035
   planning year.
+- The materialized A-014 allocation does not run net-load integration, EV
+  held-out adequacy, event analysis, `P(E)`, or manuscript-result generation.
 - Public charging profile behavior is governed separately by EV-008A.

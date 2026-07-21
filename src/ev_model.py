@@ -592,6 +592,8 @@ def validate_adoption_scenarios_config(config: dict[str, Any]) -> None:
         raise ValueError("allocation status is not recognized")
     weights = allocation.get("node_weights")
     if weights is None:
+        if allocation.get("status") == "approved":
+            raise ValueError("approved A-014 allocation requires explicit node_weights")
         source = allocation.get("node_weight_source")
         if not isinstance(source, dict) or source.get("method_id") != allocation_id:
             raise ValueError("allocation must provide node_weights or an A-014 node_weight_source")
