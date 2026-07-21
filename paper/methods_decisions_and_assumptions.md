@@ -1019,7 +1019,10 @@ through a signed sensitivity. The national When2Heat `heat_demand_*` columns
 are retained as diagnostic/source anchors but are not adopted as the local 2035
 annual HP scaling by default. Agent C must still propose a local annual HP
 scaling or adoption route for both residential space heat and domestic hot
-water before real integrated HP load is used, and D-004/Q-8 paired-weather
+water before real integrated HP load is used. The E2.S3 scaffold exposes this
+boundary through explicit component metadata: each selected component records
+its shape column, COP column, end use, building class, annual TWh input, and
+provenance before any aggregation. D-004/Q-8 paired-weather
 acceptance, cold-spell tolerances, event analysis, `P(E)`, and manuscript
 results remain blocked.
 

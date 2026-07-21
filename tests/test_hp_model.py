@@ -29,6 +29,7 @@ from src.hp_model import (
     cold_week_sanity_check,
     default_when2heat_components,
     downscale_hourly_to_15min,
+    hp001_residential_when2heat_components,
     load_when2heat_hourly_csv,
 )
 
@@ -261,8 +262,159 @@ def test_default_components_make_space_and_water_cop_mapping_explicit() -> None:
     )
 
     assert components == (
-        When2HeatComponent("NL_heat_profile_space_SFH", "NL_COP_ASHP_radiator", 0.25),
-        When2HeatComponent("NL_heat_profile_water_SFH", "NL_COP_ASHP_water", 0.1),
+        When2HeatComponent(
+            "NL_heat_profile_space_SFH",
+            "NL_COP_ASHP_radiator",
+            0.25,
+            end_use="space",
+            building_class="SFH",
+        ),
+        When2HeatComponent(
+            "NL_heat_profile_water_SFH",
+            "NL_COP_ASHP_water",
+            0.1,
+            end_use="water",
+            building_class="SFH",
+        ),
+    )
+
+
+def test_hp001_components_encode_residential_space_and_dhw_boundary() -> None:
+    components = hp001_residential_when2heat_components(
+        space_heat_twh_by_class={"SFH": 0.25, "MFH": 0.15},
+        water_heat_twh_by_class={"SFH": 0.05, "MFH": 0.03},
+        provenance={"scaling_source": "unit-test explicit values"},
+    )
+
+    assert [component.as_record() for component in components] == [
+        {
+            "heat_column": "NL_heat_profile_space_SFH",
+            "cop_column": "NL_COP_ASHP_radiator",
+            "annual_heat_demand_twh": 0.25,
+            "end_use": "space",
+            "building_class": "SFH",
+            "provenance": {
+                "annual_scaling_status": "caller_supplied_not_approved_by_hp001",
+                "boundary": "residential_space_plus_domestic_hot_water",
+                "component_boundary": "SFH_space_heat",
+                "data_id": "D-003",
+                "decision_id": "HP-001",
+                "scaling_source": "unit-test explicit values",
+                "source": "OPSD When2Heat 2023-07-27 when2heat.csv",
+            },
+        },
+        {
+            "heat_column": "NL_heat_profile_space_MFH",
+            "cop_column": "NL_COP_ASHP_radiator",
+            "annual_heat_demand_twh": 0.15,
+            "end_use": "space",
+            "building_class": "MFH",
+            "provenance": {
+                "annual_scaling_status": "caller_supplied_not_approved_by_hp001",
+                "boundary": "residential_space_plus_domestic_hot_water",
+                "component_boundary": "MFH_space_heat",
+                "data_id": "D-003",
+                "decision_id": "HP-001",
+                "scaling_source": "unit-test explicit values",
+                "source": "OPSD When2Heat 2023-07-27 when2heat.csv",
+            },
+        },
+        {
+            "heat_column": "NL_heat_profile_water_SFH",
+            "cop_column": "NL_COP_ASHP_water",
+            "annual_heat_demand_twh": 0.05,
+            "end_use": "water",
+            "building_class": "SFH",
+            "provenance": {
+                "annual_scaling_status": "caller_supplied_not_approved_by_hp001",
+                "boundary": "residential_space_plus_domestic_hot_water",
+                "component_boundary": "SFH_domestic_hot_water",
+                "data_id": "D-003",
+                "decision_id": "HP-001",
+                "scaling_source": "unit-test explicit values",
+                "source": "OPSD When2Heat 2023-07-27 when2heat.csv",
+            },
+        },
+        {
+            "heat_column": "NL_heat_profile_water_MFH",
+            "cop_column": "NL_COP_ASHP_water",
+            "annual_heat_demand_twh": 0.03,
+            "end_use": "water",
+            "building_class": "MFH",
+            "provenance": {
+                "annual_scaling_status": "caller_supplied_not_approved_by_hp001",
+                "boundary": "residential_space_plus_domestic_hot_water",
+                "component_boundary": "MFH_domestic_hot_water",
+                "data_id": "D-003",
+                "decision_id": "HP-001",
+                "scaling_source": "unit-test explicit values",
+                "source": "OPSD When2Heat 2023-07-27 when2heat.csv",
+            },
+        },
+    ]
+
+
+def test_hp001_components_reject_missing_or_com_classes() -> None:
+    with pytest.raises(ValueError, match="missing=\\('MFH',\\)"):
+        hp001_residential_when2heat_components(
+            space_heat_twh_by_class={"SFH": 0.25},
+            water_heat_twh_by_class={"SFH": 0.05, "MFH": 0.03},
+        )
+
+    with pytest.raises(ValueError, match="extra=\\('COM',\\)"):
+        hp001_residential_when2heat_components(
+            space_heat_twh_by_class={"SFH": 0.25, "MFH": 0.15, "COM": 0.40},
+            water_heat_twh_by_class={"SFH": 0.05, "MFH": 0.03},
+        )
+
+
+def test_hp001_csv_load_keeps_space_and_dhw_components_traceable(tmp_path: Path) -> None:
+    path = tmp_path / "when2heat.csv"
+    pd.DataFrame(
+        {
+            "utc_timestamp": [item.isoformat().replace("+00:00", "Z") for item in _hourly_timestamps(1)],
+            "cet_cest_timestamp": ["2025-01-01T01:00:00+0100"],
+            "NL_heat_profile_space_SFH": [2.0],
+            "NL_heat_profile_space_MFH": [3.0],
+            "NL_heat_profile_water_SFH": [4.0],
+            "NL_heat_profile_water_MFH": [5.0],
+            "NL_COP_ASHP_radiator": [2.0],
+            "NL_COP_ASHP_water": [4.0],
+        }
+    ).to_csv(path, index=False, sep=";", decimal=",")
+    components = hp001_residential_when2heat_components(
+        space_heat_twh_by_class={"SFH": 0.5, "MFH": 1.0},
+        water_heat_twh_by_class={"SFH": 0.25, "MFH": 0.2},
+    )
+
+    profile = load_when2heat_hourly_csv(path, components=components)
+
+    # Space thermal: (2*0.5 + 3*1.0) MW = 4000 kW, divided by radiator COP 2.
+    # DHW thermal: (4*0.25 + 5*0.2) MW = 2000 kW, divided by water COP 4.
+    assert np.allclose(profile.thermal_demand_kw, [6000.0])
+    assert np.allclose(profile.electric_kw, [2500.0])
+    assert profile.components == components
+    assert profile.source_metadata is not None
+    assert profile.source_metadata.selected_heat_columns == (
+        "NL_heat_profile_space_SFH",
+        "NL_heat_profile_space_MFH",
+        "NL_heat_profile_water_SFH",
+        "NL_heat_profile_water_MFH",
+    )
+    assert profile.source_metadata.selected_cop_columns == (
+        "NL_COP_ASHP_radiator",
+        "NL_COP_ASHP_radiator",
+        "NL_COP_ASHP_water",
+        "NL_COP_ASHP_water",
+    )
+    assert tuple(
+        (record["end_use"], record["building_class"], record["cop_column"])
+        for record in profile.source_metadata.selected_components
+    ) == (
+        ("space", "SFH", "NL_COP_ASHP_radiator"),
+        ("space", "MFH", "NL_COP_ASHP_radiator"),
+        ("water", "SFH", "NL_COP_ASHP_water"),
+        ("water", "MFH", "NL_COP_ASHP_water"),
     )
 
 
