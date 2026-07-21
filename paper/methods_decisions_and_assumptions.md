@@ -349,10 +349,15 @@ Within a supplied synthetic bracket, the crossing is read by an explicit
 piecewise-linear convention; if no supplied point satisfies the criterion, the
 target is recorded as `math.inf` rather than replaced by a finite sentinel or a
 defuzzified value. Membership readout is reported as bounds over finite
-`rho_star` intervals and rejects never-satisfied targets. This scaffold does
-not authorize real net-load/event analysis, paper-facing `rho_star` values, or
-case-selection claims until G3, Q-5, G2, A-013, and integrated E3 outputs are
-resolved.
+`rho_star` intervals and rejects never-satisfied targets. The procurement-
+target framing scaffold compares each finite alpha-indexed `rho_star` interval
+with the matching alpha-cut of a synthetic fuzzy delivery envelope and reports
+one of four geometric labels: inside envelope, overlapping/monitor, outside
+envelope, or never satisfied. These labels preserve the lower/upper target and
+delivery-envelope endpoints and do not imply a real procurement decision. This
+scaffold does not authorize real net-load/event analysis, paper-facing
+`rho_star` values, delivery-envelope claims, or case-selection claims until
+G3, Q-5, G2, A-013, and integrated E3 outputs are resolved.
 
 <!-- methods-id: G4 -->
 ### G4 - Fuzzy Controllability Elicitation
@@ -733,8 +738,12 @@ nonnegative integer counts by largest-remainder rounding, with ties resolved by
 node ID for deterministic reruns. The rule must not be applied directly to the
 national ElaadNL Outlook totals recorded under D-010, and it does not itself
 select the local cluster or approve public-charging behavior profiles. The
-proposed Alkmaar values in the current workflow are not allocated until the PI
-accepts them as local totals.
+current A-014 preview applies this deterministic rounding rule to the proposed
+Alkmaar values solely as an audit artifact: the totals remain
+`proposed_not_pi_signed`, the committed executable scenario table remains
+empty, and the preview may not drive net-load integration, EV held-out
+adequacy, event analysis, or manuscript results until the PI accepts the local
+totals.
 
 ## Data and Evidence Choices
 
