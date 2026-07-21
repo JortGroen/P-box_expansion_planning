@@ -192,6 +192,7 @@ def test_profile_alignment_records_weather_member_and_rejects_mismatch() -> None
     assert profile.timestamps_utc == weather.timestamps_utc
     assert profile.timestamps_local == weather.timestamps_local
     assert np.array_equal(profile.temperature_c, weather.temperature_c)
+    assert profile.pv_weather_field_names == ("ghi_w_per_m2",)
     assert profile.source_columns == ("heat", "cop")
     assert profile.weather_provenance == {"source_file_sha256": "abc123", "station_id": "260"}
     assert profile.weather_identity_record() == {
@@ -202,6 +203,7 @@ def test_profile_alignment_records_weather_member_and_rejects_mismatch() -> None
         "last_timestamp_utc": "2025-01-01T00:45:00+00:00",
         "n_timesteps": 4,
         "cadence_seconds": 900,
+        "pv_weather_field_names": ("ghi_w_per_m2",),
         "provenance": {"source_file_sha256": "abc123", "station_id": "260"},
         "first_timestamp_local": "2025-01-01T01:00:00+01:00",
         "last_timestamp_local": "2025-01-01T01:45:00+01:00",
@@ -262,6 +264,7 @@ def test_cold_week_sanity_peak_coincides_with_cold_spell() -> None:
         source_columns=("synthetic_heat", "synthetic_cop"),
         source_path=None,
         downscaling_method="test_15min_native",
+        pv_weather_field_names=("ghi_w_per_m2",),
         weather_provenance={"acceptance_evidence": "synthetic_unit_test_only"},
     )
 
@@ -299,4 +302,34 @@ def test_alignment_requires_shared_weather_driver_identity() -> None:
     )
 
     with pytest.raises(ValueError, match="shared_weather_driver_id"):
+        align_heat_pump_profile(quarter, weather)
+
+
+def test_alignment_rejects_temperature_only_shared_driver() -> None:
+    hourly = When2HeatHourlyProfile(
+        timestamps_utc=_hourly_timestamps(1),
+        thermal_demand_kw=np.array([3000.0]),
+        electric_kw=np.array([1000.0]),
+        cop=np.array([3.0]),
+        components=(When2HeatComponent("heat", "cop", 1.0),),
+    )
+    quarter = downscale_hourly_to_15min(hourly)
+
+    @dataclass(frozen=True)
+    class TemperatureOnlySharedWeather:
+        member_id: str
+        source: str
+        shared_weather_driver_id: str
+        timestamps_utc: tuple[datetime, ...]
+        temperature_c: np.ndarray
+
+    weather = TemperatureOnlySharedWeather(
+        member_id="temperature-only",
+        source="knmi",
+        shared_weather_driver_id="knmi:temperature-only",
+        timestamps_utc=quarter.timestamps_utc,
+        temperature_c=np.zeros(4),
+    )
+
+    with pytest.raises(ValueError, match="PV/irradiance"):
         align_heat_pump_profile(quarter, weather)

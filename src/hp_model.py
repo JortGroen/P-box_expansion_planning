@@ -20,6 +20,13 @@ import pandas as pd
 HOURLY_STEP_MINUTES = 60
 QUARTER_HOUR_STEP_MINUTES = 15
 QUARTER_HOURS_PER_HOUR = HOURLY_STEP_MINUTES // QUARTER_HOUR_STEP_MINUTES
+PV_WEATHER_FIELD_CANDIDATES = (
+    "ghi_w_per_m2",
+    "dni_w_per_m2",
+    "dhi_w_per_m2",
+    "poa_global_w_per_m2",
+    "irradiance_w_per_m2",
+)
 
 
 class SharedWeatherMember(Protocol):
@@ -33,6 +40,9 @@ class SharedWeatherMember(Protocol):
     source: str
     timestamps_utc: Sequence[datetime]
     temperature_c: Sequence[float]
+    # The concrete shared contract may expose irradiance either through named
+    # PV fields or a pv_weather_fields mapping; HP validates their presence so
+    # a temperature-only member cannot masquerade as the paired realization.
 
     @property
     def shared_weather_driver_id(self) -> str: ...
@@ -138,6 +148,7 @@ class HeatPumpProfile:
     source_columns: tuple[str, ...]
     source_path: str | None
     downscaling_method: str
+    pv_weather_field_names: tuple[str, ...]
     timestamps_local: tuple[datetime, ...] | None = None
     weather_provenance: Mapping[str, Any] = field(default_factory=dict)
 
@@ -154,6 +165,7 @@ class HeatPumpProfile:
         thermal = np.asarray(self.thermal_demand_kw, dtype=np.float64)
         cop = np.asarray(self.cop, dtype=np.float64)
         temperature = np.asarray(self.temperature_c, dtype=np.float64)
+        pv_weather_field_names = _coerce_field_names(self.pv_weather_field_names, "pv_weather_field_names")
         provenance = _as_provenance_mapping(self.weather_provenance, "weather_provenance")
         _validate_profile_arrays(
             timestamps,
@@ -171,6 +183,7 @@ class HeatPumpProfile:
         object.__setattr__(self, "thermal_demand_kw", thermal)
         object.__setattr__(self, "cop", cop)
         object.__setattr__(self, "temperature_c", temperature)
+        object.__setattr__(self, "pv_weather_field_names", pv_weather_field_names)
         object.__setattr__(self, "timestamps_local", timestamps_local)
         object.__setattr__(self, "weather_provenance", provenance)
 
@@ -194,6 +207,7 @@ class HeatPumpProfile:
             "last_timestamp_utc": self.timestamps_utc[-1].isoformat(),
             "n_timesteps": self.n_timesteps,
             "cadence_seconds": self.cadence_seconds,
+            "pv_weather_field_names": self.pv_weather_field_names,
             "provenance": dict(self.weather_provenance),
         }
         if self.timestamps_local is not None:
@@ -363,6 +377,10 @@ def align_heat_pump_profile(
     member_id = _required_text_attr(weather, "member_id")
     source = _required_text_attr(weather, "source")
     shared_driver_id = _required_text_attr(weather, "shared_weather_driver_id")
+    pv_weather_field_names = _paired_pv_weather_field_names(
+        weather,
+        expected_shape=when2heat_15min.electric_kw.shape,
+    )
     timestamps_local = _coerce_optional_local_timestamps(
         getattr(weather, "timestamps_local", None),
         weather_timestamps,
@@ -384,6 +402,7 @@ def align_heat_pump_profile(
         source_columns=source_columns,
         source_path=when2heat_15min.source_path,
         downscaling_method=when2heat_15min.downscaling_method,
+        pv_weather_field_names=pv_weather_field_names,
         timestamps_local=timestamps_local,
         weather_provenance=_weather_provenance(weather),
     )
@@ -464,6 +483,46 @@ def _weather_provenance(weather: object) -> dict[str, Any]:
             continue
         provenance.update(_as_provenance_mapping(raw, f"weather {attribute}"))
     return dict(sorted(provenance.items()))
+
+
+def _paired_pv_weather_field_names(weather: object, *, expected_shape: tuple[int, ...]) -> tuple[str, ...]:
+    names: list[str] = []
+    fields = getattr(weather, "pv_weather_fields", None)
+    if fields is not None:
+        if not isinstance(fields, Mapping):
+            raise ValueError("weather pv_weather_fields must be a mapping")
+        for name, values in fields.items():
+            text = str(name).strip()
+            if not text:
+                raise ValueError("weather pv_weather_fields names must be non-empty")
+            _validate_aligned_weather_field(values, text, expected_shape=expected_shape)
+            names.append(text)
+    for name in PV_WEATHER_FIELD_CANDIDATES:
+        if not hasattr(weather, name):
+            continue
+        values = getattr(weather, name)
+        if values is None:
+            continue
+        _validate_aligned_weather_field(values, name, expected_shape=expected_shape)
+        names.append(name)
+    if not names:
+        raise ValueError("weather member must provide at least one aligned PV/irradiance weather field")
+    return tuple(sorted(set(names)))
+
+
+def _validate_aligned_weather_field(values: object, name: str, *, expected_shape: tuple[int, ...]) -> None:
+    array = np.asarray(values, dtype=np.float64)
+    if array.shape != expected_shape:
+        raise ValueError(f"weather {name} must align with heat-pump demand")
+    if not np.isfinite(array).all():
+        raise ValueError(f"weather {name} must contain only finite values")
+
+
+def _coerce_field_names(names: Sequence[str], label: str) -> tuple[str, ...]:
+    cleaned = tuple(str(name).strip() for name in names)
+    if not cleaned or any(not name for name in cleaned):
+        raise ValueError(f"{label} must contain at least one non-empty field name")
+    return tuple(sorted(set(cleaned)))
 
 
 def _as_provenance_mapping(raw: Mapping[str, Any], label: str) -> dict[str, Any]:
