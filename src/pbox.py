@@ -7,7 +7,6 @@ does not run paper experiments or depend on grid-specific contracts.
 
 from __future__ import annotations
 
-import hashlib
 import math
 from dataclasses import dataclass
 from enum import Enum
@@ -19,6 +18,7 @@ from src.fuzzy import (
     TrapezoidalFuzzyNumber,
     TriangularFuzzyNumber,
 )
+from src.rng import sample_seed
 
 FuzzyNumber = (
     TrapezoidalFuzzyNumber | TriangularFuzzyNumber | PiecewiseLinearFuzzyNumber
@@ -215,13 +215,9 @@ def _estimate_probability(
 
 
 def _sample_seeds(root_seed: int, sample_count: int) -> tuple[int, ...]:
-    return tuple(_sample_seed(root_seed, sample_index) for sample_index in range(sample_count))
-
-
-def _sample_seed(root_seed: int, sample_index: int) -> int:
-    payload = f"{root_seed}:{sample_index}".encode("ascii")
-    digest = hashlib.blake2b(payload, digest_size=8).digest()
-    return int.from_bytes(digest, byteorder="big", signed=False)
+    # P-box branches must replay canonical whole-system samples under CRN;
+    # only alpha and endpoint values are allowed to vary across branches.
+    return tuple(sample_seed(root_seed, sample_index) for sample_index in range(sample_count))
 
 
 def _wilson_interval(
