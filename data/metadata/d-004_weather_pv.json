@@ -1,0 +1,16 @@
+{
+  "data_id": "D-004",
+  "doi_url": "PVGIS: https://re.jrc.ec.europa.eu/pvg_tools/en/; KNMI API: https://developer.dataplatform.knmi.nl/open-data-api",
+  "download_performed": false,
+  "extra": {
+    "download_performed": false,
+    "e2_s4_support": "retrieval URL builders, checksum recording, and PV/weather-member validation"
+  },
+  "item": "PV and weather inputs",
+  "license": "PVGIS: free/no restrictions; KNMI 10-minute in-situ dataset: CC-BY-4.0",
+  "notes": "No raw download in T2-T3; checksum must be recorded after selecting and downloading concrete PVGIS/KNMI files.",
+  "raw_subdir": "weather_pv",
+  "retrieval_script": "data/get_weather_pv.py",
+  "source": "PVGIS plus KNMI historical weather",
+  "status": "metadata-only; pending license/API verification and PI sign-off before data use"
+}
