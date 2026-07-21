@@ -514,6 +514,29 @@ class NodeChargePointAllocation:
         return sum(self.public_by_node.values())
 
 
+def a014_node_weights_from_load_table(
+    load_table: Any,
+    *,
+    node_id_template: str = "load_{source_load_index:03d}",
+) -> tuple[tuple[str, float], ...]:
+    """Return A-014 node weights from a pandapower ``net.load`` table."""
+
+    if not hasattr(load_table, "iterrows") or "p_mw" not in load_table:
+        raise ValueError("A-014 load table must provide a p_mw column")
+    records: list[tuple[str, float]] = []
+    for source_load_index, row in load_table.iterrows():
+        if "in_service" in load_table and not bool(row["in_service"]):
+            continue
+        index = _require_int(int(source_load_index), "source_load_index")
+        node_id = node_id_template.format(source_load_index=index)
+        weight = float(row["p_mw"])
+        if not np.isfinite(weight) or weight < 0.0:
+            raise ValueError("A-014 load weights must be finite and non-negative")
+        records.append((node_id, weight))
+    _validate_weight_pairs(records)
+    return tuple(records)
+
+
 def load_adoption_scenarios_config(path: Path) -> dict[str, Any]:
     """Load and validate the E2.S6 adoption scenario configuration."""
 
@@ -703,6 +726,44 @@ def adoption_node_allocations(config: dict[str, Any]) -> tuple[NodeChargePointAl
                 public_by_node=allocate_charge_points_to_nodes(
                     scenario.public_charge_points,
                     weights,
+                ),
+            )
+        )
+    return tuple(allocations)
+
+
+def proposed_a014_allocation_preview(
+    config: dict[str, Any],
+    node_weights: Sequence[tuple[str, float]],
+) -> tuple[NodeChargePointAllocation, ...]:
+    """Preview A-014 allocations from proposed local counts without approving them."""
+
+    validate_adoption_scenarios_config(config)
+    if config["allocation"].get("status") != "approved_after_local_totals":
+        raise ValueError("A-014 preview requires allocation status approved_after_local_totals")
+    _validate_weight_pairs(node_weights)
+    proposed_counts = proposed_local_charge_point_counts(config)
+    grouped: dict[str, dict[str, ProposedLocalChargePointCount]] = {}
+    for count in proposed_counts:
+        grouped.setdefault(count.scenario, {})[count.location] = count
+    allocations: list[NodeChargePointAllocation] = []
+    for scenario in sorted(grouped):
+        locations = grouped[scenario]
+        if set(locations) != {"home", "public"}:
+            raise ValueError("A-014 preview requires paired home and public counts")
+        # This preview intentionally bypasses adoption_scenarios(): the counts
+        # remain proposed, while A-014 rounding can still be audited in advance.
+        allocations.append(
+            NodeChargePointAllocation(
+                year=2035,
+                scenario=scenario,
+                home_by_node=allocate_charge_points_to_nodes(
+                    locations["home"].rounded_count,
+                    node_weights,
+                ),
+                public_by_node=allocate_charge_points_to_nodes(
+                    locations["public"].rounded_count,
+                    node_weights,
                 ),
             )
         )
@@ -959,6 +1020,10 @@ def _validate_node_weight_records(weights: Any) -> None:
     total_weight = sum(float(item["weight"]) for item in weights)
     if total_weight <= 0:
         raise ValueError("At least one node allocation weight must be positive")
+
+
+def _validate_weight_pairs(weights: Sequence[tuple[str, float]]) -> None:
+    allocate_charge_points_to_nodes(0, weights)
 
 
 def _require_int(value: Any, label: str) -> int:

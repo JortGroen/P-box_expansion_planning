@@ -757,8 +757,12 @@ nonnegative integer counts by largest-remainder rounding, with ties resolved by
 node ID for deterministic reruns. The rule must not be applied directly to the
 national ElaadNL Outlook totals recorded under D-010, and it does not itself
 select the local cluster or approve public-charging behavior profiles. The
-proposed Alkmaar values in the current workflow are not allocated until the PI
-accepts them as local totals.
+current A-014 preview applies this deterministic rounding rule to the proposed
+Alkmaar values solely as an audit artifact: the totals remain
+`proposed_not_pi_signed`, the committed executable scenario table remains
+empty, and the preview may not drive net-load integration, EV held-out
+adequacy, event analysis, or manuscript results until the PI accepts the local
+totals.
 
 ## Data and Evidence Choices
 
