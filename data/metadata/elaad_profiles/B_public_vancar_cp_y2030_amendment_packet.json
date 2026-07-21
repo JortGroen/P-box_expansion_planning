@@ -1,0 +1,192 @@
+{
+  "schema_version": 1,
+  "task": "E2.S2",
+  "packet": "ev008_public_profile_amendment_packet",
+  "status": "proposed_not_pi_signed",
+  "created_utc": "2026-07-21T14:35:00Z",
+  "inputs": {
+    "ev008_original_packet": "data/metadata/elaad_profiles/B_public_vancar_cp_y2030_decision_packet.json",
+    "ndw_inventory_metadata": "data/metadata/ev_adoption/ndw_alkmaar_public_charging_inventory_metadata.json",
+    "reports": [
+      "reports/e2_s2_public_profile_decision_packet.md",
+      "reports/e2_s2_ndw_public_charging_inventory.md",
+      "reports/e2_s2_ev008_public_profile_amendment_packet.md"
+    ]
+  },
+  "non_actions": [
+    "No ElaadNL public API request was made.",
+    "No public raw response, generated profile library, or processed profile output was created.",
+    "No EV held-out batch was opened.",
+    "No integrated net-load, congestion, event, adequacy, P(E), or manuscript-result analysis was run."
+  ],
+  "shared_settings": {
+    "api_endpoint": "POST https://api.charging.data.elaad.nl/profile/simulate",
+    "start_datetime": "2025-01-01T00:00:00+01:00",
+    "stop_datetime": "2026-01-01T00:00:00+01:00",
+    "step_size_s": 900,
+    "timezone": "CET",
+    "simulated_year": 2030,
+    "profile_type": "cp",
+    "location_type": "public",
+    "vehicle_types": [
+      "van",
+      "car"
+    ],
+    "control_mode": "uncontrolled",
+    "smart_charging": false
+  },
+  "options": {
+    "option_1_keep_22kw_future_convention": {
+      "decision_status": "requires_pi_approval",
+      "interpretation": "22 kW is a future/upper-capacity convention for public AC charge points, not a claim that 22 kW uniquely represents the current Alkmaar fleet.",
+      "capacity_classes": [
+        {
+          "class_id": "public_22kw",
+          "cp_capacity_kw": 22,
+          "candidate_seeds": [
+            150001,
+            150101,
+            150201,
+            150301,
+            150401,
+            150501,
+            150601,
+            150701,
+            150801,
+            150901
+          ],
+          "candidate_n_profiles_per_call": 100,
+          "held_out_seeds": [
+            151201,
+            151301
+          ],
+          "held_out_n_profiles_per_call": 100
+        }
+      ],
+      "candidate_M": 1000,
+      "held_out_H": 200,
+      "expected_api_calls": 12,
+      "first_request_json": {
+        "start_datetime": "2025-01-01T00:00:00+01:00",
+        "stop_datetime": "2026-01-01T00:00:00+01:00",
+        "step_size_s": 900,
+        "timezone": "CET",
+        "simulated_year": 2030,
+        "profile_type": "cp",
+        "n_profiles": 100,
+        "vehicle_types": [
+          "van",
+          "car"
+        ],
+        "location_type": "public",
+        "cp_capacity_kw": 22,
+        "seed": 150001
+      }
+    },
+    "option_2_capacity_stratified": {
+      "decision_status": "recommended_for_pi_amendment",
+      "interpretation": "Represent public charging by multiple AC capacity classes so 22 kW is one modeled class rather than the whole public library.",
+      "capacity_classes": [
+        {
+          "class_id": "public_11kw",
+          "cp_capacity_kw": 11,
+          "candidate_seeds": [
+            152001,
+            152101,
+            152201
+          ],
+          "candidate_n_profiles_per_call": 100,
+          "held_out_seeds": [
+            153201
+          ],
+          "held_out_n_profiles_per_call": 50
+        },
+        {
+          "class_id": "public_13kw",
+          "cp_capacity_kw": 13,
+          "candidate_seeds": [
+            152301,
+            152401,
+            152501
+          ],
+          "candidate_n_profiles_per_call": 100,
+          "held_out_seeds": [
+            153301
+          ],
+          "held_out_n_profiles_per_call": 50
+        },
+        {
+          "class_id": "public_15kw",
+          "cp_capacity_kw": 15,
+          "candidate_seeds": [
+            152601,
+            152701
+          ],
+          "candidate_n_profiles_per_call": 100,
+          "held_out_seeds": [
+            153401
+          ],
+          "held_out_n_profiles_per_call": 50
+        },
+        {
+          "class_id": "public_22kw",
+          "cp_capacity_kw": 22,
+          "candidate_seeds": [
+            152801,
+            152901
+          ],
+          "candidate_n_profiles_per_call": 100,
+          "held_out_seeds": [
+            153501
+          ],
+          "held_out_n_profiles_per_call": 50
+        }
+      ],
+      "candidate_M": 1000,
+      "held_out_H": 200,
+      "expected_api_calls_if_held_out_50_profile_calls_are_accepted": 14,
+      "alternate_expected_api_calls_if_held_out_calls_must_be_100_profiles": 14,
+      "alternate_held_out_H_if_held_out_calls_must_be_100_profiles": 400,
+      "first_candidate_request_json": {
+        "start_datetime": "2025-01-01T00:00:00+01:00",
+        "stop_datetime": "2026-01-01T00:00:00+01:00",
+        "step_size_s": 900,
+        "timezone": "CET",
+        "simulated_year": 2030,
+        "profile_type": "cp",
+        "n_profiles": 100,
+        "vehicle_types": [
+          "van",
+          "car"
+        ],
+        "location_type": "public",
+        "cp_capacity_kw": 11,
+        "seed": 152001
+      },
+      "first_held_out_request_json": {
+        "start_datetime": "2025-01-01T00:00:00+01:00",
+        "stop_datetime": "2026-01-01T00:00:00+01:00",
+        "step_size_s": 900,
+        "timezone": "CET",
+        "simulated_year": 2030,
+        "profile_type": "cp",
+        "n_profiles": 50,
+        "vehicle_types": [
+          "van",
+          "car"
+        ],
+        "location_type": "public",
+        "cp_capacity_kw": 11,
+        "seed": 153201
+      }
+    }
+  },
+  "recommended_option": "option_2_capacity_stratified",
+  "recommendation_rationale": "D-012 supports the public cp unit as charge-point/EVSE/connector-like but shows that 22 kW is not the unique current Alkmaar representative capacity. Capacity stratification preserves the ElaadNL public cp route while avoiding an unsupported single-capacity claim.",
+  "traceability_requirements": [
+    "Record partition, capacity class, cp_capacity_kw, batch seed, returned profile index, control mode, request checksum, raw gzip checksum, raw JSON checksum, and processed checksum for every member.",
+    "Treat each requested seed as one durable checkpoint.",
+    "Reject recovery when the response configuration does not match the normalized request configuration.",
+    "Do not claim that M = 1000 is sufficient before downstream E3.S2a adequacy testing."
+  ]
+}
