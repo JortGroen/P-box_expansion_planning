@@ -341,6 +341,19 @@ candidate within an alpha-cut and reports only alpha-indexed lower and upper
 probability bounds; it does not produce or authorize paper-facing probability
 results before G3 and downstream event dependencies are resolved.
 
+The E6.S2 decision-layer scaffold is likewise synthetic and pre-G3 only. Given
+validated alpha-indexed lower and upper event-probability curves that are
+monotone nonincreasing in controllability `rho`, it computes lower and upper
+targets by the non-strict condition `rho_star = inf{rho: P(E|rho) <= P_crit}`.
+Within a supplied synthetic bracket, the crossing is read by an explicit
+piecewise-linear convention; if no supplied point satisfies the criterion, the
+target is recorded as `math.inf` rather than replaced by a finite sentinel or a
+defuzzified value. Membership readout is reported as bounds over finite
+`rho_star` intervals and rejects never-satisfied targets. This scaffold does
+not authorize real net-load/event analysis, paper-facing `rho_star` values, or
+case-selection claims until G3, Q-5, G2, A-013, and integrated E3 outputs are
+resolved.
+
 <!-- methods-id: G4 -->
 ### G4 - Fuzzy Controllability Elicitation
 
