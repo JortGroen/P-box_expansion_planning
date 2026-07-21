@@ -111,6 +111,36 @@ class ACEvaluatorProvenance:
 
 
 @dataclass(frozen=True)
+class TransformerPQSeries:
+    """Solved AC P/Q trajectory for one decision transformer."""
+
+    transformer_index: int
+    p_kw: Sequence[float] | np.ndarray
+    q_kvar: Sequence[float] | np.ndarray
+    metadata: Mapping[str, object] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        if isinstance(self.transformer_index, bool) or int(self.transformer_index) < 0:
+            raise ValueError("transformer_index must be a nonnegative integer")
+        p = _as_vector(self.p_kw, name="p_kw")
+        q = _as_vector(self.q_kvar, name="q_kvar")
+        if p.shape != q.shape:
+            raise ValueError("p_kw and q_kvar must have identical shapes")
+        object.__setattr__(self, "transformer_index", int(self.transformer_index))
+        object.__setattr__(self, "p_kw", p)
+        object.__setattr__(self, "q_kvar", q)
+        object.__setattr__(self, "metadata", MappingProxyType(dict(self.metadata)))
+
+    def manifest_metadata(self) -> dict[str, object]:
+        """Return non-result transformer-series metadata for manifests."""
+
+        return {
+            "transformer_index": self.transformer_index,
+            "metadata": dict(self.metadata),
+        }
+
+
+@dataclass(frozen=True)
 class ACLoadingTrajectory:
     """AC/Tier-2 trajectory payload satisfying ``LoadingTrajectoryResult``."""
 
@@ -144,6 +174,83 @@ class ACLoadingTrajectory:
             "capacity": self.capacity.manifest_metadata(),
             "provenance": self.provenance.manifest_metadata(),
         }
+
+
+def build_ac_loading_trajectory_from_transformer_series(
+    transformer_series: Sequence[TransformerPQSeries],
+    *,
+    timestamps: Sequence[np.datetime64] | np.ndarray,
+    capacity: TransformerCapacityMetadata,
+    provenance: ACEvaluatorProvenance,
+    time_domain: TimeDomain = "full_year",
+    threshold_pu: float = DEFAULT_THRESHOLD_PU,
+    min_consecutive_steps: int = DEFAULT_MIN_CONSECUTIVE_STEPS,
+) -> ACLoadingTrajectory:
+    """Materialize solved transformer P/Q result series into the AC contract.
+
+    The input series are deterministic pandapower-like result fixtures: one P/Q
+    trajectory per decision transformer after an AC solve has already happened.
+    This helper sums transformer P and Q only; it does not run a power flow,
+    classify events, or compare Tier-1 against AC.
+    """
+
+    series_tuple = tuple(transformer_series)
+    if not series_tuple:
+        raise ValueError("transformer_series must not be empty")
+
+    expected_indices = set(capacity.transformer_indices)
+    seen_indices: list[int] = []
+    p_arrays: list[np.ndarray] = []
+    q_arrays: list[np.ndarray] = []
+    for series in series_tuple:
+        if series.transformer_index in seen_indices:
+            raise ValueError("transformer_series must not contain duplicate transformer_index values")
+        seen_indices.append(series.transformer_index)
+        p_arrays.append(np.asarray(series.p_kw, dtype=float))
+        q_arrays.append(np.asarray(series.q_kvar, dtype=float))
+
+    seen_set = set(seen_indices)
+    if seen_set != expected_indices:
+        missing = sorted(expected_indices - seen_set)
+        extra = sorted(seen_set - expected_indices)
+        raise ValueError(
+            "transformer_series indices must match capacity transformer_indices "
+            f"(missing={missing}, extra={extra})"
+        )
+    if any(array.shape != p_arrays[0].shape for array in (*p_arrays, *q_arrays)):
+        raise ValueError("all transformer P/Q series must have identical shapes")
+
+    timestamp_array = _as_15_minute_calendar(timestamps)
+    if timestamp_array.shape != p_arrays[0].shape:
+        raise ValueError("timestamps must match transformer P/Q series")
+
+    # Denominator provenance must travel with the exact transformer set whose
+    # solved P/Q outputs are summed; otherwise G2 can compare unlike assets.
+    materialization_metadata = {
+        "source": "pandapower_transformer_pq_series",
+        "transformer_indices": list(capacity.transformer_indices),
+        "series": [series.manifest_metadata() for series in series_tuple],
+    }
+    enriched_metadata = dict(provenance.metadata)
+    enriched_metadata["transformer_result_materialization"] = materialization_metadata
+    enriched_provenance = ACEvaluatorProvenance(
+        backend=provenance.backend,
+        network_id=provenance.network_id,
+        solver=provenance.solver,
+        run_id=provenance.run_id,
+        metadata=enriched_metadata,
+    )
+
+    return build_ac_loading_trajectory(
+        np.sum(np.vstack(p_arrays), axis=0),
+        np.sum(np.vstack(q_arrays), axis=0),
+        timestamps=timestamp_array,
+        capacity=capacity,
+        provenance=enriched_provenance,
+        time_domain=time_domain,
+        threshold_pu=threshold_pu,
+        min_consecutive_steps=min_consecutive_steps,
+    )
 
 
 def build_ac_loading_trajectory(
