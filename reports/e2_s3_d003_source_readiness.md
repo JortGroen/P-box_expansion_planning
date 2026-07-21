@@ -24,9 +24,10 @@ E2.S3 acceptance.
 1. Request normal network approval before any real download.
 2. If expected runtime exceeds 15 minutes, send the mandatory long-run notice
    before launch.
-3. Run `data/get_when2heat.py --download csv`.
+3. Run `data/get_when2heat.py --download csv --resume`.
 4. The script streams to `data/raw/when2heat/when2heat.csv.tmp`, computes
-   SHA-256 while streaming, and atomically replaces
+   SHA-256 after completion, writes resumable checkpoint metadata under
+   `data/metadata/when2heat/`, and atomically replaces
    `data/raw/when2heat/when2heat.csv` only after completion.
 5. The script writes concrete checksum metadata to
    `data/metadata/when2heat/d003_when2heat_csv_metadata.json`.

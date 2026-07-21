@@ -786,7 +786,11 @@ hourly-to-15-minute conversion, and COP treatment must be manifested before
 use. The proposed concrete source file is OPSD When2Heat package version
 `2023-07-27`, single-index `when2heat.csv`, because that file contains the
 hourly heat-profile, heat-demand, and COP columns consumed by the E2.S3 loader
-without requiring the larger full archive. The implemented E2.S3 parser treats
+without requiring the larger full archive. The prepared retrieval workflow
+streams to a temporary raw file, records resumable checkpoint metadata, computes
+the concrete SHA-256 after completion, and atomically promotes the file only
+after the download has completed; no concrete checksum is selected until the PI
+approves and reviews an actual retrieval. The implemented E2.S3 parser treats
 selected When2Heat heat-profile columns as average MW per annual TWh and
 requires the annual TWh scaling for each component to be passed explicitly, so
 adoption or building-stock volumes are not hidden as defaults. Each component
