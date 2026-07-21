@@ -284,12 +284,15 @@ member anchored to one KNMI calendar year is selected as a paired multivariate
 trajectory, so temperature, irradiance, seasonality, and persistence remain
 associated; any supplementary irradiance series must cover the same timestamps
 and year, and a typical-year PV reference is not sampled as the realized
-weather. The heat-pump and PV models consume that same aligned member. EV and baseline inputs retain
-complete temporal paths and are mapped deterministically to the common season
-and weekday/weekend calendar before aggregation. This conditional construction
-preserves dependencies with an identified physical or calendar driver without
-claiming an unsupported full joint probability distribution. Common random
-numbers then reuse the complete realization across alpha levels,
+weather. The neutral Q-8 `WeatherMember` contract records `member_id`,
+`shared_weather_driver_id`, source, UTC/local timestamps, temperature, PV
+weather fields, provenance, metadata, and a stable content hash so heat-pump
+and PV outputs can prove they consumed the same weather realization. EV and
+baseline inputs retain complete temporal paths and are mapped deterministically
+to the common season and weekday/weekend calendar before aggregation. This
+conditional construction preserves dependencies with an identified physical or
+calendar driver without claiming an unsupported full joint probability
+distribution. Common random numbers then reuse the complete realization across alpha levels,
 controllability endpoints, model-error endpoints, and treatments, but are not
 treated as a substitute for physical dependence. Leap-year and daylight-saving
 mapping are versioned and tested after the concrete weather files are selected,
