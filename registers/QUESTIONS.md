@@ -57,3 +57,10 @@ QUESTION: Does the PI approve proposed decision E5-S3-T1 as the IC-2/IC-3 schema
 OPTIONS: A) Approve E5-S3-T1 as proposed - Agents A/B can implement E5.S3 T2-T4 against trajectory endpoint counts once G2/A-013/Q-5 dependencies permit paper use.  B) Amend the schema before implementation - E5.S3 remains blocked until the PI states the required field or ownership changes.
 RECOMMENDATION: A, because the proposal reuses the current `Tier1Evaluation` fields, avoids boolean-only sample evaluation, preserves unwidened direction gating, supports asymmetric Tier-1 endpoints, and keeps implementation ownership split between A and B.
 STATUS: resolved by E5-S3-T1 in `registers/DECISIONS.md`; PI approved with conditions on 2026-07-20. Agent A must provide the shared `LoadingTrajectoryResult` contract/validator before Agent B implements IC-3 propagation; this approval does not resolve Q-5, total-versus-firm capacity, G2 error values, or numerical A-013 grid-error values.
+
+## Q-7 - E2.S6 - 2026-07-20 - BLOCKING: yes before integrated EV adoption use
+CONTEXT: E2.S6 records exact national home/public charge-point projections from the ElaadNL Outlook Mobility API for 2030, 2033, and 2035. The PI rejected treating these national totals as physical counts for the SimBench grid. A-014 is therefore narrowed to a possible second-stage within-grid allocation after a local total has been established.
+QUESTION: Which local scaling method should define SimBench-grid home and public charge-point totals before A-014-style nodal allocation is applied?
+OPTIONS: A) Select a predeclared representative CBS neighbourhood or cluster using ElaadNL's local forecasts - directly local, but requires choosing and documenting the area ex ante.  B) Derive local counts from national adoption rates multiplied by a sourced SimBench-equivalent household/service-area denominator - easier to audit against national projections, but home and public charging need separate denominators.
+RECOMMENDATION: A if a defensible representative CBS area can be predeclared without result inspection; otherwise B with separately sourced home and public denominators.
+STATUS: open

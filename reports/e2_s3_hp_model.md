@@ -42,5 +42,5 @@ evidence exists yet.
 
 - Focused tests cover metadata-only and checksum retrieval paths without internet access, component-wise COP conversion, hourly-to-15-minute energy preservation, exact shared-weather/calendar alignment, preservation of audit identity fields including PV weather field names, rejection of temperature-only weather objects, and the cold-week sanity diagnostic.
 - `.\.venv\Scripts\python.exe -m pytest tests\test_hp_model.py tests\test_data_sources.py::test_data_entrypoints_run_directly tests\test_methods_registry.py` passed 15 tests after the shared-weather compatibility and D-003 source-readiness revisions.
-- Final `.\scripts\task.ps1 ownership` and `.\scripts\task.ps1 test` results are recorded in `reports/AGENT_C_LOG.md`.
+- Final `.\scripts\task.ps1 ownership` and `.\scripts\task.ps1 test` results are recorded in the PR #47 validation section.
 - This report contains no manuscript result, no congestion probability, and no signed data-source claim.

@@ -46,9 +46,14 @@ You are **one of up to three agents** on this project. Your role (A, B, or C —
 
 Shared read access applies to everything. The machine-readable write policy is
 `configs/agent_ownership.json`: core modules and their tests are role-exclusive;
-control-register proposals, the methods registry, and task reports are shared;
-each `reports/AGENT_<X>_LOG.md` remains exclusive to its named agent. The path
-policy does not grant scientific authority: `registers/DECISIONS.md`,
+control-register proposals, the methods registry, and task reports are shared.
+`registers/STATUS.md` and the legacy aggregate logs
+`reports/AGENT_A_LOG.md`, `reports/AGENT_B_LOG.md`, and
+`reports/AGENT_C_LOG.md` are PI-dashboard files reserved for maintainer
+reconciliation. Use task-specific reports or
+`reports/agent_logs/agent-<a|b|c>/<task-id>.md` for progress notes, and put
+the suggested STATUS update in the PR body. The path policy does not grant
+scientific authority: `registers/DECISIONS.md`,
 `ASSUMPTIONS.md` (sign-off column), and `DATA_REGISTER.md` (sign-off column) are
 still PI-signed, and agents may add only clearly proposed material. Paths not
 assigned or shared by the policy are forbidden by default. Each active agent
@@ -68,18 +73,18 @@ If your current directory, branch, or worktree does not match your role and assi
 ### 3.1 Start of session (in this order, every time)
 1. Confirm you are in your assigned role worktree, not the PI dashboard: run `git status --short --branch` and check that the branch prefix matches your role (`agent-a/`, `agent-b/`, or `agent-c/`). If it does not match, stop and ask the PI.
 2. Ensure the worktree `.venv` exists: if `.venv\Scripts\python.exe` is missing, run `.\scripts\setup_venv.ps1` from the worktree root.
-3. Use `.\scripts\task.ps1 test` / `run` / `figures` for project tasks; the wrapper selects `.venv` directly and sets `NUMBA_CACHE_DIR` to `.tmp\numba_cache`.
+3. Use `.\scripts\task.ps1 test-fast` for the normal local development loop, `.\scripts\task.ps1 test` (or `test-full`) for the full merge-gate suite, and `run` / `figures` for project tasks. The wrapper selects `.venv` directly, sets `NUMBA_CACHE_DIR` to `.tmp\numba_cache`, and keeps pytest temporary files under `.tmp`.
 4. For direct Python commands, use `.venv\Scripts\python.exe` rather than `python` from Anaconda `base`. If the command imports pandapower/numba, set `NUMBA_CACHE_DIR` to `.tmp\numba_cache` first.
 5. `git fetch --all --prune`; update your task branch from `origin/main` only by fast-forward or an explicit PR/PI instruction. Never `git switch` into another agent's branch inside your worktree.
 6. Read the **diff of `registers/DECISIONS.md`** since your last session — gates may have passed or reversed; frozen items may have changed.
-7. Read `registers/STATUS.md`, your `reports/AGENT_<X>_LOG.md` last entry, and any PI answers in `registers/QUESTIONS.md`.
+7. Read `registers/STATUS.md`, your relevant task report or per-task log, any legacy aggregate-log entry that predates the dashboard policy, and any PI answers in `registers/QUESTIONS.md`.
 8. Select **one** task by plan ID. Check its dependencies: if it sits behind an unpassed gate, pick a non-gated task or end the session — never "provisionally" do gated work.
 9. Open your log entry: session start time, task ID, intent.
 10. Before editing, run `.\scripts\task.ps1 ownership -Paths path/one.py,path/two.py` with every intended repository-relative path. The command checks the planned set plus any existing worktree changes. If it fails, escalate before editing.
 
 ### 3.2 During the session
 - One task at a time; scope = exactly the task's deliverable, nothing more. New ideas go to `BACKLOG.md`, not into code.
-- Math modules: tests first (or alongside). `.\scripts\task.ps1 test` before every commit. A red test you cannot fix without changing the spec ⇒ escalate (§4); never bend the test.
+- Math modules: tests first (or alongside). Run focused tests or `.\scripts\task.ps1 test-fast` during iteration, and `.\scripts\task.ps1 test` before PR completion. A red test you cannot fix without changing the spec ⇒ escalate (§4); never bend the test.
 - All randomness through `src/rng.py`'s seed tree — never a bare `np.random` call.
 - No magic numbers in code: scientific constants and parameters live in `configs/*.yaml` with units in key names (`p_crit`, `s_rated_kva`, `step_min: 15`).
 - A PR that adds or changes an entry in `DECISIONS.md`, `ASSUMPTIONS.md`, or `DATA_REGISTER.md` must add or update its same-ID block in `paper/methods_decisions_and_assumptions.md`. Write one standalone manuscript paragraph explaining and defending the choice, scope, and limitations. Use an explicit status label so proposed, not-invoked, superseded, and pending items cannot be mistaken for approved claims.
@@ -125,8 +130,8 @@ checkpoints.
 
 ### 3.4 End of session (mandatory, even mid-task)
 1. Run `.\scripts\task.ps1 ownership`; an ownership failure is a stop condition.
-2. Log entry (template §10): what was done, what was **verified** (test/manifest evidence), open questions, next step.
-3. Update your line(s) in `registers/STATUS.md`.
+2. Update the task-specific report or per-task log (template §10): what was done, what was **verified** (test/manifest evidence), open questions, next step.
+3. Do not edit `registers/STATUS.md`; instead put a suggested STATUS update in the PR body. The PI/dashboard assistant reconciles STATUS after merge batches.
 4. Commit and push your branch. If a story's deliverable is complete: open/update the PR with the checklist (§9).
 
 ---
@@ -144,7 +149,7 @@ checkpoints.
 - You would need to edit outside your owned paths, add a dependency, or touch `main`.
 - Your role, task, or any instruction is ambiguous.
 
-**How to escalate:** append to `registers/QUESTIONS.md` using the template in §10 (context, precise question, options with your recommendation, blocking-or-not), set the story to `blocked` in `STATUS.md`, then either switch to an unblocked task or end the session. **Never resolve a trigger by assuming.** Escalations are answered by the PI in the same file; treat answers as decisions once mirrored into `DECISIONS.md`. For a cross-boundary edit, the preferred resolution is a separate PR by the owning agent. If that is impractical, the PI must merge an exact branch, role, task, and path exception into `registers/OWNERSHIP_EXCEPTIONS.json` on `main`; an exception introduced by the requesting agent's own PR is ignored by the checker.
+**How to escalate:** append to `registers/QUESTIONS.md` using the template in §10 (context, precise question, options with your recommendation, blocking-or-not), record the blocked state in your task-specific report or per-task log, put the suggested STATUS update in the PR body, then either switch to an unblocked task or end the session. **Never resolve a trigger by assuming.** Escalations are answered by the PI in the same file; treat answers as decisions once mirrored into `DECISIONS.md`. For a cross-boundary edit, the preferred resolution is a separate PR by the owning agent. If that is impractical, the PI must merge an exact branch, role, task, and path exception into `registers/OWNERSHIP_EXCEPTIONS.json` on `main`; an exception introduced by the requesting agent's own PR is ignored by the checker.
 
 ---
 
@@ -157,7 +162,7 @@ checkpoints.
 | Local performance optimizations that change no outputs (verified by identical checksums) | Any new dependency or version change in `requirements*.txt` or `pyproject.toml` |
 | Order of tasks within your assigned, unblocked stories | Any scientific parameter value, distribution choice, or cost figure |
 | Notebook explorations (clearly marked; never a source of truth) | Any sentence or number destined for the manuscript |
-| Wording of your own log/status entries | Editing golden test expectations; skipping or weakening an invariant |
+| Wording of your own task report, per-task log, and PR-suggested STATUS line | Editing golden test expectations; skipping or weakening an invariant |
 
 ---
 
@@ -213,6 +218,7 @@ checkpoints.
   - `## Validation`: exact commands run and their results, including test counts and relevant invariant or manifest checks.
   - `## Evidence`: links to reports, manifests, generated tables/figures, and the governing decision or question.
   - `## Risks and decisions`: reviewer decisions required, unresolved limitations, compatibility effects, or `None`.
+  - `## Suggested STATUS update`: the exact STATUS row the PI/dashboard assistant should apply after merge, or `None`.
   - `## Checklist`: the checklist below, with every box marked truthfully.
 - Keep PR prose direct and readable. Explain why a change exists and what a reviewer should verify; avoid inflated claims, repetitive detail, internal chain-of-thought, or unexplained task jargon.
 - **PR checklist:**
@@ -223,7 +229,7 @@ checkpoints.
   - [ ] Registers updated (`ASSUMPTIONS`/`DATA_REGISTER` rows `proposed` where needed)
   - [ ] Methods paragraph registry updated for every changed decision, assumption, or data/protocol choice
   - [ ] No interface-contract or schema change (or: gate approval linked)
-  - [ ] Log + STATUS updated
+  - [ ] Task report/log updated and suggested STATUS update included in PR body
 - You never merge, never rebase `main`, never force-push a shared branch, never commit directly to `main`.
 - Review etiquette: if asked to review another agent's PR, you check tests, manifests, contract compliance, and register hygiene — you do not push commits to their branch.
 
@@ -231,7 +237,7 @@ checkpoints.
 
 ## 10. Communication formats (use verbatim)
 
-**Log entry (`reports/AGENT_<X>_LOG.md`):**
+**Task report / per-task log entry (`reports/<task-report>.md` or `reports/agent_logs/agent-<a|b|c>/<task-id>.md`):**
 ```
 ## <YYYY-MM-DD HH:MM> — <task ID> — <status: done|in-progress|blocked>
 DID: <what was built/run, 2–4 lines>
@@ -250,7 +256,7 @@ RECOMMENDATION: <A or B, one line why>
 STATUS: open
 ```
 
-**STATUS line (`registers/STATUS.md`):** `E5.S2 | B | in-progress | 2/3 tasks | blocked-by: — | PR: #12`
+**Suggested STATUS line (put in PR body; do not edit `registers/STATUS.md`):** `E5.S2 | B | in-progress | 2/3 tasks | blocked-by: — | PR: #12`
 
 ---
 
@@ -280,8 +286,8 @@ STATUS: open
 
 ## 12. Definition of done
 
-**Task:** deliverable exists at the stated path; tests for it pass; log entry written.
-**Story:** all tasks done; acceptance criteria from the plan checked and evidenced (test output, manifest, or report); PR open with full checklist; STATUS updated to `review`.
+**Task:** deliverable exists at the stated path; tests for it pass; task report or per-task log entry written.
+**Story:** all tasks done; acceptance criteria from the plan checked and evidenced (test output, manifest, or report); PR open with full checklist; PR body includes the suggested STATUS update.
 **Nothing is "done" on your say-so alone** — done means the PI merged it.
 
 ---
