@@ -1,5 +1,7 @@
 # E2.S3 Cold-Spell And Paired-Weather Acceptance Design
 
+Protocol ID: `E2-S3-COLD-SPELL-ACCEPTANCE-DESIGN`
+
 Status: predeclared PI design packet only. D-003 remains proposed and unsigned.
 This packet defines how E2.S3 should later check whether When2Heat-derived heat
 pump profiles are acceptable under ALEA-001 once Q-8 shared-weather ownership is
