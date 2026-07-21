@@ -9,6 +9,7 @@
 ## Validation
 
 - `.\scripts\task.ps1 ownership`:
+- `.\scripts\task.ps1 test-fast`:
 - `.\scripts\task.ps1 test`:
 
 ## Evidence
