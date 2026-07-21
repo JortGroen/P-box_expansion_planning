@@ -554,6 +554,32 @@ neighbourhood-list endpoint returned HTTP 500 during this session, so individual
 CBS-neighbourhood rows remain an unresolved retrieval limitation for this
 workflow revision.
 
+<!-- methods-id: EV-008 -->
+### EV-008 - Proposed Public Charge-Point Profile Protocol
+
+**Status: Proposed; no public generation authorized.** Public EV demand remains
+the missing behavior class after EV-004 fixed only the residential home
+charge-point library and EV-007/A-014 exposed local public charge-point counts.
+The proposed Set B protocol represents neighbourhood public charging with
+uncontrolled ElaadNL `cp` profiles, `location_type = public`, the generator's
+native car/van mixture, fixed `simulated_year = 2030`, 100 profiles per batch,
+candidate seeds `150001` through `150901` for `M = 1000`, and held-out seeds
+`151201` and `151301` for `H = 200`. The proposed public capacity is 22 kW per
+charge point, but this is the main PI review item rather than a signed value:
+the local public-count unit must be confirmed as compatible with one generated
+public charge-point member before any API request is made. The ElaadNL
+documentation distinguishes the profile unit from the physical pole convention
+by stating that public locations model two charge points sharing one pole
+connection; pole-level asset reporting or conversion must therefore preserve
+that two-charge-point convention. If signed, public profiles would be sampled
+later through the same EV-003 direct empirical bootstrap and EV-005
+finite-library protocol as home profiles, keeping source-library size `M`
+separate from Monte Carlo count `N` and leaving the within-realization
+replacement rule pending until E2.S6 cohort sizes and E3.S2a adequacy criteria
+are resolved. This proposal does not authorize public smart charging,
+integrated net-load or event analysis, a claim that `M = 1000` is sufficient,
+or redistribution of generated profiles.
+
 <!-- methods-id: COST-001 -->
 ### COST-001 - Indicative Reinforcement Costs
 
@@ -802,6 +828,10 @@ wrapper is recorded for audit only and is not a new retrieval.
 The Set A library manifest is
 `data/metadata/elaad_profiles/A_home_vancar_cp_y2030_set_a_library_manifest.json`;
 the source-level report is `reports/elaad_e2_s2_home_cp_library_report.md`.
+The proposed public Set B decision packet is recorded in
+`data/metadata/elaad_profiles/B_public_vancar_cp_y2030_decision_packet.json`
+and `reports/e2_s2_public_profile_decision_packet.md`; it proposes request
+metadata only and did not generate public profiles.
 Generated raw responses and converted local profile outputs remain
 uncommitted and unredistributed; committed artifacts are limited to
 retrieval/generation code, request configurations, seed schedules, metadata,
