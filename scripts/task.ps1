@@ -1,6 +1,6 @@
 param(
     [Parameter(Mandatory = $true, Position = 0)]
-    [ValidateSet("test", "run", "figures", "ownership")]
+    [ValidateSet("test", "test-fast", "test-full", "run", "figures", "ownership")]
     [string] $Task,
 
     [string[]] $Paths = @()
@@ -15,19 +15,32 @@ if (-not (Test-Path -LiteralPath $VenvPython)) {
     exit 1
 }
 
+$TmpRoot = Join-Path $RepoRoot ".tmp"
+New-Item -ItemType Directory -Force -Path $TmpRoot | Out-Null
+
 if (-not $env:NUMBA_CACHE_DIR) {
-    $NumbaCacheDir = Join-Path $RepoRoot ".tmp\numba_cache"
+    $NumbaCacheDir = Join-Path $TmpRoot "numba_cache"
     New-Item -ItemType Directory -Force -Path $NumbaCacheDir | Out-Null
     $env:NUMBA_CACHE_DIR = $NumbaCacheDir
 }
 
 switch ($Task) {
-    "test" {
+    { $_ -in @("test", "test-full") } {
         & $VenvPython scripts/check_agent_ownership.py --base-ref origin/main
         if ($LASTEXITCODE -ne 0) {
             exit $LASTEXITCODE
         }
-        & $VenvPython -m pytest
+        $PytestBaseTemp = Join-Path $TmpRoot "pytest-full"
+        & $VenvPython -m pytest --basetemp $PytestBaseTemp
+        exit $LASTEXITCODE
+    }
+    "test-fast" {
+        & $VenvPython scripts/check_agent_ownership.py --base-ref origin/main
+        if ($LASTEXITCODE -ne 0) {
+            exit $LASTEXITCODE
+        }
+        $PytestBaseTemp = Join-Path $TmpRoot "pytest-fast"
+        & $VenvPython -m pytest -m "not slow" --basetemp $PytestBaseTemp
         exit $LASTEXITCODE
     }
     "run" {
