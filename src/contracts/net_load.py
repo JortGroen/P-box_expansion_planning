@@ -1,0 +1,260 @@
+"""Shared IC-1 NetLoadProvider scaffold and validators.
+
+This module defines the Agent A-owned net-load boundary without binding it to
+the unfinished E2 component implementations. It aggregates already-aligned
+component trajectories and preserves the provenance needed by downstream
+adequacy and physics checks.
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from types import MappingProxyType
+from typing import Literal, Mapping, Protocol, Sequence
+
+import numpy as np
+
+from src.contracts.loading_trajectory import TimeDomain
+
+
+ComponentKind = Literal[
+    "baseline",
+    "ev",
+    "hp",
+    "pv",
+    "adoption",
+    "flexibility",
+    "other",
+]
+
+
+@dataclass(frozen=True)
+class ComponentProvenance:
+    """Traceable source identity for one net-load component trajectory."""
+
+    component_id: str
+    kind: ComponentKind
+    node_id: str
+    member_id: str | None = None
+    source_id: str | None = None
+    shared_weather_driver_id: str | None = None
+    metadata: Mapping[str, object] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        _require_nonempty(self.component_id, name="component_id")
+        _require_nonempty(self.node_id, name="node_id")
+        if self.kind not in _VALID_COMPONENT_KINDS:
+            raise ValueError("kind must be a valid net-load component kind")
+        object.__setattr__(self, "metadata", MappingProxyType(dict(self.metadata)))
+
+
+@dataclass(frozen=True)
+class NetLoadComponent:
+    """One complete component trajectory before IC-1 aggregation.
+
+    Parameters
+    ----------
+    provenance:
+        Source/member identity retained in the aggregate result.
+    p_kw, q_kvar:
+        Active and reactive trajectories in kW/kvar. Generation/export
+        components, such as PV, should use negative active power.
+    timestamps:
+        Common 15-minute calendar as ``numpy.datetime64`` values.
+    """
+
+    provenance: ComponentProvenance
+    p_kw: np.ndarray
+    q_kvar: np.ndarray
+    timestamps: np.ndarray
+
+    def __post_init__(self) -> None:
+        p_kw = _as_power_vector(self.p_kw, name="p_kw")
+        q_kvar = _as_power_vector(self.q_kvar, name="q_kvar")
+        timestamps = _as_15_minute_calendar(self.timestamps)
+        if p_kw.shape != timestamps.shape or q_kvar.shape != timestamps.shape:
+            raise ValueError("component trajectories and timestamps must have identical shapes")
+        object.__setattr__(self, "p_kw", p_kw)
+        object.__setattr__(self, "q_kvar", q_kvar)
+        object.__setattr__(self, "timestamps", timestamps)
+
+
+@dataclass(frozen=True)
+class NetLoadResult:
+    """Validated IC-1 net-load payload for downstream evaluators.
+
+    Attributes
+    ----------
+    p_net_kw, q_net_kvar:
+        Aggregated nodal net-load arrays with shape ``(nodes, timesteps)``.
+    timestamps:
+        Complete common 15-minute calendar for every component and node.
+    node_ids:
+        Node labels corresponding to the first axis of ``p_net_kw`` and
+        ``q_net_kvar``.
+    component_provenance:
+        Component/member metadata retained for manifests and diagnostics.
+    """
+
+    p_net_kw: np.ndarray
+    q_net_kvar: np.ndarray
+    timestamps: np.ndarray
+    node_ids: tuple[str, ...]
+    component_provenance: tuple[ComponentProvenance, ...]
+    shared_weather_driver_ids: tuple[str, ...] = ()
+    metadata: Mapping[str, object] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        p_net_kw = np.asarray(self.p_net_kw, dtype=float)
+        q_net_kvar = np.asarray(self.q_net_kvar, dtype=float)
+        timestamps = _as_15_minute_calendar(self.timestamps)
+        if p_net_kw.ndim != 2 or q_net_kvar.ndim != 2:
+            raise ValueError("net-load arrays must have shape (nodes, timesteps)")
+        if p_net_kw.shape != q_net_kvar.shape:
+            raise ValueError("p_net_kw and q_net_kvar must have identical shapes")
+        if p_net_kw.shape[0] != len(self.node_ids):
+            raise ValueError("node_ids must match the net-load node dimension")
+        if p_net_kw.shape[1] != timestamps.size:
+            raise ValueError("timestamps must match the net-load time dimension")
+        if not np.isfinite(p_net_kw).all() or not np.isfinite(q_net_kvar).all():
+            raise ValueError("net-load arrays must contain only finite values")
+        if not self.component_provenance:
+            raise ValueError("component_provenance must not be empty")
+        for node_id in self.node_ids:
+            _require_nonempty(node_id, name="node_id")
+        object.__setattr__(self, "p_net_kw", p_net_kw)
+        object.__setattr__(self, "q_net_kvar", q_net_kvar)
+        object.__setattr__(self, "timestamps", timestamps)
+        object.__setattr__(self, "node_ids", tuple(self.node_ids))
+        object.__setattr__(self, "component_provenance", tuple(self.component_provenance))
+        object.__setattr__(self, "shared_weather_driver_ids", tuple(self.shared_weather_driver_ids))
+        object.__setattr__(self, "metadata", MappingProxyType(dict(self.metadata)))
+
+
+class NetLoadProvider(Protocol):
+    """Structural IC-1 provider protocol for future E2/E3 implementations."""
+
+    def get_net_load(
+        self,
+        scenario: str,
+        year: int,
+        time_domain: TimeDomain,
+        rho: float,
+        seed: int,
+    ) -> NetLoadResult:
+        """Return one deterministic, traceable net-load realization."""
+
+
+def build_net_load_result(
+    components: Sequence[NetLoadComponent],
+    *,
+    metadata: Mapping[str, object] | None = None,
+) -> NetLoadResult:
+    """Aggregate aligned components into a deterministic IC-1 result.
+
+    The helper is intentionally small: it validates calendar/provenance
+    invariants and sums active/reactive power by node, but performs no
+    congestion calculation or event detection.
+    """
+
+    if not components:
+        raise ValueError("components must not be empty")
+    reference_calendar = components[0].timestamps
+    for component in components[1:]:
+        if not np.array_equal(component.timestamps, reference_calendar):
+            raise ValueError("all components must use the same 15-minute calendar")
+
+    _validate_shared_weather_identity(components)
+    node_ids = tuple(dict.fromkeys(component.provenance.node_id for component in components))
+    node_index = {node_id: index for index, node_id in enumerate(node_ids)}
+    p_net_kw = np.zeros((len(node_ids), reference_calendar.size), dtype=float)
+    q_net_kvar = np.zeros_like(p_net_kw)
+    for component in components:
+        row = node_index[component.provenance.node_id]
+        p_net_kw[row] += component.p_kw
+        q_net_kvar[row] += component.q_kvar
+
+    weather_ids = tuple(
+        sorted(
+            {
+                component.provenance.shared_weather_driver_id
+                for component in components
+                if component.provenance.shared_weather_driver_id is not None
+            }
+        )
+    )
+    return NetLoadResult(
+        p_net_kw=p_net_kw,
+        q_net_kvar=q_net_kvar,
+        timestamps=reference_calendar,
+        node_ids=node_ids,
+        component_provenance=tuple(component.provenance for component in components),
+        shared_weather_driver_ids=weather_ids,
+        metadata={} if metadata is None else metadata,
+    )
+
+
+def validate_net_load_result(result: NetLoadResult) -> None:
+    """Validate an IC-1 result and raise on contract violations."""
+
+    NetLoadResult(
+        p_net_kw=result.p_net_kw,
+        q_net_kvar=result.q_net_kvar,
+        timestamps=result.timestamps,
+        node_ids=result.node_ids,
+        component_provenance=result.component_provenance,
+        shared_weather_driver_ids=result.shared_weather_driver_ids,
+        metadata=result.metadata,
+    )
+
+
+_VALID_COMPONENT_KINDS = frozenset(ComponentKind.__args__)
+
+
+def _as_power_vector(values: np.ndarray, *, name: str) -> np.ndarray:
+    array = np.asarray(values, dtype=float)
+    if array.ndim != 1:
+        raise ValueError(f"{name} must be a one-dimensional array")
+    if array.size == 0:
+        raise ValueError(f"{name} must not be empty")
+    if not np.isfinite(array).all():
+        raise ValueError(f"{name} must contain only finite values")
+    return array
+
+
+def _as_15_minute_calendar(values: np.ndarray) -> np.ndarray:
+    timestamps = np.asarray(values)
+    if timestamps.ndim != 1:
+        raise ValueError("timestamps must be a one-dimensional array")
+    if timestamps.size == 0:
+        raise ValueError("timestamps must not be empty")
+    if not np.issubdtype(timestamps.dtype, np.datetime64):
+        raise TypeError("timestamps must use numpy.datetime64 values")
+    if np.isnat(timestamps).any():
+        raise ValueError("timestamps must not contain NaT")
+    if timestamps.size > 1:
+        cadence_s = np.diff(timestamps).astype("timedelta64[s]").astype(np.int64)
+        if not np.all(cadence_s == 900):
+            raise ValueError("timestamps must form a complete 15-minute calendar")
+    return timestamps.astype("datetime64[s]")
+
+
+def _require_nonempty(value: str, *, name: str) -> None:
+    if not isinstance(value, str) or not value:
+        raise ValueError(f"{name} must be a non-empty string")
+
+
+def _validate_shared_weather_identity(components: Sequence[NetLoadComponent]) -> None:
+    weather_components = [
+        component
+        for component in components
+        if component.provenance.kind in {"hp", "pv"}
+    ]
+    kinds = {component.provenance.kind for component in weather_components}
+    if not {"hp", "pv"}.issubset(kinds):
+        return
+    ids = {component.provenance.shared_weather_driver_id for component in weather_components}
+    # ALEA-001 requires HP and PV to consume one paired weather member when both
+    # are present; accepting missing or divergent IDs would hide a broken sample.
+    if None in ids or len(ids) != 1:
+        raise ValueError("HP and PV components must share one shared_weather_driver_id")
