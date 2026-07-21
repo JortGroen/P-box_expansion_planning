@@ -952,6 +952,27 @@ recorded before inspection, the predeclared acceptance report is generated from
 committed code and source metadata, and the PI explicitly accepts or escalates
 the resulting evidence.
 
+<!-- methods-id: E2-S3-HP-TECH-SCALING-DECISION-PACKET -->
+### E2-S3-HP-TECH-SCALING-DECISION-PACKET - Heat-Pump Technology And Scaling Decision Packet
+
+**Status: Proposed PI decision packet only.** The E2.S3 heat-pump technology
+and scaling packet organizes the unresolved choices that must be decided before
+real heat-pump integration: which Dutch When2Heat normalized shape columns are
+used for space and optional water heat, which COP columns define the HP
+technology and sink assumptions, whether SFH/MFH/COM classes remain separate,
+whether domestic water heating is included, and whether annual thermal scaling
+comes from When2Heat `heat_demand_*` evidence or from another registered
+source. The packet frames ASHP radiator and ASHP water COP columns as scaffold
+review defaults only, not as signed technology scenarios, and it keeps all
+annual TWh candidates as source-backed proposals rather than approved 2035,
+local, electric-demand, or manuscript values. It also records that Q-8 shared
+weather, concrete D-004 members, D-003/D-004 signoff, PI-signed cold-spell
+tolerances, and a real paired-weather acceptance report remain blocking before
+final E2.S3 acceptance. This paragraph and packet do not sign D-003 or D-004,
+do not set final numerical tolerances, do not run paired-weather acceptance,
+and do not authorize net-load integration, event analysis, `P(E)`,
+capacity-screen evidence, probability analysis, or manuscript-result claims.
+
 <!-- methods-id: D-004 -->
 ### D-004 - Weather and PV Inputs
 
