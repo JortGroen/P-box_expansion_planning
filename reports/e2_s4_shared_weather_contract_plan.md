@@ -1,12 +1,10 @@
 # E2.S4 Shared Weather Contract Plan
 
-Status: blocked on shared-weather Q-8 ownership. PR #43 has merged, so this
-PR is now a clean follow-up plan on top of `origin/main`, not a stacked PV
-implementation branch. The neutral implementation path
-`src/weather_model.py` plus `tests/test_weather_model.py` failed Agent C
-ownership preflight on branch `agent-c/E2.S4-shared-weather-contract-plan`.
-This report is the fallback deliverable requested by the PI. It does not
-implement code and does not claim real-source PVGIS/KNMI validation.
+Status: historical shared-weather implementation plan. WEATHER-001 later
+resolved Q-8 by approving the neutral implementation path and assigning
+`src/weather_model.py` plus `tests/test_weather_model.py` to Agent C. This
+report remains a useful implementation sketch; it does not implement code and
+does not claim real-source PVGIS/KNMI validation.
 
 Dashboard files and legacy aggregate logs are maintainer-only. This branch
 does not propose direct
@@ -16,15 +14,15 @@ dashboard.
 
 ## Contract Location
 
-Target paths after shared-weather Q-8 resolution:
+Target paths approved by WEATHER-001:
 
 - `src/weather_model.py`
 - `tests/test_weather_model.py`
 
 The already-merged `src/pv_model.py` and `src/hp_model.py` should be migrated
-to import the shared contract from `src.weather_model` once Q-8 ownership is
-resolved. They should not keep separate HP-local or PV-local weather-member
-classes in the final ALEA-001-compliant shape.
+to import the shared contract from `src.weather_model`. They should not keep
+separate HP-local or PV-local weather-member classes in the final
+ALEA-001/WEATHER-001-compliant shape.
 
 ## Planned Types
 
@@ -146,7 +144,7 @@ Derived records:
 - JSON serializability of provenance, metadata, calendar records, and usage
   records.
 
-Integration migration tests after shared-weather Q-8 should cover:
+Integration migration tests after WEATHER-001 should cover:
 
 - `src.pv_model` imports `WeatherMember` from `src.weather_model` and no longer
   owns a separate class;
@@ -156,19 +154,18 @@ Integration migration tests after shared-weather Q-8 should cover:
   weather member;
 - mismatched HP/PV weather identities fail before any net-load integration.
 
-## Blocker
+## Original Blocker, Now Resolved By WEATHER-001
 
-The neutral implementation path is currently blocked by OWN-001. Running
+The neutral implementation path was originally blocked by OWN-001. Running
 
 ```powershell
 .\scripts\task.ps1 ownership -Paths src/weather_model.py,tests/test_weather_model.py
 ```
 
-on the previous stacked branch failed because both paths were unassigned. The
-current `origin/main` ownership policy still does not assign those neutral
-paths to Agent C. Implementation should resume only after shared-weather Q-8 is
-resolved by a maintainer-owned path-policy update or exact merged ownership
-exception.
+on the previous stacked branch failed because both paths were unassigned.
+WEATHER-001 resolves this by assigning the paths to Agent C in the ownership
+policy. Implementation should resume from current `origin/main` after the
+WEATHER-001 policy update is merged.
 
 ## Ownership Policy Amendment Needed
 
@@ -192,7 +189,7 @@ merged PV and HP model scaffolds must converge on the same import path.
 
 ## HP/PV Compatibility Plan
 
-1. After the ownership rule or exception is merged, Agent C implements
+1. After the WEATHER-001 ownership rule is merged, Agent C implements
    `src/weather_model.py` and `tests/test_weather_model.py` on a follow-up
    branch.
 2. PV code imports `WeatherMember` from `src.weather_model`; the PV-local
@@ -209,7 +206,7 @@ merged PV and HP model scaffolds must converge on the same import path.
 
 ## Suggested STATUS Update
 
-Suggested `registers/STATUS.md` line after PI review:
+Suggested historical `registers/STATUS.md` line after PI review:
 
 ```markdown
 | E2.S4 PV model | C | blocked | 2/3 scaffold + shared-contract plan | Shared-weather Q-8 ownership; real-source acceptance evidence pending | #43 merged; follow-up #48 |

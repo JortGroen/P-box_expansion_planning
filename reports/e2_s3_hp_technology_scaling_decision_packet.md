@@ -2,12 +2,20 @@
 
 Decision packet ID: `E2-S3-HP-TECH-SCALING-DECISION-PACKET`
 
-Status: PI decision packet only. D-003 and D-004 remain proposed and unsigned.
-This packet prepares the remaining heat-pump modeling choices before real HP
-integration. It does not select final scientific inputs, set numerical
-tolerances, run paired-weather acceptance, run net-load integration, run event
-analysis, estimate `P(E)`, produce capacity-screen evidence, or create
-manuscript results.
+Status: historical PI decision packet. It is superseded in part by HP-001,
+WEATHER-001, and E2-S3-COLD-SPELL-ACCEPTANCE-DESIGN. D-003 is now approved
+only for HP-001 residential shape/COP source use; D-004, local annual HP
+scaling, numerical tolerances, paired-weather acceptance, net-load integration,
+event analysis, `P(E)`, capacity-screen evidence, and manuscript results remain
+separate blockers.
+
+Post-decision note: HP-001 approves residential SFH/MFH space heat plus
+domestic hot water, excludes commercial heat from the primary run, and keeps
+annual local scaling pending. WEATHER-001 resolves Q-8 by approving a neutral
+shared weather contract. The cold-spell acceptance design is approved as a
+design and now includes near-freezing/defrost-risk diagnostics around
+0 degrees C, but the exact numerical tolerances and near-freezing band remain
+unsigned.
 
 ## Purpose
 
@@ -190,17 +198,18 @@ Open PI choices:
 
 ## Weather And Acceptance Blockers
 
-Q-8 remains open. HP must consume the approved shared weather contract once it
-exists, not a separate temperature-only structure. Before real E2.S3 HP
-integration or D-003 signoff, the project still needs:
+WEATHER-001 resolves Q-8 at the decision level. HP must consume the approved
+shared weather contract once it is implemented, not a separate temperature-only
+structure. Before real E2.S3 HP integration or final D-003/D-004 source-use
+acceptance, the project still needs:
 
 - an authorized shared weather contract preserving `member_id`,
   `shared_weather_driver_id`, source/provenance, UTC/local calendar,
   temperature, and irradiance/PV weather fields;
 - concrete D-004 weather members with checksums and completeness evidence;
 - HP and PV profile outputs proving they used the same weather realization;
-- PI-signed numerical tolerances for the cold-spell and temperature-response
-  acceptance design before the first real acceptance run;
+- PI-signed numerical tolerances for the cold-spell, near-freezing, and
+  temperature-response acceptance design before the first real acceptance run;
 - a real paired-weather acceptance report generated from committed code and
   source metadata.
 
@@ -211,18 +220,17 @@ mechanically regenerated the D-003 HP profile.
 
 ## Recommended PI Decision Sequence
 
-1. Resolve Q-8 so HP and PV share one weather-member contract.
-2. Decide whether D-003 can be used for shape/COP after reviewing OPSD
-   citation/license wording.
-3. Select technology/COP route: ASHP radiator, ASHP floor, GSHP/WSHP, or a
-   signed mix.
-4. Decide whether water heating is primary, sensitivity-only, or out of scope.
-5. Decide whether annual scaling uses When2Heat `heat_demand_*` evidence or an
+1. Implement WEATHER-001 so HP and PV share one weather-member contract.
+2. Use HP-001 as the approved residential shape/COP boundary: SFH/MFH space
+   heat plus domestic hot water.
+3. Keep commercial heat out of the primary run unless a later sensitivity is
+   signed.
+4. Decide whether annual scaling uses When2Heat `heat_demand_*` evidence or an
    external registered source.
-6. Decide class handling and any local/downscaled service-area denominator.
-7. Sign cold-spell/paired-weather numerical tolerances before running the real
-   acceptance check.
-8. Review the real acceptance report before considering D-003/D-004 signoff for
+5. Decide class handling and any local/downscaled service-area denominator.
+6. Sign cold-spell, near-freezing, and paired-weather numerical tolerances
+   before running the real acceptance check.
+7. Review the real acceptance report before considering D-003/D-004 signoff for
    HP integration.
 
 ## What This Packet Does Not Decide

@@ -287,12 +287,15 @@ member anchored to one KNMI calendar year is selected as a paired multivariate
 trajectory, so temperature, irradiance, seasonality, and persistence remain
 associated; any supplementary irradiance series must cover the same timestamps
 and year, and a typical-year PV reference is not sampled as the realized
-weather. The heat-pump and PV models consume that same aligned member. EV and baseline inputs retain
-complete temporal paths and are mapped deterministically to the common season
-and weekday/weekend calendar before aggregation. This conditional construction
-preserves dependencies with an identified physical or calendar driver without
-claiming an unsupported full joint probability distribution. Common random
-numbers then reuse the complete realization across alpha levels,
+weather. The neutral Q-8 `WeatherMember` contract records `member_id`,
+`shared_weather_driver_id`, source, UTC/local timestamps, temperature, PV
+weather fields, provenance, metadata, and a stable content hash so heat-pump
+and PV outputs can prove they consumed the same weather realization. EV and
+baseline inputs retain complete temporal paths and are mapped deterministically
+to the common season and weekday/weekend calendar before aggregation. This
+conditional construction preserves dependencies with an identified physical or
+calendar driver without claiming an unsupported full joint probability
+distribution. Common random numbers then reuse the complete realization across alpha levels,
 controllability endpoints, model-error endpoints, and treatments, but are not
 treated as a substitute for physical dependence. Leap-year and daylight-saving
 mapping are versioned and tested after the concrete weather files are selected,
@@ -301,6 +304,27 @@ held-out tail or dependence diagnostics show material residual dependence that
 this construction misses, a shared latent factor, multivariate block bootstrap,
 or evidence-fitted copula is introduced only through a separately signed and
 manifested sensitivity protocol.
+
+<!-- methods-id: WEATHER-001 -->
+### WEATHER-001 - Shared HP/PV Weather-Member Contract
+
+**Status: Approved.** Heat-pump and PV profiles are generated from one neutral
+shared weather-member contract rather than from separate component-local weather
+objects. Each weather member carries one canonical UTC/local calendar, source
+and member identifiers, provenance and checksum metadata, temperature fields for
+heat-pump demand, irradiance or PV-weather fields for PV generation, and a
+shared weather-driver identity that downstream manifests can record. This makes
+the ALEA-001 physical dependency structural: in one Monte Carlo realization, a
+cold or cloudy weather member affects both heat-pump load and PV output through
+the same timestamped realization. The alternative of pairing HP and PV only
+after generation is rejected because it can hide calendar, timezone, member-ID,
+or source mismatches until late integration. The contract is implemented in a
+neutral Agent C-owned module, `src/weather_model.py`, with tests in
+`tests/test_weather_model.py`, so neither `hp_model.py` nor `pv_model.py`
+becomes the owner of the shared interface. This approval does not sign the
+D-004 source files, completeness criteria, cold-spell tolerances,
+paired-weather acceptance results, net-load/event analysis, `P(E)`, capacity
+screens, or manuscript-result numbers.
 
 <!-- methods-id: ALEA-002 -->
 ### ALEA-002 - Downstream-Only Congestion Evaluation
@@ -584,17 +608,30 @@ local totals exist, as the second-stage rule that distributes those totals
 across benchmark load nodes. If local forecast retrieval or justification
 fails, a national-adoption-rate scaling with separately sourced local
 denominators remains a fallback or sensitivity rather than the primary route.
-This PR proposes Alkmaar (`GM0361`) as a municipality-level implementation
-candidate, following PI first preference, and records 2035 low/middle/high home
-and public local Outlook counts for PI review. Delft (`GM0503`) was also
-checked as a fallback and had complete municipality-level values, but it is not
-the selected proposal. The Alkmaar cluster/count values remain review-only and
-may not drive adoption scenarios, A-014 nodal allocation, EV-005 replacement
-decisions, E3.S2a adequacy tests, or integrated event/congestion analysis until
-the PI accepts the selected cluster and local totals. The live
-neighbourhood-list endpoint returned HTTP 500 during this session, so individual
-CBS-neighbourhood rows remain an unresolved retrieval limitation for this
-workflow revision.
+EV-007A subsequently selects Alkmaar (`GM0361`) as the municipality-level
+implementation proxy and signs its retrieved 2035 local Outlook counts as
+declared low/middle/high scenario branches. Delft (`GM0503`) was checked as an
+available fallback but is not selected. The live neighbourhood-list endpoint
+returned HTTP 500 during retrieval, so the accepted proxy is municipality-level
+rather than a manually assembled neighbourhood subset.
+
+<!-- methods-id: EV-007A -->
+### EV-007A - Alkmaar Local EV Adoption Counts
+
+**Status: Approved.** The local EV adoption layer uses Alkmaar municipality
+(`GM0361`) as the representative local proxy for the synthetic SimBench case
+study. ElaadNL Outlook Mobiliteit local forecast API values for 2035 are
+rounded to integer charge-point counts and carried as three declared branches:
+low `7992` home and `4183` public charge points, middle `9386` home and `5127`
+public charge points, and high `10343` home and `6138` public charge points.
+These branches are used as scenario inputs, not as probabilities and not as a
+post-hoc tuning device. The final paper branch is selected later at G5 after
+the predeclared capacity screen, within the already frozen 2035 planning year.
+National Outlook values remain provenance and scale context only. A-014 remains
+the approved within-grid allocation rule that distributes accepted totals across
+the benchmark load nodes, but this decision does not itself choose the final
+case-study branch or produce congestion, adequacy, `P(E)`, or manuscript
+results.
 
 <!-- methods-id: EV-008 -->
 ### EV-008 - Superseded Public Charge-Point Profile Protocol
@@ -820,12 +857,12 @@ nonnegative integer counts by largest-remainder rounding, with ties resolved by
 node ID for deterministic reruns. The rule must not be applied directly to the
 national ElaadNL Outlook totals recorded under D-010, and it does not itself
 select the local cluster or approve public-charging behavior profiles. The
-current A-014 preview applies this deterministic rounding rule to the proposed
-Alkmaar values solely as an audit artifact: the totals remain
-`proposed_not_pi_signed`, the committed executable scenario table remains
-empty, and the preview may not drive net-load integration, EV held-out
-adequacy, event analysis, or manuscript results until the PI accepts the local
-totals.
+current A-014 preview applies this deterministic rounding rule to the Alkmaar
+values that EV-007A later accepted. The preview remains an audit artifact rather
+than the executable allocation source: per-node A-014 weights must still be
+materialized in `configs/scenarios.yaml` before `adoption_node_allocations`
+can drive net-load integration, EV held-out adequacy, event analysis, or
+manuscript results.
 
 ## Data and Evidence Choices
 
@@ -891,8 +928,21 @@ amendment packet is recorded in
 `data/metadata/elaad_profiles/B_public_vancar_cp_y2030_amendment_packet.json`
 and `reports/e2_s2_ev008_public_profile_amendment_packet.md`; it signs the
 equal-mix capacity-stratified public design for source generation and structural
-validation only. The public packets contain request metadata only and did not
-generate public profiles.
+validation only. Under that signed protocol, the public Set B source library
+was generated locally as uncontrolled public `cp` profiles with the native
+van/car mix, simulated year 2030, and equal 25% class shares at 11, 13, 15, and
+22 kW. The candidate archive contains 1,200 distinct members from seeds
+`152001` through `153101` in the approved per-class schedule, and the held-out
+archive contains 400 distinct members from seeds `153201`, `153301`, `153401`,
+and `153501`. Each of the 16 public batches returned 35,040 UTC timestamps, 100
+profiles, 100 distinct member IDs, and no missing, non-finite, or negative
+demand values. The public Set B library manifest is
+`data/metadata/elaad_profiles/B_public_vancar_cp_y2030_set_b_library_manifest.json`;
+the source-level report is `reports/elaad_e2_s2_public_set_b_library_report.md`.
+Public Set B artifacts record only structural validation and provenance: no
+public smart-charging, DC/fast charging, behavioral/tail adequacy analysis,
+integrated net-load or event analysis, manuscript result, or claim that
+`M = 1200` is sufficient is made.
 Generated raw responses and converted local profile outputs remain
 uncommitted and unredistributed; committed artifacts are limited to
 retrieval/generation code, request configurations, seed schedules, metadata,
@@ -947,15 +997,15 @@ PV weather field names in the heat-pump identity record; this is compatibility
 scaffolding for the future shared weather contract, not a final contract
 implementation. The heat-pump module does not sample weather independently or
 shuffle timesteps. Commercial heat, local annual HP scaling for both space and
-domestic hot water, D-004/Q-8 paired-weather implementation, numerical
-cold-spell tolerances, real paired-weather acceptance, integrated event
-analysis, capacity-screen evidence, and manuscript results remain separately
-blocked.
+domestic hot water, WEATHER-001 implementation over accepted D-004 weather
+members, numerical cold-spell tolerances, real paired-weather acceptance,
+integrated event analysis, capacity-screen evidence, and manuscript results
+remain separately blocked.
 
 <!-- methods-id: E2-S3-COLD-SPELL-ACCEPTANCE-DESIGN -->
 ### E2-S3-COLD-SPELL-ACCEPTANCE-DESIGN - Heat-Pump Cold-Spell And Paired-Weather Acceptance Design
 
-**Status: Proposed predeclared acceptance design only.** The E2.S3 cold-spell
+**Status: Approved predeclared design; numerical tolerances pending.** The E2.S3 cold-spell
 and paired-weather acceptance design specifies how the project will later
 evaluate whether When2Heat-derived heat-pump profiles are acceptable for use
 with the ALEA-001 shared weather construction. The design requires HP and PV
@@ -965,16 +1015,21 @@ the same shared weather realization. It also predeclares the calendar,
 cold-spell, and temperature-response diagnostics that a later acceptance report
 must produce: complete 15-minute UTC/local calendar checks, coldest rolling
 seven-day and three-day temperature windows, HP peak and COP timing, HP load
-inside and outside cold windows, winter/top-load overlap, and paired plots and
-tables linking temperature, HP load, COP, and PV irradiance. This paragraph and
+inside and outside cold windows, near-freezing diagnostics around 0 degrees C
+to expose possible ASHP defrost or COP stress, winter/top-load overlap, and
+paired plots and tables linking temperature, HP load, COP, and PV irradiance.
+Including the near-freezing diagnostic prevents the source check from assuming
+that the coldest absolute temperature is always the hardest heat-pump operating
+condition. This paragraph and
 the design packet do not approve D-004, do not set numerical acceptance
 tolerances, do not run the check, and do not authorize net-load integration,
 event analysis, `P(E)`, capacity-screen evidence, manuscript claims, or any
 probability result. Final integrated D-003/D-004 acceptance remains pending
-until Q-8 is resolved, real D-004 weather members and checksums exist,
-PI-signed tolerances are recorded before inspection, the predeclared acceptance
-report is generated from committed code and source metadata, and the PI
-explicitly accepts or escalates the resulting evidence.
+until WEATHER-001 is implemented, real D-004 weather members and checksums
+exist, PI-signed tolerances and the exact near-freezing band are recorded before
+inspection, the predeclared acceptance report is generated from committed code
+and source metadata, and the PI explicitly accepts or escalates the resulting
+evidence.
 
 <!-- methods-id: E2-S3-HP-TECH-SCALING-DECISION-PACKET -->
 ### E2-S3-HP-TECH-SCALING-DECISION-PACKET - Heat-Pump Technology And Scaling Decision Packet
@@ -989,10 +1044,11 @@ approves the first-pass residential source/technology boundary: SFH/MFH space
 heat with ASHP radiator COP plus SFH/MFH domestic hot water with ASHP water COP.
 Commercial heat remains outside the primary run. The packet keeps all annual
 TWh candidates as source-backed proposals rather than approved 2035, local,
-electric-demand, or manuscript values. It also records that Q-8 shared weather,
-concrete D-004 members, final D-004 signoff, PI-signed cold-spell tolerances,
-local annual HP scaling, and a real paired-weather acceptance report remain
-blocking before final E2.S3 acceptance. This paragraph and packet leave D-004
+electric-demand, or manuscript values. It also records that WEATHER-001
+implementation, concrete D-004 members, final D-004 signoff, PI-signed
+cold-spell tolerances, local annual HP scaling, and a real paired-weather
+acceptance report remain blocking before final E2.S3 acceptance. This paragraph
+and packet leave D-004
 unsigned, do not set final numerical tolerances, do not run paired-weather
 acceptance, and do not authorize net-load integration, event analysis, `P(E)`,
 capacity-screen evidence, probability analysis, or manuscript-result claims.
@@ -1022,7 +1078,7 @@ scaling or adoption route for both residential space heat and domestic hot
 water before real integrated HP load is used. The E2.S3 scaffold exposes this
 boundary through explicit component metadata: each selected component records
 its shape column, COP column, end use, building class, annual TWh input, and
-provenance before any aggregation. D-004/Q-8 paired-weather
+provenance before any aggregation. WEATHER-001 implementation, D-004
 acceptance, cold-spell tolerances, event analysis, `P(E)`, and manuscript
 results remain blocked.
 
@@ -1047,7 +1103,7 @@ evidence, prove complete 2014-2023 annual weather members, or authorize
 manuscript claims. Per ALEA-001, each later usable weather member must carry one
 timezone-aware, complete, chronological UTC/local calendar plus paired
 temperature and irradiance channels, so heat-pump and PV integration can
-consume the same weather-member identity after Q-8 is resolved. PV conversion
+consume the same weather-member identity through WEATHER-001. PV conversion
 parameters and PVGIS sanity-check tolerances are supplied explicitly by the
 caller; a PVGIS typical-year reference is used for calibration or validation
 only, not as an independently sampled realized weather path. Seasonal energy
@@ -1124,26 +1180,24 @@ result uses them.
 <!-- methods-id: D-010 -->
 ### D-010 - ElaadNL Outlook Mobility Adoption Counts
 
-**Status: Proposed.** E2.S6 records EV charging-infrastructure projections from
-the official ElaadNL Outlook Mobiliteit scenariotool/API. The first D-010 use
-records national December `charging_infrastructure` values for 2030, 2033, and
-2035 under the low, middle, and high scenarios; these national records are not
-physical charge-point counts for the SimBench grid and must not flow into nodal
-allocation without a separately approved local scaling method. The second use
-records a proposed EV-007 local-count workflow for the Alkmaar (`GM0361`)
-municipality cluster in 2035, using the same home/public locations and
-low/middle/high scenarios. Delft (`GM0503`) is recorded only as a checked
-fallback municipality. The source site identifies the scenariotool as providing
-forecasts down to CBS-neighbourhood level, supplies report and model background
-pages, states that the outlook is assumption-based and indicative with a
-24-month validity note, identifies Scenariotool v1.0.0 as last updated on 9
-June 2026, and licenses the site under CC BY-NC-ND 4.0. The committed config
-and metadata record exact query strings, UTC retrieval time, raw floating API
-values, nearest-integer rounded counts, and response checksums without
-redistributing raw dashboard data. The Alkmaar values remain proposed and
-non-executable until the local cluster and totals are separately accepted.
-Public behavior profiles remain
-separately governed by the EV-008A capacity-stratified generation protocol.
+**Status: Source-approved for EV-007A local counts.** E2.S6 records EV
+charging-infrastructure projections from the official ElaadNL Outlook
+Mobiliteit scenariotool/API. The first D-010 use records national December
+`charging_infrastructure` values for 2030, 2033, and 2035 under the low,
+middle, and high scenarios; these national records are not physical
+charge-point counts for the SimBench grid and must not flow into nodal
+allocation. The second use records the EV-007A-approved Alkmaar (`GM0361`)
+municipality local-count workflow for 2035, using the same home/public
+locations and low/middle/high scenarios. Delft (`GM0503`) is recorded only as a
+checked fallback municipality. The source site identifies the scenariotool as
+providing forecasts down to CBS-neighbourhood level, supplies report and model
+background pages, states that the outlook is assumption-based and indicative
+with a 24-month validity note, identifies Scenariotool v1.0.0 as last updated
+on 9 June 2026, and licenses the site under CC BY-NC-ND 4.0. The committed
+config and metadata record exact query strings, UTC retrieval time, raw floating
+API values, nearest-integer rounded counts, and response checksums without
+redistributing raw dashboard data. Public behavior profiles are separately
+governed by the EV-008A capacity-stratified generation protocol.
 
 <!-- methods-id: D-011 -->
 ### D-011 - II3050 Scenario Framing

@@ -1,19 +1,20 @@
 # E2.S6 Local EV Adoption Counts
 
-Status: proposed workflow only; not PI-signed and not executable for integrated
-EV adoption use.
+Status: approved by EV-007A for local total-count use; not a congestion,
+profile-library adequacy, or manuscript result.
 
 ## Purpose
 
-This report turns Q-7 Option A into an auditable proposed workflow: select a
-representative CBS-area cluster before inspecting integrated congestion
-results, then derive local 2035 home and public charge-point totals from
-ElaadNL Outlook local forecast outputs. No integrated event, congestion,
-profile-library adequacy, or EV held-out analysis was run.
+This report records the Q-7 Option A workflow: select a representative CBS-area
+cluster before inspecting integrated congestion results, then derive local 2035
+home and public charge-point totals from ElaadNL Outlook local forecast outputs.
+EV-007A approves the Alkmaar municipality values below as executable declared
+local adoption branches. No integrated event, congestion, profile-library
+adequacy, or EV held-out analysis was run.
 
-## Proposed Cluster
+## Approved Cluster
 
-Proposed EV-007 cluster:
+EV-007A cluster:
 
 - Area type: `municipalities`
 - Area identifier: `GM0361`
@@ -21,7 +22,7 @@ Proposed EV-007 cluster:
 - Province: Noord-Holland
 - Network operator: not returned by the local API response
 - NAL region: not returned by the local API response
-- Status: proposed, not PI-signed
+- Status: approved by EV-007A for local total-count use
 
 Selection basis:
 
@@ -45,8 +46,8 @@ Limitation:
 - The live Outlook neighbourhood endpoint
   `/filters/municipalities/neighborhoods/GM0361` returned HTTP 500 at
   `2026-07-21T09:32:50.1236021Z`. Individual CBS-neighbourhood rows were
-  therefore not accessible through this route during the session. The proposed
-  cluster is municipality-level pending PI review.
+  therefore not accessible through this route during the session. EV-007A
+  accepts the municipality-level proxy for the first pass.
 
 ## Source Provenance
 
@@ -67,13 +68,13 @@ Metadata:
 - Path: `data/metadata/ev_adoption/e2_s6_local_adoption_counts_metadata.json`
 - SHA256: `fa4af429fd3da6f017c873801aa08064e2c2220d60ea896c1a4a8d5fd5201daa`
 
-## Proposed 2035 Counts
+## Approved 2035 Counts
 
 Rounding rule: round the floating API field `number` to the nearest integer
-charge-point count for proposed physical totals. These values are review-only
-and do not populate `local_grid_scenarios`.
+charge-point count. EV-007A approves these rounded counts as executable
+declared 2035 local-grid branches in `local_grid_scenarios`.
 
-| Scenario | Location | API number | Proposed rounded count | Retrieved UTC | Response sha256 |
+| Scenario | Location | API number | Approved rounded count | Retrieved UTC | Response sha256 |
 |---|---|---:|---:|---|---|
 | low | home | 7991.80830348258 | 7992 | 2026-07-21T09:33:34.9663859Z | `2b91de9e67c0ccddffa5c11293571391886b7a59414ae4549f5a0aad868e9bd4` |
 | low | public | 4182.6860541073265 | 4183 | 2026-07-21T09:33:36.3256749Z | `b97e7883c719e726b349ae16f8438d16308762125684d6b871772fac1dcef169` |
@@ -96,31 +97,29 @@ selected local-count proposal.
 
 ## Allocation Basis
 
-A-014 is approved only as a second-stage allocation rule after EV-007 supplies
-accepted local totals. If the proposed Alkmaar totals are accepted, the local
-totals may then be allocated across the 115 in-service SimBench `net.load` rows
-using static `p_mw` weights and deterministic largest-remainder rounding. This
-branch does not produce a per-node `K_r` table because the Alkmaar totals are
-not PI-signed.
+A-014 is approved as the second-stage allocation rule after EV-007A local
+totals. The local totals may be allocated across the 115 in-service SimBench
+`net.load` rows using static `p_mw` weights and deterministic largest-remainder
+rounding. This report records the total-count decision only; per-node `K_r`
+materialization remains the next implementation step.
 
 ## Guardrails
 
-- `configs/scenarios.yaml` stores proposed counts under `local_count_workflow`,
-  not under executable `local_grid_scenarios`.
-- `src.ev_model.adoption_scenarios()` still rejects the committed config while
-  `local_grid_scenarios.status` is `pending_local_cluster_selection`.
-- `src.ev_model.proposed_local_charge_point_counts()` exposes the proposed
-  values for audit only.
+- `configs/scenarios.yaml` preserves the original proposed-count audit records
+  under `local_count_workflow` and carries the approved copies under
+  executable `local_grid_scenarios`.
+- `src.ev_model.adoption_scenarios()` may now return the three declared 2035
+  Alkmaar branches.
+- `adoption_node_allocations(config)` remains blocked until A-014 node weights
+  are explicitly materialized in the config.
 - Country-level D-010 Outlook queries are rejected if supplied as proposed
   local-count provenance.
 
-## Remaining Decisions
+## Remaining Work
 
-- PI must decide whether Alkmaar (`GM0361`) is an acceptable representative
-  local cluster for the SimBench case.
-- PI must decide whether municipality-level clustering is acceptable while the
-  neighbourhood-list endpoint returns HTTP 500, or whether Agent C should wait
-  for/recover neighbourhood-level data.
-- The proposed Alkmaar counts remain non-executable until PI acceptance.
-- Public charging profile behavior remains separately blocked by the Elaad
-  profile-generation specification.
+- A-014 per-node allocation must still be materialized for executable nodal
+  counts.
+- Low/middle/high are declared branches; G5 selects the final paper branch
+  after the predeclared capacity screen and without changing the frozen 2035
+  planning year.
+- Public charging profile behavior is governed separately by EV-008A.
