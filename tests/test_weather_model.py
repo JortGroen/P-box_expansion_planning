@@ -124,6 +124,36 @@ def test_content_identity_changes_with_weather_or_provenance() -> None:
         assert_same_weather_realization(baseline.identity_record(), changed_irradiance.identity_record())
 
 
+def test_weather_member_audit_mappings_are_immutable_after_construction() -> None:
+    member = _short_weather()
+
+    with pytest.raises(TypeError):
+        member.pv_weather_fields["dni_w_per_m2"] = np.zeros(member.n_timesteps)  # type: ignore[index]
+    with pytest.raises(TypeError):
+        member.provenance["revision"] = "changed"  # type: ignore[index]
+    with pytest.raises(TypeError):
+        member.metadata["selection_id"] = "changed"  # type: ignore[index]
+
+    assert member.pv_weather_fields["ghi_w_per_m2"].flags.writeable is False
+    assert member.provenance["knmi_station_id"] == 249
+    assert member.metadata["selection_id"] == "d004_alkmaar_berkhout_2014_2023_v1"
+
+
+def test_identity_record_mutation_does_not_change_member_or_content_hash() -> None:
+    member = _short_weather()
+    original_hash = member.content_sha256
+    record = member.identity_record()
+
+    record["content_sha256"] = "0" * 64
+    record["provenance"]["knmi_station_id"] = 999  # type: ignore[index]
+    record["metadata"]["selection_id"] = "mutated"  # type: ignore[index]
+
+    assert member.content_sha256 == original_hash
+    assert member.provenance["knmi_station_id"] == 249
+    assert member.metadata["selection_id"] == "d004_alkmaar_berkhout_2014_2023_v1"
+    assert member.identity_record()["content_sha256"] == original_hash
+
+
 def test_same_neutral_weather_member_feeds_hp_and_pv_common_driver() -> None:
     weather = _short_weather()
     hourly = When2HeatHourlyProfile(

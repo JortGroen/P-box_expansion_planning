@@ -5,6 +5,7 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 import hashlib
 import json
+from types import MappingProxyType
 from typing import Any
 from zoneinfo import ZoneInfo
 
@@ -97,8 +98,8 @@ class WeatherMember:
                 name: _array_digest(values)
                 for name, values in sorted(self.pv_weather_fields.items())
             },
-            "provenance": self.provenance,
-            "metadata": self.metadata,
+            "provenance": dict(self.provenance),
+            "metadata": dict(self.metadata),
         }
         return hashlib.sha256(_canonical_json_bytes(payload)).hexdigest()
 
@@ -241,7 +242,7 @@ def _coerce_pv_weather_fields(
     raw_fields: Mapping[str, Sequence[float]],
     *,
     expected_len: int,
-) -> dict[str, np.ndarray]:
+) -> Mapping[str, np.ndarray]:
     if not isinstance(raw_fields, Mapping):
         raise ValueError("pv_weather_fields must be a mapping")
     fields: dict[str, np.ndarray] = {}
@@ -259,15 +260,15 @@ def _coerce_pv_weather_fields(
         raise ValueError("pv_weather_fields must include at least one irradiance/PV weather field")
     if DEFAULT_GHI_FIELD not in fields:
         raise ValueError(f"pv_weather_fields must include {DEFAULT_GHI_FIELD}")
-    return dict(sorted(fields.items()))
+    return MappingProxyType(dict(sorted(fields.items())))
 
 
-def _audit_mapping(raw: Mapping[str, Any], label: str) -> dict[str, Any]:
+def _audit_mapping(raw: Mapping[str, Any], label: str) -> Mapping[str, Any]:
     if not isinstance(raw, Mapping):
         raise ValueError(f"{label} must be a mapping")
     copied = dict(sorted((str(key), value) for key, value in raw.items()))
     _canonical_json_bytes(copied)
-    return copied
+    return MappingProxyType(copied)
 
 
 def _array_digest(array: np.ndarray) -> dict[str, object]:
