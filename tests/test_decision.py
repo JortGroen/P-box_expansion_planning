@@ -11,11 +11,16 @@ from src.decision import (
     ProcurementTargetResult,
     RhoProbabilityPoint,
     RhoStarAlphaResult,
+    SyntheticMonetaryInterval,
+    ValueOfInformationClassification,
+    ValueOfInformationInput,
+    ValueOfInformationResult,
     alpha_star,
     classify_procurement_target,
     deferral_horizon_from_procurement_targets,
     rho_star_from_probability_curves,
     rho_star_membership,
+    value_of_information_scaffold,
 )
 from src.fuzzy import TrapezoidalFuzzyNumber, TriangularFuzzyNumber
 from src.pbox import PBoxAlphaResult, ProbabilityEstimate, VertexUseMode
@@ -472,6 +477,156 @@ def test_deferral_horizon_rejects_invalid_inputs() -> None:
         )
 
 
+def test_value_of_information_preserves_alpha_indexed_synthetic_bounds() -> None:
+    horizons = {
+        0.0: _horizon_result(alpha=0.0, lower_year=2030, upper_year=2033),
+        0.5: _horizon_result(alpha=0.5, lower_year=2033, upper_year=2033),
+        1.0: _horizon_result(alpha=1.0, lower_year=None, upper_year=2030),
+    }
+    value_inputs = {
+        0.0: _voi_input(
+            alpha=0.0,
+            width=(0.20, 0.40),
+            benefit=(100.0, 160.0),
+            cost=(20.0, 50.0),
+        ),
+        0.5: _voi_input(
+            alpha=0.5,
+            width=(0.10, 0.25),
+            benefit=(20.0, 40.0),
+            cost=(50.0, 70.0),
+        ),
+        1.0: _voi_input(
+            alpha=1.0,
+            width=(0.0, 0.10),
+            benefit=(30.0, 80.0),
+            cost=(60.0, 90.0),
+        ),
+    }
+
+    result = value_of_information_scaffold(horizons, value_inputs)
+
+    assert list(result) == [0.0, 0.5, 1.0]
+    assert result[0.0].lower_horizon_year == 2030
+    assert result[0.0].upper_horizon_year == 2033
+    assert result[0.0].decision_width_lower == pytest.approx(0.20)
+    assert result[0.0].decision_width_upper == pytest.approx(0.40)
+    assert result[0.0].net_value_lower == pytest.approx(50.0)
+    assert result[0.0].net_value_upper == pytest.approx(140.0)
+    assert result[0.0].classification is ValueOfInformationClassification.NET_POSITIVE
+
+    assert result[0.5].net_value_lower == pytest.approx(-50.0)
+    assert result[0.5].net_value_upper == pytest.approx(-10.0)
+    assert result[0.5].classification is ValueOfInformationClassification.NET_NEGATIVE
+
+    assert result[1.0].net_value_lower == pytest.approx(-60.0)
+    assert result[1.0].net_value_upper == pytest.approx(20.0)
+    assert result[1.0].classification is ValueOfInformationClassification.INDETERMINATE
+    assert result[1.0].unit == "synthetic-eur"
+
+
+def test_value_of_information_marks_no_horizon_as_not_applicable() -> None:
+    result = value_of_information_scaffold(
+        {
+            0.0: _horizon_result(
+                alpha=0.0,
+                lower_year=None,
+                upper_year=None,
+            )
+        },
+        {
+            0.0: _voi_input(
+                alpha=0.0,
+                width=(0.5, 0.8),
+                benefit=(100.0, 200.0),
+                cost=(10.0, 20.0),
+            )
+        },
+    )
+
+    assert result[0.0].classification is ValueOfInformationClassification.NOT_APPLICABLE
+    assert result[0.0].net_value_lower == pytest.approx(80.0)
+    assert result[0.0].net_value_upper == pytest.approx(190.0)
+
+
+def test_value_of_information_rejects_invalid_inputs() -> None:
+    with pytest.raises(ValueError, match="deferral_horizons"):
+        value_of_information_scaffold({}, {})
+
+    with pytest.raises(ValueError, match="same alpha grid"):
+        value_of_information_scaffold(
+            {0.0: _horizon_result(alpha=0.0)},
+            {0.5: _voi_input(alpha=0.5)},
+        )
+
+    with pytest.raises(ValueError, match="mapping keys"):
+        value_of_information_scaffold(
+            {0.0: _horizon_result(alpha=0.5)},
+            {0.0: _voi_input(alpha=0.0)},
+        )
+
+    with pytest.raises(ValueError, match="nonnegative"):
+        SyntheticMonetaryInterval(-1.0, 2.0, "synthetic-eur")
+
+    with pytest.raises(ValueError, match="lower"):
+        SyntheticMonetaryInterval(3.0, 2.0, "synthetic-eur")
+
+    with pytest.raises(ValueError, match="unit"):
+        SyntheticMonetaryInterval(1.0, 2.0, " ")
+
+    with pytest.raises(ValueError, match="units must match"):
+        ValueOfInformationInput(
+            alpha=0.0,
+            decision_width_lower=0.1,
+            decision_width_upper=0.2,
+            deferral_benefit=SyntheticMonetaryInterval(1.0, 2.0, "a"),
+            information_cost=SyntheticMonetaryInterval(1.0, 2.0, "b"),
+        )
+
+    with pytest.raises(ValueError, match="decision_width_lower"):
+        _voi_input(alpha=0.0, width=(0.4, 0.2))
+
+    for name, lower, upper in (
+        ("net_value_lower", math.nan, 1.0),
+        ("net_value_lower", -math.inf, 1.0),
+        ("net_value_upper", -1.0, math.inf),
+        ("net_value_upper", -1.0, math.nan),
+    ):
+        with pytest.raises(ValueError, match=name):
+            ValueOfInformationResult(
+                alpha=0.0,
+                lower_horizon_year=2030,
+                upper_horizon_year=2033,
+                decision_width_lower=0.1,
+                decision_width_upper=0.2,
+                deferral_benefit_lower=10.0,
+                deferral_benefit_upper=20.0,
+                information_cost_lower=1.0,
+                information_cost_upper=2.0,
+                net_value_lower=lower,
+                net_value_upper=upper,
+                unit="synthetic-eur",
+                classification=ValueOfInformationClassification.NET_POSITIVE,
+            )
+
+    with pytest.raises(TypeError, match="classification"):
+        ValueOfInformationResult(
+            alpha=0.0,
+            lower_horizon_year=2030,
+            upper_horizon_year=2033,
+            decision_width_lower=0.1,
+            decision_width_upper=0.2,
+            deferral_benefit_lower=10.0,
+            deferral_benefit_upper=20.0,
+            information_cost_lower=1.0,
+            information_cost_upper=2.0,
+            net_value_lower=8.0,
+            net_value_upper=19.0,
+            unit="synthetic-eur",
+            classification="net-positive",  # type: ignore[arg-type]
+        )
+
+
 def _pbox_family(rows: list[tuple[float, float]]) -> dict[float, PBoxAlphaResult]:
     return {
         alpha: PBoxAlphaResult(
@@ -513,4 +668,49 @@ def _procurement_result(
         envelope_lower=envelope_lower,
         envelope_upper=envelope_upper,
         classification=classification,
+    )
+
+
+def _horizon_result(
+    *,
+    alpha: float,
+    lower_year: int | None = 2030,
+    upper_year: int | None = 2033,
+) -> DeferralHorizonResult:
+    yearly_results = (
+        DeferralYearResult(
+            year=2030,
+            alpha=alpha,
+            rho_lower=0.2,
+            rho_upper=0.4,
+            envelope_lower=0.1,
+            envelope_upper=0.6,
+            classification=ProcurementTargetClassification.INSIDE_ENVELOPE,
+        ),
+    )
+    return DeferralHorizonResult(
+        alpha=alpha,
+        lower_year=lower_year,
+        upper_year=upper_year,
+        first_unmet_year=None,
+        first_never_satisfied_year=None,
+        monotone_in_year=True,
+        yearly_results=yearly_results,
+    )
+
+
+def _voi_input(
+    *,
+    alpha: float,
+    width: tuple[float, float] = (0.1, 0.2),
+    benefit: tuple[float, float] = (10.0, 20.0),
+    cost: tuple[float, float] = (1.0, 2.0),
+    unit: str = "synthetic-eur",
+) -> ValueOfInformationInput:
+    return ValueOfInformationInput(
+        alpha=alpha,
+        decision_width_lower=width[0],
+        decision_width_upper=width[1],
+        deferral_benefit=SyntheticMonetaryInterval(benefit[0], benefit[1], unit),
+        information_cost=SyntheticMonetaryInterval(cost[0], cost[1], unit),
     )
