@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "task_id": "E2.S6",
-  "status": "local_grid_adoption_totals_approved",
-  "description": "EV adoption inputs for 2030, 2033, and 2035. National ElaadNL Outlook projections are retained as source provenance only; EV-007 selects the local scaling route and EV-007A approves Alkmaar GM0361 2035 low/middle/high home/public local-grid totals. EV-004 remains intact: the residential behavior library is the fixed ElaadNL 2030 home charge-point class.",
+  "status": "local_grid_adoption_totals_and_a014_node_weights_approved",
+  "description": "EV adoption inputs for 2030, 2033, and 2035. National ElaadNL Outlook projections are retained as source provenance only; EV-007A approves Alkmaar GM0361 2035 low/middle/high home/public local-grid totals, and A-014 materializes those totals across 115 SimBench load nodes by static p_mw weights. EV-004 remains intact: the residential behavior library is the fixed ElaadNL 2030 home charge-point class.",
   "source_ids": {
     "national_outlook_projection": "D-010",
     "scenario_context": "D-011",
@@ -453,7 +453,7 @@
     ]
   },
   "allocation": {
-    "status": "approved_after_local_totals",
+    "status": "approved",
     "method_id": "A-014",
     "stage": "second_stage_after_ev007_local_totals",
     "node_weight_source": {
@@ -465,10 +465,705 @@
       "node_id_template": "load_{source_load_index:03d}",
       "weight_column": "p_mw",
       "total_weight_p_mw": 31.64,
-      "node_count": 115
+      "node_count": 115,
+      "materialized_from_preview": "data/metadata/ev_adoption/e2_s6_a014_alkmaar_allocation_preview.json",
+      "node_weight_count": 115,
+      "materialization_status": "approved_config_input"
     },
     "integer_rounding": "largest_remainder_ties_by_node_id",
-    "scope_note": "Within-grid p_mw weighting and largest-remainder rounding are approved only as the second-stage allocation after EV-007 local totals are established.",
-    "public_profile_status": "Public charge-point counts need their own local basis. Public behavior profiles remain blocked by the separate Set B decision in reports/elaad_profile_generation_spec.md."
+    "scope_note": "Within-grid p_mw weighting and largest-remainder rounding are materialized as the A-014 second-stage allocation for EV-007A Alkmaar local totals. This does not select the final low/middle/high paper branch or run net-load/event analysis.",
+    "public_profile_status": "Public Set B behavior profiles are generated and structurally validated under EV-008A, but held-out adequacy and M sufficiency remain blocked by EV-005/E3.S2a.",
+    "node_weights": [
+      {
+        "node_id": "load_000",
+        "source_load_index": 0,
+        "weight": 0.34,
+        "weight_share": 0.01074589127686473
+      },
+      {
+        "node_id": "load_001",
+        "source_load_index": 1,
+        "weight": 0.441,
+        "weight_share": 0.013938053097345133
+      },
+      {
+        "node_id": "load_002",
+        "source_load_index": 2,
+        "weight": 0.409,
+        "weight_share": 0.012926675094816686
+      },
+      {
+        "node_id": "load_003",
+        "source_load_index": 3,
+        "weight": 0.409,
+        "weight_share": 0.012926675094816686
+      },
+      {
+        "node_id": "load_004",
+        "source_load_index": 4,
+        "weight": 0.243,
+        "weight_share": 0.007680151706700379
+      },
+      {
+        "node_id": "load_005",
+        "source_load_index": 5,
+        "weight": 0.243,
+        "weight_share": 0.007680151706700379
+      },
+      {
+        "node_id": "load_006",
+        "source_load_index": 6,
+        "weight": 0.409,
+        "weight_share": 0.012926675094816686
+      },
+      {
+        "node_id": "load_007",
+        "source_load_index": 7,
+        "weight": 0.202,
+        "weight_share": 0.0063843236409608095
+      },
+      {
+        "node_id": "load_008",
+        "source_load_index": 8,
+        "weight": 0.243,
+        "weight_share": 0.007680151706700379
+      },
+      {
+        "node_id": "load_009",
+        "source_load_index": 9,
+        "weight": 0.331,
+        "weight_share": 0.010461441213653604
+      },
+      {
+        "node_id": "load_010",
+        "source_load_index": 10,
+        "weight": 0.243,
+        "weight_share": 0.007680151706700379
+      },
+      {
+        "node_id": "load_011",
+        "source_load_index": 11,
+        "weight": 0.409,
+        "weight_share": 0.012926675094816686
+      },
+      {
+        "node_id": "load_012",
+        "source_load_index": 12,
+        "weight": 0.409,
+        "weight_share": 0.012926675094816686
+      },
+      {
+        "node_id": "load_013",
+        "source_load_index": 13,
+        "weight": 0.409,
+        "weight_share": 0.012926675094816686
+      },
+      {
+        "node_id": "load_014",
+        "source_load_index": 14,
+        "weight": 0.409,
+        "weight_share": 0.012926675094816686
+      },
+      {
+        "node_id": "load_015",
+        "source_load_index": 15,
+        "weight": 0.409,
+        "weight_share": 0.012926675094816686
+      },
+      {
+        "node_id": "load_016",
+        "source_load_index": 16,
+        "weight": 0.243,
+        "weight_share": 0.007680151706700379
+      },
+      {
+        "node_id": "load_017",
+        "source_load_index": 17,
+        "weight": 0.243,
+        "weight_share": 0.007680151706700379
+      },
+      {
+        "node_id": "load_018",
+        "source_load_index": 18,
+        "weight": 0.409,
+        "weight_share": 0.012926675094816686
+      },
+      {
+        "node_id": "load_019",
+        "source_load_index": 19,
+        "weight": 0.409,
+        "weight_share": 0.012926675094816686
+      },
+      {
+        "node_id": "load_020",
+        "source_load_index": 20,
+        "weight": 0.243,
+        "weight_share": 0.007680151706700379
+      },
+      {
+        "node_id": "load_021",
+        "source_load_index": 21,
+        "weight": 0.331,
+        "weight_share": 0.010461441213653604
+      },
+      {
+        "node_id": "load_022",
+        "source_load_index": 22,
+        "weight": 0.331,
+        "weight_share": 0.010461441213653604
+      },
+      {
+        "node_id": "load_023",
+        "source_load_index": 23,
+        "weight": 0.243,
+        "weight_share": 0.007680151706700379
+      },
+      {
+        "node_id": "load_024",
+        "source_load_index": 24,
+        "weight": 0.243,
+        "weight_share": 0.007680151706700379
+      },
+      {
+        "node_id": "load_025",
+        "source_load_index": 25,
+        "weight": 0.243,
+        "weight_share": 0.007680151706700379
+      },
+      {
+        "node_id": "load_026",
+        "source_load_index": 26,
+        "weight": 0.331,
+        "weight_share": 0.010461441213653604
+      },
+      {
+        "node_id": "load_027",
+        "source_load_index": 27,
+        "weight": 0.202,
+        "weight_share": 0.0063843236409608095
+      },
+      {
+        "node_id": "load_028",
+        "source_load_index": 28,
+        "weight": 0.202,
+        "weight_share": 0.0063843236409608095
+      },
+      {
+        "node_id": "load_029",
+        "source_load_index": 29,
+        "weight": 0.331,
+        "weight_share": 0.010461441213653604
+      },
+      {
+        "node_id": "load_030",
+        "source_load_index": 30,
+        "weight": 0.243,
+        "weight_share": 0.007680151706700379
+      },
+      {
+        "node_id": "load_031",
+        "source_load_index": 31,
+        "weight": 0.243,
+        "weight_share": 0.007680151706700379
+      },
+      {
+        "node_id": "load_032",
+        "source_load_index": 32,
+        "weight": 0.331,
+        "weight_share": 0.010461441213653604
+      },
+      {
+        "node_id": "load_033",
+        "source_load_index": 33,
+        "weight": 0.202,
+        "weight_share": 0.0063843236409608095
+      },
+      {
+        "node_id": "load_034",
+        "source_load_index": 34,
+        "weight": 0.202,
+        "weight_share": 0.0063843236409608095
+      },
+      {
+        "node_id": "load_035",
+        "source_load_index": 35,
+        "weight": 0.202,
+        "weight_share": 0.0063843236409608095
+      },
+      {
+        "node_id": "load_036",
+        "source_load_index": 36,
+        "weight": 0.202,
+        "weight_share": 0.0063843236409608095
+      },
+      {
+        "node_id": "load_037",
+        "source_load_index": 37,
+        "weight": 0.202,
+        "weight_share": 0.0063843236409608095
+      },
+      {
+        "node_id": "load_038",
+        "source_load_index": 38,
+        "weight": 0.202,
+        "weight_share": 0.0063843236409608095
+      },
+      {
+        "node_id": "load_039",
+        "source_load_index": 39,
+        "weight": 0.243,
+        "weight_share": 0.007680151706700379
+      },
+      {
+        "node_id": "load_040",
+        "source_load_index": 40,
+        "weight": 0.331,
+        "weight_share": 0.010461441213653604
+      },
+      {
+        "node_id": "load_041",
+        "source_load_index": 41,
+        "weight": 0.243,
+        "weight_share": 0.007680151706700379
+      },
+      {
+        "node_id": "load_042",
+        "source_load_index": 42,
+        "weight": 0.331,
+        "weight_share": 0.010461441213653604
+      },
+      {
+        "node_id": "load_043",
+        "source_load_index": 43,
+        "weight": 0.202,
+        "weight_share": 0.0063843236409608095
+      },
+      {
+        "node_id": "load_044",
+        "source_load_index": 44,
+        "weight": 0.243,
+        "weight_share": 0.007680151706700379
+      },
+      {
+        "node_id": "load_045",
+        "source_load_index": 45,
+        "weight": 0.202,
+        "weight_share": 0.0063843236409608095
+      },
+      {
+        "node_id": "load_046",
+        "source_load_index": 46,
+        "weight": 0.243,
+        "weight_share": 0.007680151706700379
+      },
+      {
+        "node_id": "load_047",
+        "source_load_index": 47,
+        "weight": 0.243,
+        "weight_share": 0.007680151706700379
+      },
+      {
+        "node_id": "load_048",
+        "source_load_index": 48,
+        "weight": 0.243,
+        "weight_share": 0.007680151706700379
+      },
+      {
+        "node_id": "load_049",
+        "source_load_index": 49,
+        "weight": 0.243,
+        "weight_share": 0.007680151706700379
+      },
+      {
+        "node_id": "load_050",
+        "source_load_index": 50,
+        "weight": 0.243,
+        "weight_share": 0.007680151706700379
+      },
+      {
+        "node_id": "load_051",
+        "source_load_index": 51,
+        "weight": 0.202,
+        "weight_share": 0.0063843236409608095
+      },
+      {
+        "node_id": "load_052",
+        "source_load_index": 52,
+        "weight": 0.202,
+        "weight_share": 0.0063843236409608095
+      },
+      {
+        "node_id": "load_053",
+        "source_load_index": 53,
+        "weight": 0.202,
+        "weight_share": 0.0063843236409608095
+      },
+      {
+        "node_id": "load_054",
+        "source_load_index": 54,
+        "weight": 0.243,
+        "weight_share": 0.007680151706700379
+      },
+      {
+        "node_id": "load_055",
+        "source_load_index": 55,
+        "weight": 0.331,
+        "weight_share": 0.010461441213653604
+      },
+      {
+        "node_id": "load_056",
+        "source_load_index": 56,
+        "weight": 0.243,
+        "weight_share": 0.007680151706700379
+      },
+      {
+        "node_id": "load_057",
+        "source_load_index": 57,
+        "weight": 0.243,
+        "weight_share": 0.007680151706700379
+      },
+      {
+        "node_id": "load_058",
+        "source_load_index": 58,
+        "weight": 0.243,
+        "weight_share": 0.007680151706700379
+      },
+      {
+        "node_id": "load_059",
+        "source_load_index": 59,
+        "weight": 0.331,
+        "weight_share": 0.010461441213653604
+      },
+      {
+        "node_id": "load_060",
+        "source_load_index": 60,
+        "weight": 0.202,
+        "weight_share": 0.0063843236409608095
+      },
+      {
+        "node_id": "load_061",
+        "source_load_index": 61,
+        "weight": 0.08,
+        "weight_share": 0.0025284450063211127
+      },
+      {
+        "node_id": "load_062",
+        "source_load_index": 62,
+        "weight": 0.08,
+        "weight_share": 0.0025284450063211127
+      },
+      {
+        "node_id": "load_063",
+        "source_load_index": 63,
+        "weight": 0.08,
+        "weight_share": 0.0025284450063211127
+      },
+      {
+        "node_id": "load_064",
+        "source_load_index": 64,
+        "weight": 0.202,
+        "weight_share": 0.0063843236409608095
+      },
+      {
+        "node_id": "load_065",
+        "source_load_index": 65,
+        "weight": 0.08,
+        "weight_share": 0.0025284450063211127
+      },
+      {
+        "node_id": "load_066",
+        "source_load_index": 66,
+        "weight": 0.409,
+        "weight_share": 0.012926675094816686
+      },
+      {
+        "node_id": "load_067",
+        "source_load_index": 67,
+        "weight": 0.243,
+        "weight_share": 0.007680151706700379
+      },
+      {
+        "node_id": "load_068",
+        "source_load_index": 68,
+        "weight": 0.331,
+        "weight_share": 0.010461441213653604
+      },
+      {
+        "node_id": "load_069",
+        "source_load_index": 69,
+        "weight": 0.331,
+        "weight_share": 0.010461441213653604
+      },
+      {
+        "node_id": "load_070",
+        "source_load_index": 70,
+        "weight": 0.08,
+        "weight_share": 0.0025284450063211127
+      },
+      {
+        "node_id": "load_071",
+        "source_load_index": 71,
+        "weight": 0.202,
+        "weight_share": 0.0063843236409608095
+      },
+      {
+        "node_id": "load_072",
+        "source_load_index": 72,
+        "weight": 0.202,
+        "weight_share": 0.0063843236409608095
+      },
+      {
+        "node_id": "load_073",
+        "source_load_index": 73,
+        "weight": 0.202,
+        "weight_share": 0.0063843236409608095
+      },
+      {
+        "node_id": "load_074",
+        "source_load_index": 74,
+        "weight": 0.202,
+        "weight_share": 0.0063843236409608095
+      },
+      {
+        "node_id": "load_075",
+        "source_load_index": 75,
+        "weight": 0.243,
+        "weight_share": 0.007680151706700379
+      },
+      {
+        "node_id": "load_076",
+        "source_load_index": 76,
+        "weight": 0.409,
+        "weight_share": 0.012926675094816686
+      },
+      {
+        "node_id": "load_077",
+        "source_load_index": 77,
+        "weight": 0.409,
+        "weight_share": 0.012926675094816686
+      },
+      {
+        "node_id": "load_078",
+        "source_load_index": 78,
+        "weight": 0.202,
+        "weight_share": 0.0063843236409608095
+      },
+      {
+        "node_id": "load_079",
+        "source_load_index": 79,
+        "weight": 0.202,
+        "weight_share": 0.0063843236409608095
+      },
+      {
+        "node_id": "load_080",
+        "source_load_index": 80,
+        "weight": 0.331,
+        "weight_share": 0.010461441213653604
+      },
+      {
+        "node_id": "load_081",
+        "source_load_index": 81,
+        "weight": 0.331,
+        "weight_share": 0.010461441213653604
+      },
+      {
+        "node_id": "load_082",
+        "source_load_index": 82,
+        "weight": 0.243,
+        "weight_share": 0.007680151706700379
+      },
+      {
+        "node_id": "load_083",
+        "source_load_index": 83,
+        "weight": 0.441,
+        "weight_share": 0.013938053097345133
+      },
+      {
+        "node_id": "load_084",
+        "source_load_index": 84,
+        "weight": 0.409,
+        "weight_share": 0.012926675094816686
+      },
+      {
+        "node_id": "load_085",
+        "source_load_index": 85,
+        "weight": 0.409,
+        "weight_share": 0.012926675094816686
+      },
+      {
+        "node_id": "load_086",
+        "source_load_index": 86,
+        "weight": 0.409,
+        "weight_share": 0.012926675094816686
+      },
+      {
+        "node_id": "load_087",
+        "source_load_index": 87,
+        "weight": 0.409,
+        "weight_share": 0.012926675094816686
+      },
+      {
+        "node_id": "load_088",
+        "source_load_index": 88,
+        "weight": 0.409,
+        "weight_share": 0.012926675094816686
+      },
+      {
+        "node_id": "load_089",
+        "source_load_index": 89,
+        "weight": 0.409,
+        "weight_share": 0.012926675094816686
+      },
+      {
+        "node_id": "load_090",
+        "source_load_index": 90,
+        "weight": 0.243,
+        "weight_share": 0.007680151706700379
+      },
+      {
+        "node_id": "load_091",
+        "source_load_index": 91,
+        "weight": 0.409,
+        "weight_share": 0.012926675094816686
+      },
+      {
+        "node_id": "load_092",
+        "source_load_index": 92,
+        "weight": 0.243,
+        "weight_share": 0.007680151706700379
+      },
+      {
+        "node_id": "load_093",
+        "source_load_index": 93,
+        "weight": 0.243,
+        "weight_share": 0.007680151706700379
+      },
+      {
+        "node_id": "load_094",
+        "source_load_index": 94,
+        "weight": 0.409,
+        "weight_share": 0.012926675094816686
+      },
+      {
+        "node_id": "load_095",
+        "source_load_index": 95,
+        "weight": 0.243,
+        "weight_share": 0.007680151706700379
+      },
+      {
+        "node_id": "load_096",
+        "source_load_index": 96,
+        "weight": 0.331,
+        "weight_share": 0.010461441213653604
+      },
+      {
+        "node_id": "load_097",
+        "source_load_index": 97,
+        "weight": 0.409,
+        "weight_share": 0.012926675094816686
+      },
+      {
+        "node_id": "load_098",
+        "source_load_index": 98,
+        "weight": 0.243,
+        "weight_share": 0.007680151706700379
+      },
+      {
+        "node_id": "load_099",
+        "source_load_index": 99,
+        "weight": 0.243,
+        "weight_share": 0.007680151706700379
+      },
+      {
+        "node_id": "load_100",
+        "source_load_index": 100,
+        "weight": 0.409,
+        "weight_share": 0.012926675094816686
+      },
+      {
+        "node_id": "load_101",
+        "source_load_index": 101,
+        "weight": 0.243,
+        "weight_share": 0.007680151706700379
+      },
+      {
+        "node_id": "load_102",
+        "source_load_index": 102,
+        "weight": 0.202,
+        "weight_share": 0.0063843236409608095
+      },
+      {
+        "node_id": "load_103",
+        "source_load_index": 103,
+        "weight": 0.202,
+        "weight_share": 0.0063843236409608095
+      },
+      {
+        "node_id": "load_104",
+        "source_load_index": 104,
+        "weight": 0.243,
+        "weight_share": 0.007680151706700379
+      },
+      {
+        "node_id": "load_105",
+        "source_load_index": 105,
+        "weight": 0.331,
+        "weight_share": 0.010461441213653604
+      },
+      {
+        "node_id": "load_106",
+        "source_load_index": 106,
+        "weight": 0.243,
+        "weight_share": 0.007680151706700379
+      },
+      {
+        "node_id": "load_107",
+        "source_load_index": 107,
+        "weight": 0.202,
+        "weight_share": 0.0063843236409608095
+      },
+      {
+        "node_id": "load_108",
+        "source_load_index": 108,
+        "weight": 0.08,
+        "weight_share": 0.0025284450063211127
+      },
+      {
+        "node_id": "load_109",
+        "source_load_index": 109,
+        "weight": 0.331,
+        "weight_share": 0.010461441213653604
+      },
+      {
+        "node_id": "load_110",
+        "source_load_index": 110,
+        "weight": 0.331,
+        "weight_share": 0.010461441213653604
+      },
+      {
+        "node_id": "load_111",
+        "source_load_index": 111,
+        "weight": 0.21,
+        "weight_share": 0.00663716814159292
+      },
+      {
+        "node_id": "load_112",
+        "source_load_index": 112,
+        "weight": 0.085,
+        "weight_share": 0.0026864728192161824
+      },
+      {
+        "node_id": "load_113",
+        "source_load_index": 113,
+        "weight": 0.235,
+        "weight_share": 0.007427307206068268
+      },
+      {
+        "node_id": "load_114",
+        "source_load_index": 114,
+        "weight": 0.245,
+        "weight_share": 0.007743362831858407
+      }
+    ]
   }
 }

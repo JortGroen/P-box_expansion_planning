@@ -455,7 +455,8 @@ def test_committed_adoption_scenarios_config_validates() -> None:
     assert all(item.area_identifier == "GM0361" for item in proposed_local)
     assert any(item.scenario == "middle" and item.location == "home" and item.rounded_count == 9386 for item in proposed_local)
     assert config["local_grid_scenarios"]["status"] == "approved"
-    assert config["allocation"]["status"] == "approved_after_local_totals"
+    assert config["allocation"]["status"] == "approved"
+    assert len(config["allocation"]["node_weights"]) == 115
     assert [(item.scenario, item.home_charge_points, item.public_charge_points) for item in scenarios] == [
         ("low", 7992, 4183),
         ("middle", 9386, 5127),
@@ -537,12 +538,23 @@ def test_proposed_local_count_workflow_rejects_country_queries_and_bad_status() 
         validate_adoption_scenarios_config(config)
 
 
-def test_committed_local_scenarios_wait_for_materialized_node_weights() -> None:
+def test_committed_local_scenarios_materialize_a014_node_weights() -> None:
     config = load_adoption_scenarios_config(Path("configs/scenarios.yaml"))
+    allocations = adoption_node_allocations(config)
 
     assert len(adoption_scenarios(config)) == 3
-    with pytest.raises(ValueError, match="approved A-014 allocation"):
-        adoption_node_allocations(config)
+    assert len(allocations) == 3
+    assert [item.scenario for item in allocations] == ["low", "middle", "high"]
+    assert all(len(item.home_by_node) == 115 for item in allocations)
+    assert all(len(item.public_by_node) == 115 for item in allocations)
+    assert {
+        item.scenario: (item.total_home_charge_points, item.total_public_charge_points)
+        for item in allocations
+    } == {
+        "low": (7992, 4183),
+        "middle": (9386, 5127),
+        "high": (10343, 6138),
+    }
 
 
 def test_unapproved_allocation_status_cannot_allocate() -> None:
@@ -551,6 +563,16 @@ def test_unapproved_allocation_status_cannot_allocate() -> None:
 
     with pytest.raises(ValueError, match="approved A-014 allocation"):
         adoption_node_allocations(config)
+
+
+def test_approved_allocation_requires_materialized_node_weights() -> None:
+    config = _adoption_config()
+    config["allocation"]["status"] = "approved"
+    del config["allocation"]["node_weights"]
+    config["allocation"]["node_weight_source"] = {"method_id": "A-014"}
+
+    with pytest.raises(ValueError, match="requires explicit node_weights"):
+        validate_adoption_scenarios_config(config)
 
 
 def test_adoption_config_rejects_duplicate_scenario_keys_and_noninteger_counts() -> None:
@@ -635,8 +657,9 @@ def test_a014_node_weights_from_load_table_filters_and_validates() -> None:
         a014_node_weights_from_load_table(bad)
 
 
-def test_proposed_a014_preview_uses_alkmaar_counts_without_executing_scenarios() -> None:
+def test_proposed_a014_preview_remains_available_for_historical_workflow() -> None:
     config = load_adoption_scenarios_config(Path("configs/scenarios.yaml"))
+    config["allocation"]["status"] = "approved_after_local_totals"
     weights = (("load_a", 2.0), ("load_b", 1.0))
 
     preview = proposed_a014_allocation_preview(config, weights)
@@ -688,8 +711,8 @@ def test_committed_a014_alkmaar_preview_preserves_totals_and_status() -> None:
         assert sum(row[f"public_{scenario}"] for row in artifact["allocations_by_node"]) == artifact[
             "scenario_totals"
         ][scenario]["public"]
-    with pytest.raises(ValueError, match="approved A-014 allocation"):
-        adoption_node_allocations(config)
+    config_allocations = adoption_node_allocations(config)
+    assert node_charge_point_ranges(config_allocations) == artifact["per_node_ranges"]
 
 
 def test_charge_point_ranges_report_totals_and_per_node_kr() -> None:
