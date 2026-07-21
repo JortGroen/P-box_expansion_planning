@@ -989,7 +989,7 @@ remain separately blocked.
 <!-- methods-id: E2-S3-COLD-SPELL-ACCEPTANCE-DESIGN -->
 ### E2-S3-COLD-SPELL-ACCEPTANCE-DESIGN - Heat-Pump Cold-Spell And Paired-Weather Acceptance Design
 
-**Status: Proposed predeclared acceptance design only.** The E2.S3 cold-spell
+**Status: Approved predeclared design; numerical tolerances pending.** The E2.S3 cold-spell
 and paired-weather acceptance design specifies how the project will later
 evaluate whether When2Heat-derived heat-pump profiles are acceptable for use
 with the ALEA-001 shared weather construction. The design requires HP and PV
@@ -999,16 +999,21 @@ the same shared weather realization. It also predeclares the calendar,
 cold-spell, and temperature-response diagnostics that a later acceptance report
 must produce: complete 15-minute UTC/local calendar checks, coldest rolling
 seven-day and three-day temperature windows, HP peak and COP timing, HP load
-inside and outside cold windows, winter/top-load overlap, and paired plots and
-tables linking temperature, HP load, COP, and PV irradiance. This paragraph and
+inside and outside cold windows, near-freezing diagnostics around 0 degrees C
+to expose possible ASHP defrost or COP stress, winter/top-load overlap, and
+paired plots and tables linking temperature, HP load, COP, and PV irradiance.
+Including the near-freezing diagnostic prevents the source check from assuming
+that the coldest absolute temperature is always the hardest heat-pump operating
+condition. This paragraph and
 the design packet do not approve D-004, do not set numerical acceptance
 tolerances, do not run the check, and do not authorize net-load integration,
 event analysis, `P(E)`, capacity-screen evidence, manuscript claims, or any
 probability result. Final integrated D-003/D-004 acceptance remains pending
 until WEATHER-001 is implemented, real D-004 weather members and checksums
-exist, PI-signed tolerances are recorded before inspection, the predeclared
-acceptance report is generated from committed code and source metadata, and the
-PI explicitly accepts or escalates the resulting evidence.
+exist, PI-signed tolerances and the exact near-freezing band are recorded before
+inspection, the predeclared acceptance report is generated from committed code
+and source metadata, and the PI explicitly accepts or escalates the resulting
+evidence.
 
 <!-- methods-id: E2-S3-HP-TECH-SCALING-DECISION-PACKET -->
 ### E2-S3-HP-TECH-SCALING-DECISION-PACKET - Heat-Pump Technology And Scaling Decision Packet

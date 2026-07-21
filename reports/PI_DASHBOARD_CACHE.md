@@ -92,3 +92,7 @@ Leave PI Lite and inspect broader context when:
   by Agent C. This approves the interface route only; D-004 source acceptance,
   completeness checks, cold-spell tolerances, paired-weather acceptance
   results, net-load/event analysis, and manuscript results remain blocked.
+- `E2-S3-COLD-SPELL-ACCEPTANCE-DESIGN` is approved as a design, with numerical
+  tolerances still pending. The future HP/PV acceptance report must check both
+  coldest-window behavior and near-freezing/defrost-risk behavior around
+  0 degrees C; the exact near-freezing band is not signed yet.
