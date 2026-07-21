@@ -1,0 +1,153 @@
+{
+  "approval_questions": [
+    {
+      "id": "D004-Q1",
+      "question": "Approve selection_id d004_alkmaar_berkhout_2014_2023_v1 as the D-004 source-selection bundle for PI-reviewed raw retrieval?",
+      "recommendation": "approve"
+    },
+    {
+      "id": "D004-Q2",
+      "question": "Approve the Alkmaar GM0361 representative point at latitude 52.63167, longitude 4.74861 for PVGIS requests?",
+      "recommendation": "approve as an exogenous local-area proxy aligned with the proposed EV-007 Alkmaar cluster"
+    },
+    {
+      "id": "D004-Q3",
+      "question": "Approve KNMI station 249 Berkhout as the primary weather station for temperature and global radiation?",
+      "recommendation": "approve, with Wijk aan Zee station 257 or Schiphol station 240 retained only as fallback/sensitivity candidates"
+    },
+    {
+      "id": "D004-Q4",
+      "question": "Approve using KNMI validated hourly station ZIPs as the first D-004 source-selection route instead of the previously planned near-real-time 10-minute in-situ bulk archive?",
+      "recommendation": "approve for first real-source retrieval because KNMI documents weekday quality control, correction, and missing-value supplementation for hourly files"
+    },
+    {
+      "id": "D004-Q5",
+      "question": "Approve the 2014-2023 historical weather-member window, filtered from the two KNMI Berkhout decade ZIP files and matched to PVGIS 5.3 SARAH-3 coverage through 2023?",
+      "recommendation": "approve as a ten-year annual-member library that avoids incomplete future/current-year data"
+    },
+    {
+      "id": "D004-Q6",
+      "question": "Approve the normalized fixed PVGIS/PV reference configuration: 1.0 kWp, 14 percent losses, fixed plane, 35 degree tilt, 0 degree south-facing aspect, PVGIS-SARAH3, JSON output?",
+      "recommendation": "approve for calibration/validation reference only; physical PV fleet sizing remains outside this packet"
+    }
+  ],
+  "data_id": "D-004",
+  "download_performed": false,
+  "long_run_notice_required_for_next_step": false,
+  "long_run_notice_text_if_scope_expands": "LONG-RUN NOTICE\nTask: E2.S4 / D-004 PI-approved weather/PV source retrieval and checksum recording\nProcess: Download two KNMI Berkhout validated hourly ZIP files plus two PVGIS JSON reference files for d004_alkmaar_berkhout_2014_2023_v1; compute SHA-256 metadata and do not use outputs until PI acceptance.\nEstimated wall time: expected under 15 minutes based on KNMI HEAD sizes of 1,536,802 bytes and 838,086 bytes plus small PVGIS JSON responses; if PVGIS/KNMI response time or a revised 10-minute in-situ route pushes the estimate over 15 minutes, stop and use the checkpoint/resume plan from data/metadata/weather_pv/d004_weather_pv_execution_plan.json before launch.\nResource impact: small network transfer, light CPU for SHA-256 hashing, ignored raw files under data/raw/weather_pv, committed checksum metadata only after review.\nCheckpoint plan: for this small four-file route, restart failed files from byte zero and accept only complete files with final SHA-256 metadata; if the PI requires 10-minute in-situ bulk retrieval, extend the downloader to .tmp streaming with per-file and 64 MiB checkpoints before launch.\nResume procedure: rerun the approved retrieval commands; skip only files with matching final checksum metadata; otherwise restart the incomplete target from byte zero.",
+  "proposed_selection": {
+    "selection_id": "d004_alkmaar_berkhout_2014_2023_v1",
+    "status": "proposed_not_pi_signed",
+    "shared_weather_status": "Q-8 open; do not implement neutral shared-weather paths in this packet",
+    "weather_member_policy": "Each accepted year 2014-2023 becomes one complete chronological weather member on the common UTC/local calendar; HP and PV must later consume the same member_id/shared_weather_driver_id under ALEA-001.",
+    "no_real_source_acceptance_claim": true
+  },
+  "pvgis": {
+    "site": {
+      "area_identifier": "GM0361",
+      "area_name": "Alkmaar",
+      "coordinate_source": "GeoNames populated-place coordinate used as exogenous representative point; municipality identity follows EV-007 Alkmaar cluster proposal",
+      "latitude": 52.63167,
+      "longitude": 4.74861
+    },
+    "radiation_database": "PVGIS-SARAH3",
+    "api_version": "PVGIS 5.3",
+    "system_configuration": {
+      "peakpower_kwp": 1.0,
+      "loss_percent": 14.0,
+      "mounting": "fixed",
+      "tilt_degrees": 35.0,
+      "aspect_degrees": 0.0,
+      "pvcalculation": 1,
+      "outputformat": "json",
+      "browser": 0
+    },
+    "use_boundary": "seriescalc and tmy are calibration/validation references only; PVGIS TMY is not a realized weather path",
+    "requests": [
+      {
+        "role": "hourly_series_reference",
+        "url": "https://re.jrc.ec.europa.eu/api/v5_3/seriescalc?lat=52.63167&lon=4.74861&startyear=2014&endyear=2023&pvcalculation=1&peakpower=1.0&loss=14.0&angle=35.0&aspect=0.0&fixed=1&outputformat=json&browser=0&raddatabase=PVGIS-SARAH3",
+        "target_path": "data/raw/weather_pv/pvgis/d004_alkmaar_berkhout_2014_2023_v1/pvgis_seriescalc_d004_alkmaar_berkhout_2014_2023_v1.json",
+        "head_status_code": 204,
+        "head_content_length_bytes": null
+      },
+      {
+        "role": "typical_year_reference",
+        "url": "https://re.jrc.ec.europa.eu/api/v5_3/tmy?lat=52.63167&lon=4.74861&outputformat=json&browser=0&raddatabase=PVGIS-SARAH3",
+        "target_path": "data/raw/weather_pv/pvgis/d004_alkmaar_berkhout_2014_2023_v1/pvgis_tmy_d004_alkmaar_berkhout_2014_2023_v1.json",
+        "head_status_code": 204,
+        "head_content_length_bytes": null
+      }
+    ]
+  },
+  "knmi": {
+    "primary_source_proposal": "validated_hourly_station_zips",
+    "station": {
+      "station_id": 249,
+      "station_name": "Berkhout",
+      "wigos_station_identifier": "0-20000-0-06249",
+      "selection_basis": "Berkhout is a North-Holland AWS with station 249 decade-hourly data available and documented continuity of temperature, precipitation, global radiation, and visibility measurements near Hoorn/Berkhout."
+    },
+    "year_range": {
+      "first_year": 2014,
+      "last_year": 2023,
+      "filter_rule": "download the two decade ZIP files, then extract/filter only complete calendar years 2014-2023 for accepted members"
+    },
+    "fields": [
+      {
+        "name": "T",
+        "unit": "0.1 degrees Celsius",
+        "role": "temperature"
+      },
+      {
+        "name": "Q",
+        "unit": "J/cm2 per hour",
+        "role": "global_radiation_to_ghi"
+      },
+      {
+        "name": "SQ",
+        "unit": "0.1 hours per hour",
+        "role": "sunshine_duration_diagnostic"
+      }
+    ],
+    "files": [
+      {
+        "role": "station_249_hourly_2011_2020_zip",
+        "url": "https://cdn.knmi.nl/knmi/map/page/klimatologie/gegevens/uurgegevens/uurgeg_249_2011-2020.zip",
+        "target_path": "data/raw/weather_pv/knmi/d004_alkmaar_berkhout_2014_2023_v1/uurgeg_249_2011-2020.zip",
+        "head_status_code": 200,
+        "head_content_length_bytes": 1536802,
+        "head_content_type": "application/zip",
+        "head_last_modified": "Tue, 01 Feb 2022 09:02:50 GMT"
+      },
+      {
+        "role": "station_249_hourly_2021_2030_zip",
+        "url": "https://cdn.knmi.nl/knmi/map/page/klimatologie/gegevens/uurgegevens/uurgeg_249_2021-2030.zip",
+        "target_path": "data/raw/weather_pv/knmi/d004_alkmaar_berkhout_2014_2023_v1/uurgeg_249_2021-2030.zip",
+        "head_status_code": 200,
+        "head_content_length_bytes": 838086,
+        "head_content_type": "application/zip",
+        "head_last_modified": "Tue, 21 Jul 2026 09:50:43 GMT"
+      }
+    ],
+    "fallback_if_not_approved": "Retain the previous Open Data API 10-minute in-situ route for station 249, but require an enumerated API file list and resumable bulk downloader before raw retrieval."
+  },
+  "retrieval_commands_after_pi_approval": [
+    ".\\.venv\\Scripts\\python.exe data/get_weather_pv.py --download-url \"https://re.jrc.ec.europa.eu/api/v5_3/seriescalc?lat=52.63167&lon=4.74861&startyear=2014&endyear=2023&pvcalculation=1&peakpower=1.0&loss=14.0&angle=35.0&aspect=0.0&fixed=1&outputformat=json&browser=0&raddatabase=PVGIS-SARAH3\" --output-path \"data/raw/weather_pv/pvgis/d004_alkmaar_berkhout_2014_2023_v1/pvgis_seriescalc_d004_alkmaar_berkhout_2014_2023_v1.json\" --timeout-s 300",
+    ".\\.venv\\Scripts\\python.exe data/get_weather_pv.py --record-local-file \"data/raw/weather_pv/pvgis/d004_alkmaar_berkhout_2014_2023_v1/pvgis_seriescalc_d004_alkmaar_berkhout_2014_2023_v1.json\" --source-kind pvgis --file-role hourly_series_calibration_or_validation_reference --source-url \"https://re.jrc.ec.europa.eu/api/v5_3/seriescalc?lat=52.63167&lon=4.74861&startyear=2014&endyear=2023&pvcalculation=1&peakpower=1.0&loss=14.0&angle=35.0&aspect=0.0&fixed=1&outputformat=json&browser=0&raddatabase=PVGIS-SARAH3\"",
+    ".\\.venv\\Scripts\\python.exe data/get_weather_pv.py --download-url \"https://re.jrc.ec.europa.eu/api/v5_3/tmy?lat=52.63167&lon=4.74861&outputformat=json&browser=0&raddatabase=PVGIS-SARAH3\" --output-path \"data/raw/weather_pv/pvgis/d004_alkmaar_berkhout_2014_2023_v1/pvgis_tmy_d004_alkmaar_berkhout_2014_2023_v1.json\" --timeout-s 300",
+    ".\\.venv\\Scripts\\python.exe data/get_weather_pv.py --record-local-file \"data/raw/weather_pv/pvgis/d004_alkmaar_berkhout_2014_2023_v1/pvgis_tmy_d004_alkmaar_berkhout_2014_2023_v1.json\" --source-kind pvgis --file-role typical_year_calibration_or_validation_only --source-url \"https://re.jrc.ec.europa.eu/api/v5_3/tmy?lat=52.63167&lon=4.74861&outputformat=json&browser=0&raddatabase=PVGIS-SARAH3\"",
+    ".\\.venv\\Scripts\\python.exe data/get_weather_pv.py --download-url \"https://cdn.knmi.nl/knmi/map/page/klimatologie/gegevens/uurgegevens/uurgeg_249_2011-2020.zip\" --output-path \"data/raw/weather_pv/knmi/d004_alkmaar_berkhout_2014_2023_v1/uurgeg_249_2011-2020.zip\" --timeout-s 300",
+    ".\\.venv\\Scripts\\python.exe data/get_weather_pv.py --record-local-file \"data/raw/weather_pv/knmi/d004_alkmaar_berkhout_2014_2023_v1/uurgeg_249_2011-2020.zip\" --source-kind knmi --file-role validated_hourly_station_249_zip_2011_2020 --source-url \"https://cdn.knmi.nl/knmi/map/page/klimatologie/gegevens/uurgegevens/uurgeg_249_2011-2020.zip\"",
+    ".\\.venv\\Scripts\\python.exe data/get_weather_pv.py --download-url \"https://cdn.knmi.nl/knmi/map/page/klimatologie/gegevens/uurgegevens/uurgeg_249_2021-2030.zip\" --output-path \"data/raw/weather_pv/knmi/d004_alkmaar_berkhout_2014_2023_v1/uurgeg_249_2021-2030.zip\" --timeout-s 300",
+    ".\\.venv\\Scripts\\python.exe data/get_weather_pv.py --record-local-file \"data/raw/weather_pv/knmi/d004_alkmaar_berkhout_2014_2023_v1/uurgeg_249_2021-2030.zip\" --source-kind knmi --file-role validated_hourly_station_249_zip_2021_2030 --source-url \"https://cdn.knmi.nl/knmi/map/page/klimatologie/gegevens/uurgegevens/uurgeg_249_2021-2030.zip\""
+  ],
+  "source_verification": {
+    "checked_utc": "2026-07-21T10:26:00Z",
+    "pvgis_docs": "https://joint-research-centre.ec.europa.eu/photovoltaic-geographical-information-system-pvgis/using-pvgis-5/api-non-interactive-service_en",
+    "pvgis_usage_conditions": "https://joint-research-centre.ec.europa.eu/photovoltaic-geographical-information-system-pvgis/general-information/usage-conditions-data-protection_en",
+    "knmi_hourly_page": "https://www.knmi.nl/nederland-nu/klimatologie/uurgegevens",
+    "knmi_10min_dataset_page": "https://dataplatform.knmi.nl/en/dataset/10-minute-in-situ-meteorological-observations-1-0",
+    "geonames_alkmaar_search": "https://www.geonames.org/advanced-search.html?country=NL&q=Alkmaar"
+  }
+}
