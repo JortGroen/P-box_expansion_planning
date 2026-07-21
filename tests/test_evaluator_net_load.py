@@ -652,5 +652,30 @@ def test_component_adapter_boundary_preserves_calendar_node_and_weather_failures
         node_id="node-b",
         shared_weather_driver_id="different-weather",
     )
-    with pytest.raises(ValueError, match="HP and PV components must share"):
+    with pytest.raises(ValueError, match="context shared_weather_driver_id"):
+        assemble_net_load_from_adapter_outputs(plan, context, outputs)
+
+
+def test_component_adapter_boundary_rejects_shared_non_context_weather_id() -> None:
+    context = _realization_context()
+    plan = NetLoadAssemblyPlan(node_ids=("node-a", "node-b"))
+    outputs = _adapter_outputs(context)
+    outputs[2] = _adapter_output(
+        context,
+        "hp-b",
+        "hp",
+        [4.0, 5.0, 6.0, 7.0],
+        node_id="node-b",
+        shared_weather_driver_id="same-but-not-context",
+    )
+    outputs[3] = _adapter_output(
+        context,
+        "pv-b",
+        "pv",
+        [0.0, -2.0, -3.0, 0.0],
+        node_id="node-b",
+        shared_weather_driver_id="same-but-not-context",
+    )
+
+    with pytest.raises(ValueError, match="context shared_weather_driver_id"):
         assemble_net_load_from_adapter_outputs(plan, context, outputs)

@@ -415,6 +415,13 @@ def net_load_component_from_adapter_output(
     # context; otherwise a component could be replayed under the wrong CRN seed.
     if output.stream_id != expected_stream.stream_id:
         raise ValueError("adapter output stream_id must match the realization context")
+    # ALEA-001 makes the context's paired weather member part of the sample
+    # identity; HP/PV may not substitute a different shared-but-wrong driver.
+    if (
+        output.kind in {"hp", "pv"}
+        and output.shared_weather_driver_id != context.shared_weather_driver_id
+    ):
+        raise ValueError("weather-dependent adapter outputs must use the context shared_weather_driver_id")
 
     provenance_metadata = dict(output.metadata)
     provenance_metadata.update(
