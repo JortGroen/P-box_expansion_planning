@@ -29,7 +29,7 @@ You are **one of up to three agents** on this project. Your role (A, B, or C —
 6. **Branch, PR, never merge.** You never push to `main`, never merge, never force-push shared branches.
 7. **Stay in your lane.** You edit only your owned paths (§2). Cross-boundary needs go through an escalation, not a quick fix.
 8. **One agent, one worktree.** Never share a working directory with another agent. The main repo directory stays on `main` as the PI dashboard; implementation happens only in your assigned role worktree.
-9. **Use the project `.venv`, never `base`.** Run project commands through the `.venv` in your assigned worktree. Do not install or run project dependencies from Anaconda `base`.
+9. **Use the project `.venv`, never `base`.** Run project commands through the `.venv` in your assigned worktree. Do not install or run project dependencies from Anaconda `base`. A `.venv` whose base interpreter is Anaconda Python is acceptable; activating or installing into Anaconda `base` is not.
 10. **Report bounds, never a defuzzified number.** Project-specific hard rule: every probability result is reported as α-indexed lower/upper bounds with Monte-Carlo CIs. Producing a single collapsed scalar as "the answer" is a violation (Baudrit rule, plan §3).
 11. **No silent or restart-only long runs.** Inform the PI before launching any process expected to exceed about 15 minutes, and make it durably resumable from verified checkpoints. A long process that cannot be checkpointed requires explicit PI approval before launch.
 12. **Ownership is machine-enforced.** Run `.\scripts\task.ps1 ownership` before committing. A cross-boundary edit fails CI unless an exact PI exception already exists on the PR base branch.
@@ -73,14 +73,16 @@ If your current directory, branch, or worktree does not match your role and assi
 ### 3.1 Start of session (in this order, every time)
 1. Confirm you are in your assigned role worktree, not the PI dashboard: run `git status --short --branch` and check that the branch prefix matches your role (`agent-a/`, `agent-b/`, or `agent-c/`). If it does not match, stop and ask the PI.
 2. Ensure the worktree `.venv` exists: if `.venv\Scripts\python.exe` is missing, run `.\scripts\setup_venv.ps1` from the worktree root.
-3. Use `.\scripts\task.ps1 test-fast` for the normal local development loop, `.\scripts\task.ps1 test` (or `test-full`) for the full merge-gate suite, and `run` / `figures` for project tasks. The wrapper selects `.venv` directly, sets `NUMBA_CACHE_DIR` to `.tmp\numba_cache`, and keeps pytest temporary files under `.tmp`.
-4. For direct Python commands, use `.venv\Scripts\python.exe` rather than `python` from Anaconda `base`. If the command imports pandapower/numba, set `NUMBA_CACHE_DIR` to `.tmp\numba_cache` first.
-5. `git fetch --all --prune`; update your task branch from `origin/main` only by fast-forward or an explicit PR/PI instruction. Never `git switch` into another agent's branch inside your worktree.
-6. Read the **diff of `registers/DECISIONS.md`** since your last session — gates may have passed or reversed; frozen items may have changed.
-7. Read `registers/STATUS.md`, your relevant task report or per-task log, any legacy aggregate-log entry that predates the dashboard policy, and any PI answers in `registers/QUESTIONS.md`.
-8. Select **one** task by plan ID. Check its dependencies: if it sits behind an unpassed gate, pick a non-gated task or end the session — never "provisionally" do gated work.
-9. Open your log entry: session start time, task ID, intent.
-10. Before editing, run `.\scripts\task.ps1 ownership -Paths path/one.py,path/two.py` with every intended repository-relative path. The command checks the planned set plus any existing worktree changes. If it fails, escalate before editing.
+3. In Codex shell calls, use non-login PowerShell (`login:false`) for project commands. Login shells may run the user's PowerShell profile and print unrelated Anaconda hook errors before your command starts.
+4. Use `.\scripts\task.ps1 test-fast` for the normal local development loop, `.\scripts\task.ps1 test` (or `test-full`) for the full merge-gate suite, and `run` / `figures` for project tasks. The wrapper selects `.venv` directly, sets `NUMBA_CACHE_DIR` to `.tmp\numba_cache`, and keeps pytest temporary files under `.tmp`.
+5. For direct Python commands, use `.venv\Scripts\python.exe` rather than `python` from Anaconda `base`. If the command imports pandapower/numba, set `NUMBA_CACHE_DIR` to `.tmp\numba_cache` first.
+6. Treat Anaconda hook tracebacks from login shells as environment noise only if the actual project command used `.venv` or `scripts/task.ps1` and exited successfully. If the project command failed, or if a bare `python`/`pip`/`pytest` command was used, diagnose the command and rerun through the project wrapper before reporting success.
+7. `git fetch --all --prune`; update your task branch from `origin/main` only by fast-forward or an explicit PR/PI instruction. Never `git switch` into another agent's branch inside your worktree.
+8. Read the **diff of `registers/DECISIONS.md`** since your last session — gates may have passed or reversed; frozen items may have changed.
+9. Read `registers/STATUS.md`, your relevant task report or per-task log, any legacy aggregate-log entry that predates the dashboard policy, and any PI answers in `registers/QUESTIONS.md`.
+10. Select **one** task by plan ID. Check its dependencies: if it sits behind an unpassed gate, pick a non-gated task or end the session — never "provisionally" do gated work.
+11. Open your log entry: session start time, task ID, intent.
+12. Before editing, run `.\scripts\task.ps1 ownership -Paths path/one.py,path/two.py` with every intended repository-relative path. The command checks the planned set plus any existing worktree changes. If it fails, escalate before editing.
 
 ### 3.2 During the session
 - One task at a time; scope = exactly the task's deliverable, nothing more. New ideas go to `BACKLOG.md`, not into code.
@@ -212,8 +214,9 @@ checkpoints.
 - Worktree naming: each active agent uses a separate sibling directory (`P-box_expansion_planning-agent-a`, `P-box_expansion_planning-agent-b`, `P-box_expansion_planning-agent-c`). The PI dashboard directory remains on `main` and is not used for implementation.
 - Do not use `git switch` to move one shared directory between agents or tasks. If the branch/task changes, ask the PI to create or retarget a worktree.
 - Write the PR for a professional human reviewer who has not followed the agent session. The title uses `<story ID>: <human-readable outcome>` and describes the delivered result, not merely the activity performed. Do not paste raw agent narration, terminal history, or a chronological diary.
+- The `## Summary` section is the PI's first-pass review aid. Write it in plain language with enough project context to judge the PR without opening the diff. It must answer: why this PR exists now, what changes for the project, what it does not decide or claim, and what the reviewer should focus on. Avoid unexplained task shorthand (`T1/T2`), file-by-file summaries, raw implementation trivia, or claims that require reading the branch history to understand.
 - **PR body must use these sections**, omitting only a section that genuinely does not apply:
-  - `## Summary`: two to four concise bullets describing the purpose and user/scientific outcome.
+  - `## Summary`: four plain-language bullets using the template prompts: why this PR exists, what changes for the project, what it does not decide or claim, and reviewer focus.
   - `## Changes`: the important implementation, data, register, or interface changes, grouped logically rather than file by file.
   - `## Validation`: exact commands run and their results, including test counts and relevant invariant or manifest checks.
   - `## Evidence`: links to reports, manifests, generated tables/figures, and the governing decision or question.
