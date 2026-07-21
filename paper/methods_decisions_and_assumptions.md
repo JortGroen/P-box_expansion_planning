@@ -822,15 +822,18 @@ PI review.
 **Status: Proposed.** KNMI observations provide the Dutch weather ensemble,
 while PVGIS supplies the solar-generation reference used to construct or check
 PV profiles. The E2.S4 support code records official PVGIS/KNMI retrieval
-endpoints and checksum metadata without selecting a concrete external file in
-this proposal. Per ALEA-001, each usable weather member carries one
-timezone-aware, complete, chronological UTC/local calendar plus paired
-temperature and irradiance channels, so later heat-pump and PV integration can
-consume the same weather-member identity. PV conversion parameters and PVGIS
-sanity-check tolerances are supplied explicitly by the caller; a PVGIS
-typical-year reference is used for calibration or validation only, not as an
-independently sampled realized weather path. Seasonal energy and peak timing
-are checked against PVGIS output before integration.
+endpoints, a metadata-only raw retrieval execution plan, target raw/metadata
+paths, checksum policy, checkpoint/resume requirements, and PI long-run notice
+text without selecting a concrete external file in this proposal. Per
+ALEA-001, each usable weather member carries one timezone-aware, complete,
+chronological UTC/local calendar plus paired temperature and irradiance
+channels, so later heat-pump and PV integration can consume the same
+weather-member identity. PV conversion parameters and PVGIS sanity-check
+tolerances are supplied explicitly by the caller; a PVGIS typical-year
+reference is used for calibration or validation only, not as an independently
+sampled realized weather path. Seasonal energy and peak timing are checked
+against PVGIS output before integration. D-004 remains proposed until concrete
+files, versions, checksums, completeness checks, and PI acceptance are recorded.
 
 <!-- methods-id: D-005 -->
 ### D-005 - Flexibility Delivery Evidence

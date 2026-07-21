@@ -264,6 +264,38 @@ def test_weather_pv_retrieval_plan_records_no_download(tmp_path: Path) -> None:
     assert payload["alea_001"]["hp_and_pv_same_weather_member_required"] is True
 
 
+def test_weather_pv_execution_plan_is_metadata_only(tmp_path: Path) -> None:
+    path = weather_pv.write_execution_plan(tmp_path)
+    payload = json.loads(path.read_text(encoding="utf-8"))
+
+    assert path == tmp_path / "weather_pv" / "d004_weather_pv_execution_plan.json"
+    assert payload["data_id"] == "D-004"
+    assert payload["download_performed"] is False
+    assert payload["raw_data_committed"] is False
+    assert payload["data_register_status"] == "proposed"
+    assert payload["shared_weather_blocker"]["question_id"] == "Q-8"
+    assert payload["shared_weather_blocker"]["neutral_paths_owned"] is False
+    assert payload["official_source_verification"]["pvgis"]["expected_size_bytes"] is None
+    assert payload["official_source_verification"]["knmi"]["expected_size_bytes"] is None
+    assert payload["checkpoint_resume_plan"]["current_download_helper_resume_capable"] is False
+    assert "LONG-RUN NOTICE" in payload["long_run_notice_text"]
+    assert "<D004_SELECTION_ID>" in payload["exact_commands_after_pi_selection"]["knmi_download"]
+    assert "PVGIS TMY" in " ".join(payload["acceptance_boundary"])
+
+
+def test_committed_weather_pv_execution_plan_records_no_real_data_acceptance() -> None:
+    payload = json.loads(Path("data/metadata/weather_pv/d004_weather_pv_execution_plan.json").read_text(encoding="utf-8"))
+
+    assert payload["download_performed"] is False
+    assert payload["raw_data_committed"] is False
+    assert payload["data_register_status"] == "proposed"
+    assert "PI sign-off pending" in payload["status"]
+    assert "src/weather_model.py" in payload["shared_weather_blocker"]["blocked_paths"]
+    assert "DATA_REGISTER D-004 must be updated only after concrete file/version/checksum selections are made" in (
+        " ".join(payload["acceptance_boundary"])
+    )
+
+
 def test_record_local_weather_pv_file_records_checksum_without_register_update(tmp_path: Path) -> None:
     source = tmp_path / "knmi_sample.nc"
     source.write_bytes(b"sample weather bytes")

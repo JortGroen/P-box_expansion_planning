@@ -19,6 +19,18 @@ PVGIS_API_BASE = "https://re.jrc.ec.europa.eu/api/v5_3"
 KNMI_OPEN_DATA_BASE = "https://api.dataplatform.knmi.nl/open-data/v1"
 KNMI_IN_SITU_DATASET_NAME = "10-minute-in-situ-meteorological-observations"
 KNMI_IN_SITU_DATASET_VERSION = "1.0"
+PVGIS_DOCUMENTATION_URL = (
+    "https://joint-research-centre.ec.europa.eu/"
+    "photovoltaic-geographical-information-system-pvgis/using-pvgis-5/"
+    "api-non-interactive-service_en"
+)
+PVGIS_USAGE_CONDITIONS_URL = (
+    "https://joint-research-centre.ec.europa.eu/"
+    "photovoltaic-geographical-information-system-pvgis/general-information/"
+    "usage-conditions-data-protection_en"
+)
+KNMI_OPEN_DATA_API_DOCS_URL = "https://developer.dataplatform.knmi.nl/open-data-api"
+KNMI_IN_SITU_DOCS_URL = "https://dataplatform.knmi.nl/dataset/docs/10-minute-in-situ-meteorological-observations-1-0"
 
 
 def build_pvgis_seriescalc_url(
@@ -173,6 +185,162 @@ def write_retrieval_plan(metadata_dir: str | Path = "data/metadata") -> Path:
     return path
 
 
+def build_d004_execution_plan() -> dict[str, Any]:
+    """Return the no-download D-004 raw retrieval execution plan.
+
+    Concrete station/site/year values remain PI-selected data choices. Keeping
+    placeholders explicit prevents a metadata plan from silently becoming a
+    source selection.
+    """
+    pvgis_series_placeholder = build_pvgis_seriescalc_url(
+        lat=0.0,
+        lon=0.0,
+        startyear=2005,
+        endyear=2023,
+        peakpower_kw=1.0,
+        loss_percent=14.0,
+        angle_degrees=35.0,
+        aspect_degrees=0.0,
+        raddatabase="PVGIS-SARAH3",
+    )
+    pvgis_tmy_placeholder = build_pvgis_tmy_url(
+        lat=0.0,
+        lon=0.0,
+        raddatabase="PVGIS-SARAH3",
+    )
+    return {
+        "data_id": "D-004",
+        "status": (
+            "execution plan only; no raw PVGIS/KNMI download performed, no "
+            "concrete station/site/year bundle selected, and PI sign-off pending"
+        ),
+        "created_utc": _now_utc_iso(),
+        "download_performed": False,
+        "raw_data_committed": False,
+        "data_register_status": "proposed",
+        "shared_weather_blocker": {
+            "question_id": "Q-8",
+            "neutral_paths_owned": False,
+            "blocked_paths": ["src/weather_model.py", "tests/test_weather_model.py"],
+            "effect": "raw weather members may be retrieved only after PI approval, but final HP/PV consumption still requires the shared weather contract",
+        },
+        "official_source_verification": {
+            "verified_on": "2026-07-21",
+            "pvgis": {
+                "api_docs": PVGIS_DOCUMENTATION_URL,
+                "usage_conditions": PVGIS_USAGE_CONDITIONS_URL,
+                "api_base": PVGIS_API_BASE,
+                "version": "PVGIS 5.3",
+                "license_or_terms": "PVGIS information is free with no restrictions on use per official usage-conditions page",
+                "api_facts": [
+                    "GET is the supported computation method; HEAD confirms function existence only.",
+                    "PVGIS 5.3 entry point is https://re.jrc.ec.europa.eu/api/v5_3/{tool_name}.",
+                    "Relevant tools are seriescalc for hourly time series and tmy for typical-year reference output.",
+                    "PVGIS 5.3 SARAH-3/ERA5 coverage is documented through 2023.",
+                ],
+                "expected_size_bytes": None,
+                "expected_size_note": "PVGIS API pages do not publish response byte sizes; record response Content-Length when available and final SHA-256/size after retrieval.",
+            },
+            "knmi": {
+                "api_docs": KNMI_OPEN_DATA_API_DOCS_URL,
+                "dataset_docs": KNMI_IN_SITU_DOCS_URL,
+                "api_base": KNMI_OPEN_DATA_BASE,
+                "dataset_name": KNMI_IN_SITU_DATASET_NAME,
+                "dataset_version": KNMI_IN_SITU_DATASET_VERSION,
+                "license_or_terms": "D-004 register records KNMI 10-minute in-situ dataset as CC-BY-4.0; reconfirm on concrete dataset metadata before retrieval.",
+                "api_facts": [
+                    "Open Data API endpoints require an Authorization header.",
+                    "List files endpoint: /datasets/{datasetName}/versions/{versionId}/files.",
+                    "Temporary download URL endpoint: /datasets/{datasetName}/versions/{versionId}/files/{filename}/url.",
+                    "The dataset is NetCDF, UTC timestamped, available from 2012-01-01, and may be incomplete/unvalidated because it is a near-real-time product archive.",
+                    "Avoid excessive polling; use narrow file listing or notification/bulk-key route if a large multi-year bundle is approved.",
+                ],
+                "expected_size_bytes": None,
+                "expected_size_note": "Public dataset documentation does not list per-file byte sizes; capture file-list metadata and temporary URL Content-Length before download when available.",
+            },
+        },
+        "pi_selection_required_before_raw_download": [
+            "D004_SELECTION_ID",
+            "PVGIS latitude/longitude and whether those coordinates are the grid area, representative CBS cluster, or another signed site proxy",
+            "PVGIS radiation database, years, PV system capacity, losses, tilt, azimuth, and whether seriescalc is a reference only or feeds an approved irradiance bridge",
+            "KNMI station or station-selection rule, calendar years, file names or listing filters, and required variables",
+            "Whether KNMI 10-minute in-situ incompleteness is acceptable or whether a validated hourly/daily KNMI source should replace it",
+            "Whether expected runtime and file volume require the long-run notice below before execution",
+        ],
+        "target_paths": {
+            "raw_root": "data/raw/weather_pv",
+            "pvgis_raw_dir": "data/raw/weather_pv/pvgis/<D004_SELECTION_ID>",
+            "knmi_raw_dir": "data/raw/weather_pv/knmi/<D004_SELECTION_ID>",
+            "pvgis_series_raw": "data/raw/weather_pv/pvgis/<D004_SELECTION_ID>/pvgis_seriescalc_<D004_SELECTION_ID>.json",
+            "pvgis_tmy_raw": "data/raw/weather_pv/pvgis/<D004_SELECTION_ID>/pvgis_tmy_<D004_SELECTION_ID>.json",
+            "knmi_file_list_metadata": "data/metadata/weather_pv/d004_knmi_file_list_<D004_SELECTION_ID>.json",
+            "download_checkpoint": "data/metadata/weather_pv/d004_download_checkpoint_<D004_SELECTION_ID>.json",
+            "source_metadata_dir": "data/metadata/weather_pv",
+        },
+        "exact_commands_after_pi_selection": {
+            "metadata_only_refresh": ".\\.venv\\Scripts\\python.exe data/get_weather_pv.py --write-execution-plan",
+            "pvgis_series_url_template": pvgis_series_placeholder.replace("lat=0.0", "lat=<PI_SIGNED_LAT>").replace("lon=0.0", "lon=<PI_SIGNED_LON>"),
+            "pvgis_tmy_url_template": pvgis_tmy_placeholder.replace("lat=0.0", "lat=<PI_SIGNED_LAT>").replace("lon=0.0", "lon=<PI_SIGNED_LON>"),
+            "pvgis_series_download": ".\\.venv\\Scripts\\python.exe data/get_weather_pv.py --download-url \"<PI_SIGNED_PVGIS_SERIESCALC_URL>\" --output-path \"data/raw/weather_pv/pvgis/<D004_SELECTION_ID>/pvgis_seriescalc_<D004_SELECTION_ID>.json\" --timeout-s 300",
+            "pvgis_series_checksum": ".\\.venv\\Scripts\\python.exe data/get_weather_pv.py --record-local-file \"data/raw/weather_pv/pvgis/<D004_SELECTION_ID>/pvgis_seriescalc_<D004_SELECTION_ID>.json\" --source-kind pvgis --file-role calibration_or_validation_reference --source-url \"<PI_SIGNED_PVGIS_SERIESCALC_URL>\"",
+            "pvgis_tmy_download": ".\\.venv\\Scripts\\python.exe data/get_weather_pv.py --download-url \"<PI_SIGNED_PVGIS_TMY_URL>\" --output-path \"data/raw/weather_pv/pvgis/<D004_SELECTION_ID>/pvgis_tmy_<D004_SELECTION_ID>.json\" --timeout-s 300",
+            "pvgis_tmy_checksum": ".\\.venv\\Scripts\\python.exe data/get_weather_pv.py --record-local-file \"data/raw/weather_pv/pvgis/<D004_SELECTION_ID>/pvgis_tmy_<D004_SELECTION_ID>.json\" --source-kind pvgis --file-role typical_year_calibration_or_validation_only --source-url \"<PI_SIGNED_PVGIS_TMY_URL>\"",
+            "knmi_list_files": "$Files = Invoke-RestMethod -Headers @{Authorization=$env:KNMI_API_KEY} -Uri \"https://api.dataplatform.knmi.nl/open-data/v1/datasets/10-minute-in-situ-meteorological-observations/versions/1.0/files?maxKeys=<PI_SIGNED_MAX_KEYS>&startAfterFilename=<PI_SIGNED_START_AFTER>\"; $Files | ConvertTo-Json -Depth 20 | Set-Content -Encoding UTF8 \"data/metadata/weather_pv/d004_knmi_file_list_<D004_SELECTION_ID>.json\"",
+            "knmi_get_temporary_url": "$DownloadUrl = (Invoke-RestMethod -Headers @{Authorization=$env:KNMI_API_KEY} -Uri \"https://api.dataplatform.knmi.nl/open-data/v1/datasets/10-minute-in-situ-meteorological-observations/versions/1.0/files/<PI_SIGNED_KNMI_FILENAME>/url\").temporaryDownloadUrl",
+            "knmi_download": ".\\.venv\\Scripts\\python.exe data/get_weather_pv.py --download-url $DownloadUrl --output-path \"data/raw/weather_pv/knmi/<D004_SELECTION_ID>/<PI_SIGNED_KNMI_FILENAME>\" --timeout-s 300",
+            "knmi_checksum": ".\\.venv\\Scripts\\python.exe data/get_weather_pv.py --record-local-file \"data/raw/weather_pv/knmi/<D004_SELECTION_ID>/<PI_SIGNED_KNMI_FILENAME>\" --source-kind knmi --file-role historical_weather_path --source-url \"https://api.dataplatform.knmi.nl/open-data/v1/datasets/10-minute-in-situ-meteorological-observations/versions/1.0/files/<PI_SIGNED_KNMI_FILENAME>/url\"",
+        },
+        "checkpoint_resume_plan": {
+            "required_before_bulk_or_slow_download": True,
+            "current_download_helper_resume_capable": False,
+            "policy": [
+                "Do not start raw D-004 retrieval until the PI has approved the source selection and the long-run notice.",
+                "For small PVGIS JSON responses, a failed retrieval may be restarted from byte 0 because no partial file is accepted without final checksum metadata.",
+                "For KNMI multi-file or any run expected to exceed 15 minutes, extend the executor before launch to stream each file to a .tmp path, checkpoint after each file and at least every 64 MiB, and atomically promote only after final SHA-256 verification.",
+                "A resume run must validate source URL, target path, bytes already present, partial SHA-256 at the checkpoint boundary, and next pending filename before skipping work.",
+            ],
+            "checkpoint_fields": [
+                "selection_id",
+                "code_git_commit",
+                "source_urls",
+                "target_paths",
+                "completed_files",
+                "bytes_downloaded",
+                "partial_sha256",
+                "final_sha256",
+                "next_file",
+                "resume_command",
+            ],
+        },
+        "long_run_notice_text": (
+            "LONG-RUN NOTICE\n"
+            "Task: E2.S4 / D-004 concrete PVGIS/KNMI weather-PV retrieval and checksum recording\n"
+            "Process: PI-approved PVGIS JSON retrieval plus KNMI Open Data API file-list, temporary-URL, and NetCDF downloads for <D004_SELECTION_ID>\n"
+            "Estimated wall time: unknown until the PI-selected station/year/file list is enumerated; PVGIS JSON is expected to be small, but KNMI multi-year 10-minute NetCDF retrieval may exceed 15 minutes depending on file count and network. Stop for PI approval if the enumerated plan estimates more than 15 minutes.\n"
+            "Resource impact: network transfer of PVGIS JSON plus selected KNMI NetCDF files; light CPU for SHA-256 hashing; raw files under data/raw/weather_pv remain ignored; metadata/checkpoints under data/metadata/weather_pv remain committed only after review.\n"
+            "Checkpoint plan: before raw download, write data/metadata/weather_pv/d004_download_checkpoint_<D004_SELECTION_ID>.json with source URLs, target paths, expected files, completed files, bytes downloaded, partial/final SHA-256 values, and next file. For bulk/slow KNMI retrieval, checkpoint after each file and at least every 64 MiB within a large file, writing to .tmp and atomically promoting only after final checksum.\n"
+            "Resume procedure: rerun the PI-approved retrieval command for <D004_SELECTION_ID>; validate the checkpoint source URLs, target paths, partial SHA-256, and completed-file list; skip files with matching final checksum metadata; resume or restart the next .tmp file; after completion update D-004 only as proposed and do not mark D-004 PI-signed."
+        ),
+        "acceptance_boundary": [
+            "This plan does not approve site, station, year, PV system, or radiation-database choices.",
+            "This plan does not make PVGIS TMY a realized weather member.",
+            "This plan does not resolve Q-8 or implement shared weather contract paths.",
+            "DATA_REGISTER D-004 must be updated only after concrete file/version/checksum selections are made for PI review.",
+        ],
+    }
+
+
+def write_execution_plan(metadata_dir: str | Path = "data/metadata") -> Path:
+    """Write the metadata-only D-004 retrieval execution plan."""
+    write_retrieval_plan(metadata_dir)
+    directory = Path(metadata_dir) / "weather_pv"
+    directory.mkdir(parents=True, exist_ok=True)
+    path = directory / "d004_weather_pv_execution_plan.json"
+    payload = build_d004_execution_plan()
+    path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    return path
+
+
 def record_local_file(
     *,
     file_path: str | Path,
@@ -239,6 +407,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Record KNMI/PVGIS source metadata for D-004.")
     parser.add_argument("--metadata-dir", default="data/metadata")
     parser.add_argument("--write-retrieval-plan", action="store_true")
+    parser.add_argument("--write-execution-plan", action="store_true")
     parser.add_argument("--record-local-file")
     parser.add_argument("--source-kind", choices=["knmi", "pvgis"])
     parser.add_argument("--file-role", default="source")
@@ -251,6 +420,10 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     if args.write_retrieval_plan:
         path = write_retrieval_plan(args.metadata_dir)
+        print(path)
+        return 0
+    if args.write_execution_plan:
+        path = write_execution_plan(args.metadata_dir)
         print(path)
         return 0
     if args.record_local_file:
