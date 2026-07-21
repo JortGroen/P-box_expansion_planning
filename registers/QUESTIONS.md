@@ -63,4 +63,4 @@ CONTEXT: E2.S6 records exact national home/public charge-point projections from 
 QUESTION: Which local scaling method should define SimBench-grid home and public charge-point totals before A-014-style nodal allocation is applied?
 OPTIONS: A) Select a predeclared representative CBS neighbourhood or cluster using ElaadNL's local forecasts - directly local, but requires choosing and documenting the area ex ante.  B) Derive local counts from national adoption rates multiplied by a sourced SimBench-equivalent household/service-area denominator - easier to audit against national projections, but home and public charging need separate denominators.
 RECOMMENDATION: A if a defensible representative CBS area can be predeclared without result inspection; otherwise B with separately sourced home and public denominators.
-STATUS: open
+STATUS: open; Agent C PR proposes EV-007 Option A using the Lingewaard (`GM1705`) municipality cluster and keeps all local values non-executable until PI sign-off.

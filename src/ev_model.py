@@ -481,6 +481,22 @@ class NationalOutlookProjection:
 
 
 @dataclass(frozen=True)
+class ProposedLocalChargePointCount:
+    """Proposed local Outlook count kept out of executable adoption scenarios."""
+
+    year: int
+    scenario: str
+    location: str
+    value: float
+    rounded_count: int
+    area_type: str
+    area_identifier: str
+    source_id: str
+    response_sha256: str
+    status: str
+
+
+@dataclass(frozen=True)
 class NodeChargePointAllocation:
     """Integer nodal charge-point allocation for a scenario."""
 
@@ -536,6 +552,9 @@ def validate_adoption_scenarios_config(config: dict[str, Any]) -> None:
         if key in national_keys:
             raise ValueError("National Outlook projection keys must be unique")
         national_keys.add(key)
+    proposed_workflow = config.get("local_count_workflow")
+    if proposed_workflow is not None:
+        _validate_local_count_workflow(proposed_workflow, outlook_id=outlook_id)
     allocation = config.get("allocation")
     if not isinstance(allocation, dict):
         raise ValueError("Adoption scenario config must include allocation settings")
@@ -577,6 +596,26 @@ def national_outlook_projections(config: dict[str, Any]) -> tuple[NationalOutloo
     return tuple(
         _national_projection_from_mapping(item, outlook_id=outlook_id)
         for item in config["national_outlook_projections"]
+    )
+
+
+def proposed_local_charge_point_counts(
+    config: dict[str, Any],
+) -> tuple[ProposedLocalChargePointCount, ...]:
+    """Return auditable proposed local counts without approving them for use."""
+
+    validate_adoption_scenarios_config(config)
+    workflow = config.get("local_count_workflow")
+    if not isinstance(workflow, dict):
+        return ()
+    outlook_id = str(config["source_ids"]["national_outlook_projection"])
+    return tuple(
+        _proposed_local_count_from_mapping(
+            item,
+            outlook_id=outlook_id,
+            workflow=workflow,
+        )
+        for item in workflow["proposed_2035_counts"]
     )
 
 
@@ -759,6 +798,108 @@ def _national_projection_from_mapping(item: Any, *, outlook_id: str) -> National
         rounded_count=rounded_count,
         source_id=outlook_id,
         response_sha256=response_sha256,
+    )
+
+
+def _validate_local_count_workflow(workflow: Any, *, outlook_id: str) -> None:
+    if not isinstance(workflow, dict):
+        raise ValueError("local_count_workflow must be a mapping")
+    if workflow.get("option") != "EV-007 Option A":
+        raise ValueError("local_count_workflow must declare EV-007 Option A")
+    status = str(workflow.get("status", ""))
+    if status != "proposed_not_pi_signed":
+        raise ValueError("local_count_workflow status must be proposed_not_pi_signed")
+    area = workflow.get("selected_cluster")
+    if not isinstance(area, dict):
+        raise ValueError("local_count_workflow must include selected_cluster")
+    if area.get("area_type") != "municipalities" or not area.get("area_identifier"):
+        raise ValueError("EV-007 Option A cluster must declare a municipality area identifier")
+    if area.get("selection_status") != "proposed_not_pi_signed":
+        raise ValueError("Selected local cluster must remain proposed_not_pi_signed")
+    records = workflow.get("proposed_2035_counts")
+    if not isinstance(records, list) or not records:
+        raise ValueError("local_count_workflow must include proposed_2035_counts")
+    keys: set[tuple[int, str, str]] = set()
+    for item in records:
+        record = _proposed_local_count_from_mapping(
+            item,
+            outlook_id=outlook_id,
+            workflow=workflow,
+        )
+        key = (record.year, record.scenario, record.location)
+        if key in keys:
+            raise ValueError("Proposed local count keys must be unique")
+        keys.add(key)
+    expected = {
+        (2035, scenario, location)
+        for scenario in {"low", "middle", "high"}
+        for location in {"home", "public"}
+    }
+    if keys != expected:
+        raise ValueError("Proposed local workflow must contain 2035 low/middle/high home and public counts")
+    metadata = workflow.get("metadata")
+    if not isinstance(metadata, dict) or not metadata.get("path") or not metadata.get("sha256"):
+        raise ValueError("local_count_workflow must record metadata path and sha256")
+    neighborhood = workflow.get("neighborhood_filter_attempt")
+    if not isinstance(neighborhood, dict) or not neighborhood.get("query"):
+        raise ValueError("local_count_workflow must record the neighbourhood-filter attempt")
+
+
+def _proposed_local_count_from_mapping(
+    item: Any,
+    *,
+    outlook_id: str,
+    workflow: dict[str, Any],
+) -> ProposedLocalChargePointCount:
+    if not isinstance(item, dict):
+        raise ValueError("Each proposed local count must be a mapping")
+    status = str(item.get("status", ""))
+    if status != "proposed_not_pi_signed":
+        raise ValueError("Proposed local counts must remain proposed_not_pi_signed")
+    year = _require_int(item.get("year"), "Proposed local count year")
+    scenario = str(item.get("scenario", ""))
+    location = str(item.get("location", ""))
+    value = float(item.get("value", float("nan")))
+    rounded_count = _require_int(item.get("rounded_count"), "Proposed local rounded_count")
+    if year != 2035:
+        raise ValueError("EV-007 local count proposal is limited to 2035 in this workflow")
+    if scenario not in {"low", "middle", "high"}:
+        raise ValueError("Proposed local scenario must be low, middle, or high")
+    if location not in {"home", "public"}:
+        raise ValueError("Proposed local location must be home or public")
+    if not np.isfinite(value) or value < 0.0:
+        raise ValueError("Proposed local value must be finite and non-negative")
+    if rounded_count < 0 or rounded_count != int(round(value)):
+        raise ValueError("Proposed local rounded_count must be the nearest integer API value")
+    provenance = item.get("provenance")
+    if not isinstance(provenance, dict):
+        raise ValueError("Proposed local counts must include provenance")
+    if provenance.get("source_id") != outlook_id:
+        raise ValueError("Proposed local counts must trace to the Outlook source ID")
+    if provenance.get("source_type") != "local_outlook_cluster":
+        raise ValueError("Proposed local counts must declare source_type=local_outlook_cluster")
+    response_sha256 = str(provenance.get("response_sha256", ""))
+    if len(response_sha256) != 64:
+        raise ValueError("Proposed local counts must record a response sha256")
+    query = str(provenance.get("query", ""))
+    if "area_type=country" in query:
+        raise ValueError("National Outlook projections cannot be used as proposed local counts")
+    area = workflow["selected_cluster"]
+    area_type = str(provenance.get("area_type", ""))
+    area_identifier = str(provenance.get("area_identifier", ""))
+    if area_type != area.get("area_type") or area_identifier != area.get("area_identifier"):
+        raise ValueError("Proposed local count provenance must match the selected EV-007 cluster")
+    return ProposedLocalChargePointCount(
+        year=year,
+        scenario=scenario,
+        location=location,
+        value=value,
+        rounded_count=rounded_count,
+        area_type=area_type,
+        area_identifier=area_identifier,
+        source_id=str(provenance["source_id"]),
+        response_sha256=response_sha256,
+        status=status,
     )
 
 
