@@ -4,6 +4,7 @@ import numpy as np
 import pytest
 
 from src.evaluator_sum import (
+    DEFAULT_THRESHOLD_PU,
     count_import_overload_episodes,
     evaluate_tier1,
     radial_downstream_sum,
@@ -137,6 +138,7 @@ def test_window_set_is_diagnostic_not_primary_probability_domain() -> None:
     assert result.overload is True
     assert result.primary_probability_domain is False
     assert result.time_domain == "window_set"
+    assert result.threshold_pu == DEFAULT_THRESHOLD_PU
 
 
 def test_preserves_unwidened_direction_masks_for_later_interval_loading() -> None:
