@@ -34,6 +34,12 @@ WHEN2HEAT_LOCAL_TIMESTAMP_COLUMN = "cet_cest_timestamp"
 WHEN2HEAT_HEAT_DEMAND_UNIT = "MW"
 WHEN2HEAT_HEAT_PROFILE_UNIT = "MW_per_annual_TWh"
 WHEN2HEAT_COP_UNIT = "dimensionless"
+HP001_COUNTRY_CODE = "NL"
+HP001_SPACE_COP_COLUMN = "NL_COP_ASHP_radiator"
+HP001_WATER_COP_COLUMN = "NL_COP_ASHP_water"
+HP001_RESIDENTIAL_BUILDING_CLASSES = ("SFH", "MFH")
+HP001_DECISION_ID = "HP-001"
+HP001_DATA_ID = "D-003"
 
 
 class SharedWeatherMember(Protocol):
@@ -71,17 +77,58 @@ class When2HeatComponent:
         Explicit thermal-energy scale in TWh/year for normalized
         ``heat_profile`` columns. Use ``1.0`` only for the source's unit
         profile, not as an adoption assumption.
+    end_use:
+        Heat end use represented by this component, for example ``"space"``
+        or ``"water"``.
+    building_class:
+        Building class represented by this component, for example ``"SFH"``
+        or ``"MFH"``.
+    provenance:
+        Auditable source/decision metadata for this component.
     """
 
     heat_column: str
     cop_column: str
     annual_heat_demand_twh: float
+    end_use: str | None = None
+    building_class: str | None = None
+    provenance: Mapping[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         if not self.heat_column or not self.cop_column:
             raise ValueError("When2Heat component columns must be non-empty")
         if self.annual_heat_demand_twh <= 0:
             raise ValueError("annual_heat_demand_twh must be positive")
+        if self.end_use is not None and not str(self.end_use).strip():
+            raise ValueError("end_use must be non-empty when provided")
+        if self.building_class is not None and not str(self.building_class).strip():
+            raise ValueError("building_class must be non-empty when provided")
+        object.__setattr__(
+            self,
+            "end_use",
+            str(self.end_use).strip() if self.end_use is not None else None,
+        )
+        object.__setattr__(
+            self,
+            "building_class",
+            str(self.building_class).strip() if self.building_class is not None else None,
+        )
+        object.__setattr__(
+            self,
+            "provenance",
+            _as_provenance_mapping(self.provenance, "component provenance"),
+        )
+
+    def as_record(self) -> dict[str, object]:
+        """Return JSON-serializable component metadata for audit reports."""
+        return {
+            "heat_column": self.heat_column,
+            "cop_column": self.cop_column,
+            "annual_heat_demand_twh": self.annual_heat_demand_twh,
+            "end_use": self.end_use,
+            "building_class": self.building_class,
+            "provenance": dict(self.provenance),
+        }
 
 
 @dataclass(frozen=True)
@@ -98,6 +145,7 @@ class When2HeatCsvMetadata:
     cop_unit: str
     selected_heat_columns: tuple[str, ...]
     selected_cop_columns: tuple[str, ...]
+    selected_components: tuple[dict[str, object], ...]
     first_timestamp_utc: str | None
     last_timestamp_utc: str | None
     first_timestamp_local: str | None
@@ -117,6 +165,7 @@ class When2HeatCsvMetadata:
             "cop_unit": self.cop_unit,
             "selected_heat_columns": self.selected_heat_columns,
             "selected_cop_columns": self.selected_cop_columns,
+            "selected_components": self.selected_components,
             "first_timestamp_utc": self.first_timestamp_utc,
             "last_timestamp_utc": self.last_timestamp_utc,
             "first_timestamp_local": self.first_timestamp_local,
@@ -314,6 +363,8 @@ def default_when2heat_components(
                 heat_column=f"{country}_heat_profile_space_{building_class}",
                 cop_column=f"{country}_COP_{source}_{space_sink}",
                 annual_heat_demand_twh=float(annual_heat_twh),
+                end_use="space",
+                building_class=str(building_class),
             )
         )
     for building_class, annual_heat_twh in (water_heat_twh_by_class or {}).items():
@@ -322,6 +373,63 @@ def default_when2heat_components(
                 heat_column=f"{country}_heat_profile_water_{building_class}",
                 cop_column=f"{country}_COP_{source}_water",
                 annual_heat_demand_twh=float(annual_heat_twh),
+                end_use="water",
+                building_class=str(building_class),
+            )
+        )
+    return tuple(components)
+
+
+def hp001_residential_when2heat_components(
+    *,
+    space_heat_twh_by_class: Mapping[str, float],
+    water_heat_twh_by_class: Mapping[str, float],
+    provenance: Mapping[str, Any] | None = None,
+) -> tuple[When2HeatComponent, ...]:
+    """Build the HP-001 approved residential SFH/MFH space+DHW components.
+
+    Annual TWh values remain caller-supplied because HP-001 approves D-003
+    shape/COP use only; it does not approve local annual HP scaling.
+    """
+    _require_exact_hp001_classes(space_heat_twh_by_class, label="space_heat_twh_by_class")
+    _require_exact_hp001_classes(water_heat_twh_by_class, label="water_heat_twh_by_class")
+    base_provenance = {
+        "decision_id": HP001_DECISION_ID,
+        "data_id": HP001_DATA_ID,
+        "source": "OPSD When2Heat 2023-07-27 when2heat.csv",
+        "boundary": "residential_space_plus_domestic_hot_water",
+        "annual_scaling_status": "caller_supplied_not_approved_by_hp001",
+    }
+    if provenance is not None:
+        base_provenance.update(_as_provenance_mapping(provenance, "component provenance"))
+
+    components: list[When2HeatComponent] = []
+    for building_class in HP001_RESIDENTIAL_BUILDING_CLASSES:
+        components.append(
+            When2HeatComponent(
+                heat_column=f"{HP001_COUNTRY_CODE}_heat_profile_space_{building_class}",
+                cop_column=HP001_SPACE_COP_COLUMN,
+                annual_heat_demand_twh=float(space_heat_twh_by_class[building_class]),
+                end_use="space",
+                building_class=building_class,
+                provenance={
+                    **base_provenance,
+                    "component_boundary": f"{building_class}_space_heat",
+                },
+            )
+        )
+    for building_class in HP001_RESIDENTIAL_BUILDING_CLASSES:
+        components.append(
+            When2HeatComponent(
+                heat_column=f"{HP001_COUNTRY_CODE}_heat_profile_water_{building_class}",
+                cop_column=HP001_WATER_COP_COLUMN,
+                annual_heat_demand_twh=float(water_heat_twh_by_class[building_class]),
+                end_use="water",
+                building_class=building_class,
+                provenance={
+                    **base_provenance,
+                    "component_boundary": f"{building_class}_domestic_hot_water",
+                },
             )
         )
     return tuple(components)
@@ -428,6 +536,7 @@ def load_when2heat_hourly_csv(
             cop_unit=WHEN2HEAT_COP_UNIT,
             selected_heat_columns=tuple(component.heat_column for component in components),
             selected_cop_columns=tuple(component.cop_column for component in components),
+            selected_components=tuple(component.as_record() for component in components),
             first_timestamp_utc=timestamps[0].isoformat() if timestamps else None,
             last_timestamp_utc=timestamps[-1].isoformat() if timestamps else None,
             first_timestamp_local=local_values[0] if local_values else None,
@@ -614,6 +723,19 @@ def _when2heat_use_columns(
         columns.add(component.heat_column)
         columns.add(component.cop_column)
     return columns
+
+
+def _require_exact_hp001_classes(values: Mapping[str, float], *, label: str) -> None:
+    keys = tuple(values)
+    required = set(HP001_RESIDENTIAL_BUILDING_CLASSES)
+    provided = set(keys)
+    if provided != required:
+        missing = tuple(sorted(required - provided))
+        extra = tuple(sorted(provided - required))
+        raise ValueError(
+            f"{label} must contain exactly HP-001 residential classes "
+            f"{HP001_RESIDENTIAL_BUILDING_CLASSES}; missing={missing}, extra={extra}"
+        )
 
 
 def _paired_pv_weather_field_names(weather: object, *, expected_shape: tuple[int, ...]) -> tuple[str, ...]:
