@@ -196,9 +196,113 @@ class DeferralHorizonResult:
                 raise ValueError("yearly_results alpha must match result alpha")
 
 
+class ValueOfInformationClassification(str, Enum):
+    """Synthetic interval comparison between information value and cost."""
+
+    NET_POSITIVE = "net-positive"
+    NET_NEGATIVE = "net-negative"
+    INDETERMINATE = "indeterminate"
+    NOT_APPLICABLE = "not-applicable"
+
+
+@dataclass(frozen=True)
+class SyntheticMonetaryInterval:
+    """Nonnegative synthetic monetary interval for scaffold-only VoI inputs."""
+
+    lower: float
+    upper: float
+    unit: str
+
+    def __post_init__(self) -> None:
+        for name, value in (("lower", self.lower), ("upper", self.upper)):
+            if not math.isfinite(value) or value < 0.0:
+                raise ValueError(f"{name} must be finite and nonnegative")
+        if self.lower > self.upper:
+            raise ValueError("lower must be <= upper")
+        if not self.unit.strip():
+            raise ValueError("unit must be nonempty")
+
+
+@dataclass(frozen=True)
+class ValueOfInformationInput:
+    """Synthetic alpha-indexed cost/benefit input for VoI scaffolding."""
+
+    alpha: float
+    decision_width_lower: float
+    decision_width_upper: float
+    deferral_benefit: SyntheticMonetaryInterval
+    information_cost: SyntheticMonetaryInterval
+
+    def __post_init__(self) -> None:
+        if not math.isfinite(self.alpha) or not 0.0 <= self.alpha <= 1.0:
+            raise ValueError("alpha must be finite and in [0, 1]")
+        for name, value in (
+            ("decision_width_lower", self.decision_width_lower),
+            ("decision_width_upper", self.decision_width_upper),
+        ):
+            if not math.isfinite(value) or not 0.0 <= value <= 1.0:
+                raise ValueError(f"{name} must be finite and in [0, 1]")
+        if self.decision_width_lower > self.decision_width_upper:
+            raise ValueError("decision_width_lower must be <= decision_width_upper")
+        if self.deferral_benefit.unit != self.information_cost.unit:
+            raise ValueError("deferral_benefit and information_cost units must match")
+
+
+@dataclass(frozen=True)
+class ValueOfInformationResult:
+    """Synthetic alpha-indexed lower/upper value-of-information result."""
+
+    alpha: float
+    lower_horizon_year: int | None
+    upper_horizon_year: int | None
+    decision_width_lower: float
+    decision_width_upper: float
+    deferral_benefit_lower: float
+    deferral_benefit_upper: float
+    information_cost_lower: float
+    information_cost_upper: float
+    net_value_lower: float
+    net_value_upper: float
+    unit: str
+    classification: ValueOfInformationClassification
+
+    def __post_init__(self) -> None:
+        if not math.isfinite(self.alpha) or not 0.0 <= self.alpha <= 1.0:
+            raise ValueError("alpha must be finite and in [0, 1]")
+        for name, year in (
+            ("lower_horizon_year", self.lower_horizon_year),
+            ("upper_horizon_year", self.upper_horizon_year),
+        ):
+            if year is not None and year <= 0:
+                raise ValueError(f"{name} must be positive when supplied")
+        for name, value in (
+            ("decision_width_lower", self.decision_width_lower),
+            ("decision_width_upper", self.decision_width_upper),
+            ("deferral_benefit_lower", self.deferral_benefit_lower),
+            ("deferral_benefit_upper", self.deferral_benefit_upper),
+            ("information_cost_lower", self.information_cost_lower),
+            ("information_cost_upper", self.information_cost_upper),
+        ):
+            if not math.isfinite(value) or value < 0.0:
+                raise ValueError(f"{name} must be finite and nonnegative")
+        if self.decision_width_lower > self.decision_width_upper:
+            raise ValueError("decision_width_lower must be <= decision_width_upper")
+        if self.deferral_benefit_lower > self.deferral_benefit_upper:
+            raise ValueError("deferral_benefit_lower must be <= deferral_benefit_upper")
+        if self.information_cost_lower > self.information_cost_upper:
+            raise ValueError("information_cost_lower must be <= information_cost_upper")
+        if self.net_value_lower > self.net_value_upper:
+            raise ValueError("net_value_lower must be <= net_value_upper")
+        if not self.unit.strip():
+            raise ValueError("unit must be nonempty")
+        if not isinstance(self.classification, ValueOfInformationClassification):
+            raise TypeError("classification must be a ValueOfInformationClassification")
+
+
 RhoProbabilityCurves = Mapping[float, Sequence[RhoProbabilityPoint]]
 RhoStarFamily = Mapping[float, RhoStarAlphaResult]
 YearlyProcurementTargets = Mapping[int, Mapping[float, ProcurementTargetResult]]
+ValueOfInformationInputs = Mapping[float, ValueOfInformationInput]
 
 
 def alpha_star(pbox_family: PBoxFamily, p_crit: float) -> float:
@@ -403,6 +507,58 @@ def deferral_horizon_from_procurement_targets(
     return results
 
 
+def value_of_information_scaffold(
+    deferral_horizons: Mapping[float, DeferralHorizonResult],
+    value_inputs: ValueOfInformationInputs,
+) -> dict[float, ValueOfInformationResult]:
+    """Compare synthetic information benefits and costs by alpha level.
+
+    This scaffold uses caller-supplied synthetic intervals only. It preserves
+    alpha-indexed lower/upper decision-width, benefit, cost, and net-value
+    bounds, and it does not approve or infer any real economic assumption.
+    """
+
+    if not deferral_horizons:
+        raise ValueError("deferral_horizons must contain at least one alpha level")
+    if not value_inputs:
+        raise ValueError("value_inputs must contain at least one alpha level")
+    alpha_grid = tuple(sorted(deferral_horizons))
+    if tuple(sorted(value_inputs)) != alpha_grid:
+        raise ValueError("deferral_horizons and value_inputs need the same alpha grid")
+
+    results: dict[float, ValueOfInformationResult] = {}
+    for alpha in alpha_grid:
+        horizon = deferral_horizons[alpha]
+        value_input = value_inputs[alpha]
+        if horizon.alpha != alpha or value_input.alpha != alpha:
+            raise ValueError("alpha values must match their mapping keys")
+        net_lower, net_upper = _subtract_monetary_intervals(
+            value_input.deferral_benefit,
+            value_input.information_cost,
+        )
+        classification = _classify_value_of_information(
+            horizon,
+            net_lower,
+            net_upper,
+        )
+        results[alpha] = ValueOfInformationResult(
+            alpha=alpha,
+            lower_horizon_year=horizon.lower_year,
+            upper_horizon_year=horizon.upper_year,
+            decision_width_lower=value_input.decision_width_lower,
+            decision_width_upper=value_input.decision_width_upper,
+            deferral_benefit_lower=value_input.deferral_benefit.lower,
+            deferral_benefit_upper=value_input.deferral_benefit.upper,
+            information_cost_lower=value_input.information_cost.lower,
+            information_cost_upper=value_input.information_cost.upper,
+            net_value_lower=net_lower,
+            net_value_upper=net_upper,
+            unit=value_input.deferral_benefit.unit,
+            classification=classification,
+        )
+    return results
+
+
 def _validate_rho_curve(
     alpha: float,
     points: Sequence[RhoProbabilityPoint],
@@ -551,6 +707,31 @@ def _is_monotone_horizon_sequence(yearly: Sequence[DeferralYearResult]) -> bool:
     # This is only a diagnostic sanity flag: scaffold tests may expose
     # non-monotone synthetic years, but real horizon claims need manifested runs.
     return all(left <= right for left, right in zip(severities, severities[1:]))
+
+
+def _subtract_monetary_intervals(
+    benefit: SyntheticMonetaryInterval,
+    cost: SyntheticMonetaryInterval,
+) -> tuple[float, float]:
+    if benefit.unit != cost.unit:
+        raise ValueError("benefit and cost units must match")
+    # Interval subtraction must pair the unfavorable endpoints; subtracting
+    # midpoints would silently collapse the synthetic uncertainty interval.
+    return benefit.lower - cost.upper, benefit.upper - cost.lower
+
+
+def _classify_value_of_information(
+    horizon: DeferralHorizonResult,
+    net_lower: float,
+    net_upper: float,
+) -> ValueOfInformationClassification:
+    if horizon.lower_year is None and horizon.upper_year is None:
+        return ValueOfInformationClassification.NOT_APPLICABLE
+    if net_lower > 0.0:
+        return ValueOfInformationClassification.NET_POSITIVE
+    if net_upper < 0.0:
+        return ValueOfInformationClassification.NET_NEGATIVE
+    return ValueOfInformationClassification.INDETERMINATE
 
 
 def _core_interval(fuzzy_number: FuzzyNumber) -> tuple[float, float]:

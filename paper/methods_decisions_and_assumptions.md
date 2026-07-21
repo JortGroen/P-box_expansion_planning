@@ -378,6 +378,26 @@ primary 2035 p-box and supporting 2030/2033 p-boxes are produced through the
 frozen manifested pipeline, and until G3, Q-5, G2, A-013, integrated E3 outputs,
 and the G4/flexibility-envelope decision permit paper-facing interpretation.
 
+<!-- methods-id: E6.S4 -->
+### E6.S4 - Value-of-Information Scaffold
+
+**Status: Scaffold-only; no economic result.** The value-of-information
+scaffold accepts alpha-indexed synthetic decision outputs and caller-supplied
+synthetic cost/benefit intervals. For each alpha level, it preserves the
+decision-width interval, the deferral-benefit interval, the information-cost
+interval, and the resulting net-value interval. Net value is computed by
+conservative interval subtraction: the lower endpoint subtracts the upper
+information cost from the lower deferral benefit, and the upper endpoint
+subtracts the lower information cost from the upper deferral benefit. The
+scaffold labels each alpha as net-positive, net-negative, indeterminate, or
+not applicable when the synthetic decision output contains no lower or
+monitoring horizon. These labels are bookkeeping for synthetic tests only.
+They do not approve real reinforcement costs, discount rates, pilot costs,
+benefit formulas, value-of-information claims, or manuscript numbers. Real E6.S4
+use remains blocked until the relevant E3/E6 outputs are produced through
+manifests and the PI signs the required economic assumptions and extracted
+cost values.
+
 <!-- methods-id: G4 -->
 ### G4 - Fuzzy Controllability Elicitation
 
