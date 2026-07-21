@@ -16,6 +16,19 @@
       "reason": "PI approved narrow D-004 source retrieval for checksum recording only; raw files remain uncommitted and D-004 remains proposed until PI review.",
       "approved_by": "PI",
       "approved_on": "2026-07-21"
+    },
+    {
+      "id": "OWN-EX-2026-07-21-Q8-SHARED-WEATHER-CONTRACT",
+      "branch": "agent-c/E2.S4-shared-weather-contract",
+      "role": "agent-c",
+      "task_id": "E2.S4",
+      "paths": [
+        "src/weather_model.py",
+        "tests/test_weather_model.py"
+      ],
+      "reason": "PI authorized a neutral shared WeatherMember contract for Q-8 so HP and PV can consume the same ALEA-001 weather realization without placing the interface inside either technology model.",
+      "approved_by": "PI",
+      "approved_on": "2026-07-21"
     }
   ]
 }
