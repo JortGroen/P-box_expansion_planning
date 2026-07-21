@@ -54,7 +54,7 @@ not prove:
 - real paired-weather cold-spell sanity;
 - final HP/PV shared-weather contract convergence.
 
-The PV/weather branch `agent-c/E2.S4-shared-weather-contract-plan` records Q-7:
+The PV/weather branch `agent-c/E2.S4-shared-weather-contract-plan` records that
 a neutral shared weather contract path such as `src/weather_model.py` is still
 unassigned. Until the PI/maintainer resolves that path, HP remains structurally
 compatible with the shared weather fields from PR #44 but does not import a
