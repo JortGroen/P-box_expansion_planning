@@ -5,11 +5,13 @@ import pytest
 
 from src.contracts.net_load import (
     ComponentProvenance,
+    DEFAULT_REALIZATION_COMPONENTS,
     NetLoadAssemblyPlan,
     NetLoadComponent,
     NetLoadProvider,
     NetLoadResult,
     assemble_net_load_from_components,
+    build_realization_context,
     build_net_load_result,
     validate_net_load_result,
 )
@@ -148,6 +150,148 @@ def test_net_load_provider_protocol_preserves_crn_and_member_traceability() -> N
     assert not np.array_equal(first.p_net_kw, different_seed.p_net_kw)
 
     validate_net_load_result(first)
+
+
+def test_realization_context_is_deterministic_and_manifestable_from_public_args() -> None:
+    first = build_realization_context(
+        scenario="scenario-a",
+        year=2035,
+        time_domain="full_year",
+        rho=0.5,
+        seed=140001,
+        calendar_metadata={"calendar_id": "synthetic-2035-15min"},
+        mapping_version_metadata={"node_mapping_version": "synthetic-v1"},
+    )
+    second = build_realization_context(
+        scenario="scenario-a",
+        year=2035,
+        time_domain="full_year",
+        rho=0.5,
+        seed=140001,
+        calendar_metadata={"calendar_id": "synthetic-2035-15min"},
+        mapping_version_metadata={"node_mapping_version": "synthetic-v1"},
+    )
+
+    assert first == second
+    assert first.scenario == "scenario-a"
+    assert first.planning_year == 2035
+    assert first.root_seed == 140001
+    assert first.sample_index == 0
+    assert first.shared_weather_driver_id.startswith("weather:sample_0:weather:seed_")
+    assert {stream.component for stream in first.component_streams} == set(DEFAULT_REALIZATION_COMPONENTS)
+    assert set(first.component_member_placeholders) == set(DEFAULT_REALIZATION_COMPONENTS)
+    assert first.manifest_metadata()["aleatory_identity"] == second.manifest_metadata()["aleatory_identity"]
+
+
+def test_realization_context_distinguishes_root_seed_and_sample_index() -> None:
+    reference = build_realization_context(
+        scenario="scenario-a",
+        year=2035,
+        time_domain="full_year",
+        rho=0.0,
+        seed=1,
+    )
+    different_root = build_realization_context(
+        scenario="scenario-a",
+        year=2035,
+        time_domain="full_year",
+        rho=0.0,
+        seed=2,
+    )
+    different_sample = build_realization_context(
+        scenario="scenario-a",
+        year=2035,
+        time_domain="full_year",
+        rho=0.0,
+        seed=1,
+        sample_index=1,
+    )
+
+    assert reference.aleatory_identity() != different_root.aleatory_identity()
+    assert reference.aleatory_identity() != different_sample.aleatory_identity()
+    assert reference.shared_weather_driver_id != different_root.shared_weather_driver_id
+    assert reference.shared_weather_driver_id != different_sample.shared_weather_driver_id
+
+
+def test_realization_context_aleatory_identity_excludes_branch_like_labels() -> None:
+    low_alpha = build_realization_context(
+        scenario="scenario-a",
+        year=2035,
+        time_domain="full_year",
+        rho=0.0,
+        seed=7,
+    )
+    high_alpha = build_realization_context(
+        scenario="scenario-a",
+        year=2035,
+        time_domain="full_year",
+        rho=1.0,
+        seed=7,
+    )
+    window_diagnostic = build_realization_context(
+        scenario="scenario-a",
+        year=2035,
+        time_domain="window_set",
+        rho=0.0,
+        seed=7,
+    )
+
+    assert low_alpha.aleatory_identity() == high_alpha.aleatory_identity()
+    assert low_alpha.aleatory_identity() == window_diagnostic.aleatory_identity()
+    assert low_alpha.manifest_metadata()["rho"] == 0.0
+    assert high_alpha.manifest_metadata()["rho"] == 1.0
+    assert window_diagnostic.manifest_metadata()["time_domain"] == "window_set"
+
+
+def test_realization_context_rejects_invalid_metadata_and_seed_inputs() -> None:
+    with pytest.raises(ValueError, match="rho must be finite and in \\[0, 1\\]"):
+        build_realization_context(
+            scenario="scenario-a",
+            year=2035,
+            time_domain="full_year",
+            rho=1.1,
+            seed=1,
+        )
+
+    with pytest.raises(ValueError, match="root_seed must be non-negative"):
+        build_realization_context(
+            scenario="scenario-a",
+            year=2035,
+            time_domain="full_year",
+            rho=0.5,
+            seed=-1,
+        )
+
+    with pytest.raises(ValueError, match="component_names must not contain duplicates"):
+        build_realization_context(
+            scenario="scenario-a",
+            year=2035,
+            time_domain="full_year",
+            rho=0.5,
+            seed=1,
+            component_names=("ev", "ev"),
+        )
+
+    with pytest.raises(ValueError, match="calendar_metadata values must not be None"):
+        build_realization_context(
+            scenario="scenario-a",
+            year=2035,
+            time_domain="full_year",
+            rho=0.5,
+            seed=1,
+            calendar_metadata={"calendar_id": None},
+        )
+
+    with pytest.raises(ValueError, match="matching component streams"):
+        build_realization_context(
+            scenario="scenario-a",
+            year=2035,
+            time_domain="full_year",
+            rho=0.5,
+            seed=1,
+            component_names=("ev",),
+            component_member_placeholders={"ev": "pending:ev", "hp": "pending:hp"},
+        )
 
 
 def test_mismatched_calendars_are_rejected() -> None:

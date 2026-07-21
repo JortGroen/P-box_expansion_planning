@@ -15,6 +15,7 @@ from typing import Literal, Mapping, Protocol, Sequence
 import numpy as np
 
 from src.contracts.loading_trajectory import TimeDomain
+from src.rng import ComponentStream, SeedTree
 
 
 ComponentKind = Literal[
@@ -37,6 +38,9 @@ REQUIRED_INTEGRATION_COMPONENT_KINDS: tuple[ComponentKind, ...] = (
     "flexibility",
 )
 
+DEFAULT_REALIZATION_COMPONENTS: tuple[str, ...] = REQUIRED_INTEGRATION_COMPONENT_KINDS
+DEFAULT_SAMPLE_INDEX = 0
+
 
 @dataclass(frozen=True)
 class ComponentProvenance:
@@ -56,6 +60,105 @@ class ComponentProvenance:
         if self.kind not in _VALID_COMPONENT_KINDS:
             raise ValueError("kind must be a valid net-load component kind")
         object.__setattr__(self, "metadata", MappingProxyType(dict(self.metadata)))
+
+
+@dataclass(frozen=True)
+class NetLoadRealizationContext:
+    """Auditable ALEA-001 sample identity derived inside IC-1.
+
+    The public ``NetLoadProvider.get_net_load(...)`` signature remains
+    unchanged; implementations can build this context internally from those
+    arguments before selecting component members or assembling trajectories.
+    """
+
+    scenario: str
+    planning_year: int
+    time_domain: TimeDomain
+    rho: float
+    root_seed: int
+    sample_index: int
+    sample_seed: int
+    component_streams: tuple[ComponentStream, ...]
+    shared_weather_driver_id: str
+    calendar_metadata: Mapping[str, object] = field(default_factory=dict)
+    mapping_version_metadata: Mapping[str, object] = field(default_factory=dict)
+    component_member_placeholders: Mapping[str, str] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        _require_nonempty(self.scenario, name="scenario")
+        if isinstance(self.planning_year, bool) or not isinstance(self.planning_year, int):
+            raise TypeError("planning_year must be an integer")
+        if self.planning_year <= 0:
+            raise ValueError("planning_year must be positive")
+        if self.time_domain not in {"full_year", "window_set"}:
+            raise ValueError("time_domain must be 'full_year' or 'window_set'")
+        if not np.isfinite(float(self.rho)) or not 0.0 <= float(self.rho) <= 1.0:
+            raise ValueError("rho must be finite and in [0, 1]")
+        if self.root_seed < 0:
+            raise ValueError("root_seed must be non-negative")
+        if self.sample_index < 0:
+            raise ValueError("sample_index must be non-negative")
+        expected_tree = SeedTree(self.root_seed)
+        expected_sample_seed = expected_tree.sample_seed(self.sample_index)
+        if self.sample_seed != expected_sample_seed:
+            raise ValueError("sample_seed must match root_seed and sample_index")
+
+        stream_by_component: dict[str, ComponentStream] = {}
+        for stream in self.component_streams:
+            if stream.component in stream_by_component:
+                raise ValueError("component_streams must not contain duplicate components")
+            expected_stream = expected_tree.component_stream(self.sample_index, stream.component)
+            if stream.seed != expected_stream.seed or stream.stream_id != expected_stream.stream_id:
+                raise ValueError("component_streams must match root_seed and sample_index")
+            stream_by_component[stream.component] = stream
+        if not stream_by_component:
+            raise ValueError("component_streams must not be empty")
+
+        _require_nonempty(self.shared_weather_driver_id, name="shared_weather_driver_id")
+        _validate_nonempty_mapping_values(self.calendar_metadata, name="calendar_metadata")
+        _validate_nonempty_mapping_values(self.mapping_version_metadata, name="mapping_version_metadata")
+        _validate_nonempty_mapping_values(
+            self.component_member_placeholders,
+            name="component_member_placeholders",
+        )
+        for component in self.component_member_placeholders:
+            if component not in stream_by_component:
+                raise ValueError("component member placeholders require matching component streams")
+
+        object.__setattr__(self, "rho", float(self.rho))
+        object.__setattr__(self, "component_streams", tuple(sorted(stream_by_component.values(), key=lambda item: item.component)))
+        object.__setattr__(self, "calendar_metadata", MappingProxyType(dict(self.calendar_metadata)))
+        object.__setattr__(self, "mapping_version_metadata", MappingProxyType(dict(self.mapping_version_metadata)))
+        object.__setattr__(
+            self,
+            "component_member_placeholders",
+            MappingProxyType(dict(self.component_member_placeholders)),
+        )
+
+    def aleatory_identity(self) -> dict[str, object]:
+        """Return the branch-independent physical sample identity."""
+
+        return {
+            "root_seed": self.root_seed,
+            "sample_index": self.sample_index,
+            "sample_seed": self.sample_seed,
+            "component_streams": [stream.manifest_record() for stream in self.component_streams],
+            "shared_weather_driver_id": self.shared_weather_driver_id,
+        }
+
+    def manifest_metadata(self) -> dict[str, object]:
+        """Return JSON-manifestable context metadata for runner outputs."""
+
+        return {
+            "scenario": self.scenario,
+            "planning_year": self.planning_year,
+            "time_domain": self.time_domain,
+            "rho": self.rho,
+            "aleatory_identity": self.aleatory_identity(),
+            "calendar_metadata": dict(self.calendar_metadata),
+            "mapping_version_metadata": dict(self.mapping_version_metadata),
+            "component_member_placeholders": dict(self.component_member_placeholders),
+        }
 
 
 @dataclass(frozen=True)
@@ -182,6 +285,61 @@ class NetLoadProvider(Protocol):
         seed: int,
     ) -> NetLoadResult:
         """Return one deterministic, traceable net-load realization."""
+
+
+def build_realization_context(
+    *,
+    scenario: str,
+    year: int,
+    time_domain: TimeDomain,
+    rho: float,
+    seed: int,
+    sample_index: int = DEFAULT_SAMPLE_INDEX,
+    component_names: Sequence[str] = DEFAULT_REALIZATION_COMPONENTS,
+    shared_weather_driver_id: str | None = None,
+    calendar_metadata: Mapping[str, object] | None = None,
+    mapping_version_metadata: Mapping[str, object] | None = None,
+    component_member_placeholders: Mapping[str, str] | None = None,
+) -> NetLoadRealizationContext:
+    """Build the internal ALEA-001 context from IC-1 public arguments.
+
+    The IC-1 public call has one ``seed`` argument, so this scaffold treats it
+    as the RNG root and uses ``sample_index=0`` unless a future internal caller
+    supplies a sample index. Branch labels are deliberately absent: alpha,
+    endpoint, and treatment must replay this same physical realization.
+    """
+
+    tree = SeedTree(seed)
+    components = tuple(_require_nonempty(component, name="component") for component in component_names)
+    if not components:
+        raise ValueError("component_names must not be empty")
+    if len(set(components)) != len(components):
+        raise ValueError("component_names must not contain duplicates")
+    streams = tuple(tree.component_stream(sample_index, component) for component in sorted(components))
+    # ALEA-001 pairs HP and PV through one shared physical weather driver; this
+    # placeholder is derived from the weather stream so CRN branch labels cannot
+    # accidentally create different weather identities for the same sample.
+    weather_stream = tree.component_stream(sample_index, "weather")
+    weather_id = shared_weather_driver_id or f"weather:{weather_stream.stream_id}"
+    placeholders = (
+        {component: f"pending:{component}" for component in sorted(components)}
+        if component_member_placeholders is None
+        else dict(component_member_placeholders)
+    )
+    return NetLoadRealizationContext(
+        scenario=scenario,
+        planning_year=year,
+        time_domain=time_domain,
+        rho=rho,
+        root_seed=seed,
+        sample_index=sample_index,
+        sample_seed=tree.sample_seed(sample_index),
+        component_streams=streams,
+        shared_weather_driver_id=weather_id,
+        calendar_metadata={} if calendar_metadata is None else calendar_metadata,
+        mapping_version_metadata={} if mapping_version_metadata is None else mapping_version_metadata,
+        component_member_placeholders=placeholders,
+    )
 
 
 def build_net_load_result(
@@ -338,9 +496,19 @@ def _as_15_minute_calendar(values: np.ndarray) -> np.ndarray:
     return timestamps.astype("datetime64[s]")
 
 
-def _require_nonempty(value: str, *, name: str) -> None:
+def _require_nonempty(value: str, *, name: str) -> str:
     if not isinstance(value, str) or not value:
         raise ValueError(f"{name} must be a non-empty string")
+    return value
+
+
+def _validate_nonempty_mapping_values(mapping: Mapping[str, object], *, name: str) -> None:
+    for key, value in mapping.items():
+        _require_nonempty(key, name=f"{name} key")
+        if value is None:
+            raise ValueError(f"{name} values must not be None")
+        if isinstance(value, str) and not value:
+            raise ValueError(f"{name} string values must be non-empty")
 
 
 def _validate_shared_weather_identity(components: Sequence[NetLoadComponent]) -> None:
