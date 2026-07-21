@@ -30,15 +30,15 @@ Format: `Story | Owner | status | tasks | blocked-by | PR`
 | E4.S1 Dense rho sweep | B | todo | 0/3 | E3.S2, E3.S4, resolved Q-5 | -- |
 | E4.S2 Fallback stub | B | todo | 0/1 | E5 invariant skeleton | -- |
 | E5.S1 Fuzzy number class | B | done | 2/2 | -- | #1 |
-| E5.S2 Vertex propagation scaffold | B | done | 3/3 | G3 before scientific use | #6; #41 RNG-001 follow-up |
-| E5.S3 Output-domain model-error propagation | B | in-progress | 1/4 | T2-T4: Agent A `LoadingTrajectoryResult` contract/validator, signed A-013, G2 envelope, resolved Q-5, and total-versus-firm capacity decision/provenance before paper use | #36; #13 closed |
+| E5.S2 Vertex propagation scaffold | B | done | 3/3 | G3 before scientific use | #6 |
+| E5.S3 Output-domain model-error propagation | B | in-progress | 1/4 + Agent A contract in review | T2-T4: signed A-013, G2 envelope, resolved Q-5, and total-versus-firm capacity decision/provenance before paper use | #36; #13 closed; Agent A contract #42 |
 | E5.S4 Independent cross-check | B | todo | 0/2 | E5.S1-E5.S3 | -- |
 | E6.S1 alpha_star | B | review | 1/1 | E5.S2 | #33 |
 | E6.S2 rho_star and membership | B | todo | 0/3 | E6.S1, G3 | -- |
 | E6.S3 Deferral horizon | B | todo | 0/1 | E6.S1 | -- |
 | E6.S4 VoI | B | todo | 0/2 | signed econ assumptions | -- |
 | E6.S5 Decision engine | B | todo | 0/2 | E6.S1-E6.S4 | -- |
-| E7.S1 DFMP transform | B | todo | 0/2 | -- | -- |
+| E7.S1 DFMP transform | B | review | 2/2 | -- | #38 |
 | E7.S2 Factor worksheet | B/C | todo | 0/3 | signed data rows | -- |
 | E7.S3 GATE G4 | HUMAN | todo | 0/1 | E7.S2 | -- |
 | E7.S4 Shape sensitivity | B | todo | 0/1 | G4, E6 | -- |
