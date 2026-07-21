@@ -58,6 +58,40 @@
     {"year": 2033, "scenario": "high", "location": "public", "value": 649640.3622993053, "rounded_count": 649640, "provenance": {"source_id": "D-010", "query": "/charging_infrastructure?area_type=country&scenario=high&location=public", "response_sha256": "c8357fbdf99dc0606c671969994a8aa931d8969192dea0a78c4fa688ae1eed4c"}},
     {"year": 2035, "scenario": "high", "location": "public", "value": 808048.9252578203, "rounded_count": 808049, "provenance": {"source_id": "D-010", "query": "/charging_infrastructure?area_type=country&scenario=high&location=public", "response_sha256": "c8357fbdf99dc0606c671969994a8aa931d8969192dea0a78c4fa688ae1eed4c"}}
   ],
+  "local_count_workflow": {
+    "status": "proposed_not_pi_signed",
+    "option": "EV-007 Option A",
+    "source_id": "D-010",
+    "metadata": {
+      "path": "data/metadata/ev_adoption/e2_s6_local_adoption_counts_metadata.json",
+      "sha256": "3f29419f89d4fa643108f594d89c07a9cda3654dfae6a71900aa0236b2aeebad"
+    },
+    "selected_cluster": {
+      "area_type": "municipalities",
+      "area_identifier": "GM1705",
+      "name": "Lingewaard",
+      "province": "Gelderland",
+      "network_operator": "Liander",
+      "nal_region": "Oost",
+      "selection_status": "proposed_not_pi_signed",
+      "selection_basis": "Exogenous EV-007 Option A municipality cluster selected before integrated congestion results: non-G4 Liander/Oost municipality with documented prior use of ElaadNL neighbourhood forecasts in local public-charging policy."
+    },
+    "neighborhood_filter_attempt": {
+      "query": "/filters/municipalities/neighborhoods/GM1705",
+      "result": "failed_http_500",
+      "retrieved_utc": "2026-07-21T08:34:16.0537604Z",
+      "consequence": "Individual CBS-neighbourhood rows were not accessible through the live proxy during this session; the proposed Option A basis is therefore the municipality as a CBS-area cluster."
+    },
+    "proposed_2035_counts": [
+      {"year": 2035, "scenario": "low", "location": "home", "value": 8042.550122943402, "rounded_count": 8043, "status": "proposed_not_pi_signed", "provenance": {"source_id": "D-010", "source_type": "local_outlook_cluster", "area_type": "municipalities", "area_identifier": "GM1705", "query": "/charging_infrastructure?area_type=municipalities&area_identifier=GM1705&scenario=low&location=home", "response_sha256": "850cdbd618ddf9b12b8f48166c26c215ee8c0a8e4299bcf7ebda1f5ea403649d"}},
+      {"year": 2035, "scenario": "low", "location": "public", "value": 1372.8223658557333, "rounded_count": 1373, "status": "proposed_not_pi_signed", "provenance": {"source_id": "D-010", "source_type": "local_outlook_cluster", "area_type": "municipalities", "area_identifier": "GM1705", "query": "/charging_infrastructure?area_type=municipalities&area_identifier=GM1705&scenario=low&location=public", "response_sha256": "2ba1848017676748c4bc28f082b6d0659e3dbbbefda4ad7cb50fd86400d23fd2"}},
+      {"year": 2035, "scenario": "middle", "location": "home", "value": 8417.687927695493, "rounded_count": 8418, "status": "proposed_not_pi_signed", "provenance": {"source_id": "D-010", "source_type": "local_outlook_cluster", "area_type": "municipalities", "area_identifier": "GM1705", "query": "/charging_infrastructure?area_type=municipalities&area_identifier=GM1705&scenario=middle&location=home", "response_sha256": "a74e8d1d2e3f774cc3b3da99afbd4b2676ac4d0c49e89746a70b5317de882b74"}},
+      {"year": 2035, "scenario": "middle", "location": "public", "value": 1624.801030181807, "rounded_count": 1625, "status": "proposed_not_pi_signed", "provenance": {"source_id": "D-010", "source_type": "local_outlook_cluster", "area_type": "municipalities", "area_identifier": "GM1705", "query": "/charging_infrastructure?area_type=municipalities&area_identifier=GM1705&scenario=middle&location=public", "response_sha256": "0d3bc6c9eb5050e51e21700e8d77943e4fe6f78516ac560af84d68e231bda107"}},
+      {"year": 2035, "scenario": "high", "location": "home", "value": 8607.135281697223, "rounded_count": 8607, "status": "proposed_not_pi_signed", "provenance": {"source_id": "D-010", "source_type": "local_outlook_cluster", "area_type": "municipalities", "area_identifier": "GM1705", "query": "/charging_infrastructure?area_type=municipalities&area_identifier=GM1705&scenario=high&location=home", "response_sha256": "4f7e1107035dd153f658214d06fc49e682d514eb1dffdf3627a025d4a66c4364"}},
+      {"year": 2035, "scenario": "high", "location": "public", "value": 1828.6489056790774, "rounded_count": 1829, "status": "proposed_not_pi_signed", "provenance": {"source_id": "D-010", "source_type": "local_outlook_cluster", "area_type": "municipalities", "area_identifier": "GM1705", "query": "/charging_infrastructure?area_type=municipalities&area_identifier=GM1705&scenario=high&location=public", "response_sha256": "58112ea08ec4c6085e9f25496e7e929f346dea5f5bf0e2839ef4431cb950a61f"}}
+    ],
+    "use_status": "review_only_not_executable"
+  },
   "local_grid_scenarios": {
     "status": "pending_local_cluster_selection",
     "governing_decision": "EV-007",

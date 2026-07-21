@@ -524,6 +524,14 @@ local totals exist, as the second-stage rule that distributes those totals
 across benchmark load nodes. If local forecast retrieval or justification
 fails, a national-adoption-rate scaling with separately sourced local
 denominators remains a fallback or sensitivity rather than the primary route.
+This PR proposes Lingewaard (`GM1705`) as a municipality-level implementation
+candidate and records 2035 low/middle/high home and public local Outlook counts
+for PI review. Those cluster/count values remain review-only and may not drive
+adoption scenarios, A-014 nodal allocation, EV-005 replacement decisions,
+E3.S2a adequacy tests, or integrated event/congestion analysis until the PI
+accepts the selected cluster and local totals. The live neighbourhood-list
+proxy returned HTTP 500 during this session, so individual CBS-neighbourhood
+rows remain an unresolved retrieval limitation for this workflow revision.
 
 <!-- methods-id: COST-001 -->
 ### COST-001 - Indicative Reinforcement Costs
@@ -708,7 +716,9 @@ static active load `p_mw`. Fractional allocations are converted to physical
 nonnegative integer counts by largest-remainder rounding, with ties resolved by
 node ID for deterministic reruns. The rule must not be applied directly to the
 national ElaadNL Outlook totals recorded under D-010, and it does not itself
-select the local cluster or approve public-charging behavior profiles.
+select the local cluster or approve public-charging behavior profiles. The
+proposed Lingewaard values in the current workflow are not allocated until the
+PI accepts them as local totals.
 
 ## Data and Evidence Choices
 
@@ -904,22 +914,25 @@ result uses them.
 <!-- methods-id: D-010 -->
 ### D-010 - ElaadNL Outlook Mobility Adoption Counts
 
-**Status: Proposed; national projections only.** E2.S6 records national EV
-charging-infrastructure projections from the official ElaadNL Outlook
-Mobiliteit scenariotool/API, using December `charging_infrastructure` records
-for 2030, 2033, and 2035 under the low, middle, and high scenarios. The home
-layer uses `location=home`, while the public layer uses `location=public`.
-These records are not physical charge-point counts for the SimBench grid and
-must not flow into nodal allocation without a separately approved local
-scaling method. The source site identifies the scenariotool as providing
-forecasts down to CBS-neighbourhood level, supplies report and model
+**Status: Proposed.** E2.S6 records EV charging-infrastructure projections from
+the official ElaadNL Outlook Mobiliteit scenariotool/API. The first D-010 use
+records national December `charging_infrastructure` values for 2030, 2033, and
+2035 under the low, middle, and high scenarios; these national records are not
+physical charge-point counts for the SimBench grid and must not flow into nodal
+allocation without a separately approved local scaling method. The second use
+records a proposed EV-007 local-count workflow for the Lingewaard (`GM1705`)
+municipality cluster in 2035, using the same home/public locations and
+low/middle/high scenarios. The source site identifies the scenariotool as
+providing forecasts down to CBS-neighbourhood level, supplies report and model
 background pages, states that the outlook is assumption-based and indicative
-with a 24-month validity note, and licenses the site under CC BY-NC-ND 4.0.
-The committed config records exact query strings, UTC retrieval time, raw
-floating API values, nearest-integer rounded national counts, and response
-checksums without redistributing raw dashboard data. Public behavior profiles
-remain separately blocked by the Elaad profile-generation specification, and
-public local-count scaling requires its own basis.
+with a 24-month validity note, identifies Scenariotool v1.0.0 as last updated
+on 9 June 2026, and licenses the site under CC BY-NC-ND 4.0. The committed
+config and metadata record exact query strings, UTC retrieval time, raw
+floating API values, nearest-integer rounded counts, and response checksums
+without redistributing raw dashboard data. The Lingewaard values remain
+proposed and non-executable until EV-007/Q-7 is signed. Public behavior
+profiles remain separately blocked by the Elaad profile-generation
+specification.
 
 <!-- methods-id: D-011 -->
 ### D-011 - II3050 Scenario Framing
