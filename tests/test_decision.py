@@ -5,9 +5,12 @@ import math
 import pytest
 
 from src.decision import (
+    ProcurementTargetClassification,
+    ProcurementTargetResult,
     RhoProbabilityPoint,
     RhoStarAlphaResult,
     alpha_star,
+    classify_procurement_target,
     rho_star_from_probability_curves,
     rho_star_membership,
 )
@@ -197,6 +200,77 @@ def test_rho_star_membership_rejects_never_satisfied_target() -> None:
 
     with pytest.raises(ValueError, match="finite rho_star"):
         rho_star_membership(rho_star, TriangularFuzzyNumber(0.0, 0.5, 1.0))
+
+
+def test_procurement_target_classifies_alpha_indexed_synthetic_intervals() -> None:
+    rho_star = {
+        0.0: RhoStarAlphaResult(0.0, 0.01, rho_lower=0.20, rho_upper=0.80),
+        0.25: RhoStarAlphaResult(0.25, 0.01, rho_lower=0.25, rho_upper=0.85),
+        0.5: RhoStarAlphaResult(0.5, 0.01, rho_lower=0.45, rho_upper=0.55),
+        0.75: RhoStarAlphaResult(0.75, 0.01, rho_lower=0.90, rho_upper=1.00),
+        1.0: RhoStarAlphaResult(1.0, 0.01, rho_lower=0.8, rho_upper=math.inf),
+    }
+    delivery = TrapezoidalFuzzyNumber(
+        support_left=0.20,
+        core_left=0.40,
+        core_right=0.60,
+        support_right=0.90,
+    )
+
+    result = classify_procurement_target(rho_star, delivery)
+
+    assert list(result) == [0.0, 0.25, 0.5, 0.75, 1.0]
+    assert result[0.0].classification is ProcurementTargetClassification.INSIDE_ENVELOPE
+    assert result[0.0].envelope_lower == pytest.approx(0.20)
+    assert result[0.0].envelope_upper == pytest.approx(0.90)
+    assert (
+        result[0.25].classification
+        is ProcurementTargetClassification.OVERLAPPING_MONITOR
+    )
+    assert result[0.5].classification is ProcurementTargetClassification.INSIDE_ENVELOPE
+    assert result[0.5].envelope_lower == pytest.approx(0.30)
+    assert result[0.5].envelope_upper == pytest.approx(0.75)
+    assert result[0.75].classification is ProcurementTargetClassification.OUTSIDE_ENVELOPE
+    assert result[1.0].classification is ProcurementTargetClassification.NEVER_SATISFIED
+
+
+def test_procurement_target_treats_boundary_touch_as_overlap_monitor() -> None:
+    rho_star = {
+        0.0: RhoStarAlphaResult(0.0, 0.01, rho_lower=0.90, rho_upper=1.00),
+    }
+    delivery = TrapezoidalFuzzyNumber(0.20, 0.40, 0.60, 0.90)
+
+    result = classify_procurement_target(rho_star, delivery)
+
+    assert (
+        result[0.0].classification
+        is ProcurementTargetClassification.OVERLAPPING_MONITOR
+    )
+
+
+def test_procurement_target_rejects_empty_family_and_invalid_results() -> None:
+    with pytest.raises(ValueError, match="at least one alpha"):
+        classify_procurement_target({}, TrapezoidalFuzzyNumber(0.0, 0.3, 0.6, 1.0))
+
+    with pytest.raises(TypeError, match="classification"):
+        ProcurementTargetResult(
+            alpha=0.0,
+            rho_lower=0.2,
+            rho_upper=0.4,
+            envelope_lower=0.1,
+            envelope_upper=0.5,
+            classification="inside-envelope",  # type: ignore[arg-type]
+        )
+
+    with pytest.raises(ValueError, match="envelope_lower"):
+        ProcurementTargetResult(
+            alpha=0.0,
+            rho_lower=0.2,
+            rho_upper=0.4,
+            envelope_lower=0.6,
+            envelope_upper=0.5,
+            classification=ProcurementTargetClassification.INSIDE_ENVELOPE,
+        )
 
 
 def _pbox_family(rows: list[tuple[float, float]]) -> dict[float, PBoxAlphaResult]:
