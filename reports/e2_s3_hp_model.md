@@ -28,7 +28,8 @@ evidence exists yet.
   direct HP/PV audit.
 - The neutral shared weather contract module is still not imported here because
   PR #43 does not yet provide `src/weather_model.py`; C.PV/weather should own
-  that implementation once Q-7/path ownership is resolved.
+  that implementation once the shared-weather path ownership blocker is
+  resolved.
 
 ## Cold-Week Sanity
 
