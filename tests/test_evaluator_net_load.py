@@ -7,10 +7,13 @@ from src.contracts.net_load import (
     ComponentProvenance,
     NetLoadAssemblyPlan,
     NetLoadComponent,
+    NetLoadProvider,
+    NetLoadResult,
     assemble_net_load_from_components,
     build_net_load_result,
     validate_net_load_result,
 )
+from src.contracts.loading_trajectory import TimeDomain
 
 
 def _calendar() -> np.ndarray:
@@ -63,6 +66,53 @@ def _integration_components() -> list[NetLoadComponent]:
     ]
 
 
+class _SyntheticNetLoadProvider:
+    def get_net_load(
+        self,
+        scenario: str,
+        year: int,
+        time_domain: TimeDomain,
+        rho: float,
+        seed: int,
+    ) -> NetLoadResult:
+        if time_domain != "full_year":
+            raise ValueError("synthetic fixture supports full_year only")
+        weather_id = f"weather-{seed}"
+        scale = 1.0 + (seed % 5) * 0.1
+        return build_net_load_result(
+            [
+                _component(
+                    f"baseline-{scenario}-{year}",
+                    "baseline",
+                    [10.0 * scale, 11.0 * scale, 12.0 * scale, 13.0 * scale],
+                    member_id=f"baseline-member-{seed}",
+                ),
+                _component(
+                    f"ev-{scenario}-{year}",
+                    "ev",
+                    [1.0 * scale, 2.0 * scale, 3.0 * scale, 4.0 * scale],
+                    member_id=f"ev-member-{seed}",
+                    source_id="synthetic-ev-fixture",
+                ),
+                _component(
+                    f"hp-{scenario}-{year}",
+                    "hp",
+                    [3.0, 4.0, 5.0, 6.0],
+                    member_id=f"hp-member-{seed}",
+                    shared_weather_driver_id=weather_id,
+                ),
+                _component(
+                    f"pv-{scenario}-{year}",
+                    "pv",
+                    [0.0, -2.0, -3.0, 0.0],
+                    member_id=f"pv-member-{seed}",
+                    shared_weather_driver_id=weather_id,
+                ),
+            ],
+            metadata={"scenario": scenario, "year": year, "rho": rho, "seed": seed},
+        )
+
+
 def test_same_synthetic_inputs_give_deterministic_output() -> None:
     components = [
         _component("base-a", "baseline", [10.0, 11.0, 12.0, 13.0], member_id="simbench-a"),
@@ -79,6 +129,25 @@ def test_same_synthetic_inputs_give_deterministic_output() -> None:
     assert first.node_ids == second.node_ids
     assert first.component_provenance == second.component_provenance
     np.testing.assert_array_equal(first.p_net_kw, np.array([[11.0, 8.0, 9.0, 17.0]]))
+
+
+def test_net_load_provider_protocol_preserves_crn_and_member_traceability() -> None:
+    provider: NetLoadProvider = _SyntheticNetLoadProvider()
+
+    first = provider.get_net_load("synthetic", 2035, "full_year", rho=0.5, seed=17)
+    second = provider.get_net_load("synthetic", 2035, "full_year", rho=0.5, seed=17)
+    different_seed = provider.get_net_load("synthetic", 2035, "full_year", rho=0.5, seed=18)
+
+    np.testing.assert_array_equal(first.p_net_kw, second.p_net_kw)
+    np.testing.assert_array_equal(first.q_net_kvar, second.q_net_kvar)
+    np.testing.assert_array_equal(first.timestamps, second.timestamps)
+    assert first.component_provenance == second.component_provenance
+    assert first.shared_weather_driver_ids == ("weather-17",)
+    assert {item.member_id for item in first.component_provenance if item.kind == "ev"} == {"ev-member-17"}
+    assert different_seed.shared_weather_driver_ids == ("weather-18",)
+    assert not np.array_equal(first.p_net_kw, different_seed.p_net_kw)
+
+    validate_net_load_result(first)
 
 
 def test_mismatched_calendars_are_rejected() -> None:
