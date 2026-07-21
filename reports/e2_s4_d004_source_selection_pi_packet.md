@@ -1,6 +1,10 @@
 # E2.S4 D-004 Source-Selection PI Packet
 
-Status: proposed for PI review. No raw D-004 data has been downloaded, no checksum has been recorded for a concrete file, and Q-8/shared-weather implementation ownership remains open.
+Status: historical source-selection packet. The four-file D-004 retrieval was
+later approved and checksummed, and WEATHER-001 later resolved the
+shared-weather ownership question. This packet remains useful source-selection
+context; it does not by itself sign D-004 source acceptance, completeness
+checks, paired-weather acceptance, or any integrated analysis.
 
 ## Recommendation
 
@@ -61,7 +65,14 @@ Header-only checks on 2026-07-21 returned `200` for both KNMI ZIPs. Reported siz
 
 ## Guardrails
 
-PVGIS TMY remains calibration/validation reference material only and must not become an independently sampled realized weather path. Each accepted historical year must later become one complete chronological weather member with paired temperature and irradiance/global-radiation fields on the common UTC/local calendar. HP and PV must consume the same `member_id` and `shared_weather_driver_id` once Q-8 is resolved; this PR does not implement `src/weather_model.py` or `tests/test_weather_model.py`.
+PVGIS TMY remains calibration/validation reference material only and must not
+become an independently sampled realized weather path. Each accepted historical
+year must later become one complete chronological weather member with paired
+temperature and irradiance/global-radiation fields on the common UTC/local
+calendar. HP and PV must consume the same `member_id` and
+`shared_weather_driver_id` through WEATHER-001; this source-selection packet
+does not implement or validate `src/weather_model.py` or
+`tests/test_weather_model.py`.
 
 No D-004 DATA_REGISTER checksum update is made here because no raw file was downloaded and no concrete checksum exists. If the PI approves this packet, the next retrieval PR should download the four files, record SHA-256 metadata, validate completeness for 2014-2023, and update D-004 as proposed for PI acceptance.
 
