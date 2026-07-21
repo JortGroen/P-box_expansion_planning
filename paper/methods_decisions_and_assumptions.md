@@ -597,59 +597,44 @@ CBS-neighbourhood rows remain an unresolved retrieval limitation for this
 workflow revision.
 
 <!-- methods-id: EV-008 -->
-### EV-008 - Proposed Public Charge-Point Profile Protocol
+### EV-008 - Superseded Public Charge-Point Profile Protocol
 
-**Status: Proposed; no public generation authorized.** Public EV demand remains
-the missing behavior class after EV-004 fixed only the residential home
-charge-point library and EV-007/A-014 exposed local public charge-point counts.
-The proposed Set B protocol represents neighbourhood public charging with
-uncontrolled ElaadNL `cp` profiles, `location_type = public`, the generator's
-native car/van mixture, fixed `simulated_year = 2030`, 100 profiles per batch,
-candidate seeds `150001` through `150901` for `M = 1000`, and held-out seeds
-`151201` and `151301` for `H = 200`. The proposed public capacity is 22 kW per
-charge point, but this is the main PI review item rather than a signed value:
-the local public-count unit must be confirmed as compatible with one generated
-public charge-point member before any API request is made. The ElaadNL
-documentation distinguishes the profile unit from the physical pole convention
-by stating that public locations model two charge points sharing one pole
-connection; pole-level asset reporting or conversion must therefore preserve
-that two-charge-point convention. D-012 subsequently adds current NDW/DOT-NL
-Alkmaar inventory evidence: it supports a charge-point/EVSE/connector-like unit
-but shows that 22 kW is not the unique current-fleet representative, so the PI
-may either sign 22 kW as a deliberate future/upper-capacity convention or amend
-Set B before generation. If signed, public profiles would be sampled
-later through the same EV-003 direct empirical bootstrap and EV-005
-finite-library protocol as home profiles, keeping source-library size `M`
-separate from Monte Carlo count `N` and leaving the within-realization
-replacement rule pending until E2.S6 cohort sizes and E3.S2a adequacy criteria
-are resolved. This proposal does not authorize public smart charging,
-integrated net-load or event analysis, a claim that `M = 1000` is sufficient,
-or redistribution of generated profiles.
+**Status: Superseded by EV-008A.** EV-008 originally proposed one uncontrolled
+ElaadNL public `cp` profile library at 22 kW. That single-capacity design is no
+longer the approved primary public EV behavior route. The parts that survive
+are the public charge-point sampling unit, `location_type = public`, the native
+public car/van mixture, fixed `simulated_year = 2030`, ignored raw/processed
+storage, and the EV-003/EV-005 distinction between source-library size and
+Monte Carlo count. The reason for superseding the row is that D-012 supports a
+charge-point/EVSE/connector-like unit but does not support treating 22 kW as
+the unique current Alkmaar representative capacity. A single 22 kW public class
+may still be used later only as a clearly labelled future/upper-capacity
+sensitivity.
 
 <!-- methods-id: EV-008A -->
-### EV-008A - Proposed Public Set B Amendment Choice
+### EV-008A - Public Set B Capacity-Stratified Profile Protocol
 
-**Status: Proposed; no public generation authorized.** EV-008A records the PI
-choice exposed by the NDW/DOT-NL evidence in D-012. One admissible route is to
-approve the original 22 kW public Set B as a deliberate future or
-upper-capacity convention, using 10 candidate 100-profile API calls and two
-held-out 100-profile API calls. That route is simple and keeps one public
-source class, but it must not be described as the unique current Alkmaar
-representative capacity. The alternative is to amend Set B to a small
-capacity-stratified public library with 11, 13, 15, and 22 kW AC classes. Agent
-C recommends the stratified route because it preserves the same ElaadNL public
-`cp` unit, native car/van mix, fixed generator year 2030, uncontrolled status,
-and EV-003/EV-005 finite-library governance while representing the main current
-capacity groups observed in D-012. The proposed stratified design keeps
-candidate `M = 1000` across 10 100-profile candidate calls and uses four
-50-profile held-out calls for `H = 200`, subject to PI acceptance of the
-50-profile held-out request size; if 100-profile held-out calls are required,
-the held-out library would increase to 400 members. In either route, each
-member must remain traceable by partition, capacity class, batch seed, returned
-profile index, request checksum, raw and processed checksums, and control mode.
-EV-008A does not authorize profile generation, public smart charging, held-out
-adequacy use, integrated event analysis, or any claim that `M = 1000` is
-sufficient.
+**Status: Approved for source generation only.** EV-008A replaces the original
+single 22 kW public Set B proposal with a small capacity-stratified public
+library. Public charging is represented by uncontrolled ElaadNL public `cp`
+profiles with native `["van", "car"]` mixing, fixed `simulated_year = 2030`,
+and four AC capacity classes: 11, 13, 15, and 22 kW. The physical capacity mix
+used for public AC charge-point allocation is a simple equal split across those
+classes: 25% each. D-012 shows the observed Alkmaar AC groups are close enough
+that equal shares are clearer and more robust than overfitting the small
+snapshot differences. The balanced candidate public source library contains
+`M = 1200` members from twelve 100-profile API calls: 300 members per class.
+The balanced held-out public source library contains `H = 400` members from
+four 100-profile API calls: 100 members per class. Candidate seeds are
+`152001`, `152101`, `152201`; `152301`, `152401`, `152501`; `152601`, `152701`,
+`152801`; and `152901`, `153001`, `153101`. Held-out seeds are `153201`,
+`153301`, `153401`, and `153501`. Each member is identified by partition,
+capacity class, `cp_capacity_kw`, batch seed, returned profile index, request
+checksum, raw and processed checksums, and control mode. The approval
+authorizes only source generation and structural validation. It does not
+approve public smart charging, DC/fast charging, held-out adequacy use,
+integrated net-load or event analysis, manuscript results, or a claim that the
+generated `M` is sufficient.
 
 <!-- methods-id: COST-001 -->
 ### COST-001 - Indicative Reinforcement Costs
@@ -899,14 +884,15 @@ wrapper is recorded for audit only and is not a new retrieval.
 The Set A library manifest is
 `data/metadata/elaad_profiles/A_home_vancar_cp_y2030_set_a_library_manifest.json`;
 the source-level report is `reports/elaad_e2_s2_home_cp_library_report.md`.
-The proposed public Set B decision packet is recorded in
+The superseded public Set B decision packet is recorded in
 `data/metadata/elaad_profiles/B_public_vancar_cp_y2030_decision_packet.json`
 and `reports/e2_s2_public_profile_decision_packet.md`. The follow-up EV-008A
 amendment packet is recorded in
 `data/metadata/elaad_profiles/B_public_vancar_cp_y2030_amendment_packet.json`
-and `reports/e2_s2_ev008_public_profile_amendment_packet.md`; it compares a
-signed 22 kW convention with a capacity-stratified public design. Both public
-packets propose request metadata only and did not generate public profiles.
+and `reports/e2_s2_ev008_public_profile_amendment_packet.md`; it signs the
+equal-mix capacity-stratified public design for source generation and structural
+validation only. The public packets contain request metadata only and did not
+generate public profiles.
 Generated raw responses and converted local profile outputs remain
 uncommitted and unredistributed; committed artifacts are limited to
 retrieval/generation code, request configurations, seed schedules, metadata,
@@ -919,7 +905,8 @@ prohibition of this research use stops profile use pending PI escalation.
 <!-- methods-id: D-003 -->
 ### D-003 - Heat-Pump Profiles
 
-**Status: Proposed.** Temperature-dependent heat-pump demand is based on the
+**Status: Proposed for HP-001 internal shape/COP source use; final integrated
+HP acceptance pending.** Temperature-dependent heat-pump demand is based on the
 When2Heat dataset so heating behavior is tied to an openly documented empirical
 profile source rather than invented load shapes. Source retrieval, checksum,
 hourly-to-15-minute conversion, and COP treatment must be manifested before
@@ -932,9 +919,11 @@ the concrete SHA-256 after completion, and atomically promotes the file only
 after the download has completed. After PI approval to run the retrieval, Agent
 C downloaded `when2heat.csv` from the OPSD package URL on
 2026-07-21T09:12:33Z, producing a 328400976-byte local raw file with SHA-256
-`f1f71790158d1de08403eea32dea7a2732050870c499938135606d9d7faac0fa`; these
-facts are proposed for PI review and do not sign D-003 or authorize manuscript
-claims. The implemented E2.S3 parser treats
+`f1f71790158d1de08403eea32dea7a2732050870c499938135606d9d7faac0fa`. HP-001
+proposes this source for the first-pass Dutch residential space-heat shape and
+COP boundary, using `NL_heat_profile_space_SFH`,
+`NL_heat_profile_space_MFH`, and `NL_COP_ASHP_radiator`. The implemented
+E2.S3 parser treats
 selected When2Heat heat-profile columns as average MW per annual TWh and
 requires the annual TWh scaling for each component to be passed explicitly, so
 adoption or building-stock volumes are not hidden as defaults. The loader now
@@ -955,10 +944,10 @@ weather inputs that lack an aligned PV/irradiance weather field and records the
 PV weather field names in the heat-pump identity record; this is compatibility
 scaffolding for the future shared weather contract, not a final contract
 implementation. The heat-pump module does not sample weather independently or
-shuffle timesteps. Cold-period validation currently has only synthetic scaffold
-coverage; real D-003/paired-weather cold-spell acceptance remains pending
-shared weather contract resolution, a real paired-weather cold-spell check, and
-PI review.
+shuffle timesteps. Commercial heat, domestic hot-water heat, local annual HP
+scaling, D-004/Q-8 paired-weather implementation, numerical cold-spell
+tolerances, real paired-weather acceptance, integrated event analysis,
+capacity-screen evidence, and manuscript results remain separately blocked.
 
 <!-- methods-id: E2-S3-COLD-SPELL-ACCEPTANCE-DESIGN -->
 ### E2-S3-COLD-SPELL-ACCEPTANCE-DESIGN - Heat-Pump Cold-Spell And Paired-Weather Acceptance Design
@@ -978,32 +967,57 @@ tables linking temperature, HP load, COP, and PV irradiance. This paragraph and
 the design packet do not sign D-003, do not approve D-004, do not set numerical
 acceptance tolerances, do not run the check, and do not authorize net-load
 integration, event analysis, `P(E)`, capacity-screen evidence, manuscript
-claims, or any probability result. D-003 remains proposed until Q-8 is resolved,
-real D-004 weather members and checksums exist, PI-signed tolerances are
-recorded before inspection, the predeclared acceptance report is generated from
-committed code and source metadata, and the PI explicitly accepts or escalates
-the resulting evidence.
+claims, or any probability result. Final integrated D-003/D-004 acceptance
+remains pending until Q-8 is resolved, real D-004 weather members and checksums
+exist, PI-signed tolerances are recorded before inspection, the predeclared
+acceptance report is generated from committed code and source metadata, and the
+PI explicitly accepts or escalates the resulting evidence.
 
 <!-- methods-id: E2-S3-HP-TECH-SCALING-DECISION-PACKET -->
 ### E2-S3-HP-TECH-SCALING-DECISION-PACKET - Heat-Pump Technology And Scaling Decision Packet
 
-**Status: Proposed PI decision packet only.** The E2.S3 heat-pump technology
+**Status: Proposed PI decision packet.** The E2.S3 heat-pump technology
 and scaling packet organizes the unresolved choices that must be decided before
 real heat-pump integration: which Dutch When2Heat normalized shape columns are
 used for space and optional water heat, which COP columns define the HP
 technology and sink assumptions, whether SFH/MFH/COM classes remain separate,
 whether domestic water heating is included, and whether annual thermal scaling
 comes from When2Heat `heat_demand_*` evidence or from another registered
-source. The packet frames ASHP radiator and ASHP water COP columns as scaffold
-review defaults only, not as signed technology scenarios, and it keeps all
+source. The packet frames ASHP radiator and ASHP water COP columns as review
+defaults only, not as signed technology scenarios, and it keeps all
 annual TWh candidates as source-backed proposals rather than approved 2035,
 local, electric-demand, or manuscript values. It also records that Q-8 shared
-weather, concrete D-004 members, D-003/D-004 signoff, PI-signed cold-spell
-tolerances, and a real paired-weather acceptance report remain blocking before
-final E2.S3 acceptance. This paragraph and packet do not sign D-003 or D-004,
-do not set final numerical tolerances, do not run paired-weather acceptance,
-and do not authorize net-load integration, event analysis, `P(E)`,
+weather, concrete D-004 members, final D-004 signoff, PI-signed cold-spell
+tolerances, local annual HP scaling, and a real paired-weather acceptance
+report remain blocking before final E2.S3 acceptance. This paragraph and packet
+leave D-004 unsigned, do not set final numerical tolerances, do not run
+paired-weather acceptance, and do not authorize net-load integration, event
+analysis, `P(E)`,
 capacity-screen evidence, probability analysis, or manuscript-result claims.
+
+<!-- methods-id: HP-001 -->
+### HP-001 - Proposed First-Pass HP Source And Technology Boundary
+
+**Status: Proposed; pending explicit PI approval.** The recommended first full-analysis HP build uses a
+residential space-heating boundary rather than all heat represented in
+When2Heat. The proposed source/technology route uses Dutch normalized
+When2Heat space-heat profiles for single-family and multi-family houses
+(`NL_heat_profile_space_SFH` and `NL_heat_profile_space_MFH`) and converts
+thermal demand to electric demand using the air-source heat-pump radiator COP
+series (`NL_COP_ASHP_radiator`). SFH and MFH remain separate components until
+aggregation so their provenance, annual scaling, and any later omission or
+sensitivity remain visible. Commercial heat and domestic hot water are excluded
+from the primary run because they represent different service boundaries and
+would require separate annual-volume and COP decisions; they may be added later
+only as signed sensitivities. The national When2Heat `heat_demand_*` columns
+are retained as diagnostic/source anchors but are not adopted as the local 2035
+annual HP scaling by default. This keeps the first implementation aligned with
+the neighbourhood consumption-congestion story while preventing a country-level
+historical heat total from becoming an unreviewed local adoption assumption.
+If the PI approves HP-001, Agent C must still propose a local annual HP scaling
+or adoption route before real integrated HP load is used, and D-004/Q-8
+paired-weather acceptance, cold-spell tolerances, event analysis, `P(E)`, and
+manuscript results remain blocked.
 
 <!-- methods-id: D-004 -->
 ### D-004 - Weather and PV Inputs
@@ -1120,8 +1134,9 @@ June 2026, and licenses the site under CC BY-NC-ND 4.0. The committed config
 and metadata record exact query strings, UTC retrieval time, raw floating API
 values, nearest-integer rounded counts, and response checksums without
 redistributing raw dashboard data. The Alkmaar values remain proposed and
-non-executable until EV-007/Q-7 is signed. Public behavior profiles remain
-separately blocked by the Elaad profile-generation specification.
+non-executable until the local cluster and totals are separately accepted.
+Public behavior profiles remain
+separately governed by the EV-008A capacity-stratified generation protocol.
 
 <!-- methods-id: D-011 -->
 ### D-011 - II3050 Scenario Framing
@@ -1154,9 +1169,10 @@ charge-point/EVSE/connector-like unit rather than a pole, while exact `GM0361`
 municipality counts require a separate boundary join. The observed current
 connector-power distribution includes substantial 11 kW-ish, 13 kW, 15 kW, and
 22 kW-ish groups, so D-012 weakens any claim that 22 kW is the unique
-representative current Alkmaar public capacity. It instead frames the PI choice
-as either a signed future/upper-capacity convention or an amended
-capacity-stratified public profile design before EV-008 generation.
+representative current Alkmaar public capacity. It therefore supports the
+EV-008A choice to use an amended equal-mix capacity-stratified public profile
+design instead of treating 22 kW as the only current-fleet representative
+capacity.
 
 <!-- methods-id: OWN-001 -->
 ### OWN-001 - Machine-Enforced Agent Ownership
