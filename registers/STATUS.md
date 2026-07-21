@@ -20,7 +20,7 @@ Format: `Story | Owner | status | tasks | blocked-by | PR`
 | E2.S3 HP model | C | todo | 0/4 | E2.S1, ALEA-001 | -- |
 | E2.S4 PV model | C | todo | 0/3 | E2.S1, G0, ALEA-001 | -- |
 | E2.S5 Baseline & diversity | C | todo | 0/2 | E1.S3, ALEA-001 | -- |
-| E2.S6 Adoption scenarios | C | todo | 0/3 | E2.S1, EV-004 | -- |
+| E2.S6 Adoption scenarios | C | in-progress | 1/3 | Q-7 resolved by EV-007; representative CBS cluster selection, local home/public totals, and A-014 per-node allocation still pending | #39 |
 | E3.S1 Flexibility aggregator | A | todo | 0/3 | E2 models | -- |
 | E3.S2 IC-1 NetLoadProvider | A | todo | 0/4 | E3.S1, ALEA-001 | -- |
 | E3.S2a Integrated library adequacy | C | todo | 0/5 | E2.S2-E2.S6, E3.S2, ALEA-002, EV-005; resolve Q-5 before opening event-based held-out results | -- |

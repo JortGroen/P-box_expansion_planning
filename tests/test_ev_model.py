@@ -400,8 +400,8 @@ def _adoption_config() -> dict:
                     "public_charge_points": 5,
                     "provenance": {
                         "source_type": "local_grid",
-                        "home_charge_points": "Q-7-approved-local-home",
-                        "public_charge_points": "Q-7-approved-local-public",
+                        "home_charge_points": "EV-007-local-home",
+                        "public_charge_points": "EV-007-local-public",
                     },
                 },
                 {
@@ -411,8 +411,8 @@ def _adoption_config() -> dict:
                     "public_charge_points": 9,
                     "provenance": {
                         "source_type": "local_grid",
-                        "home_charge_points": "Q-7-approved-local-home",
-                        "public_charge_points": "Q-7-approved-local-public",
+                        "home_charge_points": "EV-007-local-home",
+                        "public_charge_points": "EV-007-local-public",
                     },
                 },
             ],
@@ -450,8 +450,9 @@ def test_committed_adoption_scenarios_config_validates() -> None:
     assert {item.status for item in proposed_local} == {"proposed_not_pi_signed"}
     assert all(item.area_identifier == "GM1705" for item in proposed_local)
     assert any(item.scenario == "middle" and item.location == "home" and item.rounded_count == 8418 for item in proposed_local)
-    assert config["local_grid_scenarios"]["status"] == "blocked"
-    with pytest.raises(ValueError, match="remain blocked until Q-7"):
+    assert config["local_grid_scenarios"]["status"] == "pending_local_cluster_selection"
+    assert config["allocation"]["status"] == "approved_after_local_totals"
+    with pytest.raises(ValueError, match="require EV-007 local totals"):
         adoption_scenarios(config)
 
 
@@ -464,20 +465,20 @@ def test_adoption_config_accepts_approved_status() -> None:
 
 
 def test_local_scenarios_reject_counts_until_status_approved() -> None:
-    for status in ("blocked", "proposed"):
+    for status in ("blocked", "proposed", "pending_local_cluster_selection"):
         config = _adoption_config()
         config["local_grid_scenarios"]["status"] = status
 
-        with pytest.raises(ValueError, match="only after their register status is approved"):
+        with pytest.raises(ValueError, match="only after local totals are approved"):
             validate_adoption_scenarios_config(config)
 
 
 def test_adoption_scenarios_rejects_unapproved_empty_local_status() -> None:
     config = _adoption_config()
-    config["local_grid_scenarios"]["status"] = "proposed"
+    config["local_grid_scenarios"]["status"] = "pending_local_cluster_selection"
     config["local_grid_scenarios"]["scenarios"] = []
 
-    with pytest.raises(ValueError, match="remain blocked until Q-7"):
+    with pytest.raises(ValueError, match="require EV-007 local totals"):
         adoption_scenarios(config)
 
 
@@ -505,7 +506,7 @@ def test_proposed_local_counts_are_not_executable_adoption_scenarios() -> None:
     proposed = proposed_local_charge_point_counts(config)
 
     assert [item.rounded_count for item in proposed if item.location == "home"] == [8, 9, 10]
-    with pytest.raises(ValueError, match="remain blocked until Q-7"):
+    with pytest.raises(ValueError, match="require EV-007 local totals"):
         adoption_scenarios(config)
 
 
@@ -526,7 +527,7 @@ def test_proposed_local_count_workflow_rejects_country_queries_and_bad_status() 
 def test_blocked_committed_local_scenarios_cannot_allocate() -> None:
     config = load_adoption_scenarios_config(Path("configs/scenarios.yaml"))
 
-    with pytest.raises(ValueError, match="blocked until Q-7"):
+    with pytest.raises(ValueError, match="require EV-007 local totals"):
         adoption_node_allocations(config)
 
 
@@ -534,7 +535,7 @@ def test_unapproved_allocation_status_cannot_allocate() -> None:
     config = _adoption_config()
     config["allocation"]["status"] = "proposed"
 
-    with pytest.raises(ValueError, match="A-014 is approved"):
+    with pytest.raises(ValueError, match="approved A-014 allocation"):
         adoption_node_allocations(config)
 
 

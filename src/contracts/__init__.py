@@ -9,10 +9,26 @@ from src.contracts.loading_trajectory import (
     TimeDomain,
     validate_loading_trajectory_result,
 )
+from src.contracts.net_load import (
+    ComponentKind,
+    ComponentProvenance,
+    NetLoadComponent,
+    NetLoadProvider,
+    NetLoadResult,
+    build_net_load_result,
+    validate_net_load_result,
+)
 
 __all__ = [
+    "ComponentKind",
+    "ComponentProvenance",
     "LoadingTrajectoryResult",
+    "NetLoadComponent",
+    "NetLoadProvider",
+    "NetLoadResult",
     "TimeDomain",
+    "build_net_load_result",
     "validate_loading_trajectory_result",
+    "validate_net_load_result",
 ]
 

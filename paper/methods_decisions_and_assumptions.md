@@ -245,6 +245,14 @@ not resolve Q-5, total-versus-firm capacity, G2 error values, or numerical
 A-013 grid-error values; those remain blocking dependencies for paper-facing
 event results.
 
+The E5.S3 T2-T4 scaffold implements this approved endpoint propagation using
+synthetic loading trajectories only. It composes the additive Tier-1 and
+relative grid-error endpoints on complete loading trajectories, preserves the
+unwidened active-power direction gate, and counts lower and upper endpoint
+events before estimating probabilities and confidence intervals. The scaffold
+does not introduce a signed A-013 value or authorize integrated event results
+while Q-5, G2, A-013, and capacity-provenance dependencies remain unresolved.
+
 <!-- methods-id: RNG-001 -->
 ### RNG-001 - Seed-Tree and CRN Identity Protocol
 
@@ -503,25 +511,27 @@ speed, pooling option, or mapping to the uncertain controllability factor; those
 choices require separate approval and monotonicity testing.
 
 <!-- methods-id: EV-007 -->
-### EV-007 - Proposed Local EV Adoption Count Basis
+### EV-007 - Local EV Adoption Scaling Route
 
-**Status: Proposed; pending PI sign-off and Q-7 resolution.** The first local
-EV adoption-count route uses Q-7 Option A: select a representative CBS-area
-cluster by exogenous area and feeder-scale criteria before inspecting
-integrated congestion results, then derive the 2035 home and public physical
-charge-point totals from ElaadNL Outlook local forecast outputs for that
-cluster. This PR proposes Lingewaard (`GM1705`) as a municipality-level cluster
-in Gelderland/Liander/Oost, recording it as a review candidate rather than a
-settled SimBench analogue. The live Outlook municipality endpoint returned
-2035 low/middle/high home and public local charge-point counts for this
-cluster, while the neighbourhood-list proxy returned HTTP 500 during the
-session; therefore individual CBS-neighbourhood rows remain inaccessible from
-this workflow revision. The proposed counts are kept in a review-only config
-section and may not drive adoption scenarios, A-014 nodal allocation, EV-005
-replacement decisions, E3.S2a adequacy tests, or integrated event/congestion
-analysis until the PI signs EV-007/Q-7. If the PI rejects the municipality
-cluster or requires neighbourhood-level rows, the local-count workflow must be
-revised before any executable EV adoption layer is produced.
+**Status: Approved.** Local SimBench-grid home and public charge-point totals
+are derived from a predeclared representative CBS neighbourhood cluster using
+ElaadNL local forecast outputs, not by applying national Outlook totals
+directly to the benchmark grid. The cluster is selected by exogenous area and
+feeder-scale criteria before congestion results are inspected, so the adoption
+layer cannot be tuned after seeing whether the case overloads. National D-010
+values remain provenance and scenario context only. A-014 is used only after
+local totals exist, as the second-stage rule that distributes those totals
+across benchmark load nodes. If local forecast retrieval or justification
+fails, a national-adoption-rate scaling with separately sourced local
+denominators remains a fallback or sensitivity rather than the primary route.
+This PR proposes Lingewaard (`GM1705`) as a municipality-level implementation
+candidate and records 2035 low/middle/high home and public local Outlook counts
+for PI review. Those cluster/count values remain review-only and may not drive
+adoption scenarios, A-014 nodal allocation, EV-005 replacement decisions,
+E3.S2a adequacy tests, or integrated event/congestion analysis until the PI
+accepts the selected cluster and local totals. The live neighbourhood-list
+proxy returned HTTP 500 during this session, so individual CBS-neighbourhood
+rows remain an unresolved retrieval limitation for this workflow revision.
 
 <!-- methods-id: COST-001 -->
 ### COST-001 - Indicative Reinforcement Costs
@@ -697,20 +707,18 @@ results may describe the protocol and sensitivity scenarios but may not call
 <!-- methods-id: A-014 -->
 ### A-014 - EV Adoption Allocation Across Benchmark Load Nodes
 
-**Status: Proposed; blocks integrated EV adoption use until PI resolution of
-Q-7/EV-007.** A-014 is narrowed to a possible second-stage allocation rule only. After
-EV-007/Q-7 establishes signed local SimBench-grid home and public charge-point totals, the
-project may distribute those local totals across the 115 in-service `net.load`
-rows in proportion to each row's static active load `p_mw`. Fractional
-allocations are converted to physical nonnegative integer counts by
-largest-remainder rounding, with ties resolved by node ID for deterministic
-reruns. The rule must not be applied directly to the national ElaadNL Outlook
-totals recorded under D-010 or to the proposed Lingewaard cluster values before
-PI sign-off. Home local totals, public local totals, and the resulting EV-005
-per-node `K_r` ranges remain blocked until the PI signs a local scaling method,
-such as the proposed predeclared CBS-area cluster from ElaadNL local forecasts,
-or a sourced household/service-area denominator with a separate public-charging
-basis.
+**Status: Approved for second-stage use after EV-007 local totals are
+established.** A-014 is a within-grid allocation rule only. Once E2.S6 derives
+approved local SimBench-grid home and public charge-point totals from the
+EV-007 CBS neighbourhood-cluster route, the project distributes each local
+total across the 115 in-service `net.load` rows in proportion to each row's
+static active load `p_mw`. Fractional allocations are converted to physical
+nonnegative integer counts by largest-remainder rounding, with ties resolved by
+node ID for deterministic reruns. The rule must not be applied directly to the
+national ElaadNL Outlook totals recorded under D-010, and it does not itself
+select the local cluster or approve public-charging behavior profiles. The
+proposed Lingewaard values in the current workflow are not allocated until the
+PI accepts them as local totals.
 
 ## Data and Evidence Choices
 
@@ -785,9 +793,26 @@ prohibition of this research use stops profile use pending PI escalation.
 When2Heat dataset so heating behavior is tied to an openly documented empirical
 profile source rather than invented load shapes. Source retrieval, checksum,
 hourly-to-15-minute conversion, and COP treatment must be manifested before
-use. Cold-period validation checks that demand peaks under physically plausible
-temperature conditions and that temporal downscaling does not manufacture
-additional energy.
+use. The implemented E2.S3 parser treats selected When2Heat heat-profile
+columns as average MW per annual TWh and requires the annual TWh scaling for
+each component to be passed explicitly, so adoption or building-stock volumes
+are not hidden as defaults. Each component is divided by its matching When2Heat
+COP column before aggregation, preserving distinct COP treatment for space and
+water heating where those columns are selected. Hourly source values are
+downscaled to 15 minutes by repeating the average-power value into four
+quarter-hour intervals, which preserves energy and does not interpolate new
+peaks. The resulting profile must match the externally supplied shared
+weather/PV member on the canonical 15-minute UTC calendar, preserving
+`shared_weather_driver_id`, `member_id`, source, optional local calendar, and
+provenance or metadata so HP and PV outputs can be audited as products of the
+same weather realization. The HP scaffold also rejects weather inputs that lack
+an aligned PV/irradiance weather field and records the PV weather field names
+in the heat-pump identity record; this is compatibility scaffolding for the
+future shared weather contract, not a final contract implementation. The heat-pump module does not sample weather
+independently or shuffle timesteps. Cold-period validation currently has only
+synthetic scaffold coverage; real D-003/paired-weather cold-spell acceptance
+remains pending concrete file selection, shared weather contract resolution,
+and PI review.
 
 <!-- methods-id: D-004 -->
 ### D-004 - Weather and PV Inputs
