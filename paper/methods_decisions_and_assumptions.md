@@ -626,6 +626,31 @@ are resolved. This proposal does not authorize public smart charging,
 integrated net-load or event analysis, a claim that `M = 1000` is sufficient,
 or redistribution of generated profiles.
 
+<!-- methods-id: EV-008A -->
+### EV-008A - Proposed Public Set B Amendment Choice
+
+**Status: Proposed; no public generation authorized.** EV-008A records the PI
+choice exposed by the NDW/DOT-NL evidence in D-012. One admissible route is to
+approve the original 22 kW public Set B as a deliberate future or
+upper-capacity convention, using 10 candidate 100-profile API calls and two
+held-out 100-profile API calls. That route is simple and keeps one public
+source class, but it must not be described as the unique current Alkmaar
+representative capacity. The alternative is to amend Set B to a small
+capacity-stratified public library with 11, 13, 15, and 22 kW AC classes. Agent
+C recommends the stratified route because it preserves the same ElaadNL public
+`cp` unit, native car/van mix, fixed generator year 2030, uncontrolled status,
+and EV-003/EV-005 finite-library governance while representing the main current
+capacity groups observed in D-012. The proposed stratified design keeps
+candidate `M = 1000` across 10 100-profile candidate calls and uses four
+50-profile held-out calls for `H = 200`, subject to PI acceptance of the
+50-profile held-out request size; if 100-profile held-out calls are required,
+the held-out library would increase to 400 members. In either route, each
+member must remain traceable by partition, capacity class, batch seed, returned
+profile index, request checksum, raw and processed checksums, and control mode.
+EV-008A does not authorize profile generation, public smart charging, held-out
+adequacy use, integrated event analysis, or any claim that `M = 1000` is
+sufficient.
+
 <!-- methods-id: COST-001 -->
 ### COST-001 - Indicative Reinforcement Costs
 
@@ -876,8 +901,12 @@ The Set A library manifest is
 the source-level report is `reports/elaad_e2_s2_home_cp_library_report.md`.
 The proposed public Set B decision packet is recorded in
 `data/metadata/elaad_profiles/B_public_vancar_cp_y2030_decision_packet.json`
-and `reports/e2_s2_public_profile_decision_packet.md`; it proposes request
-metadata only and did not generate public profiles.
+and `reports/e2_s2_public_profile_decision_packet.md`. The follow-up EV-008A
+amendment packet is recorded in
+`data/metadata/elaad_profiles/B_public_vancar_cp_y2030_amendment_packet.json`
+and `reports/e2_s2_ev008_public_profile_amendment_packet.md`; it compares a
+signed 22 kW convention with a capacity-stratified public design. Both public
+packets propose request metadata only and did not generate public profiles.
 Generated raw responses and converted local profile outputs remain
 uncommitted and unredistributed; committed artifacts are limited to
 retrieval/generation code, request configurations, seed schedules, metadata,
