@@ -68,3 +68,9 @@ DID: Routed `src/pbox.py` sample derivation through the canonical `src.rng.sampl
 VERIFIED: Focused p-box tests passed: `.\.venv\Scripts\python.exe -m pytest tests/test_pbox.py` reported 11 tests green. `.\scripts\task.ps1 ownership` passed for Agent B with 4 authorized changed paths. `.\scripts\task.ps1 test` passed: 132 tests green in 149.14s. `git diff --check` passed.
 OPEN: No scientific values, confidence intervals, p-box mathematics, thresholds, or experiments changed. G3 remains required before E5.S2 can be used for paper results.
 NEXT: Open the scoped RNG-001 follow-up PR.
+
+## 2026-07-20 20:05 — E4.S2 — review
+DID: Created stacked branch `agent-b/E4.S2-interior-fallback` on the locally combined DFMP/RNG history and added `src/pbox_interior.py` as a deterministic interior alpha-cut fallback scaffold. The scaffold scans rho candidates within each alpha-cut, reuses canonical RNG-001 sample seeds for every candidate, and reports alpha-indexed lower/upper p-box bounds without assuming G3 has passed.
+VERIFIED: Focused `.\.venv\Scripts\python.exe -m pytest tests/test_pbox.py tests/test_pbox_interior.py` passed: 15 tests green in 0.67s. `.\scripts\task.ps1 ownership` passed for Agent B with 10 authorized changed paths. Full `.\scripts\task.ps1 test` passed: 153 tests green in 66.55s. `git diff --check` passed.
+OPEN: G3 still determines whether endpoint-only propagation is accepted or this interior path is activated. No scientific result claims, thresholds, seed policy changes, or Agent A/C-owned modules were touched.
+NEXT: Push the stacked branch without marking it merge-ready against main.

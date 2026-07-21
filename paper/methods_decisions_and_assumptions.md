@@ -308,7 +308,13 @@ corrected Tier-1, selective AC, or rejection of Tier-1.
 **Status: Pending gate.** No vertex-shortcut claim is authorized yet. The final
 paragraph must report the dense controllability sweep, tested regime, numerical
 tolerance, any counterexamples, and whether endpoint propagation or interior
-sampling is required.
+sampling is required. The E4.S2 scaffold provides a deterministic interior
+alpha-cut sampling path for synthetic validation and possible activation if G3
+rejects endpoint-only propagation. It reuses the same canonical sample
+identities for every rho candidate within an alpha-cut and reports only
+alpha-indexed lower and upper probability bounds; it does not produce or
+authorize paper-facing probability results before G3 and the downstream event
+dependencies are resolved.
 
 <!-- methods-id: G4 -->
 ### G4 - Fuzzy Controllability Elicitation
