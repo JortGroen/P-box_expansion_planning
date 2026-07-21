@@ -296,6 +296,48 @@ def test_committed_weather_pv_execution_plan_records_no_real_data_acceptance() -
     )
 
 
+def test_committed_d004_source_selection_packet_is_proposal_only() -> None:
+    packet_path = Path("data/metadata/weather_pv/d004_source_selection_pi_packet.json")
+    payload = json.loads(packet_path.read_text(encoding="utf-8"))
+    selection = payload["proposed_selection"]
+
+    assert payload["data_id"] == "D-004"
+    assert payload["download_performed"] is False
+    assert selection["selection_id"] == "d004_alkmaar_berkhout_2014_2023_v1"
+    assert selection["status"] == "proposed_not_pi_signed"
+    assert "Q-8 open" in selection["shared_weather_status"]
+    assert payload["long_run_notice_required_for_next_step"] is False
+    assert "LONG-RUN NOTICE" in payload["long_run_notice_text_if_scope_expands"]
+
+
+def test_committed_d004_source_selection_packet_pins_sources_and_guards_tmy() -> None:
+    payload = json.loads(Path("data/metadata/weather_pv/d004_source_selection_pi_packet.json").read_text(encoding="utf-8"))
+    pvgis = payload["pvgis"]
+    knmi = payload["knmi"]
+
+    assert pvgis["site"]["area_identifier"] == "GM0361"
+    assert pvgis["site"]["latitude"] == pytest.approx(52.63167)
+    assert pvgis["site"]["longitude"] == pytest.approx(4.74861)
+    assert pvgis["radiation_database"] == "PVGIS-SARAH3"
+    assert "not a realized weather path" in pvgis["use_boundary"]
+    assert {request["role"] for request in pvgis["requests"]} == {
+        "hourly_series_reference",
+        "typical_year_reference",
+    }
+
+    assert knmi["primary_source_proposal"] == "validated_hourly_station_zips"
+    assert knmi["station"]["station_id"] == 249
+    assert knmi["station"]["station_name"] == "Berkhout"
+    assert knmi["year_range"] == {
+        "first_year": 2014,
+        "last_year": 2023,
+        "filter_rule": "download the two decade ZIP files, then extract/filter only complete calendar years 2014-2023 for accepted members",
+    }
+    assert [source["head_content_length_bytes"] for source in knmi["files"]] == [1_536_802, 838_086]
+    assert all(source["target_path"].startswith("data/raw/weather_pv/knmi/") for source in knmi["files"])
+    assert any(question["id"] == "D004-Q4" for question in payload["approval_questions"])
+
+
 def test_record_local_weather_pv_file_records_checksum_without_register_update(tmp_path: Path) -> None:
     source = tmp_path / "knmi_sample.nc"
     source.write_bytes(b"sample weather bytes")
