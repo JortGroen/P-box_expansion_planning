@@ -198,12 +198,13 @@ def test_load_when2heat_csv_uses_component_cop_columns(tmp_path: Path) -> None:
     pd.DataFrame(
         {
             "utc_timestamp": [item.isoformat().replace("+00:00", "Z") for item in _hourly_timestamps(2)],
+            "cet_cest_timestamp": ["2025-01-01T01:00:00+0100", "2025-01-01T02:00:00+0100"],
             "NL_heat_profile_space_SFH": [2.0, 4.0],
             "NL_COP_ASHP_radiator": [2.0, 4.0],
             "NL_heat_profile_water_SFH": [1.0, 1.0],
             "NL_COP_ASHP_water": [2.0, 2.0],
         }
-    ).to_csv(path, index=False)
+    ).to_csv(path, index=False, sep=";", decimal=",")
     components = (
         When2HeatComponent("NL_heat_profile_space_SFH", "NL_COP_ASHP_radiator", 0.5),
         When2HeatComponent("NL_heat_profile_water_SFH", "NL_COP_ASHP_water", 1.0),
@@ -215,6 +216,42 @@ def test_load_when2heat_csv_uses_component_cop_columns(tmp_path: Path) -> None:
     assert np.allclose(profile.electric_kw, [1000.0, 1000.0])
     assert np.allclose(profile.cop, [2.0, 3.0])
     assert profile.source_path == path.as_posix()
+    assert profile.source_metadata is not None
+    assert profile.source_metadata.csv_separator == ";"
+    assert profile.source_metadata.decimal == ","
+    assert profile.source_metadata.heat_profile_unit == "MW_per_annual_TWh"
+    assert profile.source_metadata.cop_unit == "dimensionless"
+    assert profile.source_metadata.selected_heat_columns == (
+        "NL_heat_profile_space_SFH",
+        "NL_heat_profile_water_SFH",
+    )
+    assert profile.source_metadata.selected_cop_columns == (
+        "NL_COP_ASHP_radiator",
+        "NL_COP_ASHP_water",
+    )
+    assert profile.source_metadata.first_timestamp_local == "2025-01-01T01:00:00+0100"
+    assert profile.source_metadata.last_timestamp_local == "2025-01-01T02:00:00+0100"
+    assert profile.source_metadata.n_rows_loaded == 2
+
+
+def test_load_when2heat_csv_can_sample_retrieved_real_file_if_available() -> None:
+    path = Path("data/raw/when2heat/when2heat.csv")
+    if not path.exists():
+        pytest.skip("ignored D-003 raw When2Heat CSV is not present in this checkout")
+    components = (
+        When2HeatComponent("NL_heat_profile_space_SFH", "NL_COP_ASHP_radiator", 1.0),
+        When2HeatComponent("NL_heat_profile_water_SFH", "NL_COP_ASHP_water", 1.0),
+    )
+
+    profile = load_when2heat_hourly_csv(path, components=components, nrows=3)
+
+    assert len(profile.timestamps_utc) == 3
+    assert profile.timestamps_utc[0] == datetime(2007, 12, 31, 22, tzinfo=UTC)
+    assert np.all(profile.thermal_demand_kw >= 0)
+    assert np.all(profile.electric_kw >= 0)
+    assert profile.source_metadata is not None
+    assert profile.source_metadata.n_rows_loaded == 3
+    assert profile.source_metadata.first_timestamp_local == "2007-12-31T23:00:00+0100"
 
 
 def test_default_components_make_space_and_water_cop_mapping_explicit() -> None:
@@ -309,10 +346,11 @@ def test_build_heat_pump_profile_from_csv_requires_supplied_weather(tmp_path: Pa
     pd.DataFrame(
         {
             "utc_timestamp": [datetime(2025, 1, 1, tzinfo=UTC).isoformat().replace("+00:00", "Z")],
+            "cet_cest_timestamp": ["2025-01-01T01:00:00+0100"],
             "NL_heat_profile_space_SFH": [3.0],
             "NL_COP_ASHP_radiator": [3.0],
         }
-    ).to_csv(path, index=False)
+    ).to_csv(path, index=False, sep=";", decimal=",")
     weather = _shared_weather(
         member_id="weather-member-1",
         timestamps_utc=_quarter_timestamps(4),
@@ -328,6 +366,8 @@ def test_build_heat_pump_profile_from_csv_requires_supplied_weather(tmp_path: Pa
     assert np.allclose(profile.electric_kw, [1000.0] * 4)
     assert profile.weather_member_id == "weather-member-1"
     assert profile.shared_weather_driver_id == weather.shared_weather_driver_id
+    assert profile.source_metadata["csv_separator"] == ";"
+    assert profile.source_metadata["selected_heat_columns"] == ("NL_heat_profile_space_SFH",)
 
 
 def test_cold_week_sanity_peak_coincides_with_cold_spell() -> None:
