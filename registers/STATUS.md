@@ -21,7 +21,7 @@ Format: `Story | Owner | status | tasks | blocked-by | PR`
 | E2.S4 PV model | C | todo | 0/3 | E2.S1, G0, ALEA-001 | -- |
 | E2.S5 Baseline & diversity | C | todo | 0/2 | E1.S3, ALEA-001 | -- |
 | E2.S6 Adoption scenarios | C | todo | 0/3 | E2.S1, EV-004 | -- |
-| E3.S1 Flexibility aggregator | A | review | scaffold/3 | E2 models for integration; Q-5 before event-based use | stacked on #42; PR pending |
+| E3.S1 Flexibility aggregator | A | review | scaffold/3 | E2 models for integration; Q-5 before event-based use | stacked on #42; #45 draft |
 | E3.S2 IC-1 NetLoadProvider | A | todo | 0/4 | E3.S1, ALEA-001 | -- |
 | E3.S2a Integrated library adequacy | C | todo | 0/5 | E2.S2-E2.S6, E3.S2, ALEA-002, EV-005; resolve Q-5 before opening event-based held-out results | -- |
 | E3.S2b Future-layer capacity and domain screen | A | todo | 0/5 | E0.S3b, E2.S2-E2.S6, E3.S1-E3.S2a; Q-5 before threshold-based run | -- |
