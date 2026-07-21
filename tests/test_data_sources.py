@@ -18,8 +18,11 @@ from data.get_elaad_profiles import (
     _shape_report,
     build_batch_request,
     build_library_plan,
+    build_public_set_b_plan,
     build_probe_request,
     run_set_a_library_batch,
+    write_public_set_b_library_manifest,
+    write_public_set_b_plan,
     write_set_a_library_manifest,
     write_authorized_set_a_artifacts_from_raw,
     write_library_plan,
@@ -229,6 +232,70 @@ def test_elaad_library_plan_metadata_is_non_redistribution_boundary() -> None:
         batch["raw_response_path"].startswith("data/raw/elaad_profiles/")
         for batch in payload["batches"]
     )
+
+
+def test_public_set_b_plan_matches_ev008a_equal_mix_decision() -> None:
+    plan = build_public_set_b_plan()
+    seeds = [batch.seed for batch in plan]
+
+    assert len(plan) == 16
+    assert len(seeds) == len(set(seeds))
+    assert all(batch.set_id == "B" for batch in plan)
+    assert all(batch.profile_type == "cp" for batch in plan)
+    assert all(batch.location_type == "public" for batch in plan)
+    assert all(batch.vehicle_types == ["van", "car"] for batch in plan)
+    assert all(batch.simulated_year == 2030 for batch in plan)
+    assert all(batch.n_profiles == 100 for batch in plan)
+    assert [batch.seed for batch in plan if batch.partition == "candidate"] == [
+        152001,
+        152101,
+        152201,
+        152301,
+        152401,
+        152501,
+        152601,
+        152701,
+        152801,
+        152901,
+        153001,
+        153101,
+    ]
+    assert [batch.seed for batch in plan if batch.partition == "held_out"] == [
+        153201,
+        153301,
+        153401,
+        153501,
+    ]
+    per_capacity = {
+        capacity: sum(
+            batch.n_profiles
+            for batch in plan
+            if batch.partition == "candidate" and batch.cp_capacity_kw == capacity
+        )
+        for capacity in {11, 13, 15, 22}
+    }
+    assert per_capacity == {11: 300, 13: 300, 15: 300, 22: 300}
+
+
+def test_public_set_b_plan_metadata_records_non_actions(tmp_path: Path) -> None:
+    path = write_public_set_b_plan(tmp_path)
+    payload = json.loads(path.read_text(encoding="utf-8"))
+
+    assert payload["status"] == "ev008a-approved-request-metadata-only"
+    assert payload["bulk_generation_performed"] is False
+    assert payload["policy"]["decision"] == "EV-008A"
+    assert payload["policy"]["candidate_M"] == 1200
+    assert payload["policy"]["held_out_H"] == 400
+    assert payload["policy"]["public_smart_charging"] is False
+    assert payload["policy"]["dc_or_fast_charging"] is False
+    assert payload["policy"]["m_sufficiency_claimed"] is False
+    assert {batch["capacity_class"] for batch in payload["batches"]} == {
+        "public_11kw",
+        "public_13kw",
+        "public_15kw",
+        "public_22kw",
+    }
+    assert all(batch["request_sha256"] for batch in payload["batches"])
 
 
 def test_elaad_shape_report_records_runtime_sizes_and_adequacy_boundary() -> None:
@@ -573,6 +640,78 @@ def test_elaad_library_manifest_records_held_out_isolation(tmp_path: Path) -> No
     report = (tmp_path / "reports" / "elaad_e2_s2_home_cp_library_report.md").read_text(encoding="utf-8")
     assert "quarantined precriterion diagnostics" in report
     assert "They were not opened for adequacy analysis" in report
+
+
+def test_public_set_b_library_manifest_records_equal_mix_and_blocks_adequacy(
+    tmp_path: Path,
+) -> None:
+    def manifest(batch: ProfileBatch) -> Path:
+        path = tmp_path / "metadata" / f"{batch.storage_stem}_manifest.json"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        payload = {
+            "set_id": "B",
+            "purpose": batch.purpose,
+            "library_partition": batch.partition,
+            "capacity_class": batch.purpose.split("_equal_mix")[0],
+            "request_json": build_batch_request(batch),
+            "request_sha256": "a" * 64,
+            "raw_response": {
+                "path": f"data/raw/elaad_profiles/{batch.storage_stem}.json.gz",
+                "sha256_gzip_file": f"raw-{batch.seed}",
+                "sha256_uncompressed_json": f"json-{batch.seed}",
+            },
+            "processed_profiles": {
+                "path": f"data/processed/elaad_profiles/{batch.storage_stem}.npz",
+                "sha256_file": f"processed-{batch.seed}",
+            },
+            "response_shape_summary": {
+                "n_timesteps": 35040,
+                "n_profiles": 100,
+                "distinct_member_count": 100,
+                "missing_or_nonfinite_values": 0,
+                "negative_values": 0,
+            },
+            "seed_semantics_observed": {"smart_pair_order_verified": False},
+        }
+        path.write_text(json.dumps(payload), encoding="utf-8")
+        return path
+
+    paths = [manifest(batch) for batch in build_public_set_b_plan()]
+
+    library_manifest = write_public_set_b_library_manifest(
+        metadata_dir=tmp_path / "metadata",
+        reports_dir=tmp_path / "reports",
+        command_wall_time_s=3.5,
+        batch_manifest_paths=paths,
+    )
+
+    payload = json.loads(library_manifest.read_text(encoding="utf-8"))
+    assert payload["candidate_member_count"] == 1200
+    assert payload["held_out_member_count"] == 400
+    assert payload["candidate_members_per_class"] == {
+        "public_11kw": 300,
+        "public_13kw": 300,
+        "public_15kw": 300,
+        "public_22kw": 300,
+    }
+    assert payload["held_out_members_per_class"] == {
+        "public_11kw": 100,
+        "public_13kw": 100,
+        "public_15kw": 100,
+        "public_22kw": 100,
+    }
+    assert payload["policy"]["public_profiles_generated"] is True
+    assert payload["policy"]["public_smart_profiles_generated"] is False
+    assert payload["policy"]["dc_or_fast_profiles_generated"] is False
+    assert payload["policy"]["integrated_analysis_performed"] is False
+    assert payload["policy"]["m_sufficiency_claimed"] is False
+    assert payload["held_out_unopened_for_adequacy"] is True
+    report = (tmp_path / "reports" / "elaad_e2_s2_public_set_b_library_report.md").read_text(
+        encoding="utf-8"
+    )
+    assert "EV-008A source generation only" in report
+    assert "does not inspect held-out adequacy" in report
+    assert "M sufficiency claimed: False" in report
 
 
 def test_data_entrypoints_run_directly() -> None:

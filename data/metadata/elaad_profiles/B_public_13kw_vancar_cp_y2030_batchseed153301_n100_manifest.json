@@ -1,0 +1,142 @@
+{
+  "api_docs_url": "https://api.charging.data.elaad.nl/docs#",
+  "api_docs_version_info": {
+    "live_api_version_header": null,
+    "local_documentation_version": "Documentatie Laadprofielengenerator, ElaadNL, 10 November 2025",
+    "outlook_basis": "Outlook Personenauto's 2024; Outlook Logistiek 2025",
+    "server_header": "uvicorn"
+  },
+  "api_runtime_note": "Measured around the HTTPS POST only.",
+  "api_runtime_s": 60.09098950000043,
+  "api_url": "https://api.charging.data.elaad.nl/profile/simulate",
+  "authorized_generation_scope": "EV-008A Set B public capacity-stratified charge-point batch; uncontrolled public profiles only; no smart-control or DC/fast profiles.",
+  "bulk_generation_performed": true,
+  "capacity_class": "public_13kw",
+  "cp_capacity_kw": 13,
+  "dashboard_url": "https://charging.elaad.nl/",
+  "data_id": "D-002",
+  "held_out_policy": {
+    "adequacy_use_allowed": false,
+    "note": "Held-out batches are archived and source-validated only; they remain unopened for adequacy analysis until E3.S2a freezes the downstream criterion.",
+    "partition": "held_out"
+  },
+  "library_partition": "held_out",
+  "manifest_type": "elaad_profile_batch",
+  "only_authorized_batch_generated": false,
+  "policy": {
+    "commit_generated_profiles": false,
+    "data_availability": "Readers regenerate through the public API subject to terms applicable at retrieval time.",
+    "dc_or_fast_charging_generated": false,
+    "decision": "EV-002",
+    "internal_project_computation": true,
+    "public_smart_charging_generated": false,
+    "redistribute_generated_profiles": false,
+    "scientific_decisions": [
+      "EV-003",
+      "EV-005",
+      "EV-008A"
+    ],
+    "stop_condition": "If explicit terms later prohibit this research use, stop and escalate."
+  },
+  "processed_profiles": {
+    "commit_status": "ignored; not committed or redistributed",
+    "format": "npz",
+    "path": "data/processed/elaad_profiles/B_public_13kw_vancar_cp_y2030_batchseed153301_n100.npz",
+    "sha256_file": "b8383846fd67aa3863b50982d6f340241b011c09c2399b8b75f28c04e858787d",
+    "size_bytes": 951499
+  },
+  "purpose": "public_13kw_equal_mix_public_cp_library",
+  "raw_response": {
+    "path": "data/raw/elaad_profiles/B_public_13kw_vancar_cp_y2030_batchseed153301_n100.json.gz",
+    "sha256_gzip_file": "087ad81e994d9724db5d9a192e949c6c47dedcdcec6592b8eecba2f9c18e14f2",
+    "sha256_uncompressed_json": "52e1ae073e1082e5068a1a886e52ee730a9698e51a83be7b7b9e25204cc8ae12",
+    "size_bytes": 950490
+  },
+  "reconstructed_from_saved_raw_response": false,
+  "request_json": {
+    "cp_capacity_kw": 13,
+    "location_type": "public",
+    "n_profiles": 100,
+    "profile_type": "cp",
+    "seed": 153301,
+    "simulated_year": 2030,
+    "start_datetime": "2025-01-01T00:00:00+01:00",
+    "step_size_s": 900,
+    "stop_datetime": "2026-01-01T00:00:00+01:00",
+    "timezone": "CET",
+    "vehicle_types": [
+      "van",
+      "car"
+    ]
+  },
+  "request_sha256": "ead7bb788281f4e119363ddfcbe495cdeba0e298f56eaf35dcf513ee921741fa",
+  "response_config_block": {
+    "additional_capacity_profile": "zero",
+    "charging_on_holidays": true,
+    "charging_on_weekends": true,
+    "cp_base_capacity_kw": null,
+    "cp_capacity_kw": 13.0,
+    "cp_capacity_profile": "zero",
+    "cs_capacity_kw": 17.25,
+    "location_type": "public",
+    "n_profiles": 100,
+    "output": {
+      "profile": true,
+      "statistics": false
+    },
+    "pooling": "no",
+    "profile_type": "cp",
+    "seed": 153301,
+    "session_datetime_gaussian_noise_std": 1.0,
+    "simulated_year": 2030,
+    "start_datetime": "2025-01-01T00:00:00+01:00",
+    "step_size_s": "PT15M",
+    "stop_datetime": "2026-01-01T00:00:00+01:00",
+    "time_cluster": "both",
+    "timezone": "CET",
+    "vehicle_types": [
+      "van",
+      "car"
+    ],
+    "yearly_demand_mean_kwh": null,
+    "yearly_demand_normalized_std": 0.5
+  },
+  "response_shape_summary": {
+    "batch_seed": 153301,
+    "distinct_member_count": 100,
+    "first_timestamp_local": "2025-01-01T00:00:00+01:00",
+    "first_timestamp_utc": "2024-12-31T23:00:00+00:00",
+    "last_timestamp_local": "2025-12-31T23:45:00+01:00",
+    "last_timestamp_utc": "2025-12-31T22:45:00+00:00",
+    "member_identity": "profile_<batch seed>_<returned profile index>",
+    "missing_or_nonfinite_values": 0,
+    "n_profiles": 100,
+    "n_timesteps": 35040,
+    "negative_values": 0,
+    "timezone_conversion": "UTC response timestamps converted to Europe/Amsterdam for local use."
+  },
+  "response_status_code": 200,
+  "response_status_code_source": "HTTP response object",
+  "retrieval_timestamp_utc": "2026-07-21T15:16:34.105792Z",
+  "seed_semantics_observed": {
+    "batch_seed": 153301,
+    "control_mode": "uncontrolled",
+    "distinct_returned_members": 100,
+    "future_smart_pair_identity": "A future EV-006 smart counterpart would add control_mode and reuse this batch seed plus returned profile index.",
+    "independent_seed_claim": "Not claimed; batch seed 153301 identifies the response and member indices distinguish returned profiles.",
+    "member_identity": "Members are identified as (batch seed, returned profile index).",
+    "n_profiles": 100,
+    "returned_indices_available_for_planned_pairing": true,
+    "smart_pair_order_note": "This uncontrolled-only probe cannot verify that a future smart batch preserves member ordering; actual smart-pair order remains pending per reports/elaad_profile_generation_spec.md section 7.",
+    "smart_pair_order_verified": false
+  },
+  "set_id": "B",
+  "source_level_probe_verdict": {
+    "library_adequacy_proven": false,
+    "note": "This source-level probe checks API shape and member distinctness only; EV-005 adequacy is downstream and must not be inferred from component diagnostics.",
+    "supports_remaining_candidate_and_held_out_generation": true
+  },
+  "status": "ev008a-set-b-held_out-public_13kw-batch-generated",
+  "storage_stem": "B_public_13kw_vancar_cp_y2030_batchseed153301_n100",
+  "task_id": "E2.S2"
+}
