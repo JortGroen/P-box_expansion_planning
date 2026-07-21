@@ -132,8 +132,73 @@ class ProcurementTargetResult:
             raise TypeError("classification must be a ProcurementTargetClassification")
 
 
+@dataclass(frozen=True)
+class DeferralYearResult:
+    """One synthetic year entry in an alpha-indexed deferral horizon."""
+
+    year: int
+    alpha: float
+    rho_lower: float
+    rho_upper: float
+    envelope_lower: float
+    envelope_upper: float
+    classification: ProcurementTargetClassification
+
+    def __post_init__(self) -> None:
+        if self.year <= 0:
+            raise ValueError("year must be positive")
+        ProcurementTargetResult(
+            alpha=self.alpha,
+            rho_lower=self.rho_lower,
+            rho_upper=self.rho_upper,
+            envelope_lower=self.envelope_lower,
+            envelope_upper=self.envelope_upper,
+            classification=self.classification,
+        )
+
+
+@dataclass(frozen=True)
+class DeferralHorizonResult:
+    """Synthetic alpha-indexed lower/upper deferral-horizon interpretation."""
+
+    alpha: float
+    lower_year: int | None
+    upper_year: int | None
+    first_unmet_year: int | None
+    first_never_satisfied_year: int | None
+    monotone_in_year: bool
+    yearly_results: tuple[DeferralYearResult, ...]
+
+    def __post_init__(self) -> None:
+        if not math.isfinite(self.alpha) or not 0.0 <= self.alpha <= 1.0:
+            raise ValueError("alpha must be finite and in [0, 1]")
+        for name, year in (
+            ("lower_year", self.lower_year),
+            ("upper_year", self.upper_year),
+            ("first_unmet_year", self.first_unmet_year),
+            ("first_never_satisfied_year", self.first_never_satisfied_year),
+        ):
+            if year is not None and year <= 0:
+                raise ValueError(f"{name} must be positive when supplied")
+        if (
+            self.lower_year is not None
+            and self.upper_year is not None
+            and self.lower_year > self.upper_year
+        ):
+            raise ValueError("lower_year must be <= upper_year")
+        if not self.yearly_results:
+            raise ValueError("yearly_results must not be empty")
+        years = [result.year for result in self.yearly_results]
+        if years != sorted(years) or len(set(years)) != len(years):
+            raise ValueError("yearly_results must have unique sorted years")
+        for result in self.yearly_results:
+            if result.alpha != self.alpha:
+                raise ValueError("yearly_results alpha must match result alpha")
+
+
 RhoProbabilityCurves = Mapping[float, Sequence[RhoProbabilityPoint]]
 RhoStarFamily = Mapping[float, RhoStarAlphaResult]
+YearlyProcurementTargets = Mapping[int, Mapping[float, ProcurementTargetResult]]
 
 
 def alpha_star(pbox_family: PBoxFamily, p_crit: float) -> float:
@@ -282,6 +347,62 @@ def classify_procurement_target(
     return dict(sorted(results.items()))
 
 
+def deferral_horizon_from_procurement_targets(
+    yearly_targets: YearlyProcurementTargets,
+) -> dict[float, DeferralHorizonResult]:
+    """Summarize synthetic year-indexed targets as alpha-indexed horizons.
+
+    ``lower_year`` is the latest supplied year whose target interval is fully
+    inside the delivery envelope. ``upper_year`` also admits overlap/monitoring
+    years. The output is a scaffold for later manifested results and does not
+    infer unevaluated years or collapse alpha levels into a single horizon.
+    """
+
+    if not yearly_targets:
+        raise ValueError("yearly_targets must contain at least one year")
+
+    ordered_years = _validate_yearly_procurement_targets(yearly_targets)
+    alpha_grid = tuple(sorted(yearly_targets[ordered_years[0]]))
+    results: dict[float, DeferralHorizonResult] = {}
+    for alpha in alpha_grid:
+        yearly = tuple(
+            _deferral_year_result(year, yearly_targets[year][alpha])
+            for year in ordered_years
+        )
+        lower_year = _latest_year_with_classification(
+            yearly,
+            {ProcurementTargetClassification.INSIDE_ENVELOPE},
+        )
+        upper_year = _latest_year_with_classification(
+            yearly,
+            {
+                ProcurementTargetClassification.INSIDE_ENVELOPE,
+                ProcurementTargetClassification.OVERLAPPING_MONITOR,
+            },
+        )
+        first_unmet_year = _first_year_with_classification(
+            yearly,
+            {
+                ProcurementTargetClassification.OUTSIDE_ENVELOPE,
+                ProcurementTargetClassification.NEVER_SATISFIED,
+            },
+        )
+        first_never_satisfied_year = _first_year_with_classification(
+            yearly,
+            {ProcurementTargetClassification.NEVER_SATISFIED},
+        )
+        results[alpha] = DeferralHorizonResult(
+            alpha=alpha,
+            lower_year=lower_year,
+            upper_year=upper_year,
+            first_unmet_year=first_unmet_year,
+            first_never_satisfied_year=first_never_satisfied_year,
+            monotone_in_year=_is_monotone_horizon_sequence(yearly),
+            yearly_results=yearly,
+        )
+    return results
+
+
 def _validate_rho_curve(
     alpha: float,
     points: Sequence[RhoProbabilityPoint],
@@ -363,6 +484,73 @@ def _classify_interval_against_envelope(
     if rho_lower <= envelope_upper and envelope_lower <= rho_upper:
         return ProcurementTargetClassification.OVERLAPPING_MONITOR
     return ProcurementTargetClassification.OUTSIDE_ENVELOPE
+
+
+def _validate_yearly_procurement_targets(
+    yearly_targets: YearlyProcurementTargets,
+) -> tuple[int, ...]:
+    ordered_years = tuple(sorted(yearly_targets))
+    if len(set(ordered_years)) != len(ordered_years):
+        raise ValueError("years must be unique")
+    for year in ordered_years:
+        if year <= 0:
+            raise ValueError("years must be positive")
+        if not yearly_targets[year]:
+            raise ValueError("each year must contain at least one alpha result")
+
+    alpha_grid = tuple(sorted(yearly_targets[ordered_years[0]]))
+    for year in ordered_years:
+        current_alpha_grid = tuple(sorted(yearly_targets[year]))
+        if current_alpha_grid != alpha_grid:
+            raise ValueError("each year must contain the same alpha grid")
+        for alpha, result in yearly_targets[year].items():
+            if result.alpha != alpha:
+                raise ValueError("procurement result alpha must match mapping key")
+    return ordered_years
+
+
+def _deferral_year_result(
+    year: int,
+    procurement_target: ProcurementTargetResult,
+) -> DeferralYearResult:
+    return DeferralYearResult(
+        year=year,
+        alpha=procurement_target.alpha,
+        rho_lower=procurement_target.rho_lower,
+        rho_upper=procurement_target.rho_upper,
+        envelope_lower=procurement_target.envelope_lower,
+        envelope_upper=procurement_target.envelope_upper,
+        classification=procurement_target.classification,
+    )
+
+
+def _latest_year_with_classification(
+    yearly: Sequence[DeferralYearResult],
+    classifications: set[ProcurementTargetClassification],
+) -> int | None:
+    years = [result.year for result in yearly if result.classification in classifications]
+    return max(years) if years else None
+
+
+def _first_year_with_classification(
+    yearly: Sequence[DeferralYearResult],
+    classifications: set[ProcurementTargetClassification],
+) -> int | None:
+    years = [result.year for result in yearly if result.classification in classifications]
+    return min(years) if years else None
+
+
+def _is_monotone_horizon_sequence(yearly: Sequence[DeferralYearResult]) -> bool:
+    order = {
+        ProcurementTargetClassification.INSIDE_ENVELOPE: 0,
+        ProcurementTargetClassification.OVERLAPPING_MONITOR: 1,
+        ProcurementTargetClassification.OUTSIDE_ENVELOPE: 2,
+        ProcurementTargetClassification.NEVER_SATISFIED: 3,
+    }
+    severities = [order[result.classification] for result in yearly]
+    # This is only a diagnostic sanity flag: scaffold tests may expose
+    # non-monotone synthetic years, but real horizon claims need manifested runs.
+    return all(left <= right for left, right in zip(severities, severities[1:]))
 
 
 def _core_interval(fuzzy_number: FuzzyNumber) -> tuple[float, float]:
