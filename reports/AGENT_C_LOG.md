@@ -113,3 +113,9 @@ DID: Merged latest `origin/main`, renumbered E2.S6 source rows so ElaadNL Outloo
 VERIFIED: Planned-path ownership preflight passed for the Agent C/shared paths. Focused `.\.venv\Scripts\python.exe -m pytest tests\test_ev_model.py tests\test_methods_registry.py` passed 33 tests. `.\scripts\task.ps1 ownership` passed for 10 changed paths. Full `.\scripts\task.ps1 test` passed 147 tests in 75.21 s.
 OPEN: Q-7 remains blocking: local home/public totals and EV-005 `K_r` ranges are not established until PI chooses a local scaling method and public-charging basis.
 NEXT: Update PR #39 and await Q-7 resolution before any integrated EV adoption use.
+
+## 2026-07-20 20:10 - E2.S5 baseline scaffold - in-progress
+DID: Created stacked branch `agent-c/E2.S5-baseline-diversity-scaffold` on top of PR #39 and added `src/baseline_model.py`. The scaffold validates complete timezone-aware 15-minute baseline trajectories, preserves timestep order plus weekday/weekend and seasonal labels, and exposes ALEA-001/ALEA-002 metadata without congestion or adequacy claims.
+VERIFIED: Planned-path ownership preflight passed for the Agent C/shared paths. Focused `.\.venv\Scripts\python.exe -m pytest tests\test_baseline_model.py` passed 6 tests. `.\scripts\task.ps1 ownership` passed for 12 changed paths, `.\scripts\task.ps1 test` passed 153 tests in 42.25 s, and `git diff --check` returned clean.
+OPEN: E2.S5 remains in progress. Diversity calibration/source binding is not implemented, no EV held-out batches were opened, and no E3.S2a or Q-5-blocked event-based analysis was run.
+NEXT: Push this as a stacked draft PR against `agent-c/E2.S6-adoption-scenarios`; wait for PR #39 merge/refreshed base before making it merge-ready against `main`.

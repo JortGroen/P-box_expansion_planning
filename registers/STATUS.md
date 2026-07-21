@@ -19,7 +19,7 @@ Format: `Story | Owner | status | tasks | blocked-by | PR`
 | E2.S2 EV model | C | in-progress | 4/5 | EV-004 Set A candidate M=1000, quarantined diagnostic Q=200, and fresh held-out H=200 archived locally; M sufficiency, held-out adequacy use, and within-realization replacement remain blocked by E2.S6 and EV-005/E3.S2a criteria | #35 |
 | E2.S3 HP model | C | todo | 0/4 | E2.S1, ALEA-001 | -- |
 | E2.S4 PV model | C | todo | 0/3 | E2.S1, G0, ALEA-001 | -- |
-| E2.S5 Baseline & diversity | C | todo | 0/2 | E1.S3, ALEA-001 | -- |
+| E2.S5 Baseline & diversity | C | in-progress | 1/2 | Baseline complete-calendar scaffold added; diversity calibration/source binding still pending; no congestion or event analysis before Q-5 | stacked on #39 |
 | E2.S6 Adoption scenarios | C | blocked | 1/3 | National D-010 projections recorded; local counts, public basis, and K_r ranges blocked by Q-7; A-014 narrowed to possible second-stage allocation | #39 |
 | E3.S1 Flexibility aggregator | A | todo | 0/3 | E2 models | -- |
 | E3.S2 IC-1 NetLoadProvider | A | todo | 0/4 | E3.S1, ALEA-001 | -- |
