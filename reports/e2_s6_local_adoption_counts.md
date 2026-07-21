@@ -56,7 +56,7 @@ Primary source:
 Metadata:
 
 - Path: `data/metadata/ev_adoption/e2_s6_local_adoption_counts_metadata.json`
-- SHA256: `349f950866cdcea1e0c11f1189a3d4c7b3e385456edb72255281765b7b3d7cf7`
+- SHA256: `3f29419f89d4fa643108f594d89c07a9cda3654dfae6a71900aa0236b2aeebad`
 
 ## Proposed 2035 Counts
 

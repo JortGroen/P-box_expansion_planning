@@ -441,7 +441,8 @@ def test_committed_adoption_scenarios_config_validates() -> None:
 
     metadata = config["local_count_workflow"]["metadata"]
     metadata_path = Path(metadata["path"])
-    metadata_sha256 = hashlib.sha256(metadata_path.read_bytes()).hexdigest()
+    metadata_text = metadata_path.read_text(encoding="utf-8").replace("\r\n", "\n")
+    metadata_sha256 = hashlib.sha256(metadata_text.encode("utf-8")).hexdigest()
 
     assert len(national) == 18
     assert len(proposed_local) == 6
