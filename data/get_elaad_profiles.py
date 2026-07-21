@@ -130,8 +130,73 @@ def build_library_plan() -> tuple[ProfileBatch, ...]:
     return tuple(batches)
 
 
+def build_public_set_b_plan() -> tuple[ProfileBatch, ...]:
+    """Return the EV-008A equal-mix public Set B batch schedule."""
+    classes = (
+        ("public_11kw", 11, (152001, 152101, 152201), (153201,)),
+        ("public_13kw", 13, (152301, 152401, 152501), (153301,)),
+        ("public_15kw", 15, (152601, 152701, 152801), (153401,)),
+        ("public_22kw", 22, (152901, 153001, 153101), (153501,)),
+    )
+    batches: list[ProfileBatch] = []
+    for class_id, capacity_kw, candidate_seeds, held_out_seeds in classes:
+        for partition, seeds in (("candidate", candidate_seeds), ("held_out", held_out_seeds)):
+            for seed in seeds:
+                batches.append(
+                    ProfileBatch(
+                        set_id="B",
+                        purpose=f"{class_id}_equal_mix_public_cp_library",
+                        partition=partition,
+                        simulated_year=2030,
+                        profile_type="cp",
+                        n_profiles=DEFAULT_BATCH_SIZE,
+                        vehicle_types=["van", "car"],
+                        location_type="public",
+                        cp_capacity_kw=capacity_kw,
+                        seed=seed,
+                        storage_stem=(
+                            f"B_{class_id}_vancar_cp_y2030_batchseed{seed}_n{DEFAULT_BATCH_SIZE}"
+                        ),
+                    )
+                )
+    return tuple(batches)
+
+
 def _sha256_bytes(payload: bytes) -> str:
     return hashlib.sha256(payload).hexdigest()
+
+
+def _request_sha256(body: dict[str, Any]) -> str:
+    return _sha256_bytes(json.dumps(body, indent=2, sort_keys=True).encode("utf-8"))
+
+
+def _batch_scientific_decisions(batch: ProfileBatch) -> list[str]:
+    if batch.set_id == "B":
+        return ["EV-003", "EV-005", "EV-008A"]
+    return ["EV-004", "EV-005"]
+
+
+def _batch_status(batch: ProfileBatch) -> str:
+    if batch.seed == 140001 and batch.partition == "candidate" and batch.set_id == "A":
+        return "single-ev004-probe-batch-generated"
+    if batch.set_id == "B":
+        return f"ev008a-set-b-{batch.partition}-{batch.purpose.split('_equal_mix')[0]}-batch-generated"
+    return f"ev004-set-a-{batch.partition}-batch-generated"
+
+
+def _authorized_generation_scope(batch: ProfileBatch) -> str:
+    if batch.set_id == "B":
+        return (
+            "EV-008A Set B public capacity-stratified charge-point batch; "
+            "uncontrolled public profiles only; no smart-control or DC/fast profiles."
+        )
+    return "EV-004 Set A home charge-point batch; no public or smart-control profiles."
+
+
+def _shape_report_path(batch: ProfileBatch, reports_dir: Path) -> Path:
+    if batch.set_id == "B":
+        return reports_dir / f"elaad_e2_s2_ev008a_public_{batch.cp_capacity_kw}kw_batchseed{batch.seed}_shape_report.md"
+    return reports_dir / f"elaad_e2_s2_ev004_home_cp_batchseed{batch.seed}_shape_report.md"
 
 
 def _parse_json(payload: bytes) -> dict[str, Any]:
@@ -380,9 +445,9 @@ def write_authorized_set_a_artifacts_from_response(
     save_processed_batch_npz(parsed_batch, processed_path)
 
     summary = batch_summary(parsed_batch)
-    if batch.partition == "held_out":
-        # Fresh held-out batches stay source-integrity-only until E3.S2a freezes
-        # its adequacy criterion; behavior summaries would leak evidence early.
+    if batch.partition == "held_out" or batch.set_id == "B":
+        # Public Set B is approved for source generation and structural checks
+        # only; behavioral summaries wait for downstream adequacy governance.
         summary.pop("annual_energy_kwh", None)
         summary.pop("peak_kw", None)
     metadata_dir.mkdir(parents=True, exist_ok=True)
@@ -391,12 +456,12 @@ def write_authorized_set_a_artifacts_from_response(
         "data_id": "D-002",
         "task_id": "E2.S2",
         "manifest_type": "elaad_profile_batch",
-        "status": (
-            "single-ev004-probe-batch-generated"
-            if batch.seed == 140001 and batch.partition == "candidate"
-            else f"ev004-set-a-{batch.partition}-batch-generated"
-        ),
+        "status": _batch_status(batch),
+        "set_id": batch.set_id,
+        "purpose": batch.purpose,
         "library_partition": batch.partition,
+        "capacity_class": batch.purpose.split("_equal_mix")[0] if batch.set_id == "B" else None,
+        "cp_capacity_kw": batch.cp_capacity_kw,
         "storage_stem": stem,
         "retrieval_timestamp_utc": retrieval_ts,
         "api_url": API_URL,
@@ -410,14 +475,17 @@ def write_authorized_set_a_artifacts_from_response(
         },
         "policy": {
             "decision": "EV-002",
-            "scientific_decisions": ["EV-004", "EV-005"],
+            "scientific_decisions": _batch_scientific_decisions(batch),
             "internal_project_computation": True,
             "commit_generated_profiles": False,
             "redistribute_generated_profiles": False,
+            "public_smart_charging_generated": False,
+            "dc_or_fast_charging_generated": False,
             "data_availability": "Readers regenerate through the public API subject to terms applicable at retrieval time.",
             "stop_condition": "If explicit terms later prohibit this research use, stop and escalate.",
         },
         "request_json": body,
+        "request_sha256": _request_sha256(body),
         "api_runtime_s": api_runtime_s,
         "api_runtime_note": (
             "Measured around the HTTPS POST only."
@@ -464,7 +532,7 @@ def write_authorized_set_a_artifacts_from_response(
             "note": "This source-level probe checks API shape and member distinctness only; EV-005 adequacy is downstream and must not be inferred from component diagnostics.",
         },
         "bulk_generation_performed": not (batch.seed == 140001 and batch.partition == "candidate"),
-        "authorized_generation_scope": "EV-004 Set A home charge-point batch; no public or smart-control profiles.",
+        "authorized_generation_scope": _authorized_generation_scope(batch),
         "only_authorized_batch_generated": batch.seed == 140001 and batch.partition == "candidate",
         "held_out_policy": {
             "partition": batch.partition,
@@ -484,7 +552,7 @@ def write_authorized_set_a_artifacts_from_response(
     metadata_path.write_text(json.dumps(metadata, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
     reports_dir.mkdir(parents=True, exist_ok=True)
-    report_path = reports_dir / f"elaad_e2_s2_ev004_home_cp_batchseed{batch.seed}_shape_report.md"
+    report_path = _shape_report_path(batch, reports_dir)
     report_path.write_text(_shape_report(metadata, metadata_path), encoding="utf-8")
 
     if distinct_members < batch.n_profiles:
@@ -531,7 +599,7 @@ def write_authorized_set_a_artifacts_from_raw(
         metadata_path.write_text(json.dumps(metadata, indent=2, sort_keys=True) + "\n", encoding="utf-8")
         reports_dir.mkdir(parents=True, exist_ok=True)
         active_batch = batch or build_library_plan()[0]
-        report_path = reports_dir / f"elaad_e2_s2_ev004_home_cp_batchseed{active_batch.seed}_shape_report.md"
+        report_path = _shape_report_path(active_batch, reports_dir)
         report_path.write_text(_shape_report(metadata, metadata_path), encoding="utf-8")
     return metadata_path
 
@@ -579,6 +647,11 @@ def _load_verified_checkpoint(
             reports_dir=reports_dir,
         )
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    if batch.set_id == "B" and (
+        "annual_energy_kwh" in manifest["response_shape_summary"]
+        or "peak_kw" in manifest["response_shape_summary"]
+    ):
+        return None
     return manifest
 
 
@@ -590,7 +663,7 @@ def _reclassify_checkpoint_manifest(
     reports_dir: Path,
 ) -> None:
     manifest["library_partition"] = batch.partition
-    manifest["status"] = f"ev004-set-a-{batch.partition}-batch-retained"
+    manifest["status"] = _batch_status(batch).replace("generated", "retained")
     manifest["bulk_generation_performed"] = not (batch.seed == 140001 and batch.partition == "candidate")
     if batch.partition == "candidate":
         policy_note = "Candidate batch available for downstream candidate-library construction; adequacy is not inferred here."
@@ -615,7 +688,7 @@ def _reclassify_checkpoint_manifest(
         }
     manifest_path.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     reports_dir.mkdir(parents=True, exist_ok=True)
-    report_path = reports_dir / f"elaad_e2_s2_ev004_home_cp_batchseed{batch.seed}_shape_report.md"
+    report_path = _shape_report_path(batch, reports_dir)
     report_path.write_text(_shape_report(manifest, manifest_path), encoding="utf-8")
 
 
@@ -716,6 +789,36 @@ def run_set_a_home_profile_library(
     )
 
 
+def run_public_set_b_equal_mix_library(
+    *,
+    metadata_dir: Path,
+    raw_dir: Path,
+    processed_dir: Path,
+    reports_dir: Path,
+    timeout_s: int,
+) -> Path:
+    """Generate the EV-008A public equal-mix Set B library with checkpoints."""
+    started = perf_counter()
+    generated_or_verified: list[Path] = []
+    for batch in build_public_set_b_plan():
+        generated_or_verified.append(
+            run_set_a_library_batch(
+                batch,
+                metadata_dir=metadata_dir,
+                raw_dir=raw_dir,
+                processed_dir=processed_dir,
+                reports_dir=reports_dir,
+                timeout_s=timeout_s,
+            )
+        )
+    return write_public_set_b_library_manifest(
+        metadata_dir=metadata_dir,
+        reports_dir=reports_dir,
+        command_wall_time_s=perf_counter() - started,
+        batch_manifest_paths=generated_or_verified,
+    )
+
+
 def write_set_a_library_manifest(
     *,
     metadata_dir: Path,
@@ -793,11 +896,143 @@ def write_set_a_library_manifest(
     return path
 
 
+def write_public_set_b_library_manifest(
+    *,
+    metadata_dir: Path,
+    reports_dir: Path,
+    command_wall_time_s: float,
+    batch_manifest_paths: Sequence[Path],
+) -> Path:
+    """Write a commit-safe manifest for the EV-008A public Set B archive."""
+    manifests = [json.loads(path.read_text(encoding="utf-8")) for path in batch_manifest_paths]
+    expected_by_seed = {batch.seed: batch for batch in build_public_set_b_plan()}
+    for item in manifests:
+        seed = item["request_json"]["seed"]
+        if seed not in expected_by_seed:
+            raise ValueError(f"Unexpected Set B seed in manifest: {seed}")
+        expected = expected_by_seed[seed]
+        if item["request_json"] != build_batch_request(expected):
+            raise ValueError(f"Set B request mismatch for seed {seed}")
+        item.setdefault("library_partition", expected.partition)
+        item.setdefault("capacity_class", expected.purpose.split("_equal_mix")[0])
+    candidate = [item for item in manifests if item["library_partition"] == "candidate"]
+    held_out = [item for item in manifests if item["library_partition"] == "held_out"]
+    classes = sorted({item["capacity_class"] for item in manifests})
+    class_summary = {
+        class_id: {
+            "cp_capacity_kw": next(
+                item["request_json"]["cp_capacity_kw"]
+                for item in manifests
+                if item["capacity_class"] == class_id
+            ),
+            "candidate_members": sum(
+                item["response_shape_summary"]["n_profiles"]
+                for item in candidate
+                if item["capacity_class"] == class_id
+            ),
+            "held_out_members": sum(
+                item["response_shape_summary"]["n_profiles"]
+                for item in held_out
+                if item["capacity_class"] == class_id
+            ),
+            "candidate_seeds": [
+                item["request_json"]["seed"]
+                for item in candidate
+                if item["capacity_class"] == class_id
+            ],
+            "held_out_seeds": [
+                item["request_json"]["seed"]
+                for item in held_out
+                if item["capacity_class"] == class_id
+            ],
+        }
+        for class_id in classes
+    }
+    payload = {
+        "data_id": "D-002",
+        "task_id": "E2.S2",
+        "manifest_type": "elaad_set_b_public_equal_mix_cp_library",
+        "status": "ev008a-public-set-b-equal-mix-source-library-archived-locally",
+        "created_timestamp_utc": datetime.now(UTC).isoformat().replace("+00:00", "Z"),
+        "command_wall_time_s": command_wall_time_s,
+        "summed_recorded_api_runtime_s": sum(item.get("api_runtime_s") or 0.0 for item in manifests),
+        "capacity_mix": {
+            "public_11kw": 0.25,
+            "public_13kw": 0.25,
+            "public_15kw": 0.25,
+            "public_22kw": 0.25,
+        },
+        "candidate_member_count": sum(item["response_shape_summary"]["n_profiles"] for item in candidate),
+        "held_out_member_count": sum(item["response_shape_summary"]["n_profiles"] for item in held_out),
+        "candidate_members_per_class": {
+            class_id: summary["candidate_members"] for class_id, summary in class_summary.items()
+        },
+        "held_out_members_per_class": {
+            class_id: summary["held_out_members"] for class_id, summary in class_summary.items()
+        },
+        "library_adequacy_proven": False,
+        "held_out_unopened_for_adequacy": True,
+        "behavioral_tail_adequacy_inspected": False,
+        "policy": {
+            "decisions": ["EV-002", "EV-003", "EV-005", "EV-008A"],
+            "commit_generated_profiles": False,
+            "redistribute_generated_profiles": False,
+            "public_profiles_generated": True,
+            "public_smart_profiles_generated": False,
+            "dc_or_fast_profiles_generated": False,
+            "integrated_analysis_performed": False,
+            "m_sufficiency_claimed": False,
+        },
+        "checkpoint_recovery": {
+            "unit": "one 100-profile public API batch",
+            "resume_procedure": "Re-run data/get_elaad_profiles.py --run-public-set-b-equal-mix-library; verified checkpoints are skipped, saved raw gzip files are recovered without rewriting, and mismatched request/config/checksums stop the run.",
+            "retry_idempotence": "Retries reuse the identical request_json for a batch seed and cannot register a duplicate batch.",
+        },
+        "class_summary": class_summary,
+        "batches": [
+            {
+                "seed": item["request_json"]["seed"],
+                "partition": item["library_partition"],
+                "capacity_class": item["capacity_class"],
+                "cp_capacity_kw": item["request_json"]["cp_capacity_kw"],
+                "manifest_path": path.as_posix(),
+                "request_sha256": item["request_sha256"],
+                "raw_path": item["raw_response"]["path"],
+                "raw_sha256_gzip_file": item["raw_response"]["sha256_gzip_file"],
+                "raw_sha256_uncompressed_json": item["raw_response"]["sha256_uncompressed_json"],
+                "processed_path": item["processed_profiles"]["path"],
+                "processed_sha256_file": item["processed_profiles"]["sha256_file"],
+                "n_timesteps": item["response_shape_summary"]["n_timesteps"],
+                "n_profiles": item["response_shape_summary"]["n_profiles"],
+                "distinct_member_count": item["response_shape_summary"]["distinct_member_count"],
+                "missing_or_nonfinite_values": item["response_shape_summary"]["missing_or_nonfinite_values"],
+                "negative_values": item["response_shape_summary"]["negative_values"],
+                "smart_pair_order_verified": item["seed_semantics_observed"]["smart_pair_order_verified"],
+            }
+            for path, item in zip(batch_manifest_paths, manifests, strict=True)
+        ],
+    }
+    metadata_dir.mkdir(parents=True, exist_ok=True)
+    path = metadata_dir / "B_public_vancar_cp_y2030_set_b_library_manifest.json"
+    path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    reports_dir.mkdir(parents=True, exist_ok=True)
+    report_path = reports_dir / "elaad_e2_s2_public_set_b_library_report.md"
+    report_path.write_text(_public_set_b_library_report(payload, path), encoding="utf-8")
+    return path
+
+
 def _shape_report(metadata: dict[str, Any], metadata_path: Path) -> str:
     summary = metadata["response_shape_summary"]
     request_body = metadata["request_json"]
     request_json = json.dumps(metadata["request_json"], indent=2, sort_keys=True)
     partition = metadata.get("library_partition", "candidate")
+    set_id = metadata.get("set_id", "A")
+    decision_label = "EV-008A Set B" if set_id == "B" else "EV-004 Set A"
+    location_label = (
+        f"public {request_body['cp_capacity_kw']} kW charge-point profiles"
+        if set_id == "B"
+        else "home charge-point profiles"
+    )
     behavior_summary = ""
     if "annual_energy_kwh" in summary and "peak_kw" in summary:
         energy = summary["annual_energy_kwh"]
@@ -810,14 +1045,23 @@ def _shape_report(metadata: dict[str, Any], metadata_path: Path) -> str:
             f"mean {peak['mean']:.3f}, p95 {peak['p95']:.3f}, max {peak['max']:.3f}\n\n"
         )
     else:
-        behavior_summary = (
-            "## Summary statistics\n\n"
-            "Behavioral annual-energy, peak, and percentile summaries are intentionally omitted for fresh held-out batches until E3.S2a freezes the adequacy criterion.\n\n"
-        )
+        if set_id == "B":
+            behavior_summary = (
+                "## Structural-only summary\n\n"
+                "Behavioral annual-energy, peak, and percentile summaries are intentionally "
+                "omitted for public Set B source-generation artifacts. EV-008A authorizes "
+                "structural validation only; adequacy remains downstream under E3.S2a.\n\n"
+            )
+        else:
+            behavior_summary = (
+                "## Summary statistics\n\n"
+                "Behavioral annual-energy, peak, and percentile summaries are intentionally omitted "
+                "for fresh held-out batches until E3.S2a freezes the adequacy criterion.\n\n"
+            )
     return (
-        "# E2.S2 ElaadNL Set A shape report\n\n"
+        f"# E2.S2 ElaadNL {decision_label} shape report\n\n"
         "## Scope\n\n"
-        f"EV-004 Set A `{partition}` batch: home charge-point profiles "
+        f"{decision_label} `{partition}` batch: {location_label} "
         f"with the native car/van mix, simulated_year {request_body['simulated_year']}, "
         f"batch seed {request_body['seed']}, n_profiles {request_body['n_profiles']}. Raw and processed "
         "generated profiles are ignored and not redistributed under EV-002.\n\n"
@@ -838,11 +1082,9 @@ def _shape_report(metadata: dict[str, Any], metadata_path: Path) -> str:
         "## Seed semantics\n\n"
         "Members are identified as `(batch seed, returned profile index)`. This "
         "report does not interpret a batch seed as a range of per-member seeds. "
-        "Seed 140001 is reserved by EV-006 for a future same-seed smart-control "
-        "counterpart, but no smart-control API call was made in this session. "
-        "This uncontrolled-only probe leaves smart-batch member ordering "
-        "unverified; actual pairing remains pending per section 7 of the "
-        "Elaad profile generation spec.\n\n"
+        "no smart-control API call was made in this session. Smart-batch member "
+        "ordering remains unverified unless a later signed smart-control "
+        "counterfactual explicitly authorizes paired same-seed generation.\n\n"
         "## Source-level verdict\n\n"
         f"- API runtime seconds: {_format_optional_seconds(metadata['api_runtime_s'])}\n"
         f"- API runtime note: {metadata['api_runtime_note']}\n"
@@ -929,6 +1171,59 @@ def _library_report(payload: dict[str, Any], manifest_path: Path) -> str:
     )
 
 
+def _public_set_b_library_report(payload: dict[str, Any], manifest_path: Path) -> str:
+    rows = "\n".join(
+        f"| `{class_id}` | {summary['cp_capacity_kw']} | "
+        f"{', '.join(str(seed) for seed in summary['candidate_seeds'])} | "
+        f"{summary['candidate_members']} | "
+        f"{', '.join(str(seed) for seed in summary['held_out_seeds'])} | "
+        f"{summary['held_out_members']} |"
+        for class_id, summary in payload["class_summary"].items()
+    )
+    return (
+        "# E2.S2 ElaadNL Set B public equal-mix library report\n\n"
+        "## Scope\n\n"
+        "EV-008A source generation only: uncontrolled public ElaadNL `cp` "
+        "profiles with the native van/car mix, simulated_year 2030, and four "
+        "AC capacity classes at equal 25% physical mix. Raw API responses and "
+        "processed annual members stay in ignored data paths and are not "
+        "redistributed. This report records structural validation only; it "
+        "does not inspect held-out adequacy, run integrated analysis, or "
+        "declare the candidate M sufficient.\n\n"
+        "## Generated batches\n\n"
+        "| Capacity class | kW | Candidate seeds | Candidate members | Held-out seeds | Held-out members |\n"
+        "|---|---:|---|---:|---|---:|\n"
+        f"{rows}\n\n"
+        f"- Candidate members: {payload['candidate_member_count']}\n"
+        f"- Held-out members: {payload['held_out_member_count']}\n"
+        "- Public smart charging generated: False\n"
+        "- DC/fast charging generated: False\n"
+        "- Integrated analysis performed: False\n"
+        "- M sufficiency claimed: False\n\n"
+        "## Checkpoint and recovery\n\n"
+        f"{payload['checkpoint_recovery']['resume_procedure']} "
+        f"{payload['checkpoint_recovery']['retry_idempotence']}\n\n"
+        "## Structural verification\n\n"
+        f"- Command wall time seconds for latest manifest-writing command: {_format_optional_seconds(payload['command_wall_time_s'])}\n"
+        f"- Summed recorded API runtime seconds: {_format_optional_seconds(payload['summed_recorded_api_runtime_s'])}\n"
+        f"- Every listed batch has 35,040 timesteps: {all(item['n_timesteps'] == 35040 for item in payload['batches'])}\n"
+        f"- Every listed batch has 100 profiles: {all(item['n_profiles'] == 100 for item in payload['batches'])}\n"
+        f"- Every listed batch has 100 distinct members: {all(item['distinct_member_count'] == 100 for item in payload['batches'])}\n"
+        f"- Every listed batch has zero missing/nonfinite values: {all(item['missing_or_nonfinite_values'] == 0 for item in payload['batches'])}\n"
+        f"- Every listed batch has zero negative values: {all(item['negative_values'] == 0 for item in payload['batches'])}\n"
+        f"- Smart pair order verified: {all(item['smart_pair_order_verified'] for item in payload['batches'])}\n\n"
+        "## Held-out isolation\n\n"
+        "Held-out public batches are generated and source-validated only. They "
+        "remain blocked for adequacy or tail analysis until E3.S2a freezes a "
+        "downstream criterion. No behavioral annual-energy, peak, percentile, "
+        "congestion, event, or P(E) conclusion is drawn from held-out data in "
+        "this packet.\n\n"
+        "## Evidence\n\n"
+        f"- Library manifest: `{manifest_path.as_posix()}`\n"
+        "- Per-batch raw and processed checksums are listed in the manifest.\n"
+    )
+
+
 def _format_optional_seconds(value: Any) -> str:
     if value is None:
         return "not recorded"
@@ -993,6 +1288,62 @@ def write_library_plan(metadata_dir: Path) -> Path:
     return path
 
 
+def write_public_set_b_plan(metadata_dir: Path) -> Path:
+    """Write EV-008A public Set B request schedule metadata without API calls."""
+    batches = build_public_set_b_plan()
+    seeds = [batch.seed for batch in batches]
+    if len(seeds) != len(set(seeds)):
+        raise ValueError("ElaadNL public Set B batch seeds must be distinct")
+    metadata_dir.mkdir(parents=True, exist_ok=True)
+    path = metadata_dir / "B_public_vancar_cp_y2030_equal_mix_library_plan.json"
+    payload = {
+        "data_id": "D-002",
+        "status": "ev008a-approved-request-metadata-only",
+        "bulk_generation_performed": False,
+        "api_url": API_URL,
+        "api_docs_url": DOCS_URL,
+        "dashboard_url": DASHBOARD_URL,
+        "local_documentation_version": DOC_VERSION,
+        "outlook_basis": OUTLOOK_BASIS,
+        "calendar": {
+            "start_datetime": CALENDAR_START,
+            "stop_datetime": CALENDAR_STOP,
+            "step_size_s": STEP_SIZE_S,
+            "timezone": TIMEZONE,
+        },
+        "policy": {
+            "decision": "EV-008A",
+            "scientific_decisions": ["EV-002", "EV-003", "EV-005", "EV-008A"],
+            "candidate_M": 1200,
+            "held_out_H": 400,
+            "capacity_mix": {
+                "public_11kw": 0.25,
+                "public_13kw": 0.25,
+                "public_15kw": 0.25,
+                "public_22kw": 0.25,
+            },
+            "commit_generated_profiles": False,
+            "redistribute_generated_profiles": False,
+            "public_smart_charging": False,
+            "dc_or_fast_charging": False,
+            "m_sufficiency_claimed": False,
+        },
+        "batches": [
+            {
+                **asdict(batch),
+                "capacity_class": batch.purpose.split("_equal_mix")[0],
+                "request_json": build_batch_request(batch),
+                "request_sha256": _request_sha256(build_batch_request(batch)),
+                "raw_response_path": f"data/raw/elaad_profiles/{batch.storage_stem}.json.gz",
+                "processed_path": f"data/processed/elaad_profiles/{batch.storage_stem}.npz",
+            }
+            for batch in batches
+        ],
+    }
+    path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    return path
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description="Record or probe ElaadNL profile-generator metadata for E2.S1."
@@ -1001,8 +1352,10 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--raw-dir", default="data/raw/elaad_profiles")
     parser.add_argument("--probe-one-profile", action="store_true")
     parser.add_argument("--write-library-plan", action="store_true")
+    parser.add_argument("--write-public-set-b-plan", action="store_true")
     parser.add_argument("--run-ev004-home-cp-probe", action="store_true")
     parser.add_argument("--run-set-a-home-profile-library", action="store_true")
+    parser.add_argument("--run-public-set-b-equal-mix-library", action="store_true")
     parser.add_argument("--processed-dir", default="data/processed/elaad_profiles")
     parser.add_argument("--reports-dir", default="reports")
     parser.add_argument("--simulated-year", type=int, default=2033)
@@ -1012,8 +1365,10 @@ def main(argv: Sequence[str] | None = None) -> int:
     actions = [
         args.probe_one_profile,
         args.write_library_plan,
+        args.write_public_set_b_plan,
         args.run_ev004_home_cp_probe,
         args.run_set_a_home_profile_library,
+        args.run_public_set_b_equal_mix_library,
     ]
     if sum(bool(item) for item in actions) > 1:
         parser.error("ElaadNL actions are mutually exclusive")
@@ -1027,6 +1382,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         )
     elif args.write_library_plan:
         path = write_library_plan(Path(args.metadata_dir))
+    elif args.write_public_set_b_plan:
+        path = write_public_set_b_plan(Path(args.metadata_dir))
     elif args.run_ev004_home_cp_probe:
         path = run_authorized_set_a_batch(
             metadata_dir=Path(args.metadata_dir),
@@ -1037,6 +1394,14 @@ def main(argv: Sequence[str] | None = None) -> int:
         )
     elif args.run_set_a_home_profile_library:
         path = run_set_a_home_profile_library(
+            metadata_dir=Path(args.metadata_dir),
+            raw_dir=Path(args.raw_dir),
+            processed_dir=Path(args.processed_dir),
+            reports_dir=Path(args.reports_dir),
+            timeout_s=args.timeout_s,
+        )
+    elif args.run_public_set_b_equal_mix_library:
+        path = run_public_set_b_equal_mix_library(
             metadata_dir=Path(args.metadata_dir),
             raw_dir=Path(args.raw_dir),
             processed_dir=Path(args.processed_dir),

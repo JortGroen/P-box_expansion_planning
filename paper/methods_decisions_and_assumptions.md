@@ -928,8 +928,21 @@ amendment packet is recorded in
 `data/metadata/elaad_profiles/B_public_vancar_cp_y2030_amendment_packet.json`
 and `reports/e2_s2_ev008_public_profile_amendment_packet.md`; it signs the
 equal-mix capacity-stratified public design for source generation and structural
-validation only. The public packets contain request metadata only and did not
-generate public profiles.
+validation only. Under that signed protocol, the public Set B source library
+was generated locally as uncontrolled public `cp` profiles with the native
+van/car mix, simulated year 2030, and equal 25% class shares at 11, 13, 15, and
+22 kW. The candidate archive contains 1,200 distinct members from seeds
+`152001` through `153101` in the approved per-class schedule, and the held-out
+archive contains 400 distinct members from seeds `153201`, `153301`, `153401`,
+and `153501`. Each of the 16 public batches returned 35,040 UTC timestamps, 100
+profiles, 100 distinct member IDs, and no missing, non-finite, or negative
+demand values. The public Set B library manifest is
+`data/metadata/elaad_profiles/B_public_vancar_cp_y2030_set_b_library_manifest.json`;
+the source-level report is `reports/elaad_e2_s2_public_set_b_library_report.md`.
+Public Set B artifacts record only structural validation and provenance: no
+public smart-charging, DC/fast charging, behavioral/tail adequacy analysis,
+integrated net-load or event analysis, manuscript result, or claim that
+`M = 1200` is sufficient is made.
 Generated raw responses and converted local profile outputs remain
 uncommitted and unredistributed; committed artifacts are limited to
 retrieval/generation code, request configurations, seed schedules, metadata,

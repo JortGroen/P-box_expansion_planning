@@ -1,0 +1,616 @@
+{
+  "api_docs_url": "https://api.charging.data.elaad.nl/docs#",
+  "api_url": "https://api.charging.data.elaad.nl/profile/simulate",
+  "batches": [
+    {
+      "capacity_class": "public_11kw",
+      "cp_capacity_kw": 11,
+      "location_type": "public",
+      "n_profiles": 100,
+      "partition": "candidate",
+      "processed_path": "data/processed/elaad_profiles/B_public_11kw_vancar_cp_y2030_batchseed152001_n100.npz",
+      "profile_type": "cp",
+      "purpose": "public_11kw_equal_mix_public_cp_library",
+      "raw_response_path": "data/raw/elaad_profiles/B_public_11kw_vancar_cp_y2030_batchseed152001_n100.json.gz",
+      "request_json": {
+        "cp_capacity_kw": 11,
+        "location_type": "public",
+        "n_profiles": 100,
+        "profile_type": "cp",
+        "seed": 152001,
+        "simulated_year": 2030,
+        "start_datetime": "2025-01-01T00:00:00+01:00",
+        "step_size_s": 900,
+        "stop_datetime": "2026-01-01T00:00:00+01:00",
+        "timezone": "CET",
+        "vehicle_types": [
+          "van",
+          "car"
+        ]
+      },
+      "request_sha256": "fed590b1b9a63505f6dffceeffb29d68fb17708b30ddf73cbf520d31bcc8d314",
+      "seed": 152001,
+      "set_id": "B",
+      "simulated_year": 2030,
+      "storage_stem": "B_public_11kw_vancar_cp_y2030_batchseed152001_n100",
+      "vehicle_types": [
+        "van",
+        "car"
+      ]
+    },
+    {
+      "capacity_class": "public_11kw",
+      "cp_capacity_kw": 11,
+      "location_type": "public",
+      "n_profiles": 100,
+      "partition": "candidate",
+      "processed_path": "data/processed/elaad_profiles/B_public_11kw_vancar_cp_y2030_batchseed152101_n100.npz",
+      "profile_type": "cp",
+      "purpose": "public_11kw_equal_mix_public_cp_library",
+      "raw_response_path": "data/raw/elaad_profiles/B_public_11kw_vancar_cp_y2030_batchseed152101_n100.json.gz",
+      "request_json": {
+        "cp_capacity_kw": 11,
+        "location_type": "public",
+        "n_profiles": 100,
+        "profile_type": "cp",
+        "seed": 152101,
+        "simulated_year": 2030,
+        "start_datetime": "2025-01-01T00:00:00+01:00",
+        "step_size_s": 900,
+        "stop_datetime": "2026-01-01T00:00:00+01:00",
+        "timezone": "CET",
+        "vehicle_types": [
+          "van",
+          "car"
+        ]
+      },
+      "request_sha256": "e5f06933de38707bab65811b4463545a96b05043aa1e3da2356cb15d75258887",
+      "seed": 152101,
+      "set_id": "B",
+      "simulated_year": 2030,
+      "storage_stem": "B_public_11kw_vancar_cp_y2030_batchseed152101_n100",
+      "vehicle_types": [
+        "van",
+        "car"
+      ]
+    },
+    {
+      "capacity_class": "public_11kw",
+      "cp_capacity_kw": 11,
+      "location_type": "public",
+      "n_profiles": 100,
+      "partition": "candidate",
+      "processed_path": "data/processed/elaad_profiles/B_public_11kw_vancar_cp_y2030_batchseed152201_n100.npz",
+      "profile_type": "cp",
+      "purpose": "public_11kw_equal_mix_public_cp_library",
+      "raw_response_path": "data/raw/elaad_profiles/B_public_11kw_vancar_cp_y2030_batchseed152201_n100.json.gz",
+      "request_json": {
+        "cp_capacity_kw": 11,
+        "location_type": "public",
+        "n_profiles": 100,
+        "profile_type": "cp",
+        "seed": 152201,
+        "simulated_year": 2030,
+        "start_datetime": "2025-01-01T00:00:00+01:00",
+        "step_size_s": 900,
+        "stop_datetime": "2026-01-01T00:00:00+01:00",
+        "timezone": "CET",
+        "vehicle_types": [
+          "van",
+          "car"
+        ]
+      },
+      "request_sha256": "85e7a4e0f45e5ae6c45c7f85a0b7100a006e32da418804ef9be6571aaec5c71e",
+      "seed": 152201,
+      "set_id": "B",
+      "simulated_year": 2030,
+      "storage_stem": "B_public_11kw_vancar_cp_y2030_batchseed152201_n100",
+      "vehicle_types": [
+        "van",
+        "car"
+      ]
+    },
+    {
+      "capacity_class": "public_11kw",
+      "cp_capacity_kw": 11,
+      "location_type": "public",
+      "n_profiles": 100,
+      "partition": "held_out",
+      "processed_path": "data/processed/elaad_profiles/B_public_11kw_vancar_cp_y2030_batchseed153201_n100.npz",
+      "profile_type": "cp",
+      "purpose": "public_11kw_equal_mix_public_cp_library",
+      "raw_response_path": "data/raw/elaad_profiles/B_public_11kw_vancar_cp_y2030_batchseed153201_n100.json.gz",
+      "request_json": {
+        "cp_capacity_kw": 11,
+        "location_type": "public",
+        "n_profiles": 100,
+        "profile_type": "cp",
+        "seed": 153201,
+        "simulated_year": 2030,
+        "start_datetime": "2025-01-01T00:00:00+01:00",
+        "step_size_s": 900,
+        "stop_datetime": "2026-01-01T00:00:00+01:00",
+        "timezone": "CET",
+        "vehicle_types": [
+          "van",
+          "car"
+        ]
+      },
+      "request_sha256": "3d3c995e36649782684c39ae5a898110caade4913d1a4bf949fc6ca66643a9a0",
+      "seed": 153201,
+      "set_id": "B",
+      "simulated_year": 2030,
+      "storage_stem": "B_public_11kw_vancar_cp_y2030_batchseed153201_n100",
+      "vehicle_types": [
+        "van",
+        "car"
+      ]
+    },
+    {
+      "capacity_class": "public_13kw",
+      "cp_capacity_kw": 13,
+      "location_type": "public",
+      "n_profiles": 100,
+      "partition": "candidate",
+      "processed_path": "data/processed/elaad_profiles/B_public_13kw_vancar_cp_y2030_batchseed152301_n100.npz",
+      "profile_type": "cp",
+      "purpose": "public_13kw_equal_mix_public_cp_library",
+      "raw_response_path": "data/raw/elaad_profiles/B_public_13kw_vancar_cp_y2030_batchseed152301_n100.json.gz",
+      "request_json": {
+        "cp_capacity_kw": 13,
+        "location_type": "public",
+        "n_profiles": 100,
+        "profile_type": "cp",
+        "seed": 152301,
+        "simulated_year": 2030,
+        "start_datetime": "2025-01-01T00:00:00+01:00",
+        "step_size_s": 900,
+        "stop_datetime": "2026-01-01T00:00:00+01:00",
+        "timezone": "CET",
+        "vehicle_types": [
+          "van",
+          "car"
+        ]
+      },
+      "request_sha256": "8bbdd5a92bacbb4ca0f5ad0b26d9bf6e3e9e06292d1f69e15cfb782ae634a7cb",
+      "seed": 152301,
+      "set_id": "B",
+      "simulated_year": 2030,
+      "storage_stem": "B_public_13kw_vancar_cp_y2030_batchseed152301_n100",
+      "vehicle_types": [
+        "van",
+        "car"
+      ]
+    },
+    {
+      "capacity_class": "public_13kw",
+      "cp_capacity_kw": 13,
+      "location_type": "public",
+      "n_profiles": 100,
+      "partition": "candidate",
+      "processed_path": "data/processed/elaad_profiles/B_public_13kw_vancar_cp_y2030_batchseed152401_n100.npz",
+      "profile_type": "cp",
+      "purpose": "public_13kw_equal_mix_public_cp_library",
+      "raw_response_path": "data/raw/elaad_profiles/B_public_13kw_vancar_cp_y2030_batchseed152401_n100.json.gz",
+      "request_json": {
+        "cp_capacity_kw": 13,
+        "location_type": "public",
+        "n_profiles": 100,
+        "profile_type": "cp",
+        "seed": 152401,
+        "simulated_year": 2030,
+        "start_datetime": "2025-01-01T00:00:00+01:00",
+        "step_size_s": 900,
+        "stop_datetime": "2026-01-01T00:00:00+01:00",
+        "timezone": "CET",
+        "vehicle_types": [
+          "van",
+          "car"
+        ]
+      },
+      "request_sha256": "0b61d4cc6345d3f389e668ac86c6d751da8628da217f02183f842e9e08cb9eb2",
+      "seed": 152401,
+      "set_id": "B",
+      "simulated_year": 2030,
+      "storage_stem": "B_public_13kw_vancar_cp_y2030_batchseed152401_n100",
+      "vehicle_types": [
+        "van",
+        "car"
+      ]
+    },
+    {
+      "capacity_class": "public_13kw",
+      "cp_capacity_kw": 13,
+      "location_type": "public",
+      "n_profiles": 100,
+      "partition": "candidate",
+      "processed_path": "data/processed/elaad_profiles/B_public_13kw_vancar_cp_y2030_batchseed152501_n100.npz",
+      "profile_type": "cp",
+      "purpose": "public_13kw_equal_mix_public_cp_library",
+      "raw_response_path": "data/raw/elaad_profiles/B_public_13kw_vancar_cp_y2030_batchseed152501_n100.json.gz",
+      "request_json": {
+        "cp_capacity_kw": 13,
+        "location_type": "public",
+        "n_profiles": 100,
+        "profile_type": "cp",
+        "seed": 152501,
+        "simulated_year": 2030,
+        "start_datetime": "2025-01-01T00:00:00+01:00",
+        "step_size_s": 900,
+        "stop_datetime": "2026-01-01T00:00:00+01:00",
+        "timezone": "CET",
+        "vehicle_types": [
+          "van",
+          "car"
+        ]
+      },
+      "request_sha256": "2b63e310aa24c461a5c22b43077281eee217c6d6de4365107ef3d83a97d66835",
+      "seed": 152501,
+      "set_id": "B",
+      "simulated_year": 2030,
+      "storage_stem": "B_public_13kw_vancar_cp_y2030_batchseed152501_n100",
+      "vehicle_types": [
+        "van",
+        "car"
+      ]
+    },
+    {
+      "capacity_class": "public_13kw",
+      "cp_capacity_kw": 13,
+      "location_type": "public",
+      "n_profiles": 100,
+      "partition": "held_out",
+      "processed_path": "data/processed/elaad_profiles/B_public_13kw_vancar_cp_y2030_batchseed153301_n100.npz",
+      "profile_type": "cp",
+      "purpose": "public_13kw_equal_mix_public_cp_library",
+      "raw_response_path": "data/raw/elaad_profiles/B_public_13kw_vancar_cp_y2030_batchseed153301_n100.json.gz",
+      "request_json": {
+        "cp_capacity_kw": 13,
+        "location_type": "public",
+        "n_profiles": 100,
+        "profile_type": "cp",
+        "seed": 153301,
+        "simulated_year": 2030,
+        "start_datetime": "2025-01-01T00:00:00+01:00",
+        "step_size_s": 900,
+        "stop_datetime": "2026-01-01T00:00:00+01:00",
+        "timezone": "CET",
+        "vehicle_types": [
+          "van",
+          "car"
+        ]
+      },
+      "request_sha256": "ead7bb788281f4e119363ddfcbe495cdeba0e298f56eaf35dcf513ee921741fa",
+      "seed": 153301,
+      "set_id": "B",
+      "simulated_year": 2030,
+      "storage_stem": "B_public_13kw_vancar_cp_y2030_batchseed153301_n100",
+      "vehicle_types": [
+        "van",
+        "car"
+      ]
+    },
+    {
+      "capacity_class": "public_15kw",
+      "cp_capacity_kw": 15,
+      "location_type": "public",
+      "n_profiles": 100,
+      "partition": "candidate",
+      "processed_path": "data/processed/elaad_profiles/B_public_15kw_vancar_cp_y2030_batchseed152601_n100.npz",
+      "profile_type": "cp",
+      "purpose": "public_15kw_equal_mix_public_cp_library",
+      "raw_response_path": "data/raw/elaad_profiles/B_public_15kw_vancar_cp_y2030_batchseed152601_n100.json.gz",
+      "request_json": {
+        "cp_capacity_kw": 15,
+        "location_type": "public",
+        "n_profiles": 100,
+        "profile_type": "cp",
+        "seed": 152601,
+        "simulated_year": 2030,
+        "start_datetime": "2025-01-01T00:00:00+01:00",
+        "step_size_s": 900,
+        "stop_datetime": "2026-01-01T00:00:00+01:00",
+        "timezone": "CET",
+        "vehicle_types": [
+          "van",
+          "car"
+        ]
+      },
+      "request_sha256": "b31242221988bfd67350bd64df151740855eb6e23214bc52502182ea734058e0",
+      "seed": 152601,
+      "set_id": "B",
+      "simulated_year": 2030,
+      "storage_stem": "B_public_15kw_vancar_cp_y2030_batchseed152601_n100",
+      "vehicle_types": [
+        "van",
+        "car"
+      ]
+    },
+    {
+      "capacity_class": "public_15kw",
+      "cp_capacity_kw": 15,
+      "location_type": "public",
+      "n_profiles": 100,
+      "partition": "candidate",
+      "processed_path": "data/processed/elaad_profiles/B_public_15kw_vancar_cp_y2030_batchseed152701_n100.npz",
+      "profile_type": "cp",
+      "purpose": "public_15kw_equal_mix_public_cp_library",
+      "raw_response_path": "data/raw/elaad_profiles/B_public_15kw_vancar_cp_y2030_batchseed152701_n100.json.gz",
+      "request_json": {
+        "cp_capacity_kw": 15,
+        "location_type": "public",
+        "n_profiles": 100,
+        "profile_type": "cp",
+        "seed": 152701,
+        "simulated_year": 2030,
+        "start_datetime": "2025-01-01T00:00:00+01:00",
+        "step_size_s": 900,
+        "stop_datetime": "2026-01-01T00:00:00+01:00",
+        "timezone": "CET",
+        "vehicle_types": [
+          "van",
+          "car"
+        ]
+      },
+      "request_sha256": "2edebdb78f2eb52b318568c4bddb5a639a97d9830aed6856c2f5719f0d765cb3",
+      "seed": 152701,
+      "set_id": "B",
+      "simulated_year": 2030,
+      "storage_stem": "B_public_15kw_vancar_cp_y2030_batchseed152701_n100",
+      "vehicle_types": [
+        "van",
+        "car"
+      ]
+    },
+    {
+      "capacity_class": "public_15kw",
+      "cp_capacity_kw": 15,
+      "location_type": "public",
+      "n_profiles": 100,
+      "partition": "candidate",
+      "processed_path": "data/processed/elaad_profiles/B_public_15kw_vancar_cp_y2030_batchseed152801_n100.npz",
+      "profile_type": "cp",
+      "purpose": "public_15kw_equal_mix_public_cp_library",
+      "raw_response_path": "data/raw/elaad_profiles/B_public_15kw_vancar_cp_y2030_batchseed152801_n100.json.gz",
+      "request_json": {
+        "cp_capacity_kw": 15,
+        "location_type": "public",
+        "n_profiles": 100,
+        "profile_type": "cp",
+        "seed": 152801,
+        "simulated_year": 2030,
+        "start_datetime": "2025-01-01T00:00:00+01:00",
+        "step_size_s": 900,
+        "stop_datetime": "2026-01-01T00:00:00+01:00",
+        "timezone": "CET",
+        "vehicle_types": [
+          "van",
+          "car"
+        ]
+      },
+      "request_sha256": "707cb9e6cc005fd544491051abafc551bf0c549808d0cceb76ed1b367509c2a8",
+      "seed": 152801,
+      "set_id": "B",
+      "simulated_year": 2030,
+      "storage_stem": "B_public_15kw_vancar_cp_y2030_batchseed152801_n100",
+      "vehicle_types": [
+        "van",
+        "car"
+      ]
+    },
+    {
+      "capacity_class": "public_15kw",
+      "cp_capacity_kw": 15,
+      "location_type": "public",
+      "n_profiles": 100,
+      "partition": "held_out",
+      "processed_path": "data/processed/elaad_profiles/B_public_15kw_vancar_cp_y2030_batchseed153401_n100.npz",
+      "profile_type": "cp",
+      "purpose": "public_15kw_equal_mix_public_cp_library",
+      "raw_response_path": "data/raw/elaad_profiles/B_public_15kw_vancar_cp_y2030_batchseed153401_n100.json.gz",
+      "request_json": {
+        "cp_capacity_kw": 15,
+        "location_type": "public",
+        "n_profiles": 100,
+        "profile_type": "cp",
+        "seed": 153401,
+        "simulated_year": 2030,
+        "start_datetime": "2025-01-01T00:00:00+01:00",
+        "step_size_s": 900,
+        "stop_datetime": "2026-01-01T00:00:00+01:00",
+        "timezone": "CET",
+        "vehicle_types": [
+          "van",
+          "car"
+        ]
+      },
+      "request_sha256": "58291f7ea48a5049f3563fbb7598852426f8ea83a5d07c9fb588799623c9d45a",
+      "seed": 153401,
+      "set_id": "B",
+      "simulated_year": 2030,
+      "storage_stem": "B_public_15kw_vancar_cp_y2030_batchseed153401_n100",
+      "vehicle_types": [
+        "van",
+        "car"
+      ]
+    },
+    {
+      "capacity_class": "public_22kw",
+      "cp_capacity_kw": 22,
+      "location_type": "public",
+      "n_profiles": 100,
+      "partition": "candidate",
+      "processed_path": "data/processed/elaad_profiles/B_public_22kw_vancar_cp_y2030_batchseed152901_n100.npz",
+      "profile_type": "cp",
+      "purpose": "public_22kw_equal_mix_public_cp_library",
+      "raw_response_path": "data/raw/elaad_profiles/B_public_22kw_vancar_cp_y2030_batchseed152901_n100.json.gz",
+      "request_json": {
+        "cp_capacity_kw": 22,
+        "location_type": "public",
+        "n_profiles": 100,
+        "profile_type": "cp",
+        "seed": 152901,
+        "simulated_year": 2030,
+        "start_datetime": "2025-01-01T00:00:00+01:00",
+        "step_size_s": 900,
+        "stop_datetime": "2026-01-01T00:00:00+01:00",
+        "timezone": "CET",
+        "vehicle_types": [
+          "van",
+          "car"
+        ]
+      },
+      "request_sha256": "e880de0df4ddcbe4b7d8bf2af976c97a87372d14bcf9e49da4d99cffbfd9ca3c",
+      "seed": 152901,
+      "set_id": "B",
+      "simulated_year": 2030,
+      "storage_stem": "B_public_22kw_vancar_cp_y2030_batchseed152901_n100",
+      "vehicle_types": [
+        "van",
+        "car"
+      ]
+    },
+    {
+      "capacity_class": "public_22kw",
+      "cp_capacity_kw": 22,
+      "location_type": "public",
+      "n_profiles": 100,
+      "partition": "candidate",
+      "processed_path": "data/processed/elaad_profiles/B_public_22kw_vancar_cp_y2030_batchseed153001_n100.npz",
+      "profile_type": "cp",
+      "purpose": "public_22kw_equal_mix_public_cp_library",
+      "raw_response_path": "data/raw/elaad_profiles/B_public_22kw_vancar_cp_y2030_batchseed153001_n100.json.gz",
+      "request_json": {
+        "cp_capacity_kw": 22,
+        "location_type": "public",
+        "n_profiles": 100,
+        "profile_type": "cp",
+        "seed": 153001,
+        "simulated_year": 2030,
+        "start_datetime": "2025-01-01T00:00:00+01:00",
+        "step_size_s": 900,
+        "stop_datetime": "2026-01-01T00:00:00+01:00",
+        "timezone": "CET",
+        "vehicle_types": [
+          "van",
+          "car"
+        ]
+      },
+      "request_sha256": "bda6b27f13b04976efe3749717ebd2611a090babeb91ef6ae7e24582460d8d8d",
+      "seed": 153001,
+      "set_id": "B",
+      "simulated_year": 2030,
+      "storage_stem": "B_public_22kw_vancar_cp_y2030_batchseed153001_n100",
+      "vehicle_types": [
+        "van",
+        "car"
+      ]
+    },
+    {
+      "capacity_class": "public_22kw",
+      "cp_capacity_kw": 22,
+      "location_type": "public",
+      "n_profiles": 100,
+      "partition": "candidate",
+      "processed_path": "data/processed/elaad_profiles/B_public_22kw_vancar_cp_y2030_batchseed153101_n100.npz",
+      "profile_type": "cp",
+      "purpose": "public_22kw_equal_mix_public_cp_library",
+      "raw_response_path": "data/raw/elaad_profiles/B_public_22kw_vancar_cp_y2030_batchseed153101_n100.json.gz",
+      "request_json": {
+        "cp_capacity_kw": 22,
+        "location_type": "public",
+        "n_profiles": 100,
+        "profile_type": "cp",
+        "seed": 153101,
+        "simulated_year": 2030,
+        "start_datetime": "2025-01-01T00:00:00+01:00",
+        "step_size_s": 900,
+        "stop_datetime": "2026-01-01T00:00:00+01:00",
+        "timezone": "CET",
+        "vehicle_types": [
+          "van",
+          "car"
+        ]
+      },
+      "request_sha256": "b6a6758e88b8292bb426ff5c92cb3b30e95862a46a3a3c64344bd6c9fb5584cb",
+      "seed": 153101,
+      "set_id": "B",
+      "simulated_year": 2030,
+      "storage_stem": "B_public_22kw_vancar_cp_y2030_batchseed153101_n100",
+      "vehicle_types": [
+        "van",
+        "car"
+      ]
+    },
+    {
+      "capacity_class": "public_22kw",
+      "cp_capacity_kw": 22,
+      "location_type": "public",
+      "n_profiles": 100,
+      "partition": "held_out",
+      "processed_path": "data/processed/elaad_profiles/B_public_22kw_vancar_cp_y2030_batchseed153501_n100.npz",
+      "profile_type": "cp",
+      "purpose": "public_22kw_equal_mix_public_cp_library",
+      "raw_response_path": "data/raw/elaad_profiles/B_public_22kw_vancar_cp_y2030_batchseed153501_n100.json.gz",
+      "request_json": {
+        "cp_capacity_kw": 22,
+        "location_type": "public",
+        "n_profiles": 100,
+        "profile_type": "cp",
+        "seed": 153501,
+        "simulated_year": 2030,
+        "start_datetime": "2025-01-01T00:00:00+01:00",
+        "step_size_s": 900,
+        "stop_datetime": "2026-01-01T00:00:00+01:00",
+        "timezone": "CET",
+        "vehicle_types": [
+          "van",
+          "car"
+        ]
+      },
+      "request_sha256": "c0ad9a487770239758c1ca0469b76e1619a30ddd2fc3cdafba372a0876f655da",
+      "seed": 153501,
+      "set_id": "B",
+      "simulated_year": 2030,
+      "storage_stem": "B_public_22kw_vancar_cp_y2030_batchseed153501_n100",
+      "vehicle_types": [
+        "van",
+        "car"
+      ]
+    }
+  ],
+  "bulk_generation_performed": false,
+  "calendar": {
+    "start_datetime": "2025-01-01T00:00:00+01:00",
+    "step_size_s": 900,
+    "stop_datetime": "2026-01-01T00:00:00+01:00",
+    "timezone": "CET"
+  },
+  "dashboard_url": "https://charging.elaad.nl/",
+  "data_id": "D-002",
+  "local_documentation_version": "Documentatie Laadprofielengenerator, ElaadNL, 10 November 2025",
+  "outlook_basis": "Outlook Personenauto's 2024; Outlook Logistiek 2025",
+  "policy": {
+    "candidate_M": 1200,
+    "capacity_mix": {
+      "public_11kw": 0.25,
+      "public_13kw": 0.25,
+      "public_15kw": 0.25,
+      "public_22kw": 0.25
+    },
+    "commit_generated_profiles": false,
+    "dc_or_fast_charging": false,
+    "decision": "EV-008A",
+    "held_out_H": 400,
+    "m_sufficiency_claimed": false,
+    "public_smart_charging": false,
+    "redistribute_generated_profiles": false,
+    "scientific_decisions": [
+      "EV-002",
+      "EV-003",
+      "EV-005",
+      "EV-008A"
+    ]
+  },
+  "status": "ev008a-approved-request-metadata-only"
+}
