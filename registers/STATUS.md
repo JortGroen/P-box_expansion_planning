@@ -31,7 +31,7 @@ Format: `Story | Owner | status | tasks | blocked-by | PR`
 | E4.S2 Fallback stub | B | todo | 0/1 | E5 invariant skeleton | -- |
 | E5.S1 Fuzzy number class | B | done | 2/2 | -- | #1 |
 | E5.S2 Vertex propagation scaffold | B | done | 3/3 | G3 before scientific use | #6 |
-| E5.S3 Output-domain model-error propagation | B | in-progress | 1/4 | T2-T4: Agent A `LoadingTrajectoryResult` contract/validator, signed A-013, G2 envelope, resolved Q-5, and total-versus-firm capacity decision/provenance before paper use | #36; #13 closed |
+| E5.S3 Output-domain model-error propagation | B | in-progress | 1/4 + Agent A contract in review | T2-T4: signed A-013, G2 envelope, resolved Q-5, and total-versus-firm capacity decision/provenance before paper use | #36; #13 closed; Agent A contract #42 |
 | E5.S4 Independent cross-check | B | todo | 0/2 | E5.S1-E5.S3 | -- |
 | E6.S1 alpha_star | B | review | 1/1 | E5.S2 | #33 |
 | E6.S2 rho_star and membership | B | todo | 0/3 | E6.S1, G3 | -- |
