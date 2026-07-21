@@ -175,6 +175,10 @@
       "owners": ["agent-c"]
     },
     {
+      "pattern": "src/weather_model.py",
+      "owners": ["agent-c"]
+    },
+    {
       "pattern": "src/baseline_model.py",
       "owners": ["agent-c"]
     },
@@ -212,6 +216,10 @@
     },
     {
       "pattern": "tests/test_pv_model.py",
+      "owners": ["agent-c"]
+    },
+    {
+      "pattern": "tests/test_weather_model.py",
       "owners": ["agent-c"]
     },
     {

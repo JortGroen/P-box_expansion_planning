@@ -84,6 +84,11 @@ Leave PI Lite and inspect broader context when:
 - `HP-001` is approved. D-003 When2Heat is approved for first-pass internal
   Dutch residential HP shape/COP source use covering SFH/MFH space heat with
   ASHP radiator COP plus SFH/MFH domestic hot water with ASHP water COP.
-  Commercial heat, local annual HP scaling, D-004/Q-8 paired-weather
-  acceptance, cold-spell tolerances, event analysis, and manuscript results
-  remain separate blockers.
+  Commercial heat, local annual HP scaling, WEATHER-001 implementation over
+  accepted D-004 members, paired-weather acceptance, cold-spell tolerances,
+  event analysis, and manuscript results remain separate blockers.
+- `WEATHER-001` resolves Q-8. HP and PV must use one neutral shared weather
+  contract in `src/weather_model.py` / `tests/test_weather_model.py`, now owned
+  by Agent C. This approves the interface route only; D-004 source acceptance,
+  completeness checks, cold-spell tolerances, paired-weather acceptance
+  results, net-load/event analysis, and manuscript results remain blocked.
