@@ -897,6 +897,80 @@ def test_committed_d004_source_member_acceptance_decision_is_partial() -> None:
     assert "approved for internal first-screen source/member use; final paired/cold-spell acceptance pending" in data_register
     assert "final paired HP/PV validation" in data_register
 
+def test_d004_weather_input_artifact_builds_from_accepted_source_member_metadata(tmp_path: Path) -> None:
+    metadata_src = Path("data/metadata/weather_pv")
+    metadata_dst = tmp_path / "metadata" / "weather_pv"
+    metadata_dst.mkdir(parents=True)
+    for name in [
+        weather_pv.D004_SOURCE_MEMBER_ACCEPTANCE_DECISION_NAME,
+        weather_pv.D004_MEMBER_MANIFEST_NAME,
+        weather_pv.D004_MEMBER_READINESS_DIAGNOSTICS_NAME,
+    ]:
+        (metadata_dst / name).write_text((metadata_src / name).read_text(encoding="utf-8"), encoding="utf-8")
+
+    payload = weather_pv.build_d004_weather_input_artifact(metadata_dir=tmp_path / "metadata")
+    first_member = payload["members"][0]
+
+    assert payload["status"] == "accepted_for_source_member_use_final_paired_cold_spell_pending"
+    assert payload["source_member_acceptance_id"] == "D004-SOURCE-MEMBER-ACCEPTANCE"
+    assert payload["accepted_for_source_member_use"] is True
+    assert payload["ready_for_executable_input_gate"] is True
+    assert payload["realized_weather_path"].startswith("KNMI station 249")
+    assert payload["pvgis_realized_weather_path"] is False
+    assert payload["pvgis_role"].startswith("qualitative seasonal/peak sanity")
+    assert payload["blocked_acceptance_gates"]["final_paired_hp_pv_acceptance"]["blocked"] is True
+    assert payload["blocked_acceptance_gates"]["cold_spell_acceptance"]["blocked"] is True
+    assert payload["blocked_acceptance_gates"]["integrated_analysis"]["blocked"] is True
+    assert payload["required_identity_fields_for_hp_pv_pairing"] == [
+        "member_id",
+        "shared_weather_driver_id",
+        "source",
+        "first_timestamp_utc",
+        "last_timestamp_utc",
+        "n_timesteps",
+        "cadence_seconds",
+        "content_sha256",
+    ]
+    assert len(payload["members"]) == 10
+    assert first_member["accepted_for_source_member_use"] is True
+    assert first_member["final_paired_hp_pv_acceptance"] is False
+    assert first_member["cold_spell_acceptance"] is False
+    assert first_member["calendar_id"] == "d004_alkmaar_berkhout_2014_2023_v1:utc_year_15min_europe_amsterdam:2014"
+    assert first_member["cadence_seconds"] == 900
+    assert len(first_member["content_sha256"]) == 64
+    assert first_member["shared_weather_driver_id"] == "d004_alkmaar_berkhout_2014_2023_v1:2014"
+    assert first_member["weather_fields"]["temperature_c"]["conversion"] == "T / 10"
+    assert first_member["weather_fields"]["pv_weather_fields.ghi_w_per_m2"]["hourly_energy_preserved"] is True
+
+
+def test_committed_d004_weather_input_artifact_exposes_input_gate_but_blocks_final_acceptance() -> None:
+    payload = weather_pv.load_d004_weather_input_artifact()
+
+    assert payload["artifact_type"] == "accepted_weather_001_member_index_for_executable_input_gate"
+    assert payload["source_member_acceptance_id"] == "D004-SOURCE-MEMBER-ACCEPTANCE"
+    assert payload["source_member_acceptance_status"] == (
+        "approved_for_internal_first_screen_source_member_use_final_paired_acceptance_pending"
+    )
+    assert payload["accepted_for_source_member_use"] is True
+    assert payload["ready_for_executable_input_gate"] is True
+    assert payload["weather_contract"] == "WEATHER-001"
+    assert payload["member_construction_rule_id"] == "D004-MC-001"
+    assert payload["calendar_contract"]["cadence_seconds"] == 900
+    assert payload["calendar_contract"]["timezone"] == "Europe/Amsterdam"
+    assert payload["pvgis_realized_weather_path"] is False
+    assert payload["pvgis_role"].startswith("qualitative seasonal/peak sanity")
+    assert payload["blocked_acceptance_gates"]["final_paired_hp_pv_acceptance"]["blocked"] is True
+    assert payload["blocked_acceptance_gates"]["cold_spell_acceptance"]["blocked"] is True
+    assert payload["blocked_acceptance_gates"]["integrated_analysis"]["blocked"] is True
+    assert [member["year"] for member in payload["members"]] == list(range(2014, 2024))
+    assert all(member["accepted_for_source_member_use"] is True for member in payload["members"])
+    assert all(member["final_paired_hp_pv_acceptance"] is False for member in payload["members"])
+    assert all(member["cold_spell_acceptance"] is False for member in payload["members"])
+    assert {member["shared_weather_driver_id"] for member in payload["members"]} == {
+        f"d004_alkmaar_berkhout_2014_2023_v1:{year}" for year in range(2014, 2024)
+    }
+
+
 def test_d004_weather_member_builder_expands_knmi_hourly_fixture_to_utc_year(tmp_path: Path) -> None:
     metadata_dir = tmp_path / "metadata"
     _write_d004_fixture_manifest(tmp_path, metadata_dir, year=2014)
