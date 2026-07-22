@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import math
-from typing import Mapping, Sequence
+from typing import Any, Mapping, Sequence
 
 import numpy as np
 
@@ -42,6 +42,124 @@ class OutputErrorEnvelope:
     epsilon_grid: EnvelopeValue
     epsilon_tier1_minus: EnvelopeValue
     epsilon_tier1_plus: EnvelopeValue
+
+@dataclass(frozen=True)
+class OutputErrorProtocolConfig:
+    """Manifest-ready synthetic E5.S3 output-error protocol configuration.
+
+    The numerical envelope values are explicit inputs so tests and later runner
+    plumbing can record them without treating A-013 or G2 values as signed.
+    """
+
+    envelope: OutputErrorEnvelope
+    threshold_pu: float
+    min_consecutive_steps: int
+    timestep_seconds: int
+    envelope_source: str = "synthetic-placeholder"
+    grid_error_source: str = "synthetic-placeholder"
+    tier1_error_source: str = "synthetic-placeholder"
+    capacity_denominator_provenance: str = "synthetic-placeholder"
+    use_status: str = "synthetic-only"
+
+    def __post_init__(self) -> None:
+        if not math.isfinite(float(self.threshold_pu)) or self.threshold_pu < 0.0:
+            raise ValueError("threshold_pu must be finite and nonnegative")
+        if isinstance(self.min_consecutive_steps, bool) or not isinstance(
+            self.min_consecutive_steps,
+            int,
+        ):
+            raise TypeError("min_consecutive_steps must be an integer")
+        if self.min_consecutive_steps <= 0:
+            raise ValueError("min_consecutive_steps must be positive")
+        if isinstance(self.timestep_seconds, bool) or not isinstance(self.timestep_seconds, int):
+            raise TypeError("timestep_seconds must be an integer")
+        if self.timestep_seconds <= 0:
+            raise ValueError("timestep_seconds must be positive")
+        for name, value in (
+            ("envelope_source", self.envelope_source),
+            ("grid_error_source", self.grid_error_source),
+            ("tier1_error_source", self.tier1_error_source),
+            ("capacity_denominator_provenance", self.capacity_denominator_provenance),
+            ("use_status", self.use_status),
+        ):
+            if not isinstance(value, str) or not value.strip():
+                raise ValueError(f"{name} must be a nonempty string")
+        _validate_envelope_values(self.envelope)
+
+    @classmethod
+    def from_mapping(cls, config: Mapping[str, Any]) -> "OutputErrorProtocolConfig":
+        """Build a typed protocol config from an explicit mapping."""
+
+        required = {
+            "epsilon_grid",
+            "epsilon_tier1_minus",
+            "epsilon_tier1_plus",
+            "threshold_pu",
+            "min_consecutive_steps",
+            "timestep_seconds",
+        }
+        optional = {
+            "envelope_source",
+            "grid_error_source",
+            "tier1_error_source",
+            "capacity_denominator_provenance",
+            "use_status",
+        }
+        missing = required.difference(config)
+        if missing:
+            raise ValueError(f"missing output-error config fields: {sorted(missing)}")
+        unknown = set(config).difference(required | optional)
+        if unknown:
+            raise ValueError(f"unknown output-error config fields: {sorted(unknown)}")
+        return cls(
+            envelope=OutputErrorEnvelope(
+                epsilon_grid=config["epsilon_grid"],
+                epsilon_tier1_minus=config["epsilon_tier1_minus"],
+                epsilon_tier1_plus=config["epsilon_tier1_plus"],
+            ),
+            threshold_pu=float(config["threshold_pu"]),
+            min_consecutive_steps=_coerce_int_config(
+                config["min_consecutive_steps"],
+                name="min_consecutive_steps",
+            ),
+            timestep_seconds=_coerce_int_config(
+                config["timestep_seconds"],
+                name="timestep_seconds",
+            ),
+            envelope_source=str(config.get("envelope_source", "synthetic-placeholder")),
+            grid_error_source=str(config.get("grid_error_source", "synthetic-placeholder")),
+            tier1_error_source=str(config.get("tier1_error_source", "synthetic-placeholder")),
+            capacity_denominator_provenance=str(
+                config.get("capacity_denominator_provenance", "synthetic-placeholder")
+            ),
+            use_status=str(config.get("use_status", "synthetic-only")),
+        )
+
+    def manifest_metadata(self) -> dict[str, object]:
+        """Return deterministic metadata suitable for an ExperimentRunner manifest."""
+
+        return {
+            "capacity_denominator_provenance": self.capacity_denominator_provenance,
+            "envelope": {
+                "epsilon_grid": _jsonable_endpoint_value(self.envelope.epsilon_grid),
+                "epsilon_tier1_minus": _jsonable_endpoint_value(
+                    self.envelope.epsilon_tier1_minus
+                ),
+                "epsilon_tier1_plus": _jsonable_endpoint_value(self.envelope.epsilon_tier1_plus),
+            },
+            "envelope_source": self.envelope_source,
+            "event_semantics": {
+                "comparator": "strict_greater_than",
+                "direction_gate": "unwidened_p_net_import_mask",
+                "min_consecutive_steps": self.min_consecutive_steps,
+                "threshold_pu": self.threshold_pu,
+                "timestep_seconds": self.timestep_seconds,
+            },
+            "grid_error_source": self.grid_error_source,
+            "probability_widening": "forbidden",
+            "tier1_error_source": self.tier1_error_source,
+            "use_status": self.use_status,
+        }
 
 
 @dataclass(frozen=True)
@@ -201,6 +319,22 @@ def evaluate_output_error_endpoint_event(
         upper_longest_run_steps=upper_longest,
     )
 
+def estimate_output_error_probability_from_config(
+    results: Sequence[LoadingTrajectoryResult],
+    config: OutputErrorProtocolConfig,
+    *,
+    confidence_level: float = 0.95,
+) -> OutputErrorProbabilityResult:
+    """Estimate endpoint probabilities using a manifest-ready protocol config."""
+
+    for result in results:
+        _validate_result_matches_config(result, config)
+    return estimate_output_error_probability(
+        results,
+        config.envelope,
+        confidence_level=confidence_level,
+    )
+
 
 def estimate_output_error_probability(
     results: Sequence[LoadingTrajectoryResult],
@@ -300,6 +434,45 @@ def estimate_alpha_output_error_probability(
         for alpha in alpha_grid
     }
 
+def _validate_envelope_values(envelope: OutputErrorEnvelope) -> None:
+    for name, value in (
+        ("epsilon_grid", envelope.epsilon_grid),
+        ("epsilon_tier1_minus", envelope.epsilon_tier1_minus),
+        ("epsilon_tier1_plus", envelope.epsilon_tier1_plus),
+    ):
+        array = np.asarray(value, dtype=float)
+        if not np.isfinite(array).all():
+            raise ValueError(f"{name} must contain only finite values")
+        if np.any(array < 0.0):
+            raise ValueError(f"{name} must be nonnegative")
+    if np.any(np.asarray(envelope.epsilon_grid, dtype=float) >= 1.0):
+        raise ValueError("epsilon_grid must be less than 1")
+
+
+def _validate_result_matches_config(
+    result: LoadingTrajectoryResult,
+    config: OutputErrorProtocolConfig,
+) -> None:
+    validate_loading_trajectory_result(result)
+    if not math.isclose(result.threshold_pu, config.threshold_pu, rel_tol=0.0, abs_tol=1e-12):
+        raise ValueError("trajectory threshold_pu must match output-error config")
+    if result.min_consecutive_steps != config.min_consecutive_steps:
+        raise ValueError("trajectory min_consecutive_steps must match output-error config")
+
+
+def _jsonable_endpoint_value(value: EnvelopeValue) -> float | list[float]:
+    array = np.asarray(value, dtype=float)
+    if array.ndim == 0:
+        return float(array)
+    return [float(item) for item in array.reshape(-1)]
+
+
+def _coerce_int_config(value: Any, *, name: str) -> int:
+    if isinstance(value, bool):
+        raise TypeError(f"{name} must be an integer")
+    if isinstance(value, int):
+        return value
+    raise TypeError(f"{name} must be an integer")
 
 def _as_endpoint_array(
     value: EnvelopeValue,
