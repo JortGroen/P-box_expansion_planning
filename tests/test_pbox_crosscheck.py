@@ -1,103 +1,139 @@
 from __future__ import annotations
 
 from pathlib import Path
-from statistics import NormalDist
 
 import pytest
 
 from src.fuzzy import TrapezoidalFuzzyNumber
-from src.pbox import VertexUseMode, estimate_vertex_pbox
-from src.rng import sample_seed
+from src.pbox_crosscheck import (
+    FiniteHybridState,
+    GaussianToyParameters,
+    estimate_gaussian_toy_pbox,
+    finite_hybrid_bounds,
+    gaussian_closed_form_bounds,
+    gaussian_tail_probability,
+)
 
 
-def _gaussian_tail_probability(
-    *,
-    rho: float,
-    mu_0: float,
-    beta: float,
-    sigma: float,
-    threshold: float,
-) -> float:
-    z_score = (threshold - mu_0 + beta * rho) / sigma
-    return 1.0 - NormalDist().cdf(z_score)
+def _gaussian_fixture() -> tuple[TrapezoidalFuzzyNumber, list[float], GaussianToyParameters]:
+    return (
+        TrapezoidalFuzzyNumber(0.0, 0.25, 0.75, 1.0),
+        [0.0, 0.5, 1.0],
+        GaussianToyParameters(mu_0=1.0, beta=0.4, sigma=0.2, threshold=1.1),
+    )
 
 
 def test_gaussian_crosscheck_closed_form_is_monotone_and_endpoint_bounded() -> None:
-    fuzzy = TrapezoidalFuzzyNumber(0.0, 0.25, 0.75, 1.0)
-    alpha_grid = [0.0, 0.5, 1.0]
-    params = {"mu_0": 1.0, "beta": 0.4, "sigma": 0.2, "threshold": 1.1}
+    fuzzy, alpha_grid, params = _gaussian_fixture()
 
-    intervals: list[tuple[float, float]] = []
-    for alpha in alpha_grid:
+    bounds = gaussian_closed_form_bounds(
+        fuzzy_number=fuzzy,
+        alpha_grid=alpha_grid,
+        params=params,
+    )
+
+    assert list(bounds) == alpha_grid
+    for alpha, (lower, upper) in bounds.items():
         cut = fuzzy.alpha_cut(alpha)
-        lower = _gaussian_tail_probability(rho=cut.upper, **params)
-        upper = _gaussian_tail_probability(rho=cut.lower, **params)
-        intervals.append((lower, upper))
-
         assert lower <= upper
-        assert lower == pytest.approx(
-            1.0
-            - NormalDist().cdf(
-                (params["threshold"] - params["mu_0"] + params["beta"] * cut.upper)
-                / params["sigma"]
-            )
-        )
+        assert lower == pytest.approx(gaussian_tail_probability(rho=cut.upper, params=params))
+        assert upper == pytest.approx(gaussian_tail_probability(rho=cut.lower, params=params))
 
-    assert intervals[0][0] <= intervals[1][0] <= intervals[2][0]
-    assert intervals[2][1] <= intervals[1][1] <= intervals[0][1]
+    assert bounds[0.0][0] <= bounds[0.5][0] <= bounds[1.0][0]
+    assert bounds[1.0][1] <= bounds[0.5][1] <= bounds[0.0][1]
 
 
 def test_gaussian_crosscheck_known_synthetic_tail_values_are_stable() -> None:
-    params = {"mu_0": 1.0, "beta": 0.4, "sigma": 0.2, "threshold": 1.1}
+    _, _, params = _gaussian_fixture()
 
-    assert _gaussian_tail_probability(rho=0.0, **params) == pytest.approx(
+    assert gaussian_tail_probability(rho=0.0, params=params) == pytest.approx(
         0.3085375387259869
     )
-    assert _gaussian_tail_probability(rho=1.0, **params) == pytest.approx(
+    assert gaussian_tail_probability(rho=1.0, params=params) == pytest.approx(
         0.006209665325776159
     )
 
 
 def test_gaussian_crosscheck_exercises_vertex_pbox_against_closed_form() -> None:
-    fuzzy = TrapezoidalFuzzyNumber(0.0, 0.25, 0.75, 1.0)
-    alpha_grid = [0.0, 0.5, 1.0]
-    sample_count = 4096
-    root_seed = 20260721
-    params = {"mu_0": 1.0, "beta": 0.4, "sigma": 0.2, "threshold": 1.1}
-    seed_to_index = {
-        sample_seed(root_seed, sample_index): sample_index
-        for sample_index in range(sample_count)
-    }
-    normal = NormalDist()
-
-    def evaluator(rho: float, seed: int) -> bool:
-        sample_index = seed_to_index[seed]
-        quantile = (sample_index + 0.5) / sample_count
-        z_value = normal.inv_cdf(quantile)
-        loading = params["mu_0"] - params["beta"] * rho + params["sigma"] * z_value
-        return loading > params["threshold"]
-
-    pbox = estimate_vertex_pbox(
+    fuzzy, alpha_grid, params = _gaussian_fixture()
+    expected = gaussian_closed_form_bounds(
         fuzzy_number=fuzzy,
         alpha_grid=alpha_grid,
-        sample_count=sample_count,
-        root_seed=root_seed,
-        evaluator=evaluator,
-        use_mode=VertexUseMode.PRE_G3_SYNTHETIC,
+        params=params,
+    )
+
+    pbox = estimate_gaussian_toy_pbox(
+        fuzzy_number=fuzzy,
+        alpha_grid=alpha_grid,
+        params=params,
+        sample_count=4096,
+        root_seed=20260721,
     )
 
     for alpha, result in pbox.items():
-        expected_lower = _gaussian_tail_probability(
-            rho=fuzzy.alpha_cut(alpha).upper,
-            **params,
-        )
-        expected_upper = _gaussian_tail_probability(
-            rho=fuzzy.alpha_cut(alpha).lower,
-            **params,
-        )
+        expected_lower, expected_upper = expected[alpha]
         assert abs(result.lower.probability - expected_lower) < 0.01
         assert abs(result.upper.probability - expected_upper) < 0.01
         assert result.lower.probability <= result.upper.probability
+
+
+def test_finite_hybrid_crosscheck_matches_hand_computed_probability_bounds() -> None:
+    fuzzy = TrapezoidalFuzzyNumber(0.0, 0.2, 0.4, 0.6)
+    states = [
+        FiniteHybridState(value=0.2, probability=0.25),
+        FiniteHybridState(value=0.7, probability=0.25),
+        FiniteHybridState(value=1.05, probability=0.5),
+    ]
+
+    bounds = finite_hybrid_bounds(
+        fuzzy_number=fuzzy,
+        alpha_grid=[0.0, 0.5, 1.0],
+        states=states,
+        threshold=0.5,
+    )
+
+    assert bounds[0.0].lower_probability == pytest.approx(0.0)
+    assert bounds[0.0].upper_probability == pytest.approx(0.75)
+    assert bounds[0.5].lower_probability == pytest.approx(0.5)
+    assert bounds[0.5].upper_probability == pytest.approx(0.75)
+    assert bounds[1.0].lower_probability == pytest.approx(0.5)
+    assert bounds[1.0].upper_probability == pytest.approx(0.5)
+    assert bounds[0.0].lower_probability <= bounds[0.5].lower_probability <= bounds[1.0].lower_probability
+    assert bounds[1.0].upper_probability <= bounds[0.5].upper_probability <= bounds[0.0].upper_probability
+
+
+def test_finite_hybrid_crosscheck_keeps_alpha_indexed_bounds_only() -> None:
+    fuzzy = TrapezoidalFuzzyNumber(0.0, 0.2, 0.4, 0.6)
+    states = [
+        FiniteHybridState(value=0.2, probability=0.25),
+        FiniteHybridState(value=0.7, probability=0.25),
+        FiniteHybridState(value=1.05, probability=0.5),
+    ]
+
+    bounds = finite_hybrid_bounds(
+        fuzzy_number=fuzzy,
+        alpha_grid=[0.0, 1.0],
+        states=states,
+        threshold=0.5,
+    )
+
+    assert set(bounds) == {0.0, 1.0}
+    assert all(hasattr(result, "lower_probability") for result in bounds.values())
+    assert all(hasattr(result, "upper_probability") for result in bounds.values())
+    assert all(not hasattr(result, "defuzzified_probability") for result in bounds.values())
+
+
+def test_crosscheck_helpers_reject_invalid_synthetic_inputs() -> None:
+    with pytest.raises(ValueError, match="beta must be positive"):
+        GaussianToyParameters(mu_0=1.0, beta=0.0, sigma=0.2, threshold=1.1)
+
+    with pytest.raises(ValueError, match="state probabilities must sum to 1"):
+        finite_hybrid_bounds(
+            fuzzy_number=TrapezoidalFuzzyNumber(0.0, 0.2, 0.4, 0.6),
+            alpha_grid=[0.0],
+            states=[FiniteHybridState(value=1.0, probability=0.5)],
+            threshold=0.5,
+        )
 
 
 def test_crosscheck_report_records_scaffold_only_guardrails() -> None:
@@ -108,9 +144,10 @@ def test_crosscheck_report_records_scaffold_only_guardrails() -> None:
         "does not run integrated net load",
         "P(E_toy | rho)",
         "1 - Phi",
-        "absolute error below 0.01",
+        "absolute-error tolerance",
+        "finite hybrid toy",
         "Baudrit-style hybrid propagation",
-        "executable synthetic scaffold",
+        "executable synthetic package",
         "no scalar defuzzified probability",
         "G3 remains pending",
         "Q-5 remains open",
