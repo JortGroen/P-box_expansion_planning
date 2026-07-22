@@ -1,0 +1,25 @@
+{
+  "blocked_by": "PI approval of D004-MC-001 or an amended construction rule",
+  "clarification_status": "proposal_only_waiting_for_pi",
+  "data_id": "D-004",
+  "d004_status": "proposed_not_signed",
+  "implementation_allowed_before_approval": false,
+  "member_construction_rule_id": "D004-MC-001",
+  "question_id": "Q-9",
+  "recommended_pi_action": "approve D004-MC-001 as proposed",
+  "recommended_approval_summary": {
+    "calendar_basis": "UTC calendar year",
+    "ghi_rule": "KNMI Q converted to hourly-average W/m2 and repeated over four quarter-hour sub-intervals",
+    "local_timestamp_rule": "derive Europe/Amsterdam timestamps from UTC instants",
+    "member_id_template": "d004_alkmaar_berkhout_<YEAR>_v1",
+    "pvgis_use": "calibration_or_validation_provenance_only",
+    "shared_weather_driver_id_template": "d004_alkmaar_berkhout_2014_2023_v1:<YEAR>",
+    "temperature_rule": "KNMI T divided by 10 and repeated over four quarter-hour timestamps"
+  },
+  "scope_boundaries": [
+    "no D-004 signoff",
+    "no accepted WeatherMember generation",
+    "no raw download",
+    "no net-load/event/P(E)/capacity-screen/manuscript-result analysis"
+  ]
+}
