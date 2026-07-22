@@ -7,7 +7,7 @@ boundary for future accepted C-owned baseline, EV, HP, and PV artifacts. It
 uses merged readiness reports and metadata-only or synthetic placeholders. It
 does not wire real arrays, open EV held-out data, run E3.S2a held-out results,
 run E3.S2b/E3.S3 threshold screens, evaluate events, compute `P(E)`, or produce
-manuscript numbers. Q-5 remains a hard stop before event-based scientific
+manuscript numbers. Q-5 is resolved by G0-A3, but this scaffold still does not authorize event-based scientific
 analysis.
 
 ## Purpose
@@ -122,7 +122,7 @@ following occur:
 6. The run would inspect EV held-out adequacy data before E3.S2a freezes its
    downstream criterion.
 7. The run would evaluate thresholds, event episodes, `P(E)`, E3.S2b/E3.S3
-   threshold screens, or manuscript numbers while Q-5 is unresolved.
+   threshold screens, or manuscript numbers without satisfying the remaining integrated-analysis gates.
 
 ## Suggested Implementation Sequence
 

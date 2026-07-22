@@ -7,8 +7,8 @@ the adapter skeleton checklist: an accepted-metadata registry that can build an
 auditable IC-1 assembly plan and validate synthetic adapter outputs before
 aggregation. It does not wire real E2 arrays, open EV held-out data, run
 E3.S2a held-out adequacy, run E3.S2b/E3.S3 threshold screens, evaluate events,
-compute `P(E)`, or produce manuscript numbers. Q-5 remains a hard stop before
-event-based scientific analysis.
+compute `P(E)`, or produce manuscript numbers. Q-5 is resolved by G0-A3,
+but this readiness packet still does not authorize event-based scientific analysis.
 
 ## Purpose
 
@@ -59,7 +59,7 @@ Stop before real integration if any real component artifact remains scaffold or
 synthetic, if the registry cannot prove one calendar and HP/PV weather member,
 if output metadata drifts from accepted skeleton metadata, or if the next step
 would inspect EV held-out data or produce event, threshold, probability, or
-manuscript results while Q-5 is unresolved.
+manuscript results without satisfying the remaining integrated-analysis gates.
 
 ## No-Result Boundary
 

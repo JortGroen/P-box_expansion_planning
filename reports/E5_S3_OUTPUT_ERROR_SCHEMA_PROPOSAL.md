@@ -9,8 +9,8 @@
 
 This report defines the smallest G1-A1/G1-A2-compliant schema change at the
 IC-2/IC-3 boundary. It does not implement E5.S3 T2-T4 and does not choose
-`epsilon_grid`, Tier-1 error endpoints, a G2 adequacy rule, or the Q-5
-threshold interpretation.
+`epsilon_grid`, Tier-1 error endpoints, or a G2 adequacy rule. Q-5 is
+now resolved separately by G0-A3.
 
 ## PI Approval Conditions
 
@@ -29,8 +29,8 @@ Q-6 approved the schema with these conditions:
   composed conservatively before event detection.
 - Timestep cadence and transformer capacity/denominator provenance must be
   recorded in runner configuration and manifests.
-- This approval does not resolve Q-5, total-versus-firm capacity, G2 error
-  values, or numerical A-013 grid-error values.
+- Q-5 is resolved separately by G0-A3. This approval does not resolve
+  total-versus-firm capacity, G2 error values, or numerical A-013 grid-error values.
 
 The current `Tier1Evaluation` already carries the essential IC-2 evidence:
 `p_net_kw`, `screening_loading_pu`, direction masks, threshold, persistence
@@ -51,7 +51,7 @@ IC-2 should return or expose one sample-level object with these required fields:
 | `import_mask` | `np.ndarray[bool_]` shape `(T,)` | boolean | True exactly where unwidened `p_net_kw > 0`. |
 | `export_mask` | `np.ndarray[bool_]` shape `(T,)` | boolean | True exactly where unwidened `p_net_kw < 0`; diagnostic only for primary import event. |
 | `zero_mask` | `np.ndarray[bool_]` shape `(T,)` | boolean | True exactly where unwidened `p_net_kw == 0`. |
-| `threshold_pu` | `float` | p.u. | Strict event threshold, currently the provisional G0-A3 value. |
+| `threshold_pu` | `float` | p.u. | Strict event threshold declared by G0-A3 or the sensitivity run. |
 | `min_consecutive_steps` | `int` | count | Episode persistence length, currently 4. |
 | `time_domain` | `Literal["full_year", "window_set"]` | enum | Distinguishes primary full-year evaluation from diagnostics. |
 | `primary_probability_domain` | `bool` | boolean | True only for full-year primary probability samples. |
@@ -198,6 +198,6 @@ specific implementation scope.
 - **Agent A contract:** provide the shared `LoadingTrajectoryResult` contract/validator and define the matching AC/Tier-2 payload if needed before Agent B implements IC-3 propagation.
 - **G2:** supply additive Tier-1 endpoint values and validation/adequacy verdict.
 - **A-013:** sign numerical `epsilon_grid` scenario values and operating-domain status before paper use.
-- **Q-5:** resolve the provisional 1.1-p.u. overload-threshold source and time-aggregation review before integrated event-based scientific analysis.
+- **Q-5/G0-A3:** resolved. Use strict `L_import > 1.0 p.u.` for the primary four-step event, with `1.1` and `1.2 p.u.` persistent-event sensitivities.
 - **Capacity provenance:** total-versus-firm capacity remains unresolved; runner configuration and manifests must record the timestep cadence and transformer capacity/denominator provenance used by any later run.
 - **G3:** decide whether endpoint/vertex propagation in controllability is allowed; before G3, the proposal only governs output-error endpoint classification once the appropriate rho sampling path is selected.

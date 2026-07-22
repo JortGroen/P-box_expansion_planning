@@ -44,19 +44,17 @@ OPTIONS: A) Sign a sourced value only after E9.S5a documents a comparable quanti
 RECOMMENDATION: A if comparable evidence is found; otherwise B is more defensible than converting a mechanism inventory into a false empirical claim.
 STATUS: open; does not block model/data integration, but blocks numerical A-013 sign-off and manuscript claims that 5% is scientifically established.
 
-## Q-5 - G0-A3 - 2026-07-16 - BLOCKING: yes before integrated event analysis
-CONTEXT: The PI selected a provisional congestion event of strict import loading above 1.1 p.u. for one hour. The executable default has been changed, but the source and the meaning of "one hour" have not yet been verified, and a source may also impose a separate cumulative rule for loading between 1.0 and 1.1 p.u.
-QUESTION: Before event-based scientific analysis, should G0-A3 remain four consecutive 15-minute values above 1.1 p.u., change to an hourly-average criterion, add a cumulative 1.0-1.1 p.u. exposure rule, or revert/demote 1.1 after source review?
-OPTIONS: A) Retain strict `>1.1` for four consecutive steps as primary, with the verified source and scope recorded.  B) Amend the event and sensitivities to match the verified source and applicable Dutch transformer-planning interpretation.
-RECOMMENDATION: Verify the exact passage and prefer B if its time aggregation, asset, jurisdiction, or companion 100-110% rule differs from the current working implementation.
-STATUS: open; model/data construction and non-event diagnostics may continue, but resolve before E3.S2a held-out event results, E3.S2b/E3.S3 threshold-based integrated runs, E4 `P(E)`, or manuscript results.
-
+## Q-5 - G0-A3 - 2026-07-16 - RESOLVED 2026-07-22
+CONTEXT: The project previously used a provisional strict `L_import > 1.1 p.u.` working threshold for one persistent hour, pending source review and PI confirmation before integrated event analysis.
+QUESTION: Should the primary overload criterion retain 1.1 p.u., change to 1.0 p.u., add a separate 1.0-1.1 cumulative-exposure rule, or use hourly-average semantics?
+RESOLUTION: PI approved primary strict `L_import > 1.0 p.u.` for four consecutive 15-minute import steps over the full planning year. Retain persistent-event sensitivities at `1.1 p.u.` and `1.2 p.u.`. Do not add a separate cumulative-exposure rule for the 1.0-1.1 p.u. band in the primary analysis. Keep single-step E9 as a separate sensitivity and keep export-side exceedance diagnostics aligned to the threshold of each run.
+STATUS: resolved by G0-A3 update in `registers/DECISIONS.md`; no longer blocks integrated event-based analysis. Other gates and unsigned values still apply.
 ## Q-6 - E5.S3 - 2026-07-17 - BLOCKING: yes
 CONTEXT: E5.S3 T1 requires the smallest G1-A2-compliant IC-2/IC-3 schema change before implementation. Agent B drafted `reports/E5_S3_OUTPUT_ERROR_SCHEMA_PROPOSAL.md`, proposing to pass the existing IC-2 loading trajectory payload into IC-3 and add an explicit output-error envelope with `epsilon_grid`, `epsilon_tier1_minus`, and `epsilon_tier1_plus`.
 QUESTION: Does the PI approve proposed decision E5-S3-T1 as the IC-2/IC-3 schema for output-domain model-error propagation, subject to Agent A confirming the IC-2 trajectory payload?
 OPTIONS: A) Approve E5-S3-T1 as proposed - Agents A/B can implement E5.S3 T2-T4 against trajectory endpoint counts once G2/A-013/Q-5 dependencies permit paper use.  B) Amend the schema before implementation - E5.S3 remains blocked until the PI states the required field or ownership changes.
 RECOMMENDATION: A, because the proposal reuses the current `Tier1Evaluation` fields, avoids boolean-only sample evaluation, preserves unwidened direction gating, supports asymmetric Tier-1 endpoints, and keeps implementation ownership split between A and B.
-STATUS: resolved by E5-S3-T1 in `registers/DECISIONS.md`; PI approved with conditions on 2026-07-20. Agent A must provide the shared `LoadingTrajectoryResult` contract/validator before Agent B implements IC-3 propagation; this approval does not resolve Q-5, total-versus-firm capacity, G2 error values, or numerical A-013 grid-error values.
+STATUS: resolved by E5-S3-T1 in `registers/DECISIONS.md`; PI approved with conditions on 2026-07-20. Agent A must provide the shared `LoadingTrajectoryResult` contract/validator before Agent B implements IC-3 propagation; Q-5 is resolved separately by G0-A3; this approval does not resolve total-versus-firm capacity, G2 error values, or numerical A-013 grid-error values.
 
 ## Q-7 - E2.S6 - 2026-07-20 - BLOCKING: yes before integrated EV adoption use
 CONTEXT: E2.S6 records exact national home/public charge-point projections from the ElaadNL Outlook Mobility API for 2030, 2033, and 2035. The PI rejected treating these national totals as physical counts for the SimBench grid. A-014 is therefore narrowed to a possible second-stage within-grid allocation after a local total has been established.

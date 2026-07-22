@@ -7,7 +7,7 @@ for future baseline, EV, HP, and PV real-component adapters. It uses only merged
 readiness metadata and synthetic fixtures. It does not wire real E2 component
 arrays, open EV held-out data, run E3.S2a held-out adequacy, run E3.S2b/E3.S3
 threshold screens, evaluate events, compute `P(E)`, or produce manuscript
-numbers. Q-5 remains a hard stop before event-based scientific analysis.
+numbers. Q-5 is resolved by G0-A3, but this scaffold still does not authorize event-based scientific analysis.
 
 ## Purpose
 
@@ -58,7 +58,7 @@ Stop before loading real arrays if any required skeleton is missing, still
 scaffold/synthetic, has unresolved blockers, cannot prove the common 15-minute
 calendar, or cannot pair HP/PV through one WEATHER-001 shared weather identity.
 Stop as well if the next step would inspect EV held-out data or produce any
-event, threshold, probability, or manuscript result while Q-5 is unresolved.
+event, threshold, probability, or manuscript result without satisfying the remaining integrated-analysis gates.
 
 ## No-Result Boundary
 
