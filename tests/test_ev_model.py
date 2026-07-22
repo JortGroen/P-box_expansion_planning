@@ -24,6 +24,7 @@ from src.ev_model import (
     charge_point_range_by_year,
     distinct_member_count,
     ev_candidate_checksum_expectations,
+    ev_ic1_candidate_adapter_artifact,
     ev_ic1_adapter_guardrail_packet,
     ev_library_integration_artifact_from_manifest,
     ev_planning_calendar_mapping_expectation,
@@ -640,6 +641,178 @@ def test_committed_ev_readiness_guardrail_packet_blocks_ic1_result_claims() -> N
     assert packet["policy"]["integrated_analysis_performed"] is False
     assert packet["policy"]["m_sufficiency_claimed"] is False
     assert any("Q-5" in blocker for blocker in packet["ic1_use_blockers"])
+
+
+def test_ev_ic1_candidate_adapter_artifact_materializes_allocations_and_members(
+    tmp_path: Path,
+) -> None:
+    home_manifest = tmp_path / "home_manifest.json"
+    public_manifest = tmp_path / "public_manifest.json"
+    home_manifest.write_text(
+        json.dumps(_library_manifest(candidate_seeds=(140001,), component_prefix="A_home")),
+        encoding="utf-8",
+    )
+    public_manifest.write_text(
+        json.dumps(_library_manifest(candidate_seeds=(152001,), component_prefix="B_public")),
+        encoding="utf-8",
+    )
+    config_path = tmp_path / "scenarios.json"
+    config_path.write_text(json.dumps(_adoption_config()), encoding="utf-8")
+    readiness = build_ev_integration_readiness_artifact(
+        home_manifest_path=home_manifest,
+        public_manifest_path=public_manifest,
+        scenario_config_path=config_path,
+        expected_home_candidate_members=100,
+        expected_public_candidate_members=100,
+    ).manifest_record()
+
+    artifact = ev_ic1_candidate_adapter_artifact(readiness)
+
+    assert artifact["artifact_type"] == "ev_to_ic1_candidate_adapter_artifact"
+    assert artifact["scenario_totals"] == {
+        "high": {"home": 17, "public": 9},
+        "low": {"home": 11, "public": 5},
+    }
+    assert artifact["checksum_preconditions"]["verification_status"] == (
+        "verification_required_before_loading"
+    )
+    assert artifact["checksum_preconditions"]["profile_arrays_loaded"] is False
+    assert artifact["calendar_mapping_decision"]["status"] == (
+        "pi_decision_required_before_implementation"
+    )
+    assert artifact["policy"]["held_out_access"] is False
+    libraries = {item["component_id"]: item for item in artifact["candidate_libraries"]}
+    assert libraries[EV_HOME_COMPONENT]["candidate_batches"][0]["member_id_pattern"] == (
+        "profile_140001_<returned_profile_index:03d>"
+    )
+    assert libraries[EV_HOME_COMPONENT]["candidate_batches"][0]["returned_profile_index_range"] == [
+        0,
+        99,
+    ]
+    assert libraries[EV_PUBLIC_COMPONENT]["candidate_batches"][0]["checksum_verification"] == {
+        "checksum_verified": False,
+        "verification_required_before_loading": True,
+    }
+
+
+def test_ev_ic1_candidate_adapter_artifact_records_complete_checksum_verification(
+    tmp_path: Path,
+) -> None:
+    artifact = load_ev_integration_readiness_record(
+        Path("data/metadata/ev_adoption/e2_s2_ev_integration_readiness.json")
+    )
+    expectations = ev_candidate_checksum_expectations(artifact)
+    verifications = []
+    for expectation in expectations:
+        payload = f"{expectation.component_id}-{expectation.seed}".encode("utf-8")
+        path = tmp_path / expectation.processed_path
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(payload)
+        corrected = ev_model.EVCandidateChecksumExpectation(
+            component_id=expectation.component_id,
+            library_id=expectation.library_id,
+            seed=expectation.seed,
+            processed_path=expectation.processed_path,
+            expected_sha256=ev_model._sha256_file(path),
+            n_profiles=expectation.n_profiles,
+            n_timesteps=expectation.n_timesteps,
+            capacity_class=expectation.capacity_class,
+            cp_capacity_kw=expectation.cp_capacity_kw,
+        )
+        verifications.append(
+            ev_model.EVCandidateChecksumVerification(
+                expectation=corrected,
+                observed_sha256=corrected.expected_sha256,
+                byte_size=len(payload),
+            )
+        )
+    adjusted = json.loads(json.dumps(artifact))
+    by_key = {
+        (item.expectation.component_id, item.expectation.library_id, item.expectation.seed): item
+        for item in verifications
+    }
+    for library in adjusted["libraries"]:
+        for batch in library["candidate_batches"]:
+            key = (library["component_id"], library["library_id"], batch["seed"])
+            batch["processed_sha256_file"] = by_key[key].expectation.expected_sha256
+
+    candidate_artifact = ev_ic1_candidate_adapter_artifact(
+        adjusted,
+        checksum_verifications=tuple(verifications),
+        verification_timestamp_utc="2026-07-22T08:45:00Z",
+    )
+
+    assert candidate_artifact["checksum_preconditions"]["verification_status"] == (
+        "verified_in_agent_c_worktree"
+    )
+    assert candidate_artifact["checksum_preconditions"]["verification_timestamp_utc"] == (
+        "2026-07-22T08:45:00Z"
+    )
+    assert candidate_artifact["checksum_preconditions"][
+        "verification_required_in_consuming_worktree_before_profile_loading"
+    ] is True
+    assert all(
+        batch["checksum_verification"]["checksum_verified"]
+        for library in candidate_artifact["candidate_libraries"]
+        for batch in library["candidate_batches"]
+    )
+
+
+def test_ev_ic1_candidate_adapter_artifact_rejects_partial_verification() -> None:
+    artifact = load_ev_integration_readiness_record(
+        Path("data/metadata/ev_adoption/e2_s2_ev_integration_readiness.json")
+    )
+    first = ev_candidate_checksum_expectations(artifact)[0]
+    verification = ev_model.EVCandidateChecksumVerification(
+        expectation=first,
+        observed_sha256=first.expected_sha256,
+        byte_size=10,
+    )
+
+    with pytest.raises(ValueError, match="cover every candidate batch"):
+        ev_ic1_candidate_adapter_artifact(artifact, checksum_verifications=(verification,))
+
+
+def test_committed_ev_ic1_candidate_adapter_artifact_is_candidate_only() -> None:
+    artifact = json.loads(
+        Path("data/metadata/ev_adoption/e2_s2_ev_ic1_candidate_adapter_artifact.json").read_text(
+            encoding="utf-8"
+        )
+    )
+
+    assert artifact["artifact_type"] == "ev_to_ic1_candidate_adapter_artifact"
+    assert artifact["scenario_totals"] == {
+        "high": {"home": 10343, "public": 6138},
+        "low": {"home": 7992, "public": 4183},
+        "middle": {"home": 9386, "public": 5127},
+    }
+    assert artifact["checksum_preconditions"]["candidate_processed_file_count"] == 22
+    assert artifact["checksum_preconditions"]["verification_status"] == (
+        "verified_in_agent_c_worktree"
+    )
+    assert artifact["checksum_preconditions"]["profile_arrays_loaded"] is False
+    assert artifact["calendar_mapping_decision"]["status"] == (
+        "pi_decision_required_before_implementation"
+    )
+    assert artifact["policy"]["held_out_access"] is False
+    assert artifact["policy"]["m_sufficiency_claimed"] is False
+    assert len(artifact["node_allocations"]) == 3
+    assert all(item["node_count"] == 115 for item in artifact["node_allocations"])
+    libraries = {item["component_id"]: item for item in artifact["candidate_libraries"]}
+    assert libraries[EV_HOME_COMPONENT]["candidate_member_count"] == 1000
+    assert libraries[EV_PUBLIC_COMPONENT]["candidate_member_count"] == 1200
+    assert libraries[EV_HOME_COMPONENT]["candidate_batch_count"] == 10
+    assert libraries[EV_PUBLIC_COMPONENT]["candidate_batch_count"] == 12
+    assert all(
+        batch["checksum_verification"]["checksum_verified"]
+        for library in artifact["candidate_libraries"]
+        for batch in library["candidate_batches"]
+    )
+    assert all(
+        "held_out" not in batch["processed_path"]
+        for library in artifact["candidate_libraries"]
+        for batch in library["candidate_batches"]
+    )
 
 
 def _adoption_config() -> dict:
