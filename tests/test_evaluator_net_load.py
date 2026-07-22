@@ -10,6 +10,7 @@ from src.contracts.net_load import (
     ComponentAdapterOutput,
     ComponentAdapterSkeleton,
     ExecutableInputArtifact,
+    GatedAdapterBackedNetLoadProvider,
     ComponentProvenance,
     DEFAULT_REALIZATION_COMPONENTS,
     NetLoadAssemblyPlan,
@@ -1700,3 +1701,91 @@ def test_executable_input_gate_requires_version_and_signed_or_blocking_ids() -> 
 
     with pytest.raises(ValueError, match="non-accepted executable inputs must list"):
         _executable_input_artifact("flexibility", artifact_status="scaffold", signed_register_ids=())
+
+class _CountingComponentAdapter:
+    def __init__(self, output: ComponentAdapterOutput) -> None:
+        self.output = output
+        self.calls = 0
+
+    def get_component_outputs(self, context, node_ids) -> list[ComponentAdapterOutput]:
+        self.calls += 1
+        return [self.output]
+
+
+def _gated_provider(
+    artifacts: list[ExecutableInputArtifact],
+    context,
+    *,
+    adapters: tuple[object, ...] | None = None,
+) -> GatedAdapterBackedNetLoadProvider:
+    plan = NetLoadAssemblyPlan(node_ids=("node-a", "node-b"))
+    if adapters is None:
+        adapters = tuple(
+            _CountingComponentAdapter(output)
+            for output in _adapter_outputs(context)
+        )
+    return GatedAdapterBackedNetLoadProvider(
+        plan=plan,
+        adapters=adapters,
+        executable_input_artifacts=tuple(artifacts),
+        intended_use="e3_s2b_screen_prerequisite",
+        calendar_metadata={"calendar_id": "calendar-2035-15min"},
+        mapping_version_metadata={"node_mapping_version": "synthetic-v1"},
+        metadata={"scaffold_only": True},
+    )
+
+
+def test_gated_provider_blocks_unsigned_inputs_before_adapter_calls() -> None:
+    artifacts = _executable_input_artifacts()
+    artifacts[1] = _executable_input_artifact(
+        "ev",
+        artifact_status="unsigned",
+        signed_register_ids=(),
+        blocking_register_ids=("EV-005B",),
+    )
+    context = build_realization_context(
+        scenario="scenario-a",
+        year=2035,
+        time_domain="full_year",
+        rho=0.0,
+        seed=7001,
+        shared_weather_driver_id="weather-executable-1",
+    )
+    adapter = _CountingComponentAdapter(_adapter_outputs(context)[0])
+    provider = _gated_provider(artifacts, context, adapters=(adapter,))
+
+    with pytest.raises(ValueError, match="ev: EV-005B"):
+        provider.get_net_load("scenario-a", 2035, "full_year", rho=0.0, seed=7001)
+    assert adapter.calls == 0
+
+
+def test_gated_provider_allows_accepted_synthetic_fixture_without_events() -> None:
+    context = build_realization_context(
+        scenario="scenario-a",
+        year=2035,
+        time_domain="full_year",
+        rho=0.5,
+        seed=7001,
+        shared_weather_driver_id="weather-executable-1",
+    )
+    provider = _gated_provider(_executable_input_artifacts(), context)
+
+    result = provider.get_net_load("scenario-a", 2035, "full_year", rho=0.5, seed=7001)
+
+    assert result.metadata["provider"] == "gated_adapter_backed_ic1_preflight"
+    assert result.metadata["executable_input_gate"]["ready_for_execution"] is True
+    assert result.metadata["executable_input_gate"]["intended_use"] == "e3_s2b_screen_prerequisite"
+    assert result.metadata["scaffold_only"] is True
+    assert result.shared_weather_driver_ids == ("weather-executable-1",)
+    assert "threshold_pu" not in result.metadata
+    assert "overload" not in result.metadata
+    assert "capacity_screen" not in result.metadata
+    np.testing.assert_array_equal(
+        result.p_net_kw,
+        np.array(
+            [
+                [10.8, 12.8, 15.0, 17.0],
+                [4.0, 3.0, 3.0, 7.0],
+            ]
+        ),
+    )

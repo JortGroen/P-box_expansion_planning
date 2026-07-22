@@ -821,6 +821,81 @@ class AdapterBackedNetLoadProvider:
         )
 
 
+@dataclass(frozen=True)
+class GatedAdapterBackedNetLoadProvider:
+    """Adapter-backed IC-1 provider guarded by executable-input metadata."""
+
+    plan: NetLoadAssemblyPlan
+    adapters: tuple[NetLoadComponentAdapter, ...]
+    executable_input_artifacts: tuple[ExecutableInputArtifact, ...]
+    intended_use: str = "ic1_real_component_integration"
+    calendar_metadata: Mapping[str, object] = field(default_factory=dict)
+    mapping_version_metadata: Mapping[str, object] = field(default_factory=dict)
+    metadata: Mapping[str, object] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        if not self.adapters:
+            raise ValueError("adapters must not be empty")
+        if not self.executable_input_artifacts:
+            raise ValueError("executable_input_artifacts must not be empty")
+        _require_nonempty(self.intended_use, name="intended_use")
+        _validate_nonempty_mapping_values(self.calendar_metadata, name="calendar_metadata")
+        _validate_nonempty_mapping_values(self.mapping_version_metadata, name="mapping_version_metadata")
+        _validate_nonempty_mapping_values(self.metadata, name="metadata")
+        object.__setattr__(self, "adapters", tuple(self.adapters))
+        object.__setattr__(self, "executable_input_artifacts", tuple(self.executable_input_artifacts))
+        object.__setattr__(self, "calendar_metadata", MappingProxyType(dict(self.calendar_metadata)))
+        object.__setattr__(self, "mapping_version_metadata", MappingProxyType(dict(self.mapping_version_metadata)))
+        object.__setattr__(self, "metadata", MappingProxyType(dict(self.metadata)))
+
+    def preflight(self) -> dict[str, object]:
+        """Return manifestable readiness metadata before arrays are loaded."""
+
+        return validate_executable_input_gate(
+            self.executable_input_artifacts,
+            required_component_kinds=self.plan.required_component_kinds,
+            intended_use=self.intended_use,
+        )
+
+    def get_net_load(
+        self,
+        scenario: str,
+        year: int,
+        time_domain: TimeDomain,
+        rho: float,
+        seed: int,
+    ) -> NetLoadResult:
+        """Return IC-1 net load only after executable inputs pass preflight."""
+
+        gate_manifest = self.preflight()
+        context = build_realization_context(
+            scenario=scenario,
+            year=year,
+            time_domain=time_domain,
+            rho=rho,
+            seed=seed,
+            shared_weather_driver_id=gate_manifest["shared_weather_driver_id"],
+            calendar_metadata=self.calendar_metadata,
+            mapping_version_metadata=self.mapping_version_metadata,
+        )
+        outputs: list[ComponentAdapterOutput] = []
+        for adapter in self.adapters:
+            outputs.extend(adapter.get_component_outputs(context, self.plan.node_ids))
+        # The gate is evaluated before adapter calls so unsigned real artifacts
+        # cannot leak arrays into IC-1 under a synthetic-looking manifest.
+        return assemble_net_load_from_adapter_outputs(
+            self.plan,
+            context,
+            outputs,
+            metadata={
+                "provider": "gated_adapter_backed_ic1_preflight",
+                "executable_input_gate": gate_manifest,
+                "scaffold_only": True,
+                **dict(self.metadata),
+            },
+        )
+
+
 def build_realization_context(
     *,
     scenario: str,
