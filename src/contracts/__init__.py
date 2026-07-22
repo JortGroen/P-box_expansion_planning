@@ -11,6 +11,7 @@ from src.contracts.loading_trajectory import (
 )
 from src.contracts.net_load import (
     ALLOWED_COMPONENT_ARTIFACT_STATUSES,
+    AcceptedComponentAdapterArtifact,
     ComponentAdapterRegistry,
     ComponentAdapterSkeleton,
     ComponentKind,
@@ -25,6 +26,7 @@ from src.contracts.net_load import (
     assemble_net_load_from_registry_outputs,
     assemble_net_load_from_components,
     build_ic1_assembly_plan_from_registry,
+    build_component_adapter_registry_from_artifacts,
     build_net_load_result,
     validate_component_adapter_skeletons,
     validate_real_component_adapter_readiness,
@@ -33,6 +35,7 @@ from src.contracts.net_load import (
 
 __all__ = [
     "ALLOWED_COMPONENT_ARTIFACT_STATUSES",
+    "AcceptedComponentAdapterArtifact",
     "ComponentAdapterRegistry",
     "ComponentAdapterSkeleton",
     "ComponentKind",
@@ -49,6 +52,7 @@ __all__ = [
     "assemble_net_load_from_registry_outputs",
     "assemble_net_load_from_components",
     "build_ic1_assembly_plan_from_registry",
+    "build_component_adapter_registry_from_artifacts",
     "build_net_load_result",
     "validate_loading_trajectory_result",
     "validate_component_adapter_skeletons",

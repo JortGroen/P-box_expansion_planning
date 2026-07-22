@@ -278,6 +278,90 @@ class ComponentAdapterSkeleton:
 
 
 @dataclass(frozen=True)
+class AcceptedComponentAdapterArtifact:
+    """Metadata-only handle for an accepted future component adapter artifact.
+
+    This bridge record is deliberately array-free. It captures the accepted
+    source/member/calendar/node metadata needed to construct an IC-1 adapter
+    registry before any real component trajectories are loaded.
+    """
+
+    artifact_id: str
+    kind: ComponentKind
+    source_id: str
+    member_id: str
+    node_ids: tuple[str, ...]
+    calendar_id: str
+    timestep_seconds: int = 900
+    shared_weather_driver_id: str | None = None
+    provenance: Mapping[str, object] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        artifact_id = _require_nonempty(self.artifact_id, name="artifact_id")
+        if self.kind not in _VALID_COMPONENT_KINDS:
+            raise ValueError("kind must be a valid net-load component kind")
+        source_id = _require_nonempty(self.source_id, name="source_id")
+        member_id = _require_nonempty(self.member_id, name="member_id")
+        calendar_id = _require_nonempty(self.calendar_id, name="calendar_id")
+        if not self.node_ids:
+            raise ValueError("node_ids must not be empty")
+        node_ids = tuple(_require_nonempty(node_id, name="node_id") for node_id in self.node_ids)
+        if len(set(node_ids)) != len(node_ids):
+            raise ValueError("node_ids must not contain duplicates")
+        if (
+            isinstance(self.timestep_seconds, bool)
+            or not isinstance(self.timestep_seconds, int)
+            or self.timestep_seconds != 900
+        ):
+            raise ValueError("timestep_seconds must be the 900-second IC-1 cadence")
+        if self.shared_weather_driver_id is not None:
+            _require_nonempty(self.shared_weather_driver_id, name="shared_weather_driver_id")
+        if self.kind in {"hp", "pv"} and self.shared_weather_driver_id is None:
+            raise ValueError("weather-dependent adapter artifacts require shared_weather_driver_id")
+        _validate_nonempty_mapping_values(self.provenance, name="provenance")
+        object.__setattr__(self, "artifact_id", artifact_id)
+        object.__setattr__(self, "source_id", source_id)
+        object.__setattr__(self, "member_id", member_id)
+        object.__setattr__(self, "node_ids", node_ids)
+        object.__setattr__(self, "calendar_id", calendar_id)
+        object.__setattr__(self, "timestep_seconds", int(self.timestep_seconds))
+        object.__setattr__(self, "provenance", MappingProxyType(dict(self.provenance)))
+
+    def to_skeleton(self) -> ComponentAdapterSkeleton:
+        """Convert accepted artifact metadata into a registry skeleton."""
+
+        return ComponentAdapterSkeleton(
+            kind=self.kind,
+            artifact_status="accepted",
+            source_id=self.source_id,
+            member_id=self.member_id,
+            node_ids=self.node_ids,
+            calendar_id=self.calendar_id,
+            timestep_seconds=self.timestep_seconds,
+            shared_weather_driver_id=self.shared_weather_driver_id,
+            metadata={
+                "artifact_id": self.artifact_id,
+                "provenance": dict(self.provenance),
+            },
+        )
+
+    def manifest_record(self) -> dict[str, object]:
+        """Return manifestable accepted-artifact metadata for IC-1 plans."""
+
+        return {
+            "artifact_id": self.artifact_id,
+            "kind": self.kind,
+            "source_id": self.source_id,
+            "member_id": self.member_id,
+            "node_ids": self.node_ids,
+            "calendar_id": self.calendar_id,
+            "timestep_seconds": self.timestep_seconds,
+            "shared_weather_driver_id": self.shared_weather_driver_id,
+            "provenance": dict(self.provenance),
+        }
+
+
+@dataclass(frozen=True)
 class ComponentAdapterRegistry:
     """Accepted metadata registry for building an auditable IC-1 plan.
 
@@ -729,6 +813,71 @@ def build_ic1_assembly_plan_from_registry(registry: ComponentAdapterRegistry) ->
             "assembly": "ic1_adapter_registry_readiness",
             "adapter_registry": registry.manifest_record(),
         },
+    )
+
+
+def build_component_adapter_registry_from_artifacts(
+    *,
+    registry_id: str,
+    node_ids: Sequence[str],
+    artifacts: Sequence[AcceptedComponentAdapterArtifact],
+    required_component_kinds: Sequence[ComponentKind] = REAL_COMPONENT_WIRING_KINDS,
+    metadata: Mapping[str, object] | None = None,
+) -> ComponentAdapterRegistry:
+    """Build an IC-1 adapter registry from accepted artifact metadata only."""
+
+    if not artifacts:
+        raise ValueError("artifacts must not be empty")
+    required = tuple(required_component_kinds)
+    if not required:
+        raise ValueError("required_component_kinds must not be empty")
+    by_kind: dict[ComponentKind, AcceptedComponentAdapterArtifact] = {}
+    for artifact in artifacts:
+        if artifact.kind in by_kind:
+            raise ValueError("accepted component adapter artifact kinds must be unique")
+        by_kind[artifact.kind] = artifact
+    missing = [kind for kind in required if kind not in by_kind]
+    if missing:
+        raise ValueError(f"missing accepted component adapter artifact kind(s): {', '.join(missing)}")
+
+    registry_nodes = tuple(_require_nonempty(node_id, name="node_id") for node_id in node_ids)
+    if len(set(registry_nodes)) != len(registry_nodes):
+        raise ValueError("node_ids must not contain duplicates")
+    artifact_nodes = {
+        node_id
+        for artifact in artifacts
+        for node_id in artifact.node_ids
+    }
+    missing_coverage = sorted(set(registry_nodes).difference(artifact_nodes))
+    if missing_coverage:
+        raise ValueError(f"registry node_id(s) lack adapter artifact coverage: {', '.join(missing_coverage)}")
+
+    weather_ids = {
+        by_kind[kind].shared_weather_driver_id
+        for kind in ("hp", "pv")
+        if kind in by_kind
+    }
+    # The artifact bridge checks HP/PV pairing before a registry exists, so
+    # later real integration cannot launder mismatched weather IDs into a plan.
+    if weather_ids and (None in weather_ids or len(weather_ids) != 1):
+        raise ValueError("HP and PV accepted adapter artifacts must share one weather driver")
+
+    combined_metadata = {
+        "artifact_bridge": {
+            "accepted_artifacts": [
+                by_kind[kind].manifest_record()
+                for kind in required
+            ],
+        },
+    }
+    if metadata is not None:
+        combined_metadata.update(metadata)
+    return ComponentAdapterRegistry(
+        registry_id=registry_id,
+        node_ids=registry_nodes,
+        skeletons=tuple(by_kind[kind].to_skeleton() for kind in required),
+        required_component_kinds=required,
+        metadata=combined_metadata,
     )
 
 

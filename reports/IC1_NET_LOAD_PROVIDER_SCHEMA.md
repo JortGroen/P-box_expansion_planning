@@ -126,6 +126,26 @@ The registry-backed helper remains a synthetic/readiness harness. It does not
 open real held-out data, call IC-2, detect events, run thresholds, or compute
 `P(E)`.
 
+
+## Accepted Adapter Artifact Bridge
+
+`AcceptedComponentAdapterArtifact` is the metadata-only bridge between future
+C-owned accepted component artifacts and the IC-1 adapter registry. It contains
+no trajectories. Each record carries an accepted artifact ID, component kind,
+source ID, member ID, covered node IDs, common calendar ID, 900-second cadence,
+optional HP/PV shared weather-driver ID, and manifestable provenance.
+
+`build_component_adapter_registry_from_artifacts(...)` validates the required
+baseline, EV, HP, and PV artifact metadata before constructing a
+`ComponentAdapterRegistry`. The bridge requires one unique accepted artifact per
+required component kind, rejects missing registry-node coverage, preserves
+source/member provenance in the registry manifest, and checks that HP and PV
+share one WEATHER-001 weather-driver identity before any registry-backed
+assembly can run.
+
+This bridge is still below scientific analysis. It does not load real held-out
+data, run E3.S2a adequacy, call IC-2, evaluate thresholds or events, compute
+`P(E)`, or produce manuscript numbers.
 ## Calendar Rules
 
 All component outputs in one `NetLoadResult` must share exactly one calendar.
