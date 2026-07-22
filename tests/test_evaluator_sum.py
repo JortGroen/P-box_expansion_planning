@@ -111,10 +111,16 @@ def test_three_qualifying_steps_do_not_trigger_but_four_do() -> None:
     assert count_import_overload_episodes([1.11, 1.11, 1.11, 1.11], min_consecutive_steps=4) == (1, 4)
 
 
-def test_default_g0_a3_threshold_is_strictly_greater_than_1_1() -> None:
-    assert count_import_overload_episodes([1.1, 1.1, 1.1, 1.1]) == (0, 0)
-    assert count_import_overload_episodes([1.1001, 1.1001, 1.1001, 1.1001]) == (1, 4)
+def test_default_g0_a3_threshold_is_strictly_greater_than_1_0() -> None:
+    assert DEFAULT_THRESHOLD_PU == 1.0
+    assert count_import_overload_episodes([1.0, 1.0, 1.0, 1.0]) == (0, 0)
+    assert count_import_overload_episodes([1.0001, 1.0001, 1.0001, 1.0001]) == (1, 4)
 
+def test_declared_sensitivity_thresholds_are_explicit() -> None:
+    assert count_import_overload_episodes([1.05, 1.05, 1.05, 1.05], threshold_pu=1.1) == (0, 0)
+    assert count_import_overload_episodes([1.1001, 1.1001, 1.1001, 1.1001], threshold_pu=1.1) == (1, 4)
+    assert count_import_overload_episodes([1.15, 1.15, 1.15, 1.15], threshold_pu=1.2) == (0, 0)
+    assert count_import_overload_episodes([1.2001, 1.2001, 1.2001, 1.2001], threshold_pu=1.2) == (1, 4)
 
 def test_full_year_behavior_detects_late_import_episode() -> None:
     nodal_p = np.full((1, 35_040), 100.0)
@@ -264,4 +270,3 @@ def test_net_load_to_tier1_rejects_invalid_ic1_payload_before_evaluation() -> No
 
     with pytest.raises(ValueError, match="net-load arrays must contain only finite"):
         evaluate_net_load_tier1(invalid, s_nom_agg_kva=1.0)
-
