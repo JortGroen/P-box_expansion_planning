@@ -555,6 +555,19 @@ before Agent A can aggregate EV demand with baseline, HP, or PV components.
 This guardrail packet still does not choose the mapping algorithm, choose a
 replacement rule, certify `M`, inspect held-out data, or run event analysis.
 
+The next candidate-adapter artifact materializes the approved EV-007A/A-014
+2035 Alkmaar low, middle, and high home/public charge-point allocations as
+per-node integer dictionaries alongside compact candidate-library member
+metadata for home and public EV profiles. Candidate member identity remains
+defined by component, library, batch seed, and returned profile index; the
+artifact intentionally avoids expanding or loading profile arrays. Agent C
+verified the 22 local candidate processed-file SHA-256 digests as a handoff
+precondition, while still requiring any consuming IC-1 worktree to repeat that
+byte-level verification before loading ignored NPZ files. The same artifact
+points reviewers to a PI decision packet for the unresolved 2025 ElaadNL
+source-calendar to 2035 planning-calendar mapping, and blocks implementation
+until that deterministic mapping rule is signed.
+
 <!-- methods-id: EV-004 -->
 ### EV-004 - Fixed Residential Charge-Point Distribution
 

@@ -987,6 +987,165 @@ def ev_ic1_adapter_guardrail_packet(readiness_record: Mapping[str, Any]) -> dict
     }
 
 
+def ev_ic1_candidate_adapter_artifact(
+    readiness_record: Mapping[str, Any],
+    *,
+    checksum_verifications: Sequence[EVCandidateChecksumVerification] = (),
+    verification_timestamp_utc: str | None = None,
+) -> dict[str, object]:
+    """Materialize candidate-only EV metadata and A-014 allocations for IC-1."""
+
+    expectations = ev_candidate_checksum_expectations(readiness_record)
+    expectation_keys = {
+        (item.component_id, item.library_id, item.seed): item for item in expectations
+    }
+    verification_records: dict[tuple[str, str, int], dict[str, object]] = {}
+    for verification in checksum_verifications:
+        key = (
+            verification.expectation.component_id,
+            verification.expectation.library_id,
+            verification.expectation.seed,
+        )
+        if key not in expectation_keys:
+            raise ValueError("Checksum verification is not tied to a candidate expectation")
+        verification_records[key] = verification.manifest_record()
+    if checksum_verifications and len(verification_records) != len(expectations):
+        raise ValueError("Checksum verification must cover every candidate batch")
+
+    libraries = readiness_record.get("libraries")
+    if not isinstance(libraries, (list, tuple)):
+        raise ValueError("EV readiness artifact must include library records")
+    materialized_libraries: list[dict[str, object]] = []
+    for library in libraries:
+        if not isinstance(library, dict):
+            raise ValueError("EV readiness library records must be mappings")
+        component_id = str(library.get("component_id", ""))
+        library_id = str(library.get("library_id", ""))
+        batches: list[dict[str, object]] = []
+        for expectation in expectations:
+            if expectation.component_id != component_id or expectation.library_id != library_id:
+                continue
+            key = (expectation.component_id, expectation.library_id, expectation.seed)
+            checksum_record = verification_records.get(key)
+            batches.append(
+                {
+                    "seed": expectation.seed,
+                    "processed_path": expectation.processed_path,
+                    "processed_sha256_file": expectation.expected_sha256,
+                    "checksum_verification": (
+                        checksum_record
+                        if checksum_record is not None
+                        else {
+                            "checksum_verified": False,
+                            "verification_required_before_loading": True,
+                        }
+                    ),
+                    "n_profiles": expectation.n_profiles,
+                    "n_timesteps": expectation.n_timesteps,
+                    "returned_profile_index_range": [0, expectation.n_profiles - 1],
+                    "member_id_pattern": f"profile_{expectation.seed}_<returned_profile_index:03d>",
+                    "member_identity_fields": [
+                        "component_id",
+                        "library_id",
+                        "batch_seed",
+                        "returned_profile_index",
+                    ],
+                    "capacity_class": expectation.capacity_class,
+                    "cp_capacity_kw": expectation.cp_capacity_kw,
+                }
+            )
+        member_count = int(library.get("candidate_member_count", 0))
+        materialized_libraries.append(
+            {
+                "component_id": component_id,
+                "library_id": library_id,
+                "candidate_member_count": member_count,
+                "candidate_batch_count": len(batches),
+                "candidate_batches": batches,
+                "member_reference": {
+                    "member_rows_materialized": False,
+                    "compact_representation": (
+                        "Members are the Cartesian expansion of each candidate batch seed "
+                        "and returned_profile_index_range; no profile arrays are loaded."
+                    ),
+                    "member_id_rule": "profile_<batch_seed>_<returned_profile_index:03d>",
+                },
+            }
+        )
+
+    allocations = readiness_record.get("node_allocations")
+    if not isinstance(allocations, (list, tuple)):
+        raise ValueError("EV readiness artifact must include node_allocations")
+    allocation_records: list[dict[str, object]] = []
+    scenario_totals: dict[str, dict[str, int]] = {}
+    for allocation in allocations:
+        if not isinstance(allocation, dict):
+            raise ValueError("EV node allocation records must be mappings")
+        scenario = str(allocation.get("scenario", ""))
+        home_by_node = _require_int_mapping(allocation.get("home_by_node"), "home_by_node")
+        public_by_node = _require_int_mapping(allocation.get("public_by_node"), "public_by_node")
+        if set(home_by_node) != set(public_by_node):
+            raise ValueError("EV home/public allocations must cover the same IC-1 nodes")
+        home_total = sum(home_by_node.values())
+        public_total = sum(public_by_node.values())
+        scenario_totals[scenario] = {"home": home_total, "public": public_total}
+        allocation_records.append(
+            {
+                "scenario": scenario,
+                "year": _require_int(allocation.get("year"), "year"),
+                "node_count": len(home_by_node),
+                "home_charge_points": home_total,
+                "public_charge_points": public_total,
+                "home_by_node": dict(sorted(home_by_node.items())),
+                "public_by_node": dict(sorted(public_by_node.items())),
+                "total_conservation_verified": True,
+                "allocation_method_id": str(readiness_record.get("allocation_method_id", "")),
+                "provenance": allocation.get("provenance", {}),
+            }
+        )
+
+    calendar = ev_planning_calendar_mapping_expectation(readiness_record)
+    verification_status = (
+        "verified_in_agent_c_worktree"
+        if checksum_verifications
+        else "verification_required_before_loading"
+    )
+    return {
+        "schema_version": 1,
+        "artifact_type": "ev_to_ic1_candidate_adapter_artifact",
+        "source_readiness_artifact": "data/metadata/ev_adoption/e2_s2_ev_integration_readiness.json",
+        "source_guardrail_artifact": "data/metadata/ev_adoption/e2_s2_ev_ic1_adapter_guardrails.json",
+        "planning_year": calendar.target_planning_year,
+        "allocation_method_id": str(readiness_record.get("allocation_method_id", "")),
+        "scenario_totals": dict(sorted(scenario_totals.items())),
+        "node_allocations": sorted(allocation_records, key=lambda item: str(item["scenario"])),
+        "candidate_libraries": sorted(
+            materialized_libraries,
+            key=lambda item: str(item["component_id"]),
+        ),
+        "checksum_preconditions": {
+            "candidate_only": True,
+            "candidate_processed_file_count": len(expectations),
+            "verification_status": verification_status,
+            "verification_timestamp_utc": verification_timestamp_utc,
+            "verification_required_in_consuming_worktree_before_profile_loading": True,
+            "profile_arrays_loaded": False,
+        },
+        "calendar_mapping_decision": {
+            "status": "pi_decision_required_before_implementation",
+            "packet_path": "reports/e2_s2_ev_calendar_mapping_decision_packet.md",
+            "expectation": calendar.manifest_record(),
+        },
+        "policy": {
+            "candidate_libraries_only": True,
+            "held_out_access": False,
+            "m_sufficiency_claimed": False,
+            "integrated_analysis_performed": False,
+            "event_or_p_e_analysis_performed": False,
+        },
+    }
+
+
 def a014_node_weights_from_load_table(
     load_table: Any,
     *,
@@ -1699,6 +1858,23 @@ def _require_int(value: Any, label: str) -> int:
     if isinstance(value, bool) or not isinstance(value, int):
         raise ValueError(f"{label} must be a true integer")
     return value
+
+
+def _require_int_mapping(value: Any, label: str) -> dict[str, int]:
+    if not isinstance(value, dict):
+        raise ValueError(f"{label} must be a mapping")
+    result: dict[str, int] = {}
+    for key, raw_count in value.items():
+        node_id = _require_non_empty_string(key, f"{label} node_id")
+        if node_id in result:
+            raise ValueError(f"{label} must contain unique node IDs")
+        count = _require_int(raw_count, f"{label}[{node_id}]")
+        if count < 0:
+            raise ValueError(f"{label} counts must be non-negative")
+        result[node_id] = count
+    if not result:
+        raise ValueError(f"{label} must be non-empty")
+    return result
 
 
 def _load_response_payload(payload: bytes | str | dict[str, Any]) -> dict[str, Any]:
