@@ -33,6 +33,7 @@ from src.ev_model import (
     ev_ic1_adapter_guardrail_packet,
     ev_downstream_adequacy_criterion_packet,
     ev_ic1_candidate_adapter_artifact,
+    ev_ic1_candidate_member_reference_artifact,
     ev_library_integration_artifact_from_manifest,
     ev_planning_calendar_mapping_expectation,
     load_adoption_scenarios_config,
@@ -926,6 +927,180 @@ def test_committed_ev_ic1_candidate_adapter_artifact_is_candidate_only() -> None
         for batch in library["candidate_batches"]
     )
 
+
+
+def test_ev_ic1_candidate_member_reference_expands_synthetic_batches(tmp_path: Path) -> None:
+    home_manifest = tmp_path / "home_manifest.json"
+    public_manifest = tmp_path / "public_manifest.json"
+    home_manifest.write_text(
+        json.dumps(_library_manifest(candidate_seeds=(140001,), component_prefix="A_home")),
+        encoding="utf-8",
+    )
+    public_manifest.write_text(
+        json.dumps(_library_manifest(candidate_seeds=(152001,), component_prefix="B_public")),
+        encoding="utf-8",
+    )
+    config_path = tmp_path / "scenarios.json"
+    config_path.write_text(json.dumps(_adoption_config()), encoding="utf-8")
+    readiness = build_ev_integration_readiness_artifact(
+        home_manifest_path=home_manifest,
+        public_manifest_path=public_manifest,
+        scenario_config_path=config_path,
+        expected_home_candidate_members=100,
+        expected_public_candidate_members=100,
+    ).manifest_record()
+    adjusted = ev_ic1_candidate_adapter_artifact(readiness)
+    for library in adjusted["candidate_libraries"]:
+        for batch in library["candidate_batches"]:
+            if library["component_id"] == EV_PUBLIC_COMPONENT:
+                batch["capacity_class"] = "public_11kw"
+                batch["cp_capacity_kw"] = 11
+            batch["checksum_verification"] = {
+                "checksum_verified": True,
+                "observed_sha256": batch["processed_sha256_file"],
+                "expected_sha256": batch["processed_sha256_file"],
+                "byte_size": 10,
+            }
+
+    reference = ev_ic1_candidate_member_reference_artifact(adjusted)
+
+    assert reference["artifact_type"] == "ev_ic1_candidate_member_reference"
+    assert reference["candidate_member_count_by_component"] == {
+        EV_HOME_COMPONENT: 100,
+        EV_PUBLIC_COMPONENT: 100,
+    }
+    assert len(reference["candidate_members"]) == 200
+    first_home = next(
+        row for row in reference["candidate_members"] if row["component_id"] == EV_HOME_COMPONENT
+    )
+    assert first_home["source_member_id"] == "profile_140001_000"
+    assert first_home["returned_profile_index"] == 0
+    assert first_home["calendar_mapping_rule_id"] == "EV-CAL-001"
+    assert first_home["weekday_weekend_preserved"] is False
+    assert len(reference["scenario_node_requirements"]) == 6
+    assert reference["selection_boundary"] == {
+        "replacement_rule_chosen": False,
+        "component_stream_required": True,
+        "sample_rows_materialized": False,
+        "realization_selection_performed": False,
+    }
+    assert reference["policy"]["profile_arrays_loaded"] is False
+    assert reference["policy"]["m_sufficiency_claimed"] is False
+
+
+def test_committed_ev_ic1_candidate_member_reference_is_candidate_only() -> None:
+    adapter = json.loads(
+        Path("data/metadata/ev_adoption/e2_s2_ev_ic1_candidate_adapter_artifact.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    public_capacity = json.loads(
+        Path("data/metadata/ev_adoption/e2_s2_public_set_b_capacity_allocation_readiness.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    reference = ev_ic1_candidate_member_reference_artifact(
+        adapter,
+        public_capacity_artifact=public_capacity,
+    )
+    committed = json.loads(
+        Path("data/metadata/ev_adoption/e2_s2_ev_ic1_candidate_member_reference.json").read_text(
+            encoding="utf-8"
+        )
+    )
+
+    assert committed == reference
+    assert reference["candidate_member_count_by_component"] == {
+        EV_HOME_COMPONENT: 1000,
+        EV_PUBLIC_COMPONENT: 1200,
+    }
+    assert reference["public_candidate_member_count_by_capacity_class"] == {
+        "public_11kw": 300,
+        "public_13kw": 300,
+        "public_15kw": 300,
+        "public_22kw": 300,
+    }
+    assert len(reference["candidate_members"]) == 2200
+    assert len(reference["scenario_node_requirements"]) == 345
+    assert len({
+        (row["component_id"], row["library_id"], row["source_member_id"])
+        for row in reference["candidate_members"]
+    }) == 2200
+    assert any(
+        row["component_id"] == EV_HOME_COMPONENT
+        and row["source_member_id"] == "profile_140001_000"
+        for row in reference["candidate_members"]
+    )
+    assert any(
+        row["component_id"] == EV_PUBLIC_COMPONENT
+        and row["capacity_class"] == "public_22kw"
+        and row["source_member_id"] == "profile_153101_099"
+        for row in reference["candidate_members"]
+    )
+    assert all(row["partition"] == "candidate" for row in reference["candidate_members"])
+    assert all(row["n_timesteps"] == EXPECTED_FULL_YEAR_STEPS for row in reference["candidate_members"])
+    assert reference["calendar_mapping"] == {
+        "status": "approved",
+        "rule_id": "EV-CAL-001",
+        "rule_version": "ordinal-v1",
+        "source_calendar_id": "elaad-2025-europe-amsterdam-15min",
+        "target_calendar_id": "planning-2035-europe-amsterdam-15min",
+        "source_timestamp_index_policy": "target_index_i_uses_source_index_i",
+        "n_timesteps": EXPECTED_FULL_YEAR_STEPS,
+        "weekday_weekend_preserved": False,
+    }
+    assert reference["policy"] == {
+        "candidate_libraries_only": True,
+        "held_out_access": False,
+        "profile_arrays_loaded": False,
+        "integrated_analysis_performed": False,
+        "event_or_p_e_analysis_performed": False,
+        "m_sufficiency_claimed": False,
+    }
+    for requirement in reference["scenario_node_requirements"]:
+        by_class = requirement["public_required_members_by_capacity_class"]
+        assert by_class is not None
+        assert sum(by_class.values()) == requirement["public_required_members"]
+        assert requirement["source_type"] == "required_member_counts_not_realization_draws"
+
+
+def test_ev_ic1_candidate_member_reference_rejects_unsafe_inputs() -> None:
+    adapter = json.loads(
+        Path("data/metadata/ev_adoption/e2_s2_ev_ic1_candidate_adapter_artifact.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    adapter["policy"]["held_out_access"] = True
+    with pytest.raises(ValueError, match="held-out"):
+        ev_ic1_candidate_member_reference_artifact(adapter)
+
+    adapter = json.loads(
+        Path("data/metadata/ev_adoption/e2_s2_ev_ic1_candidate_adapter_artifact.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    adapter["candidate_libraries"][0]["candidate_batches"][0]["checksum_verification"] = {
+        "checksum_verified": False
+    }
+    with pytest.raises(ValueError, match="verified candidate checksums"):
+        ev_ic1_candidate_member_reference_artifact(adapter)
+
+    adapter = json.loads(
+        Path("data/metadata/ev_adoption/e2_s2_ev_ic1_candidate_adapter_artifact.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    public_capacity = json.loads(
+        Path("data/metadata/ev_adoption/e2_s2_public_set_b_capacity_allocation_readiness.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    public_capacity["scenario_allocations"][0]["public_by_node_by_capacity_class"]["load_000"]["public_11kw"] += 1
+    with pytest.raises(ValueError, match="conserve node public totals"):
+        ev_ic1_candidate_member_reference_artifact(
+            adapter,
+            public_capacity_artifact=public_capacity,
+        )
 
 def test_committed_ev_calendar_mapping_decision_route_records_approved_option_a() -> None:
     route = json.loads(

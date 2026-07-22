@@ -597,10 +597,7 @@ source-library identity, processed-checksum provenance, and candidate/held-out
 partition separation. It does not preserve actual 2035 weekday/weekend or
 holiday labels when those differ from the 2025 source calendar, so mapping
 provenance records `weekday_weekend_preserved = false` and
-`source_timestamp_index_policy = target_index_i_uses_source_index_i`. This
-approval authorizes readiness/adapter mapping code only; held-out adequacy,
-finite-library sufficiency, within-realization replacement, net-load/event/
-`P(E)`, capacity-screen, and manuscript-result work remain outside this step.
+`source_timestamp_index_policy = target_index_i_uses_source_index_i`. This approval authorizes readiness/adapter mapping code only. The candidate member-reference artifact materializes source-member IDs, batch seeds, returned profile indices, processed checksums, component identity, and EV-CAL-001 calendar provenance for home Set A and public Set B without loading profile arrays or selecting a realization. Held-out adequacy, finite-library sufficiency, within-realization replacement, net-load/event/`P(E)`, capacity-screen, and manuscript-result work remain outside this step.
 <!-- methods-id: EV-004 -->
 ### EV-004 - Fixed Residential Charge-Point Distribution
 
@@ -1300,7 +1297,7 @@ as PI-review evidence only. A subsequent proposed acceptance packet
 packages the concrete source files and checksums, member completeness and
 calendar evidence, KNMI `T`/`Q` conversion checks, PVGIS provenance boundary,
 seasonal and peak diagnostics, and explicit PI questions about source/member
-acceptance and unsigned sanity criteria. D-004 itself remains proposed until the
+acceptance and unsigned sanity criteria. A paired-weather acceptance scaffold then records what source/member evidence could be accepted now if the PI agrees and what remains blocked by unsigned PVGIS seasonal/peak criteria, paired HP/PV validation, cold-spell tolerances, and later integrated analysis. D-004 itself remains proposed until the
 PI accepts the concrete files, versions, checksums, source-use evidence,
 completeness checks, PVGIS seasonal and peak-timing sanity checks, and final
 integrated HP/PV acceptance.
@@ -1524,5 +1521,3 @@ base policy as well. The sole code-level bootstrap exception is the initial
 `codex/ownership-enforcement` pull request when neither policy file exists on
 its base; after that first merge, the same branch is governed by the base
 policy like every other branch.
-
-
