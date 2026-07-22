@@ -76,6 +76,31 @@ artifact-status values in `NetLoadResult.metadata["real_component_wiring"]`, and
 then delegates to the same IC-1 adapter assembler. It does not call IC-2,
 evaluate thresholds, inspect held-out data, or compute adequacy.
 
+## Metadata-Only Adapter Skeletons
+
+Future real-component adapters can be checked before any component arrays are
+loaded by creating `ComponentAdapterSkeleton` records. These records are
+array-free and exist only to make readiness provenance manifestable:
+
+| Field | Meaning |
+|---|---|
+| `kind` | Component family, usually one of baseline, EV, HP, or PV for real-component wiring. |
+| `artifact_status` | `accepted`, `scaffold`, or `synthetic_fixture`; accepted records must not list blocking items. |
+| `source_id` | Readiness artifact, model, or source/config handle expected to feed the adapter. |
+| `member_id` | Placeholder or accepted member identity that will later appear on emitted outputs. |
+| `node_ids` | IC-1 nodes this adapter family is expected to cover. |
+| `calendar_id` | Common calendar identity, such as the canonical 2035 15-minute calendar. |
+| `timestep_seconds` | Must be 900 for the current IC-1 scaffold. |
+| `shared_weather_driver_id` | Required for HP and PV, and the HP/PV values must match. |
+| `blocking_items` | Remaining acceptance tasks for scaffold or synthetic fixtures. |
+| `metadata` | Extra manifestable readiness notes, such as the owning E2 readiness report ID. |
+
+`validate_component_adapter_skeletons(...)` requires one unique skeleton for
+each requested component family, enforces the 900-second cadence, enforces the
+WEATHER-001 HP/PV pairing hook, and reports whether all required real-component
+families are accepted. It does not load trajectories, call adapters, assemble
+net load, call IC-2, or evaluate thresholds.
+
 ## Calendar Rules
 
 All component outputs in one `NetLoadResult` must share exactly one calendar.
