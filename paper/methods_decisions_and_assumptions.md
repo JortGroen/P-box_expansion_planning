@@ -1297,7 +1297,7 @@ as PI-review evidence only. A subsequent proposed acceptance packet
 packages the concrete source files and checksums, member completeness and
 calendar evidence, KNMI `T`/`Q` conversion checks, PVGIS provenance boundary,
 seasonal and peak diagnostics, and explicit PI questions about source/member
-acceptance and unsigned sanity criteria. A paired-weather acceptance scaffold then records what source/member evidence could be accepted now if the PI agrees and what remains blocked by unsigned PVGIS seasonal/peak criteria, paired HP/PV validation, cold-spell tolerances, and later integrated analysis. D-004 itself remains proposed until the
+acceptance and unsigned sanity criteria. A paired-weather acceptance scaffold then records what source/member evidence could be accepted now if the PI agrees and what remains blocked by unsigned PVGIS seasonal/peak criteria, paired HP/PV validation, cold-spell tolerances, and later integrated analysis. A subsequent acceptance/tolerance packet makes those governance gates explicit for PI review: exact source/member audit checks appear satisfied for review, while PVGIS seasonal/peak criteria, paired HP/PV validation rules, and cold-spell numerical tolerances remain unsigned. D-004 itself remains proposed until the
 PI accepts the concrete files, versions, checksums, source-use evidence,
 completeness checks, PVGIS seasonal and peak-timing sanity checks, and final
 integrated HP/PV acceptance.

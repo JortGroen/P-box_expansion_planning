@@ -48,6 +48,7 @@ D004_RETRIEVAL_MANIFEST = f"{D004_SELECTION_ID}_retrieval_manifest.json"
 D004_MEMBER_READINESS_DIAGNOSTICS_NAME = f"{D004_SELECTION_ID}_member_readiness_diagnostics.json"
 D004_ACCEPTANCE_PACKET_NAME = f"{D004_SELECTION_ID}_acceptance_packet.json"
 D004_PAIRED_WEATHER_ACCEPTANCE_SCAFFOLD_NAME = f"{D004_SELECTION_ID}_paired_weather_acceptance_scaffold.json"
+D004_ACCEPTANCE_TOLERANCE_PACKET_NAME = f"{D004_SELECTION_ID}_acceptance_tolerance_packet.json"
 
 
 @dataclass(frozen=True)
@@ -601,6 +602,138 @@ def write_d004_paired_weather_acceptance_scaffold(*, metadata_dir: str | Path = 
     )
 
 
+def build_d004_acceptance_tolerance_packet(*, metadata_dir: str | Path = "data/metadata") -> dict[str, Any]:
+    """Prepare PI decisions for final D-004 and paired-weather acceptance."""
+    metadata_root = Path(metadata_dir)
+    weather_dir = metadata_root / "weather_pv"
+    acceptance = _load_json(weather_dir / D004_ACCEPTANCE_PACKET_NAME)
+    scaffold = _load_json(weather_dir / D004_PAIRED_WEATHER_ACCEPTANCE_SCAFFOLD_NAME)
+    seasonal_summary = acceptance.get("seasonal_peak_sanity_summary", {})
+    candidate = scaffold.get("source_member_acceptance_candidate", {})
+    candidate_checks = candidate.get("checks", {})
+    identity_contract = scaffold.get("paired_weather_identity_contract", {})
+    satisfied_evidence = [
+        {
+            "id": "D004-EVIDENCE-SOURCE-FILES",
+            "status": "satisfied_for_pi_review_not_signed" if _all_named_true(candidate_checks, ["four_source_file_checksums_match", "four_source_file_sizes_match"]) else "needs_recheck",
+            "evidence": "retrieval manifest plus source acceptance evidence record exact URLs, ignored raw paths, sizes, and SHA-256 checksums for the approved four-file bundle",
+            "acceptance_rule": "exact file size and SHA-256 match; raw files remain ignored/uncommitted",
+        },
+        {
+            "id": "D004-EVIDENCE-KNMI-COMPLETENESS",
+            "status": "satisfied_for_pi_review_not_signed" if bool(candidate_checks.get("knmi_station_249_complete_2014_2023")) else "needs_recheck",
+            "evidence": "KNMI station 249 has complete hourly T and Q rows for each UTC year 2014-2023",
+            "acceptance_rule": "all expected hourly rows present for non-leap and leap years before 15-minute expansion",
+        },
+        {
+            "id": "D004-EVIDENCE-WEATHER-MEMBERS",
+            "status": "satisfied_for_pi_review_not_signed" if _all_named_true(candidate_checks, ["weather_members_present_2014_2023", "utc_local_calendar_and_15min_cadence_ok", "temperature_t_over_10_finite", "knmi_q_derived_ghi_nonnegative", "knmi_hourly_q_energy_preserved"]) else "needs_recheck",
+            "evidence": "ten committed WEATHER-001 member metadata records for UTC years 2014-2023 with member IDs, shared driver IDs, UTC/local timestamps, T/10 temperature, and Q-derived GHI",
+            "acceptance_rule": "complete 15-minute UTC-year calendars, aligned Europe/Amsterdam timestamps, finite temperature, nonnegative GHI, and preserved KNMI hourly Q energy",
+        },
+        {
+            "id": "D004-EVIDENCE-PVGIS-BOUNDARY",
+            "status": "satisfied_for_pi_review_not_signed" if bool(candidate_checks.get("pvgis_not_realized_weather_path")) else "needs_recheck",
+            "evidence": "PVGIS-SARAH3 seriescalc/TMY URLs, checksums, and normalized PV configuration are carried as provenance/calibration context only",
+            "acceptance_rule": "KNMI station 249 remains the realized temperature/GHI weather path; PVGIS is not sampled as a realized weather member",
+        },
+        {
+            "id": "D004-EVIDENCE-WEATHER-IDENTITY",
+            "status": "satisfied_for_pi_review_not_signed" if bool(candidate_checks.get("weather_identity_roundtrip_ready")) else "needs_recheck",
+            "evidence": "WEATHER-001 member identity and PV/HP record fields can carry the same shared_weather_driver_id and content_sha256",
+            "acceptance_rule": "later HP and PV outputs must match the same member_id, shared_weather_driver_id, source, UTC span, timestep count, cadence, and content_sha256",
+        },
+    ]
+    return {
+        "data_id": "D-004",
+        "selection_id": D004_SELECTION_ID,
+        "created_utc": _now_utc_iso(),
+        "status": "pi_acceptance_tolerance_packet_proposed_not_signed",
+        "d004_final_acceptance": False,
+        "paired_hp_pv_acceptance_run": False,
+        "cold_spell_acceptance_run": False,
+        "no_integrated_analysis": True,
+        "no_manuscript_results": True,
+        "decision_layer": "final_source_member_and_paired_weather_acceptance_predecision",
+        "satisfied_evidence_for_pi_review": satisfied_evidence,
+        "source_member_acceptance_candidate": {
+            "status": candidate.get("status"),
+            "all_scaffold_checks_passed": candidate.get("all_scaffold_checks_passed"),
+            "agent_recommendation": "PI may sign D-004 source/member acceptance separately if the satisfied evidence is acceptable; keep paired HP/PV and cold-spell acceptance as later gates unless the PI explicitly bundles them.",
+        },
+        "unsigned_tolerance_decisions": [
+            {
+                "id": "D004-TOL-SOURCE-MEMBER",
+                "decision_needed": "Should source/member acceptance use exact checksum, size, row-count, cadence, timestamp, finite-value, nonnegative-GHI, and Q-energy-preservation checks as the acceptance criteria?",
+                "agent_recommendation": "Approve exact/invariant criteria for source/member acceptance because these are audit and construction invariants, not empirical performance tolerances.",
+                "blocks": "final D-004 source/member signoff",
+            },
+            {
+                "id": "D004-TOL-PVGIS-SEASONAL-PEAK",
+                "decision_needed": "Choose the PVGIS seasonal/peak sanity rule before final D-004 or PV calibration acceptance.",
+                "current_diagnostic_status": seasonal_summary.get("status"),
+                "current_diagnostic_range": {
+                    "annual_ghi_to_pvgis_gi_ratio_min": seasonal_summary.get("annual_ghi_to_pvgis_gi_ratio_min"),
+                    "annual_ghi_to_pvgis_gi_ratio_max": seasonal_summary.get("annual_ghi_to_pvgis_gi_ratio_max"),
+                    "knmi_peak_ghi_months_utc": seasonal_summary.get("knmi_peak_ghi_months_utc"),
+                    "all_knmi_peak_months_may_to_july": seasonal_summary.get("all_knmi_peak_months_may_to_july"),
+                },
+                "options_for_pi": [
+                    "Qualitative source/member criterion: observed annual ratio range and May-July peak months are sanity evidence only, with no numeric percent tolerance claimed.",
+                    "Numeric criterion: PI supplies explicit annual/seasonal relative-error bounds and allowed peak-month set before the first acceptance run that uses them.",
+                    "Request a different PVGIS comparison quantity or transform before signing this gate.",
+                ],
+                "agent_recommendation": "Use the qualitative source/member criterion now and reserve numeric PVGIS tolerances for later PV calibration, because KNMI GHI and PVGIS fixed-plane G(i)/P are related but not identical quantities.",
+                "blocks": "PVGIS seasonal/peak sanity signoff and any final D-004 acceptance that requires that signoff",
+            },
+            {
+                "id": "D004-TOL-PAIRED-HP-PV",
+                "decision_needed": "Confirm that paired HP/PV validation should require exact WEATHER-001 identity equality plus complete timestamp equality before comparing HP/PV diagnostic outputs.",
+                "strict_identity_fields": identity_contract.get("required_equal_fields"),
+                "weather_fields": identity_contract.get("required_weather_fields"),
+                "agent_recommendation": "Approve exact identity/calendar equality as a prerequisite; do not approve final paired HP/PV acceptance until real HP loads with signed annual scaling are available.",
+                "blocks": "paired HP/PV acceptance",
+            },
+            {
+                "id": "D004-TOL-COLD-SPELL",
+                "decision_needed": "Set numerical coldest-window, near-freezing/defrost-risk, and temperature-response pass/fail tolerances, including the near-freezing band around 0 degrees C.",
+                "agent_recommendation": "Do not run final cold-spell acceptance until these values are PI-signed in the E2-S3 design lineage.",
+                "blocks": "cold-spell acceptance and any bundled final D-003/D-004 acceptance",
+            },
+        ],
+        "must_wait_for_hp_pv_validation": [
+            "accepted D-004 source/member layer or explicit PI instruction to run as provisional evidence",
+            "accepted HP annual local scaling and executable HP profiles; current HP source/technology boundary does not sign annual values",
+            "pre-signed paired-weather and cold-spell tolerance criteria before inspecting real paired HP/PV acceptance diagnostics",
+            "runner/manifested acceptance execution if the validation produces experimental evidence rather than metadata-only governance evidence",
+        ],
+        "out_of_scope_guards": [
+            "no final D-004 signoff by Agent C",
+            "no net-load aggregation",
+            "no event detection or P(E)",
+            "no capacity screen",
+            "no manuscript result",
+        ],
+        "evidence_artifacts": {
+            "acceptance_packet": f"data/metadata/weather_pv/{D004_ACCEPTANCE_PACKET_NAME}",
+            "paired_weather_acceptance_scaffold": f"data/metadata/weather_pv/{D004_PAIRED_WEATHER_ACCEPTANCE_SCAFFOLD_NAME}",
+            "acceptance_tolerance_packet": f"data/metadata/weather_pv/{D004_ACCEPTANCE_TOLERANCE_PACKET_NAME}",
+            "member_readiness_diagnostics": f"data/metadata/weather_pv/{D004_MEMBER_READINESS_DIAGNOSTICS_NAME}",
+            "followup_memo": "reports/e2_s4_d004_acceptance_tolerance_packet.md",
+        },
+    }
+
+
+def write_d004_acceptance_tolerance_packet(*, metadata_dir: str | Path = "data/metadata") -> Path:
+    """Write the PI-facing D-004 acceptance/tolerance packet without signing D-004."""
+    directory = Path(metadata_dir) / "weather_pv"
+    directory.mkdir(parents=True, exist_ok=True)
+    return _write_json(
+        directory / D004_ACCEPTANCE_TOLERANCE_PACKET_NAME,
+        build_d004_acceptance_tolerance_packet(metadata_dir=metadata_dir),
+    )
+
+
 def write_retrieval_plan(metadata_dir: str | Path = "data/metadata") -> Path:
     """Write the D-004 weather/PV retrieval protocol without downloading data."""
     directory = Path(metadata_dir) / "weather_pv"
@@ -893,6 +1026,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--write-d004-member-readiness-diagnostics", action="store_true")
     parser.add_argument("--write-d004-acceptance-packet", action="store_true")
     parser.add_argument("--write-d004-paired-weather-acceptance-scaffold", action="store_true")
+    parser.add_argument("--write-d004-acceptance-tolerance-packet", action="store_true")
     parser.add_argument("--root-dir", default=".")
     args = parser.parse_args(argv)
 
@@ -942,6 +1076,11 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     if args.write_d004_paired_weather_acceptance_scaffold:
         path = write_d004_paired_weather_acceptance_scaffold(metadata_dir=args.metadata_dir)
+        print(path)
+        return 0
+
+    if args.write_d004_acceptance_tolerance_packet:
+        path = write_d004_acceptance_tolerance_packet(metadata_dir=args.metadata_dir)
         print(path)
         return 0
 
@@ -1396,6 +1535,9 @@ def _same_weather_roundtrip_ok(member: WeatherMember) -> bool:
         return False
     return True
 
+
+def _all_named_true(values: Mapping[str, Any], names: Sequence[str]) -> bool:
+    return all(bool(values.get(name)) for name in names)
 
 def _safe_ratio(numerator: float, denominator: object) -> float | None:
     if denominator is None:
