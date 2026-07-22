@@ -6,8 +6,8 @@ Status: scaffold/readiness only. This packet validates synthetic accepted
 adapter artifacts and synthetic adapter outputs up to the net-load/loading-input
 handoff. It does not load real component arrays, open EV held-out data, run
 E3.S2a adequacy, run E3.S2b/E3.S3 threshold screens, evaluate events, compute
-P(E), or produce manuscript numbers. G0-A3 resolves Q-5 with the primary
-strict L_import > 1.0 p.u. event definition; this scaffold still does not
+`P(E)`, or produce manuscript numbers. G0-A3 resolves Q-5 with the primary
+strict `L_import > 1.0 p.u.` event definition; this scaffold still does not
 run that criterion.
 
 ## Purpose
@@ -29,6 +29,8 @@ loading evaluator, without actually invoking IC-2.
   checks;
 - HP/PV paired weather identity through the registry and realization context;
 - a common 2035 timestamp axis at 900-second cadence;
+- complete 2035 full-year coverage before `primary_probability_domain` can be
+  true; diagnostic/scaffold slices must use `window_set`;
 - manifest-ready registry, realization-context, component-provenance, node, and
   weather metadata.
 
@@ -37,9 +39,11 @@ probability, capacity-screen, and manuscript-result fields.
 
 ## Synthetic Fixture
 
-The tests use a four-step 2035 synthetic calendar and synthetic baseline, EV,
-HP, and PV outputs. This is a minimal contract fixture, not a real full-year
-scientific input. Full-year real component use remains blocked until the owning
+The tests use a four-step 2035 synthetic `window_set` calendar and synthetic
+baseline, EV, HP, and PV outputs. This is a minimal contract fixture, not a
+real full-year scientific input, and its manifest sets
+`primary_probability_domain = false`. A separate regression test rejects the
+same partial payload when it is claimed as `full_year`. Full-year real component use remains blocked until the owning
 C artifacts are accepted and remaining downstream gates, signed values,
 capacity conventions, and manifests are in place.
 

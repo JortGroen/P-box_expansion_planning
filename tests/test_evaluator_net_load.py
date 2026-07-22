@@ -224,11 +224,11 @@ def _accepted_adapter_registry() -> ComponentAdapterRegistry:
     )
 
 
-def _registry_context(registry: ComponentAdapterRegistry):
+def _registry_context(registry: ComponentAdapterRegistry, *, time_domain: TimeDomain = "full_year"):
     return build_realization_context(
         scenario="scenario-a",
         year=2035,
-        time_domain="full_year",
+        time_domain=time_domain,
         rho=0.5,
         seed=7001,
         shared_weather_driver_id=registry.manifest_record()["readiness"]["shared_weather_driver_id"],
@@ -1397,26 +1397,27 @@ def test_artifact_bridge_rejects_unmanifestable_provenance_and_cadence() -> None
             provenance={"readiness_artifact": "E2.S2"},
         )
 
-def test_loading_input_readiness_validates_synthetic_registry_outputs_without_events() -> None:
+def test_loading_input_readiness_validates_synthetic_window_set_without_events() -> None:
     registry = build_component_adapter_registry_from_artifacts(
         registry_id="loading-input-registry",
         node_ids=("node-a", "node-b"),
         artifacts=_accepted_adapter_artifacts(),
     )
-    context = _registry_context(registry)
+    context = _registry_context(registry, time_domain="window_set")
 
     readiness = prepare_loading_input_from_registry_outputs(
         registry,
         context,
         _registry_adapter_outputs(context, registry),
+        time_domain="window_set",
         metadata={"fixture": "synthetic-minimal"},
     )
     manifest = readiness.manifest_record()
 
     assert isinstance(readiness, NetLoadLoadingInputReadiness)
     assert manifest["planning_year"] == 2035
-    assert manifest["time_domain"] == "full_year"
-    assert manifest["primary_probability_domain"] is True
+    assert manifest["time_domain"] == "window_set"
+    assert manifest["primary_probability_domain"] is False
     assert manifest["timestep_seconds"] == 900
     assert manifest["timestep_count"] == 4
     assert manifest["calendar_start"].startswith("2035-01-01T00:00:00")
@@ -1426,6 +1427,21 @@ def test_loading_input_readiness_validates_synthetic_registry_outputs_without_ev
     assert "threshold_pu" not in manifest
     assert "overload" not in manifest
 
+
+def test_loading_input_readiness_rejects_partial_full_year_payload() -> None:
+    registry = build_component_adapter_registry_from_artifacts(
+        registry_id="loading-input-registry",
+        node_ids=("node-a", "node-b"),
+        artifacts=_accepted_adapter_artifacts(),
+    )
+    context = _registry_context(registry)
+
+    with pytest.raises(ValueError, match="complete planning year"):
+        prepare_loading_input_from_registry_outputs(
+            registry,
+            context,
+            _registry_adapter_outputs(context, registry),
+        )
 
 def test_loading_input_readiness_rejects_context_year_or_domain_mismatch() -> None:
     registry = build_component_adapter_registry_from_artifacts(
@@ -1503,5 +1519,6 @@ def test_loading_input_readiness_rejects_nonmanifestable_metadata() -> None:
             net_load=net_load,
             registry_manifest=registry.manifest_record(),
             realization_context_manifest=context.manifest_metadata(),
+            time_domain="window_set",
             metadata={"bad": None},
         )

@@ -589,6 +589,7 @@ class NetLoadLoadingInputReadiness:
             self.net_load.timestamps,
             planning_year=self.planning_year,
             timestep_seconds=self.timestep_seconds,
+            time_domain=self.time_domain,
         )
         _validate_nonempty_mapping_values(self.registry_manifest, name="registry_manifest")
         _validate_nonempty_mapping_values(
@@ -1300,6 +1301,7 @@ def _validate_loading_input_calendar(
     *,
     planning_year: int,
     timestep_seconds: int,
+    time_domain: TimeDomain,
 ) -> None:
     calendar = _as_15_minute_calendar(timestamps)
     years = calendar.astype("datetime64[Y]").astype(int) + 1970
@@ -1309,6 +1311,15 @@ def _validate_loading_input_calendar(
         cadence_s = np.diff(calendar).astype("timedelta64[s]").astype(np.int64)
         if not np.all(cadence_s == timestep_seconds):
             raise ValueError("loading-input timestamps must use the declared cadence")
+    if time_domain == "full_year":
+        start = np.datetime64(f"{planning_year}-01-01T00:00:00", "s")
+        next_year = np.datetime64(f"{planning_year + 1}-01-01T00:00:00", "s")
+        expected_steps = int((next_year - start) / np.timedelta64(timestep_seconds, "s"))
+        expected_end = start + np.timedelta64((expected_steps - 1) * timestep_seconds, "s")
+        # A primary-probability manifest must not be creatable from a diagnostic
+        # slice; partial windows belong to window_set and are non-primary.
+        if calendar.size != expected_steps or calendar[0] != start or calendar[-1] != expected_end:
+            raise ValueError("full_year loading-input timestamps must cover the complete planning year")
 
 def _component_streams_by_name(context: NetLoadRealizationContext) -> dict[str, ComponentStream]:
     return {stream.component: stream for stream in context.component_streams}
