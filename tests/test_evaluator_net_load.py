@@ -13,6 +13,7 @@ from src.contracts.net_load import (
     DEFAULT_REALIZATION_COMPONENTS,
     NetLoadAssemblyPlan,
     NetLoadComponent,
+    NetLoadLoadingInputReadiness,
     NetLoadProvider,
     NetLoadResult,
     REAL_COMPONENT_WIRING_KINDS,
@@ -25,6 +26,7 @@ from src.contracts.net_load import (
     build_realization_context,
     build_net_load_result,
     net_load_component_from_adapter_output,
+    prepare_loading_input_from_registry_outputs,
     validate_component_adapter_skeletons,
     validate_net_load_result,
     validate_real_component_adapter_readiness,
@@ -222,11 +224,11 @@ def _accepted_adapter_registry() -> ComponentAdapterRegistry:
     )
 
 
-def _registry_context(registry: ComponentAdapterRegistry):
+def _registry_context(registry: ComponentAdapterRegistry, *, time_domain: TimeDomain = "full_year"):
     return build_realization_context(
         scenario="scenario-a",
         year=2035,
-        time_domain="full_year",
+        time_domain=time_domain,
         rho=0.5,
         seed=7001,
         shared_weather_driver_id=registry.manifest_record()["readiness"]["shared_weather_driver_id"],
@@ -1393,4 +1395,130 @@ def test_artifact_bridge_rejects_unmanifestable_provenance_and_cadence() -> None
             calendar_id="calendar-2035-15min",
             timestep_seconds=1800,
             provenance={"readiness_artifact": "E2.S2"},
+        )
+
+def test_loading_input_readiness_validates_synthetic_window_set_without_events() -> None:
+    registry = build_component_adapter_registry_from_artifacts(
+        registry_id="loading-input-registry",
+        node_ids=("node-a", "node-b"),
+        artifacts=_accepted_adapter_artifacts(),
+    )
+    context = _registry_context(registry, time_domain="window_set")
+
+    readiness = prepare_loading_input_from_registry_outputs(
+        registry,
+        context,
+        _registry_adapter_outputs(context, registry),
+        time_domain="window_set",
+        metadata={"fixture": "synthetic-minimal"},
+    )
+    manifest = readiness.manifest_record()
+
+    assert isinstance(readiness, NetLoadLoadingInputReadiness)
+    assert manifest["planning_year"] == 2035
+    assert manifest["time_domain"] == "window_set"
+    assert manifest["primary_probability_domain"] is False
+    assert manifest["timestep_seconds"] == 900
+    assert manifest["timestep_count"] == 4
+    assert manifest["calendar_start"].startswith("2035-01-01T00:00:00")
+    assert manifest["node_ids"] == ("node-a", "node-b")
+    assert manifest["registry_manifest"]["registry_id"] == "loading-input-registry"
+    assert manifest["metadata"]["scaffold_only"] is True
+    assert "threshold_pu" not in manifest
+    assert "overload" not in manifest
+
+
+def test_loading_input_readiness_rejects_partial_full_year_payload() -> None:
+    registry = build_component_adapter_registry_from_artifacts(
+        registry_id="loading-input-registry",
+        node_ids=("node-a", "node-b"),
+        artifacts=_accepted_adapter_artifacts(),
+    )
+    context = _registry_context(registry)
+
+    with pytest.raises(ValueError, match="complete planning year"):
+        prepare_loading_input_from_registry_outputs(
+            registry,
+            context,
+            _registry_adapter_outputs(context, registry),
+        )
+
+def test_loading_input_readiness_rejects_context_year_or_domain_mismatch() -> None:
+    registry = build_component_adapter_registry_from_artifacts(
+        registry_id="loading-input-registry",
+        node_ids=("node-a", "node-b"),
+        artifacts=_accepted_adapter_artifacts(),
+    )
+    context = _registry_context(registry)
+
+    with pytest.raises(ValueError, match="planning_year must match"):
+        prepare_loading_input_from_registry_outputs(
+            registry,
+            context,
+            _registry_adapter_outputs(context, registry),
+            planning_year=2030,
+        )
+
+    with pytest.raises(ValueError, match="time_domain must match"):
+        prepare_loading_input_from_registry_outputs(
+            registry,
+            context,
+            _registry_adapter_outputs(context, registry),
+            time_domain="window_set",
+        )
+
+
+def test_loading_input_readiness_rejects_non_2035_timestamps() -> None:
+    registry = build_component_adapter_registry_from_artifacts(
+        registry_id="loading-input-registry",
+        node_ids=("node-a", "node-b"),
+        artifacts=_accepted_adapter_artifacts(),
+    )
+    context = _registry_context(registry)
+    shifted = _calendar().astype("datetime64[s]") - np.timedelta64(365, "D")
+    outputs = [
+        ComponentAdapterOutput(
+            component_id=output.component_id,
+            kind=output.kind,
+            node_id=output.node_id,
+            p_kw=output.p_kw,
+            q_kvar=output.q_kvar,
+            timestamps=shifted,
+            member_id=output.member_id,
+            source_id=output.source_id,
+            stream_id=output.stream_id,
+            shared_weather_driver_id=output.shared_weather_driver_id,
+            metadata=dict(output.metadata),
+        )
+        for output in _registry_adapter_outputs(context, registry)
+    ]
+
+    with pytest.raises(ValueError, match="planning year"):
+        prepare_loading_input_from_registry_outputs(
+            registry,
+            context,
+            outputs,
+        )
+
+
+def test_loading_input_readiness_rejects_nonmanifestable_metadata() -> None:
+    registry = build_component_adapter_registry_from_artifacts(
+        registry_id="loading-input-registry",
+        node_ids=("node-a", "node-b"),
+        artifacts=_accepted_adapter_artifacts(),
+    )
+    context = _registry_context(registry)
+    net_load = assemble_net_load_from_registry_outputs(
+        registry,
+        context,
+        _registry_adapter_outputs(context, registry),
+    )
+
+    with pytest.raises(ValueError, match="metadata values must not be None"):
+        NetLoadLoadingInputReadiness(
+            net_load=net_load,
+            registry_manifest=registry.manifest_record(),
+            realization_context_manifest=context.manifest_metadata(),
+            time_domain="window_set",
+            metadata={"bad": None},
         )

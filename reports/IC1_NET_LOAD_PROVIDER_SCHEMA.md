@@ -146,6 +146,22 @@ assembly can run.
 This bridge is still below scientific analysis. It does not load real held-out
 data, run E3.S2a adequacy, call IC-2, evaluate thresholds or events, compute
 `P(E)`, or produce manuscript numbers.
+
+## Loading-Input Readiness Boundary
+
+`NetLoadLoadingInputReadiness` validates a registry-backed IC-1 `NetLoadResult`
+as ready to be handed to a future loading evaluator. It is still below IC-2: it
+records array-free manifest metadata for the net-load payload, registry,
+realization context, node IDs, component provenance, shared weather IDs,
+planning year, time domain, and cadence, but it does not compute transformer
+loading, thresholds, events, adequacy, or probabilities.
+
+`prepare_loading_input_from_registry_outputs(...)` is the synthetic/minimal
+fixture route from accepted adapter artifacts to this boundary. It assembles
+through the existing registry helper, then validates that the realization
+context and timestamps use the G0-A4 2035 planning year and 900-second cadence.
+The helper rejects context year/domain drift and non-2035 timestamp payloads
+before later IC-2 work can consume them.
 ## Calendar Rules
 
 All component outputs in one `NetLoadResult` must share exactly one calendar.
