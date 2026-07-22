@@ -211,12 +211,14 @@ def _compute_rebound(reduction: np.ndarray, *, mode: ReboundMode) -> np.ndarray:
 
 
 def _eligibility(component: _PreparedComponent) -> tuple[bool, str]:
+    component_type = component.component_type.strip().lower()
+    if component_type in {"pv", "solar", "generation", "export"}:
+        return False, "PV/export components are never demand-side controllable"
     if not component.is_import_controllable:
         return False, "not marked as import-side controllable demand"
     if component.controllable_fraction == 0.0:
         return False, "zero controllable fraction"
     return True, "reduced positive import demand by controllable_fraction * rho during active steps"
-
 
 def _prepare_component(component: FlexComponent) -> _PreparedComponent:
     if not component.name:
