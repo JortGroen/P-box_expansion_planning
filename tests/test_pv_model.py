@@ -815,6 +815,60 @@ def test_committed_d004_acceptance_tolerance_packet_keeps_tolerances_unsigned() 
     assert "no event detection or P(E)" in payload["out_of_scope_guards"]
 
 
+def test_d004_pi_recommendation_packet_is_concise_and_unsigned(tmp_path: Path) -> None:
+    metadata_src = Path("data/metadata/weather_pv")
+    metadata_dst = tmp_path / "metadata" / "weather_pv"
+    metadata_dst.mkdir(parents=True)
+    for name in [
+        weather_pv.D004_ACCEPTANCE_TOLERANCE_PACKET_NAME,
+        weather_pv.D004_ACCEPTANCE_PACKET_NAME,
+    ]:
+        (metadata_dst / name).write_text((metadata_src / name).read_text(encoding="utf-8"), encoding="utf-8")
+
+    payload = weather_pv.build_d004_pi_recommendation_packet(metadata_dir=tmp_path / "metadata")
+
+    assert payload["status"] == "pi_recommendation_packet_proposed_not_signed"
+    assert payload["d004_final_acceptance"] is False
+    assert payload["paired_hp_pv_acceptance_run"] is False
+    assert [item["id"] for item in payload["recommended_pi_decisions"]] == [
+        "D004-REC-1-SOURCE-MEMBER",
+        "D004-REC-2-PVGIS-SANITY",
+        "D004-REC-3-WEATHER-IDENTITY",
+        "D004-REC-4-COLD-SPELL",
+    ]
+    assert payload["recommended_pi_decisions"][0]["recommended_outcome"] == "approve_source_member_acceptance_only"
+    assert payload["recommended_pi_decisions"][1]["numeric_tolerance_status"] == "unsigned_not_recommended_for_source_member_gate"
+    assert payload["recommended_pi_decisions"][2]["recommended_outcome"] == "approve_exact_identity_calendar_prerequisite"
+    assert payload["recommended_pi_decisions"][3]["recommended_outcome"] == "defer_to_hp_cold_spell_tolerance_decision"
+    assert any("manifested paired HP/PV" in item for item in payload["decision_sequence_recommendation"])
+    assert "no event detection or P(E)" in payload["out_of_scope_guards"]
+
+
+def test_committed_d004_pi_recommendation_packet_keeps_decisions_with_pi() -> None:
+    path = Path(
+        "data/metadata/weather_pv/"
+        "d004_alkmaar_berkhout_2014_2023_v1_pi_recommendation_packet.json"
+    )
+    payload = json.loads(path.read_text(encoding="utf-8"))
+
+    assert payload["data_id"] == "D-004"
+    assert payload["status"] == "pi_recommendation_packet_proposed_not_signed"
+    assert payload["d004_final_acceptance"] is False
+    assert payload["cold_spell_acceptance_run"] is False
+    assert payload["no_integrated_analysis"] is True
+    source = next(item for item in payload["recommended_pi_decisions"] if item["id"] == "D004-REC-1-SOURCE-MEMBER")
+    assert source["recommended_outcome"] == "approve_source_member_acceptance_only"
+    assert "D004-EVIDENCE-SOURCE-FILES" in source["basis"]
+    pvgis = next(item for item in payload["recommended_pi_decisions"] if item["id"] == "D004-REC-2-PVGIS-SANITY")
+    assert pvgis["basis"]["annual_ghi_to_pvgis_gi_ratio_min"] == pytest.approx(0.806128)
+    assert pvgis["numeric_tolerance_status"] == "unsigned_not_recommended_for_source_member_gate"
+    weather = next(item for item in payload["recommended_pi_decisions"] if item["id"] == "D004-REC-3-WEATHER-IDENTITY")
+    assert weather["strict_identity_fields"][-1] == "content_sha256"
+    cold = next(item for item in payload["recommended_pi_decisions"] if item["id"] == "D004-REC-4-COLD-SPELL")
+    assert any("near-freezing" in item for item in cold["remaining_decisions"])
+    assert "no capacity screen" in payload["out_of_scope_guards"]
+
+
 def test_d004_weather_member_builder_expands_knmi_hourly_fixture_to_utc_year(tmp_path: Path) -> None:
     metadata_dir = tmp_path / "metadata"
     _write_d004_fixture_manifest(tmp_path, metadata_dir, year=2014)
