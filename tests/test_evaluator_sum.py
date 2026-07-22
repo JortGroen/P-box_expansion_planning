@@ -6,8 +6,15 @@ import pytest
 from src.evaluator_sum import (
     DEFAULT_THRESHOLD_PU,
     count_import_overload_episodes,
+    evaluate_net_load_tier1,
     evaluate_tier1,
     radial_downstream_sum,
+)
+from src.contracts.loading_trajectory import validate_loading_trajectory_result
+from src.contracts.net_load import (
+    ComponentProvenance,
+    NetLoadComponent,
+    build_net_load_result,
 )
 
 
@@ -163,4 +170,98 @@ def test_invalid_window_arguments_are_rejected() -> None:
 
     with pytest.raises(ValueError, match="only allowed"):
         evaluate_tier1(nodal_p, nodal_q, s_nom_agg_kva=1.0, window_indices=[0])
+
+
+def _net_load_calendar() -> np.ndarray:
+    return np.array(
+        [
+            "2035-01-01T00:00:00",
+            "2035-01-01T00:15:00",
+            "2035-01-01T00:30:00",
+            "2035-01-01T00:45:00",
+        ],
+        dtype="datetime64[s]",
+    )
+
+
+def _net_load_component(
+    component_id: str,
+    kind: str,
+    node_id: str,
+    p_kw: list[float],
+    q_kvar: list[float],
+) -> NetLoadComponent:
+    return NetLoadComponent(
+        provenance=ComponentProvenance(
+            component_id=component_id,
+            kind=kind,
+            node_id=node_id,
+            member_id=f"{component_id}-member",
+            source_id="synthetic-tier1-fixture",
+            metadata={"fixture": "ic1-to-tier1"},
+        ),
+        p_kw=np.array(p_kw, dtype=float),
+        q_kvar=np.array(q_kvar, dtype=float),
+        timestamps=_net_load_calendar(),
+    )
+
+
+def test_net_load_result_routes_to_loading_trajectory_contract() -> None:
+    net_load = build_net_load_result(
+        [
+            _net_load_component("baseline-a", "baseline", "node-a", [8.0, 8.0, 8.0, 8.0], [6.0, 6.0, 6.0, 6.0]),
+            _net_load_component("ev-a", "ev", "node-a", [1.0, 2.0, 3.0, 4.0], [0.0, 0.0, 0.0, 0.0]),
+            _net_load_component("pv-b", "pv", "node-b", [0.0, -2.0, -4.0, -6.0], [0.0, 0.0, 0.0, 0.0]),
+        ],
+        metadata={"scaffold": "synthetic-ic1-to-tier1"},
+    )
+
+    result = evaluate_net_load_tier1(net_load, s_nom_agg_kva=10.0)
+
+    validate_loading_trajectory_result(result)
+    np.testing.assert_allclose(result.p_net_kw, np.array([9.0, 8.0, 7.0, 6.0]))
+    np.testing.assert_allclose(result.q_net_kvar, np.array([6.0, 6.0, 6.0, 6.0]))
+    np.testing.assert_allclose(result.s_net_kva, np.hypot(result.p_net_kw, result.q_net_kvar))
+    assert result.import_mask.tolist() == [True, True, True, True]
+    assert result.export_mask.tolist() == [False, False, False, False]
+    assert result.zero_mask.tolist() == [False, False, False, False]
+    assert result.time_domain == "full_year"
+    assert result.primary_probability_domain is True
+
+
+def test_net_load_to_tier1_preserves_unwidened_direction_gates() -> None:
+    net_load = build_net_load_result(
+        [
+            _net_load_component("baseline-a", "baseline", "node-a", [3.0, 0.0, 0.0, 4.0], [4.0, 5.0, 0.0, 3.0]),
+            _net_load_component("pv-a", "pv", "node-a", [0.0, -2.0, 0.0, -8.0], [0.0, 0.0, 0.0, 0.0]),
+        ]
+    )
+
+    result = evaluate_net_load_tier1(net_load, s_nom_agg_kva=5.0)
+
+    np.testing.assert_allclose(result.p_net_kw, np.array([3.0, -2.0, 0.0, -4.0]))
+    np.testing.assert_allclose(result.screening_loading_pu, np.array([1.0, np.hypot(-2.0, 5.0) / 5.0, 0.0, 1.0]))
+    assert result.import_mask.tolist() == [True, False, False, False]
+    assert result.export_mask.tolist() == [False, True, False, True]
+    assert result.zero_mask.tolist() == [False, False, True, False]
+    assert result.import_loading_pu.tolist() == pytest.approx([1.0, 0.0, 0.0, 0.0])
+    assert result.export_loading_pu.tolist() == pytest.approx([0.0, np.hypot(-2.0, 5.0) / 5.0, 0.0, 1.0])
+
+
+def test_net_load_to_tier1_rejects_invalid_ic1_payload_before_evaluation() -> None:
+    invalid = build_net_load_result(
+        [
+            _net_load_component(
+                "baseline-a",
+                "baseline",
+                "node-a",
+                [1.0, 1.0, 1.0, 1.0],
+                [0.0, 0.0, 0.0, 0.0],
+            )
+        ]
+    )
+    invalid.p_net_kw[0, 1] = np.nan
+
+    with pytest.raises(ValueError, match="net-load arrays must contain only finite"):
+        evaluate_net_load_tier1(invalid, s_nom_agg_kva=1.0)
 

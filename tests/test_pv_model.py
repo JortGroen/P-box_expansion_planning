@@ -33,11 +33,13 @@ def _short_weather(
     timestamps_local = tuple(item.astimezone(canonical_15min_local_axis_for_year(2025)[0].tzinfo) for item in timestamps_utc)
     return WeatherMember(
         member_id="knmi_member_001",
+        shared_weather_driver_id="d004_test_weather:knmi_member_001",
         source="knmi_historical_plus_paired_irradiance",
         timestamps_utc=timestamps_utc,
         timestamps_local=timestamps_local,
         temperature_c=temperature_c or [25.0, 35.0, 400.0, 25.0],
-        ghi_w_per_m2=ghi_w_per_m2 or [0.0, 1000.0, 1000.0, 2000.0],
+        pv_weather_fields={"ghi_w_per_m2": ghi_w_per_m2 or [0.0, 1000.0, 1000.0, 2000.0]},
+        provenance={"fixture": "pv_model_short_weather"},
     )
 
 
@@ -62,25 +64,28 @@ def test_weather_member_retains_paired_identity_and_complete_calendar() -> None:
     timestamps_local = canonical_15min_local_axis_for_year(2025)
     member = WeatherMember(
         member_id="knmi_2025_rotterdam_001",
+        shared_weather_driver_id="knmi_historical_member:knmi_2025_rotterdam_001",
         source="knmi_historical_member",
         timestamps_utc=timestamps_utc,
         timestamps_local=timestamps_local,
         temperature_c=np.full(len(timestamps_utc), 12.0),
-        ghi_w_per_m2=np.zeros(len(timestamps_utc)),
+        pv_weather_fields={"ghi_w_per_m2": np.zeros(len(timestamps_utc))},
     )
 
     validate_canonical_15min_calendar(member, local_year=2025)
     assert member.shared_weather_driver_id == "knmi_historical_member:knmi_2025_rotterdam_001"
     assert member.identity_record()["cadence_seconds"] == 900
     assert member.identity_record()["first_timestamp_local"] == "2025-01-01T00:00:00+01:00"
+    assert len(member.identity_record()["content_sha256"]) == 64
 
     incomplete = WeatherMember(
         member_id="knmi_2025_rotterdam_incomplete",
+        shared_weather_driver_id="knmi_historical_member:knmi_2025_rotterdam_incomplete",
         source="knmi_historical_member",
         timestamps_utc=timestamps_utc[:-1],
         timestamps_local=timestamps_local[:-1],
         temperature_c=np.full(len(timestamps_utc) - 1, 12.0),
-        ghi_w_per_m2=np.zeros(len(timestamps_utc) - 1),
+        pv_weather_fields={"ghi_w_per_m2": np.zeros(len(timestamps_utc) - 1)},
     )
     with pytest.raises(ValueError, match="canonical 2025 UTC calendar"):
         validate_canonical_15min_calendar(incomplete, local_year=2025)
@@ -96,20 +101,22 @@ def test_weather_member_rejects_unpaired_or_invalid_weather_paths() -> None:
     with pytest.raises(ValueError, match="chronological"):
         WeatherMember(
             member_id="bad",
+            shared_weather_driver_id="driver",
             source="knmi",
             timestamps_utc=timestamps_utc,
             timestamps_local=timestamps_local,
             temperature_c=[1.0, 1.0],
-            ghi_w_per_m2=[0.0, 0.0],
+            pv_weather_fields={"ghi_w_per_m2": [0.0, 0.0]},
         )
     with pytest.raises(ValueError, match="timezone-aware"):
         WeatherMember(
             member_id="bad",
+            shared_weather_driver_id="driver",
             source="knmi",
             timestamps_utc=(datetime(2025, 1, 1), datetime(2025, 1, 1, 0, 15)),
             timestamps_local=timestamps_local,
             temperature_c=[1.0, 1.0],
-            ghi_w_per_m2=[0.0, 0.0],
+            pv_weather_fields={"ghi_w_per_m2": [0.0, 0.0]},
         )
     with pytest.raises(ValueError, match="non-negative"):
         _short_weather(ghi_w_per_m2=[0.0, -1.0, 0.0, 0.0])
@@ -143,11 +150,12 @@ def test_pvgis_reference_check_covers_seasonal_totals_and_peak_timing() -> None:
     ghi = np.asarray([month_to_kw[item.month] / 10.0 * 1000.0 for item in timestamps_local])
     weather = WeatherMember(
         member_id="weather_member_with_summer_peak",
+        shared_weather_driver_id="synthetic_weather:weather_member_with_summer_peak",
         source="knmi_paired_irradiance",
         timestamps_utc=timestamps_utc,
         timestamps_local=timestamps_local,
         temperature_c=np.full(len(timestamps_utc), 25.0),
-        ghi_w_per_m2=ghi,
+        pv_weather_fields={"ghi_w_per_m2": ghi},
     )
     config = PVSystemConfig(
         installed_capacity_kw=10.0,
@@ -273,8 +281,9 @@ def test_weather_pv_execution_plan_is_metadata_only(tmp_path: Path) -> None:
     assert payload["download_performed"] is False
     assert payload["raw_data_committed"] is False
     assert payload["data_register_status"] == "proposed"
-    assert payload["shared_weather_blocker"]["question_id"] == "Q-8"
-    assert payload["shared_weather_blocker"]["neutral_paths_owned"] is False
+    assert payload["shared_weather_contract"]["question_id"] == "Q-8"
+    assert payload["shared_weather_contract"]["decision_id"] == "WEATHER-001"
+    assert payload["shared_weather_contract"]["neutral_paths_owned"] is True
     assert payload["official_source_verification"]["pvgis"]["expected_size_bytes"] is None
     assert payload["official_source_verification"]["knmi"]["expected_size_bytes"] is None
     assert payload["checkpoint_resume_plan"]["current_download_helper_resume_capable"] is False
@@ -290,7 +299,7 @@ def test_committed_weather_pv_execution_plan_records_no_real_data_acceptance() -
     assert payload["raw_data_committed"] is False
     assert payload["data_register_status"] == "proposed"
     assert "PI sign-off pending" in payload["status"]
-    assert "src/weather_model.py" in payload["shared_weather_blocker"]["blocked_paths"]
+    assert "src/weather_model.py" in payload["shared_weather_contract"]["implemented_paths"]
     assert "DATA_REGISTER D-004 must be updated only after concrete file/version/checksum selections are made" in (
         " ".join(payload["acceptance_boundary"])
     )
@@ -305,7 +314,7 @@ def test_committed_d004_source_selection_packet_is_proposal_only() -> None:
     assert payload["download_performed"] is False
     assert selection["selection_id"] == "d004_alkmaar_berkhout_2014_2023_v1"
     assert selection["status"] == "proposed_not_pi_signed"
-    assert "Q-8 open" in selection["shared_weather_status"]
+    assert "WEATHER-001 resolved Q-8" in selection["shared_weather_status"]
     assert payload["long_run_notice_required_for_next_step"] is False
     assert "LONG-RUN NOTICE" in payload["long_run_notice_text_if_scope_expands"]
 
@@ -369,7 +378,7 @@ def test_committed_d004_retrieval_manifest_records_only_approved_four_file_route
     assert payload["d004_status"] == "proposed_pending_pi_review"
     assert payload["raw_data_committed"] is False
     assert payload["no_analysis_performed"] is True
-    assert payload["q8_shared_weather_implementation"].startswith("not implemented")
+    assert payload["q8_shared_weather_implementation"].startswith("implemented separately")
     assert len(files) == 4
     assert {item["source_kind"] for item in files} == {"pvgis", "knmi"}
     assert {item["file_role"] for item in files} == {
@@ -382,3 +391,28 @@ def test_committed_d004_retrieval_manifest_records_only_approved_four_file_route
     assert all(item["size_bytes"] > 0 for item in files)
     assert any("not a realized sampled weather path" in item for item in payload["validation_boundary"])
     assert any("no net-load" in item for item in payload["validation_boundary"])
+    assert any("WEATHER-001 shared-weather contract implemented separately" in item for item in payload["validation_boundary"])
+
+
+def test_committed_d004_source_acceptance_evidence_is_readiness_only() -> None:
+    evidence_path = Path(
+        "data/metadata/weather_pv/d004_alkmaar_berkhout_2014_2023_v1_source_acceptance_evidence.json"
+    )
+    payload = json.loads(evidence_path.read_text(encoding="utf-8"))
+
+    assert payload["data_id"] == "D-004"
+    assert payload["selection_id"] == "d004_alkmaar_berkhout_2014_2023_v1"
+    assert payload["status"] == "proposed_pending_pi_review"
+    assert payload["no_analysis_performed"] is True
+    assert all(item["sha256_matches_manifest"] for item in payload["raw_files"])
+    assert all(item["size_matches_manifest"] for item in payload["raw_files"])
+    assert all(
+        payload["knmi_station_249_hourly_coverage"]["years"][str(year)]["complete"]
+        for year in range(2014, 2024)
+    )
+    assert payload["pvgis_sarah3_hourly_series_coverage"]["rows_by_year"] == {
+        str(year): 8784 if year in {2016, 2020} else 8760
+        for year in range(2014, 2024)
+    }
+    assert payload["weather_001_compatibility"]["pv_model_consumes_neutral_weather_member"] is True
+    assert any("hourly-to-15-minute" in item for item in payload["remaining_before_final_d004_acceptance"])

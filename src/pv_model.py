@@ -2,15 +2,20 @@ from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 import json
 from typing import Any
-from zoneinfo import ZoneInfo
 
 import numpy as np
 
-LOCAL_TIMEZONE = "Europe/Amsterdam"
-STEP_SECONDS_15MIN = 900
+from src.weather_model import (
+    LOCAL_TIMEZONE,
+    WeatherMember,
+    canonical_15min_local_axis_for_year,
+    canonical_15min_utc_axis_for_local_year,
+    validate_canonical_15min_calendar,
+)
+
 SEASON_BY_MONTH = {
     12: "DJF",
     1: "DJF",
@@ -26,78 +31,6 @@ SEASON_BY_MONTH = {
     11: "SON",
 }
 SEASONS = ("DJF", "MAM", "JJA", "SON")
-
-
-@dataclass(frozen=True)
-class WeatherMember:
-    """Paired temperature and irradiance member on one chronological calendar."""
-
-    member_id: str
-    source: str
-    timestamps_utc: Sequence[datetime]
-    timestamps_local: Sequence[datetime]
-    temperature_c: Sequence[float]
-    ghi_w_per_m2: Sequence[float]
-    metadata: Mapping[str, Any] = field(default_factory=dict)
-
-    def __post_init__(self) -> None:
-        if not self.member_id:
-            raise ValueError("member_id must be non-empty")
-        if not self.source:
-            raise ValueError("source must be non-empty")
-        timestamps_utc = tuple(_coerce_aware_datetime(item, "timestamps_utc").astimezone(UTC) for item in self.timestamps_utc)
-        timestamps_local = tuple(_coerce_aware_datetime(item, "timestamps_local") for item in self.timestamps_local)
-        if len(timestamps_utc) < 2:
-            raise ValueError("Weather member must contain at least two timestamps")
-        if len(timestamps_utc) != len(timestamps_local):
-            raise ValueError("UTC and local timestamp counts must match")
-        _validate_strictly_chronological(timestamps_utc, "Weather member")
-        for utc_timestamp, local_timestamp in zip(timestamps_utc, timestamps_local, strict=True):
-            if local_timestamp.astimezone(UTC) != utc_timestamp:
-                raise ValueError("UTC and local timestamps must represent the same instants")
-
-        temperature = _as_float_vector(self.temperature_c, "temperature_c")
-        irradiance = _as_float_vector(self.ghi_w_per_m2, "ghi_w_per_m2")
-        if len(temperature) != len(timestamps_utc) or len(irradiance) != len(timestamps_utc):
-            raise ValueError("Weather channels must match the timestamp count")
-        if (irradiance < 0).any():
-            raise ValueError("ghi_w_per_m2 must be non-negative")
-
-        object.__setattr__(self, "timestamps_utc", timestamps_utc)
-        object.__setattr__(self, "timestamps_local", timestamps_local)
-        object.__setattr__(self, "temperature_c", temperature)
-        object.__setattr__(self, "ghi_w_per_m2", irradiance)
-        object.__setattr__(self, "metadata", dict(sorted(dict(self.metadata).items())))
-
-    @property
-    def n_timesteps(self) -> int:
-        return len(self.timestamps_utc)
-
-    @property
-    def shared_weather_driver_id(self) -> str:
-        return f"{self.source}:{self.member_id}"
-
-    @property
-    def cadence_seconds(self) -> int:
-        return _constant_cadence_seconds(self.timestamps_utc)
-
-    @property
-    def cadence_hours(self) -> float:
-        return self.cadence_seconds / 3600.0
-
-    def identity_record(self) -> dict[str, object]:
-        return {
-            "member_id": self.member_id,
-            "source": self.source,
-            "shared_weather_driver_id": self.shared_weather_driver_id,
-            "first_timestamp_utc": self.timestamps_utc[0].isoformat(),
-            "last_timestamp_utc": self.timestamps_utc[-1].isoformat(),
-            "first_timestamp_local": self.timestamps_local[0].isoformat(),
-            "last_timestamp_local": self.timestamps_local[-1].isoformat(),
-            "n_timesteps": self.n_timesteps,
-            "cadence_seconds": self.cadence_seconds,
-        }
-
 
 @dataclass(frozen=True)
 class PVSystemConfig:
@@ -223,53 +156,6 @@ class PVGISSanityCheck:
     def raise_for_failure(self) -> None:
         if not self.passed:
             raise ValueError("; ".join(self.failed_reasons))
-
-
-def canonical_15min_utc_axis_for_local_year(
-    year: int,
-    *,
-    timezone: str = LOCAL_TIMEZONE,
-) -> tuple[datetime, ...]:
-    """Return the UTC 15-minute axis for one complete local calendar year."""
-    local_zone = ZoneInfo(timezone)
-    start_utc = datetime(int(year), 1, 1, tzinfo=local_zone).astimezone(UTC)
-    end_utc = datetime(int(year) + 1, 1, 1, tzinfo=local_zone).astimezone(UTC)
-    step = timedelta(seconds=STEP_SECONDS_15MIN)
-    values: list[datetime] = []
-    current = start_utc
-    while current < end_utc:
-        values.append(current)
-        current += step
-    if current != end_utc:
-        raise AssertionError("15-minute axis did not land on local year boundary")
-    return tuple(values)
-
-
-def canonical_15min_local_axis_for_year(
-    year: int,
-    *,
-    timezone: str = LOCAL_TIMEZONE,
-) -> tuple[datetime, ...]:
-    """Return local timestamps paired to the canonical UTC axis."""
-    local_zone = ZoneInfo(timezone)
-    return tuple(item.astimezone(local_zone) for item in canonical_15min_utc_axis_for_local_year(year, timezone=timezone))
-
-
-def validate_canonical_15min_calendar(
-    member: WeatherMember,
-    *,
-    local_year: int,
-    timezone: str = LOCAL_TIMEZONE,
-) -> None:
-    """Validate that a weather member covers one complete 15-minute local year."""
-    expected_utc = canonical_15min_utc_axis_for_local_year(local_year, timezone=timezone)
-    expected_local = canonical_15min_local_axis_for_year(local_year, timezone=timezone)
-    if member.timestamps_utc != expected_utc:
-        raise ValueError(f"Weather member does not match the canonical {local_year} UTC calendar")
-    if member.timestamps_local != expected_local:
-        raise ValueError(f"Weather member does not match the canonical {local_year} local calendar")
-
-
 def generate_pv_profile(weather: WeatherMember, config: PVSystemConfig) -> PVGenerationProfile:
     """Generate PV power in kW from paired irradiance and temperature channels."""
     temperature_factor = 1.0 + config.temperature_coefficient_per_c * (

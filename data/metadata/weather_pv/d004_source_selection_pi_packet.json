@@ -38,7 +38,7 @@
   "proposed_selection": {
     "selection_id": "d004_alkmaar_berkhout_2014_2023_v1",
     "status": "proposed_not_pi_signed",
-    "shared_weather_status": "Q-8 open; do not implement neutral shared-weather paths in this packet",
+    "shared_weather_status": "WEATHER-001 resolved Q-8 at the contract level; this packet still does not create accepted D-004 weather members",
     "weather_member_policy": "Each accepted year 2014-2023 becomes one complete chronological weather member on the common UTC/local calendar; HP and PV must later consume the same member_id/shared_weather_driver_id under ALEA-001.",
     "no_real_source_acceptance_claim": true
   },

@@ -305,6 +305,22 @@ this construction misses, a shared latent factor, multivariate block bootstrap,
 or evidence-fitted copula is introduced only through a separately signed and
 manifested sensitivity protocol.
 
+The E2.S5 readiness scaffold implements this ALEA-001 handoff without adding a
+new scientific decision: baseline SimBench load, EV charging, heat-pump demand,
+and PV generation trajectories are represented as complete ordered 15-minute
+paths on the same Europe/Amsterdam planning-year calendar before Agent A
+aggregates them through IC-1. Each component contributes a manifestable calendar
+footprint with component name, member ID, source ID, UTC timestamps, cadence,
+first/last timestamp, and timestamp checksum. HP and PV footprints must also
+carry the same `shared_weather_driver_id`, implementing WEATHER-001 before
+net-load assembly. The validator checks exact equality to the canonical
+local-year UTC axis and rejects shifted, missing, duplicated, or unpaired
+components, but it does not compute net load, transformer loading, congestion,
+profile-library adequacy, or manuscript numbers. Household-diversity
+calibration remains open; this scaffold only preserves the selected baseline
+trajectory's temporal and weekday/weekend structure so later diversity choices
+cannot be hidden inside timestamp repair.
+
 <!-- methods-id: WEATHER-001 -->
 ### WEATHER-001 - Shared HP/PV Weather-Member Contract
 
@@ -1118,19 +1134,23 @@ TMY JSON responses at the exogenous Alkmaar GM0361 representative point
 `52.63167,4.74861`, plus KNMI station 249 Berkhout validated hourly station
 ZIPs for 2011-2020 and 2021-2030. The committed D-004 metadata records the raw
 file paths, source URLs, file sizes, SHA-256 checksums, and the boundary that
-PVGIS outputs are calibration or validation references only. These checksum
-records are proposed for PI review; they do not sign the KNMI hourly source-use
-evidence, prove complete 2014-2023 annual weather members, or authorize
-manuscript claims. Per ALEA-001, each later usable weather member must carry one
-timezone-aware, complete, chronological UTC/local calendar plus paired
-temperature and irradiance channels, so heat-pump and PV integration can
-consume the same weather-member identity through WEATHER-001. PV conversion
-parameters and PVGIS sanity-check tolerances are supplied explicitly by the
-caller; a PVGIS typical-year reference is used for calibration or validation
-only, not as an independently sampled realized weather path. Seasonal energy
-and peak timing are checked against PVGIS output before integration. D-004
-remains proposed until the PI accepts the concrete files, versions, checksums,
-source-use evidence, and completeness checks.
+PVGIS outputs are calibration or validation references only. A later
+source-readiness memo and metadata file verify that the four local raw files
+still match those checksums, that KNMI station 249 has complete hourly `T` and
+`Q` rows for 2014-2023, and that the PVGIS-SARAH3 Alkmaar hourly series covers
+exactly the same 2014-2023 years. These records are proposed for PI review; they
+do not sign the KNMI hourly source-use evidence, create accepted 15-minute
+weather members, or authorize manuscript claims. Per ALEA-001, each later
+usable weather member must carry one timezone-aware, complete, chronological
+UTC/local calendar plus paired temperature and irradiance channels, so heat-pump
+and PV integration can consume the same weather-member identity through
+WEATHER-001. PV conversion parameters and PVGIS sanity-check tolerances are
+supplied explicitly by the caller; a PVGIS typical-year reference is used for
+calibration or validation only, not as an independently sampled realized weather
+path. Seasonal energy and peak timing are checked against PVGIS output before
+integration. D-004 remains proposed until the PI accepts the concrete files,
+versions, checksums, source-use evidence, completeness checks, and the
+hourly-to-15-minute member-construction rule.
 
 <!-- methods-id: D-005 -->
 ### D-005 - Flexibility Delivery Evidence
