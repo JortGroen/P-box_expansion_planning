@@ -9,6 +9,7 @@ from src.contracts.net_load import (
     ComponentAdapterRegistry,
     ComponentAdapterOutput,
     ComponentAdapterSkeleton,
+    ExecutableInputArtifact,
     ComponentProvenance,
     DEFAULT_REALIZATION_COMPONENTS,
     NetLoadAssemblyPlan,
@@ -31,6 +32,7 @@ from src.contracts.net_load import (
     validate_net_load_result,
     validate_real_component_adapter_readiness,
     validate_registry_adapter_output_readiness,
+    validate_executable_input_gate,
 )
 from src.contracts.loading_trajectory import TimeDomain
 
@@ -1572,3 +1574,129 @@ def test_loading_input_readiness_rejects_nonmanifestable_metadata() -> None:
             time_domain="window_set",
             metadata={"bad": None},
         )
+
+
+def _executable_input_artifact(
+    kind: str,
+    *,
+    artifact_status: str = "accepted",
+    calendar_id: str = "calendar-2035-15min",
+    timestep_seconds: int = 900,
+    shared_weather_driver_id: str | None = None,
+    version_id: str = "synthetic-v1",
+    signed_register_ids: tuple[str, ...] | None = None,
+    blocking_register_ids: tuple[str, ...] = (),
+    manifest_path: str | None = "synthetic-default",
+) -> ExecutableInputArtifact:
+    if shared_weather_driver_id is None and kind in {"hp", "pv"}:
+        shared_weather_driver_id = "weather-executable-1"
+    if signed_register_ids is None and artifact_status == "accepted":
+        signed_register_ids = {
+            "baseline": ("D-001",),
+            "ev": ("EV-003", "EV-004", "EV-007A", "EV-CAL-001"),
+            "hp": ("HP-001", "D-003"),
+            "pv": ("WEATHER-001", "D004-MC-001"),
+            "adoption": ("EV-007A", "A-014"),
+            "flexibility": ("FLEX-001",),
+        }[kind]
+    return ExecutableInputArtifact(
+        artifact_id=f"{kind}-executable-artifact",
+        kind=kind,
+        artifact_status=artifact_status,
+        version_id=version_id,
+        source_id=f"{kind}-source",
+        member_id=f"{kind}-member",
+        calendar_id=calendar_id,
+        node_ids=("node-a",) if kind not in {"hp", "pv"} else ("node-b",),
+        signed_register_ids=() if signed_register_ids is None else signed_register_ids,
+        blocking_register_ids=blocking_register_ids,
+        timestep_seconds=timestep_seconds,
+        shared_weather_driver_id=shared_weather_driver_id,
+        manifest_path=None if manifest_path is None else f"data/metadata/synthetic/{kind}.json",
+        provenance={"fixture": "executable-input-gate"},
+    )
+
+
+def _executable_input_artifacts() -> list[ExecutableInputArtifact]:
+    return [
+        _executable_input_artifact("baseline"),
+        _executable_input_artifact("ev"),
+        _executable_input_artifact("hp"),
+        _executable_input_artifact("pv"),
+        _executable_input_artifact("adoption"),
+        _executable_input_artifact("flexibility"),
+    ]
+
+
+def test_executable_input_gate_records_manifestable_ready_inputs_without_arrays() -> None:
+    readiness = validate_executable_input_gate(
+        _executable_input_artifacts(),
+        intended_use="e3_s2b_screen_prerequisite",
+    )
+
+    assert readiness["ready_for_execution"] is True
+    assert readiness["intended_use"] == "e3_s2b_screen_prerequisite"
+    assert readiness["present_component_kinds"] == (
+        "adoption",
+        "baseline",
+        "ev",
+        "flexibility",
+        "hp",
+        "pv",
+    )
+    assert readiness["calendar_id"] == "calendar-2035-15min"
+    assert readiness["timestep_seconds"] == 900
+    assert readiness["shared_weather_driver_id"] == "weather-executable-1"
+    assert readiness["signed_register_ids_by_kind"]["flexibility"] == ("FLEX-001",)
+    assert readiness["manifest_paths_by_kind"]["ev"].endswith("ev.json")
+    assert all("p_kw" not in artifact for artifact in readiness["artifacts"])
+    assert all("q_kvar" not in artifact for artifact in readiness["artifacts"])
+
+
+def test_executable_input_gate_rejects_missing_required_component() -> None:
+    artifacts = [artifact for artifact in _executable_input_artifacts() if artifact.kind != "adoption"]
+
+    with pytest.raises(ValueError, match=r"missing executable input artifact kind\(s\): adoption"):
+        validate_executable_input_gate(artifacts)
+
+
+def test_executable_input_gate_rejects_unsigned_inputs_with_blocking_ids() -> None:
+    artifacts = _executable_input_artifacts()
+    artifacts[2] = _executable_input_artifact(
+        "hp",
+        artifact_status="unsigned",
+        signed_register_ids=(),
+        blocking_register_ids=("D-013", "HP-LOCAL-SCALING", "D-004"),
+    )
+
+    with pytest.raises(ValueError, match="hp: D-013, HP-LOCAL-SCALING, D-004"):
+        validate_executable_input_gate(
+            artifacts,
+            intended_use="e3_s2b_screen_prerequisite",
+        )
+
+
+def test_executable_input_gate_rejects_calendar_and_weather_mismatches() -> None:
+    artifacts = _executable_input_artifacts()
+    artifacts[1] = _executable_input_artifact("ev", calendar_id="calendar-2030-15min")
+    with pytest.raises(ValueError, match="share one calendar_id"):
+        validate_executable_input_gate(artifacts)
+
+    artifacts = _executable_input_artifacts()
+    artifacts[3] = _executable_input_artifact("pv", shared_weather_driver_id="different-weather")
+    with pytest.raises(ValueError, match="share one weather driver"):
+        validate_executable_input_gate(artifacts)
+
+
+def test_executable_input_gate_requires_version_and_signed_or_blocking_ids() -> None:
+    with pytest.raises(ValueError, match="version_id"):
+        _executable_input_artifact("baseline", version_id="")
+
+    with pytest.raises(ValueError, match="accepted executable inputs must cite signed_register_ids"):
+        _executable_input_artifact("baseline", signed_register_ids=())
+
+    with pytest.raises(ValueError, match="accepted executable inputs must cite manifest_path"):
+        _executable_input_artifact("baseline", manifest_path=None)
+
+    with pytest.raises(ValueError, match="non-accepted executable inputs must list"):
+        _executable_input_artifact("flexibility", artifact_status="scaffold", signed_register_ids=())
