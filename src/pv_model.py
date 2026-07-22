@@ -4,6 +4,7 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 import json
+from types import MappingProxyType
 from typing import Any
 
 import numpy as np
@@ -68,6 +69,7 @@ class PVGenerationProfile:
     timestamps_local: Sequence[datetime]
     generation_kw: Sequence[float]
     config: PVSystemConfig
+    weather_identity: Mapping[str, object] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         timestamps_utc = tuple(_coerce_aware_datetime(item, "timestamps_utc").astimezone(UTC) for item in self.timestamps_utc)
@@ -85,10 +87,17 @@ class PVGenerationProfile:
             raise ValueError("generation_kw must match the timestamp count")
         if (generation < 0).any():
             raise ValueError("generation_kw must be non-negative")
+        weather_identity = _audit_json_mapping(self.weather_identity, "weather_identity")
+        if weather_identity:
+            if weather_identity.get("member_id") != self.weather_member_id:
+                raise ValueError("weather_identity member_id must match weather_member_id")
+            if weather_identity.get("shared_weather_driver_id") != self.shared_weather_driver_id:
+                raise ValueError("weather_identity shared_weather_driver_id must match shared_weather_driver_id")
 
         object.__setattr__(self, "timestamps_utc", timestamps_utc)
         object.__setattr__(self, "timestamps_local", timestamps_local)
         object.__setattr__(self, "generation_kw", generation)
+        object.__setattr__(self, "weather_identity", weather_identity)
 
     @property
     def n_timesteps(self) -> int:
@@ -110,6 +119,25 @@ class PVGenerationProfile:
 
     def peak_timestamp_local(self) -> datetime:
         return self.timestamps_local[int(np.argmax(self.generation_kw))]
+
+    @property
+    def weather_content_sha256(self) -> str | None:
+        value = self.weather_identity.get("content_sha256")
+        return None if value is None else str(value)
+
+    def identity_record(self) -> dict[str, object]:
+        """Return PV output identity fields for later HP/PV pairing checks."""
+        return {
+            "weather_member_id": self.weather_member_id,
+            "weather_source": self.weather_source,
+            "shared_weather_driver_id": self.shared_weather_driver_id,
+            "weather_content_sha256": self.weather_content_sha256,
+            "first_timestamp_utc": self.timestamps_utc[0].isoformat(),
+            "last_timestamp_utc": self.timestamps_utc[-1].isoformat(),
+            "n_timesteps": self.n_timesteps,
+            "cadence_seconds": self.cadence_seconds,
+            "config_id": self.config.config_id,
+        }
 
 
 @dataclass(frozen=True)
@@ -181,6 +209,7 @@ def generate_pv_profile(weather: WeatherMember, config: PVSystemConfig) -> PVGen
         timestamps_local=weather.timestamps_local,
         generation_kw=generation_kw.astype(np.float64),
         config=config,
+        weather_identity=weather.identity_record(),
     )
 
 
@@ -209,6 +238,8 @@ def summarize_pv_profile(profile: PVGenerationProfile) -> dict[str, object]:
         "peak_timestamp_local": peak_timestamp.isoformat(),
         "peak_month": peak_timestamp.month,
         "config_id": profile.config.config_id,
+        "weather_content_sha256": profile.weather_content_sha256,
+        "weather_identity_record": profile.identity_record(),
     }
 
 
@@ -311,6 +342,15 @@ def parse_pvgis_monthly_reference(
         peak_month=peak_month,
     )
 
+def _audit_json_mapping(raw: Mapping[str, object], label: str) -> Mapping[str, object]:
+    if not isinstance(raw, Mapping):
+        raise ValueError(f"{label} must be a mapping")
+    copied = dict(sorted((str(key), value) for key, value in raw.items()))
+    try:
+        json.dumps(copied, sort_keys=True, separators=(",", ":"))
+    except TypeError as exc:
+        raise ValueError(f"{label} must be JSON-serializable") from exc
+    return MappingProxyType(copied)
 
 def _coerce_aware_datetime(value: datetime, name: str) -> datetime:
     if not isinstance(value, datetime):
@@ -384,3 +424,4 @@ def _allowed_peak_months(
     if invalid:
         raise ValueError(f"allowed_peak_months contains invalid months: {invalid}")
     return months
+

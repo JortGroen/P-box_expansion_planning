@@ -1275,10 +1275,14 @@ the committed member manifest, raw-file checksum continuity where the ignored
 local files are present, UTC/local cadence consistency, KNMI-Q energy
 preservation, finite/nonnegative weather channels, PVGIS/KNMI seasonal and peak
 diagnostics without signed tolerances, and shared HP/PV weather-driver identity
-as PI-review evidence only. D-004 itself remains proposed until the PI accepts
-the concrete files, versions, checksums, source-use evidence, completeness
-checks, PVGIS seasonal and peak-timing sanity checks, and final integrated HP/PV
-acceptance.
+as PI-review evidence only. A subsequent proposed acceptance packet
+packages the concrete source files and checksums, member completeness and
+calendar evidence, KNMI `T`/`Q` conversion checks, PVGIS provenance boundary,
+seasonal and peak diagnostics, and explicit PI questions about source/member
+acceptance and unsigned sanity criteria. D-004 itself remains proposed until the
+PI accepts the concrete files, versions, checksums, source-use evidence,
+completeness checks, PVGIS seasonal and peak-timing sanity checks, and final
+integrated HP/PV acceptance.
 
 <!-- methods-id: D004-MC-001 -->
 ### D004-MC-001 - D-004 Weather-Member Construction Rule
@@ -1481,4 +1485,5 @@ base policy as well. The sole code-level bootstrap exception is the initial
 `codex/ownership-enforcement` pull request when neither policy file exists on
 its base; after that first merge, the same branch is governed by the base
 policy like every other branch.
+
 
