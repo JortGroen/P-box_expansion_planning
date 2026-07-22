@@ -80,12 +80,12 @@ If your current directory, branch, or worktree does not match your role and assi
 7. `git fetch --all --prune`; update your task branch from `origin/main` only by fast-forward or an explicit PR/PI instruction. Never `git switch` into another agent's branch inside your worktree.
 8. Read the **diff of `registers/DECISIONS.md`** since your last session — gates may have passed or reversed; frozen items may have changed.
 9. Read `registers/STATUS.md`, your relevant task report or per-task log, any legacy aggregate-log entry that predates the dashboard policy, and any PI answers in `registers/QUESTIONS.md`.
-10. Select **one** task by plan ID. Check its dependencies: if it sits behind an unpassed gate, pick a non-gated task or end the session — never "provisionally" do gated work.
+10. Select **one** PR-sized task by plan ID. Check its dependencies: if it sits behind an unpassed gate, pick a non-gated task; end the session only when no owned, unblocked task is reasonably available. Never "provisionally" do gated work.
 11. Open your log entry: session start time, task ID, intent.
 12. Before editing, run `.\scripts\task.ps1 ownership -Paths path/one.py,path/two.py` with every intended repository-relative path. The command checks the planned set plus any existing worktree changes. If it fails, escalate before editing.
 
 ### 3.2 During the session
-- One task at a time; scope = exactly the task's deliverable, nothing more. New ideas go to `BACKLOG.md`, not into code.
+- One task at a time; scope = exactly the task's deliverable, nothing more. A long working session may contain multiple tasks only as separate, reviewable PR-sized units. New ideas go to `BACKLOG.md`, not into code.
 - Math modules: tests first (or alongside). Run focused tests or `.\scripts\task.ps1 test-fast` during iteration, and `.\scripts\task.ps1 test` before PR completion. A red test you cannot fix without changing the spec ⇒ escalate (§4); never bend the test.
 - All randomness through `src/rng.py`'s seed tree — never a bare `np.random` call.
 - No magic numbers in code: scientific constants and parameters live in `configs/*.yaml` with units in key names (`p_crit`, `s_rated_kva`, `step_min: 15`).
@@ -135,6 +135,8 @@ checkpoints.
 2. Update the task-specific report or per-task log (template §10): what was done, what was **verified** (test/manifest evidence), open questions, next step.
 3. Do not edit `registers/STATUS.md`; instead put a suggested STATUS update in the PR body. The PI/dashboard assistant reconciles STATUS after merge batches.
 4. Commit and push your branch. If a story's deliverable is complete: open/update the PR with the checklist (§9).
+5. Default to continuation mode after a PR-sized unit is cleanly pushed: if another owned, unblocked unit is available and does not require an unmerged dependency, start a new own-role branch from latest `origin/main`, repeat the relevant start-of-session checks, and keep going. Opening one PR is not by itself a reason to stop.
+6. If the best next unit depends on an unmerged PR, prefer an independent task. If stacking is the sensible path, open a clearly labeled **draft** stacked PR, name the upstream PR/branch in the PR body, and keep the scope narrow. Stop only when every reasonable owned lane is blocked or waiting for PI/merge action.
 
 ---
 
@@ -212,7 +214,7 @@ checkpoints.
 - Branch naming: `agent-<a|b|c>/E#.S#-<slug>`.
 - Keep commits small and cohesive. Use `<task ID>: <imperative outcome>` for the subject, for example `E5.S2: Preserve common random numbers across alpha cuts`. Keep the complete subject concise (preferably at most 72 characters), specific, and understandable without reading the diff. Avoid vague subjects such as `update files`, `fix work`, `done`, or agent/session narration. Add a short body when the reason, scientific constraint, or compatibility consequence is not obvious from the subject.
 - Worktree naming: each active agent uses a separate sibling directory (`P-box_expansion_planning-agent-a`, `P-box_expansion_planning-agent-b`, `P-box_expansion_planning-agent-c`). The PI dashboard directory remains on `main` and is not used for implementation.
-- Do not use `git switch` to move one shared directory between agents or tasks. If the branch/task changes, ask the PI to create or retarget a worktree.
+- Do not use `git switch` to move one shared directory between agents. After your own PR-sized unit is pushed and your role worktree is clean, you may create or switch to another same-role branch for the next independent unit. Never switch into another agent's branch, and never carry uncommitted work across tasks.
 - Write the PR for a professional human reviewer who has not followed the agent session. The title uses `<story ID>: <human-readable outcome>` and describes the delivered result, not merely the activity performed. Do not paste raw agent narration, terminal history, or a chronological diary.
 - The `## Summary` section is the PI's first-pass review aid. Write it in plain language with enough project context to judge the PR without opening the diff. It must answer: why this PR exists now, what changes for the project, what it does not decide or claim, and what the reviewer should focus on. Avoid unexplained task shorthand (`T1/T2`), file-by-file summaries, raw implementation trivia, or claims that require reading the branch history to understand.
 - **PR body must use these sections**, omitting only a section that genuinely does not apply:

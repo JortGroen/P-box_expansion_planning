@@ -18,7 +18,10 @@ Bootstrap rules:
 - Use the project `.venv` in your assigned worktree; never install or run project dependencies from Anaconda `base`.
 - Use `scripts/task.ps1`; it selects `.venv` and sets `NUMBA_CACHE_DIR=.tmp/numba_cache` for pandapower/numba imports.
 - In Codex shell calls, use non-login PowerShell (`login:false`) for project commands so user shell-profile hooks such as Anaconda initialization do not run. If a login shell prints an Anaconda hook traceback before a command, treat it as environment noise only when the actual project command ran through `.venv`/`scripts/task.ps1` and exited successfully; otherwise diagnose the command failure.
-- Use one task ID from `actionable_project_plan_agentic.md` per session.
+- Use one task ID from `actionable_project_plan_agentic.md` per PR-sized work unit; a long session may complete multiple units as separate PRs when each unit is safe and reviewable.
+- Default to continuation mode: after completing a coherent PR-sized unit, open or update that PR, make the worktree clean, then keep working on another owned, unblocked unit when one is reasonably available.
+- Stop only for a hard blocker: missing PI decision/sign-off, missing ownership exception, unavailable required data/dependency/API approval, required long-run approval or checkpointing gap, unsafe scientific boundary, or an unmerged dependency that cannot be sensibly stacked.
+- If a follow-up depends on an unmerged PR, either choose an independent task or open a clearly labeled draft stacked PR that names the upstream PR/branch. Do not mix unrelated tasks into one PR.
 - Work only in your owned paths.
 - Before editing, preflight the intended paths with `scripts/task.ps1 ownership -Paths path/one.py,path/two.py`; use repository-relative paths.
 - Run `scripts/task.ps1 ownership` before committing and before opening or updating a PR. The same check is enforced in CI from `configs/agent_ownership.json`.
