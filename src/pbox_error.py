@@ -226,6 +226,35 @@ class OutputErrorProbabilityResult:
 
 
 @dataclass(frozen=True)
+class OutputErrorManifestRecord:
+    """Manifest-ready synthetic endpoint-count record for E5.S3."""
+
+    config: OutputErrorProtocolConfig
+    probability: OutputErrorProbabilityResult
+
+    def to_mapping(self) -> dict[str, object]:
+        """Return a JSON-stable record for later runner manifest plumbing."""
+
+        sample_count = self.probability.lower.sample_count
+        return {
+            "config": self.config.manifest_metadata(),
+            "event_count_bounds": {
+                "lower_successes": self.probability.lower.successes,
+                "upper_successes": self.probability.upper.successes,
+                "sample_count": sample_count,
+            },
+            "probability_bounds": {
+                "lower": _probability_estimate_metadata(self.probability.lower),
+                "upper": _probability_estimate_metadata(self.probability.upper),
+            },
+            "probability_widening": "forbidden",
+            "sample_endpoint_events": [
+                _endpoint_event_metadata(event) for event in self.probability.samples
+            ],
+        }
+
+
+@dataclass(frozen=True)
 class OutputErrorAlphaResult:
     """One alpha-indexed lower/upper probability result from endpoint counts."""
 
@@ -318,6 +347,25 @@ def evaluate_output_error_endpoint_event(
         lower_longest_run_steps=lower_longest,
         upper_longest_run_steps=upper_longest,
     )
+
+
+def build_output_error_manifest_record(
+    results: Sequence[LoadingTrajectoryResult],
+    config: OutputErrorProtocolConfig,
+    *,
+    confidence_level: float = 0.95,
+) -> dict[str, object]:
+    """Build a manifest-ready record from endpoint event counts only."""
+
+    probability = estimate_output_error_probability_from_config(
+        results,
+        config,
+        confidence_level=confidence_level,
+    )
+    # The manifest-facing record preserves endpoint counts so output error
+    # cannot be reintroduced later as a post-hoc probability margin.
+    return OutputErrorManifestRecord(config=config, probability=probability).to_mapping()
+
 
 def estimate_output_error_probability_from_config(
     results: Sequence[LoadingTrajectoryResult],
@@ -433,6 +481,29 @@ def estimate_alpha_output_error_probability(
         )
         for alpha in alpha_grid
     }
+
+
+def _probability_estimate_metadata(estimate: ProbabilityEstimate) -> dict[str, object]:
+    return {
+        "ci_lower": estimate.ci_lower,
+        "ci_upper": estimate.ci_upper,
+        "probability": estimate.probability,
+        "sample_count": estimate.sample_count,
+        "successes": estimate.successes,
+    }
+
+
+def _endpoint_event_metadata(event: EndpointEventEvaluation) -> dict[str, object]:
+    return {
+        "lower_episode_count": event.lower_episode_count,
+        "lower_event": event.lower_event,
+        "lower_longest_run_steps": event.lower_longest_run_steps,
+        "sample_index": event.sample_index,
+        "upper_episode_count": event.upper_episode_count,
+        "upper_event": event.upper_event,
+        "upper_longest_run_steps": event.upper_longest_run_steps,
+    }
+
 
 def _validate_envelope_values(envelope: OutputErrorEnvelope) -> None:
     for name, value in (

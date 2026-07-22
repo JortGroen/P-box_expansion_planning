@@ -15,6 +15,7 @@ from src.pbox_error import (
     OutputErrorEnvelope,
     OutputErrorProtocolConfig,
     apply_output_error_envelope,
+    build_output_error_manifest_record,
     estimate_alpha_output_error_probability,
     estimate_output_error_probability,
     estimate_output_error_probability_from_config,
@@ -55,6 +56,72 @@ def test_output_error_protocol_config_records_manifest_ready_metadata() -> None:
         "threshold_pu": 1.0,
         "timestep_seconds": 900,
     }
+
+
+def test_output_error_manifest_record_is_json_stable_and_count_based() -> None:
+    config = OutputErrorProtocolConfig.from_mapping(
+        {
+            "epsilon_grid": 0.0,
+            "epsilon_tier1_minus": 0.1,
+            "epsilon_tier1_plus": 0.1,
+            "threshold_pu": 1.0,
+            "min_consecutive_steps": 4,
+            "timestep_seconds": 900,
+            "envelope_source": "synthetic-record-envelope",
+            "grid_error_source": "synthetic-grid-placeholder",
+            "tier1_error_source": "synthetic-tier1-placeholder",
+            "capacity_denominator_provenance": "synthetic-capacity-placeholder",
+        }
+    )
+
+    record = build_output_error_manifest_record(
+        [
+            _trajectory([0.8, 0.8, 0.8, 0.8], p_signs=[1, 1, 1, 1]),
+            _trajectory([0.95, 0.95, 0.95, 0.95], p_signs=[1, 1, 1, 1]),
+            _trajectory([1.2, 1.2, 1.2, 1.2], p_signs=[1, 1, 1, 1]),
+        ],
+        config,
+    )
+
+    assert json.loads(json.dumps(record, sort_keys=True)) == record
+    assert record["probability_widening"] == "forbidden"
+    assert record["config"]["probability_widening"] == "forbidden"
+    assert record["config"]["event_semantics"]["direction_gate"] == (
+        "unwidened_p_net_import_mask"
+    )
+    assert record["event_count_bounds"] == {
+        "lower_successes": 1,
+        "upper_successes": 2,
+        "sample_count": 3,
+    }
+    assert record["probability_bounds"]["lower"]["successes"] == 1
+    assert record["probability_bounds"]["upper"]["successes"] == 2
+    assert record["probability_bounds"]["lower"]["probability"] == pytest.approx(1 / 3)
+    assert record["probability_bounds"]["upper"]["probability"] == pytest.approx(2 / 3)
+    assert [event["sample_index"] for event in record["sample_endpoint_events"]] == [0, 1, 2]
+    assert [
+        (event["lower_event"], event["upper_event"])
+        for event in record["sample_endpoint_events"]
+    ] == [(False, False), (False, True), (True, True)]
+
+
+def test_output_error_manifest_record_validates_protocol_config_against_trajectories() -> None:
+    config = OutputErrorProtocolConfig.from_mapping(
+        {
+            "epsilon_grid": 0.0,
+            "epsilon_tier1_minus": 0.0,
+            "epsilon_tier1_plus": 0.0,
+            "threshold_pu": 1.0,
+            "min_consecutive_steps": 4,
+            "timestep_seconds": 900,
+        }
+    )
+
+    with pytest.raises(ValueError, match="trajectory threshold_pu"):
+        build_output_error_manifest_record(
+            [_trajectory([1.0], p_signs=[1], threshold_pu=1.1)],
+            config,
+        )
 
 def test_output_error_endpoints_match_hand_computed_asymmetric_formula() -> None:
     result = _trajectory([1.0, 0.5], p_signs=[1, 1])
