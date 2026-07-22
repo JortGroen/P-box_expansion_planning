@@ -23,8 +23,12 @@ from src.ev_model import (
     build_ev_integration_readiness_artifact,
     charge_point_range_by_year,
     distinct_member_count,
+    ev_candidate_checksum_expectations,
+    ev_ic1_adapter_guardrail_packet,
     ev_library_integration_artifact_from_manifest,
+    ev_planning_calendar_mapping_expectation,
     load_adoption_scenarios_config,
+    load_ev_integration_readiness_record,
     load_processed_batch_npz,
     national_outlook_projections,
     node_charge_point_ranges,
@@ -33,6 +37,7 @@ from src.ev_model import (
     proposed_local_charge_point_counts,
     save_processed_batch_npz,
     validate_adoption_scenarios_config,
+    verify_ev_candidate_checksums,
     write_ev_integration_readiness_artifact,
 )
 from src.rng import SeedTree
@@ -501,6 +506,140 @@ def test_committed_ev_integration_readiness_artifact_exposes_candidate_libraries
     assert len(artifact["node_allocations"]) == 3
     assert all(len(item["home_by_node"]) == 115 for item in artifact["node_allocations"])
     assert all(len(item["public_by_node"]) == 115 for item in artifact["node_allocations"])
+
+
+def test_ev_candidate_checksum_verification_uses_candidate_processed_files_only(
+    tmp_path: Path,
+) -> None:
+    payload = b"synthetic candidate bytes"
+    processed_path = tmp_path / "data" / "processed" / "elaad_profiles" / "candidate.npz"
+    processed_path.parent.mkdir(parents=True)
+    processed_path.write_bytes(payload)
+    digest = ev_model._sha256_file(processed_path)
+    readiness = {
+        "schema_version": 1,
+        "artifact_type": "ev_to_ic1_integration_readiness",
+        "policy": {
+            "held_out_access": False,
+            "candidate_profiles_opened": False,
+            "integrated_analysis_performed": False,
+            "m_sufficiency_claimed": False,
+        },
+        "calendar_mapping": {
+            "profile_generator_calendar_local_year": 2025,
+            "planning_year": 2035,
+            "n_timesteps": EXPECTED_FULL_YEAR_STEPS,
+            "step_seconds": 900,
+            "timezone": "Europe/Amsterdam",
+            "planning_year_mapping_status": (
+                "deterministic_calendar_mapping_required_before_ic1_results"
+            ),
+        },
+        "libraries": [
+            {
+                "library_id": "synthetic_home",
+                "component_id": EV_HOME_COMPONENT,
+                "candidate_member_count": 100,
+                "candidate_batches": [
+                    {
+                        "seed": 140001,
+                        "processed_path": processed_path.relative_to(tmp_path).as_posix(),
+                        "processed_sha256_file": digest,
+                        "n_profiles": 100,
+                        "n_timesteps": EXPECTED_FULL_YEAR_STEPS,
+                        "capacity_class": None,
+                        "cp_capacity_kw": 11,
+                    }
+                ],
+            }
+        ],
+    }
+
+    expectations = ev_candidate_checksum_expectations(readiness)
+    verifications = verify_ev_candidate_checksums(readiness, base_dir=tmp_path)
+
+    assert len(expectations) == 1
+    assert verifications[0].observed_sha256 == digest
+    assert verifications[0].byte_size == len(payload)
+    assert verifications[0].manifest_record()["checksum_verified"] is True
+
+
+def test_ev_candidate_checksum_guardrail_rejects_held_out_paths() -> None:
+    readiness = {
+        "libraries": [
+            {
+                "library_id": "synthetic_home",
+                "component_id": EV_HOME_COMPONENT,
+                "candidate_batches": [
+                    {
+                        "seed": 141201,
+                        "processed_path": "data/processed/elaad_profiles/held_out_141201.npz",
+                        "processed_sha256_file": "a" * 64,
+                        "n_profiles": 100,
+                        "n_timesteps": EXPECTED_FULL_YEAR_STEPS,
+                    }
+                ],
+            }
+        ]
+    }
+
+    with pytest.raises(ValueError, match="candidate processed files only"):
+        ev_candidate_checksum_expectations(readiness)
+
+
+def test_ev_planning_calendar_mapping_guardrail_requires_2035_mapping() -> None:
+    readiness = {
+        "calendar_mapping": {
+            "profile_generator_calendar_local_year": 2025,
+            "planning_year": 2035,
+            "n_timesteps": EXPECTED_FULL_YEAR_STEPS,
+            "step_seconds": 900,
+            "timezone": "Europe/Amsterdam",
+            "planning_year_mapping_status": (
+                "deterministic_calendar_mapping_required_before_ic1_results"
+            ),
+        }
+    }
+
+    expectation = ev_planning_calendar_mapping_expectation(readiness)
+
+    assert expectation.source_calendar_local_year == 2025
+    assert expectation.target_planning_year == 2035
+    assert expectation.profile_loading_allowed_before_mapping is False
+
+    readiness["calendar_mapping"]["planning_year"] = 2033
+    with pytest.raises(ValueError, match="2035 planning year"):
+        ev_planning_calendar_mapping_expectation(readiness)
+
+
+def test_committed_ev_readiness_guardrail_packet_blocks_ic1_result_claims() -> None:
+    artifact = load_ev_integration_readiness_record(
+        Path("data/metadata/ev_adoption/e2_s2_ev_integration_readiness.json")
+    )
+
+    packet = ev_ic1_adapter_guardrail_packet(artifact)
+    committed_packet = json.loads(
+        Path("data/metadata/ev_adoption/e2_s2_ev_ic1_adapter_guardrails.json").read_text(
+            encoding="utf-8"
+        )
+    )
+
+    assert committed_packet == packet
+    assert packet["candidate_checksum_expectation_count"] == 22
+    assert packet["candidate_checksum_expectations_by_component"] == {
+        EV_HOME_COMPONENT: 10,
+        EV_PUBLIC_COMPONENT: 12,
+    }
+    assert packet["candidate_member_count_by_component"] == {
+        EV_HOME_COMPONENT: 1000,
+        EV_PUBLIC_COMPONENT: 1200,
+    }
+    assert packet["calendar_mapping_expectation"]["target_planning_year"] == 2035
+    assert packet["policy"]["held_out_access"] is False
+    assert packet["policy"]["profile_arrays_opened"] is False
+    assert packet["policy"]["integrated_analysis_performed"] is False
+    assert packet["policy"]["m_sufficiency_claimed"] is False
+    assert any("Q-5" in blocker for blocker in packet["ic1_use_blockers"])
 
 
 def _adoption_config() -> dict:
