@@ -6,6 +6,7 @@ import pytest
 from src.contracts.net_load import (
     AdapterBackedNetLoadProvider,
     ComponentAdapterOutput,
+    ComponentAdapterSkeleton,
     ComponentProvenance,
     DEFAULT_REALIZATION_COMPONENTS,
     NetLoadAssemblyPlan,
@@ -19,6 +20,7 @@ from src.contracts.net_load import (
     build_realization_context,
     build_net_load_result,
     net_load_component_from_adapter_output,
+    validate_component_adapter_skeletons,
     validate_net_load_result,
     validate_real_component_adapter_readiness,
 )
@@ -146,6 +148,58 @@ def _adapter_outputs(context) -> list[ComponentAdapterOutput]:
         ),
         _adapter_output(context, "adoption-a", "adoption", [0.0, 0.0, 0.0, 0.0], member_id="adoption-1"),
         _adapter_output(context, "flex-a", "flexibility", [-0.2, -0.2, 0.0, 0.0], member_id="rho-0.5"),
+    ]
+
+
+def _adapter_skeletons(
+    *,
+    artifact_status: str = "scaffold",
+    shared_weather_driver_id: str = "weather-placeholder-1",
+) -> list[ComponentAdapterSkeleton]:
+    blockers = () if artifact_status == "accepted" else ("awaiting accepted E2 artifact",)
+    return [
+        ComponentAdapterSkeleton(
+            kind="baseline",
+            artifact_status=artifact_status,
+            source_id="baseline-readiness",
+            member_id="baseline-member-placeholder",
+            node_ids=("node-a", "node-b"),
+            calendar_id="calendar-2035-15min",
+            blocking_items=blockers,
+            metadata={"readiness_artifact": "E2.S5"},
+        ),
+        ComponentAdapterSkeleton(
+            kind="ev",
+            artifact_status=artifact_status,
+            source_id="ev-readiness",
+            member_id="ev-member-placeholder",
+            node_ids=("node-a",),
+            calendar_id="calendar-2035-15min",
+            blocking_items=blockers,
+            metadata={"readiness_artifact": "E2.S2"},
+        ),
+        ComponentAdapterSkeleton(
+            kind="hp",
+            artifact_status=artifact_status,
+            source_id="hp-readiness",
+            member_id="hp-member-placeholder",
+            node_ids=("node-b",),
+            calendar_id="calendar-2035-15min",
+            shared_weather_driver_id=shared_weather_driver_id,
+            blocking_items=blockers,
+            metadata={"readiness_artifact": "E2.S3"},
+        ),
+        ComponentAdapterSkeleton(
+            kind="pv",
+            artifact_status=artifact_status,
+            source_id="weather-pv-readiness",
+            member_id="pv-member-placeholder",
+            node_ids=("node-b",),
+            calendar_id="calendar-2035-15min",
+            shared_weather_driver_id=shared_weather_driver_id,
+            blocking_items=blockers,
+            metadata={"readiness_artifact": "E2.S4"},
+        ),
     ]
 
 
@@ -870,3 +924,103 @@ def test_real_component_readiness_rejects_missing_or_unknown_artifact_status() -
 
     with pytest.raises(ValueError, match="valid artifact_status"):
         validate_real_component_adapter_readiness(outputs)
+
+
+def test_metadata_adapter_skeletons_record_scaffold_readiness_without_arrays() -> None:
+    readiness = validate_component_adapter_skeletons(_adapter_skeletons())
+
+    assert readiness["required_component_kinds"] == REAL_COMPONENT_WIRING_KINDS
+    assert readiness["present_component_kinds"] == ("baseline", "ev", "hp", "pv")
+    assert readiness["ready_for_real_arrays"] is False
+    assert readiness["artifact_status_by_kind"]["ev"] == "scaffold"
+    assert readiness["blocking_items_by_kind"]["baseline"] == ("awaiting accepted E2 artifact",)
+    assert readiness["shared_weather_driver_id"] == "weather-placeholder-1"
+    assert readiness["skeletons"][0]["kind"] == "baseline"
+
+
+def test_metadata_adapter_skeletons_can_mark_all_required_real_components_accepted() -> None:
+    readiness = validate_component_adapter_skeletons(
+        _adapter_skeletons(artifact_status="accepted")
+    )
+
+    assert readiness["ready_for_real_arrays"] is True
+    assert readiness["blocking_items_by_kind"] == {}
+    assert set(readiness["artifact_status_by_kind"].values()) == {"accepted"}
+
+
+def test_metadata_adapter_skeletons_reject_missing_or_duplicate_required_kind() -> None:
+    with pytest.raises(ValueError, match="missing component adapter skeleton kind\\(s\\): ev"):
+        validate_component_adapter_skeletons(
+            [skeleton for skeleton in _adapter_skeletons() if skeleton.kind != "ev"]
+        )
+
+    duplicate = _adapter_skeletons()
+    duplicate.append(duplicate[0])
+    with pytest.raises(ValueError, match="skeleton kinds must be unique"):
+        validate_component_adapter_skeletons(duplicate)
+
+
+def test_metadata_adapter_skeletons_reject_mismatched_calendar_id() -> None:
+    skeletons = _adapter_skeletons()
+    skeletons[1] = ComponentAdapterSkeleton(
+        kind="ev",
+        artifact_status="scaffold",
+        source_id="ev-readiness",
+        member_id="ev-member-placeholder",
+        node_ids=("node-a",),
+        calendar_id="different-calendar",
+        blocking_items=("awaiting accepted E2 artifact",),
+        metadata={"readiness_artifact": "E2.S2"},
+    )
+
+    with pytest.raises(ValueError, match="share one calendar_id"):
+        validate_component_adapter_skeletons(skeletons)
+
+
+def test_metadata_adapter_skeletons_enforce_weather_cadence_and_blocker_rules() -> None:
+    with pytest.raises(ValueError, match="shared_weather_driver_id"):
+        ComponentAdapterSkeleton(
+            kind="hp",
+            artifact_status="scaffold",
+            source_id="hp-readiness",
+            member_id="hp-member",
+            node_ids=("node-b",),
+            calendar_id="calendar-2035-15min",
+        )
+
+    skeletons = _adapter_skeletons()
+    skeletons[3] = ComponentAdapterSkeleton(
+        kind="pv",
+        artifact_status="scaffold",
+        source_id="weather-pv-readiness",
+        member_id="pv-member-placeholder",
+        node_ids=("node-b",),
+        calendar_id="calendar-2035-15min",
+        shared_weather_driver_id="different-weather",
+        blocking_items=("awaiting accepted E2 artifact",),
+    )
+    with pytest.raises(ValueError, match="HP and PV adapter skeletons must share"):
+        validate_component_adapter_skeletons(skeletons)
+
+    with pytest.raises(ValueError, match="900-second"):
+        ComponentAdapterSkeleton(
+            kind="baseline",
+            artifact_status="scaffold",
+            source_id="baseline-readiness",
+            member_id="baseline-member",
+            node_ids=("node-a",),
+            calendar_id="calendar-2035-15min",
+            timestep_seconds=1800,
+            blocking_items=("awaiting accepted E2 artifact",),
+        )
+
+    with pytest.raises(ValueError, match="accepted adapter skeletons must not list"):
+        ComponentAdapterSkeleton(
+            kind="ev",
+            artifact_status="accepted",
+            source_id="ev-readiness",
+            member_id="ev-member",
+            node_ids=("node-a",),
+            calendar_id="calendar-2035-15min",
+            blocking_items=("should not remain",),
+        )

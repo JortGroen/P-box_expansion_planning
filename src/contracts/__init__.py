@@ -11,6 +11,7 @@ from src.contracts.loading_trajectory import (
 )
 from src.contracts.net_load import (
     ALLOWED_COMPONENT_ARTIFACT_STATUSES,
+    ComponentAdapterSkeleton,
     ComponentKind,
     ComponentProvenance,
     REAL_COMPONENT_WIRING_KINDS,
@@ -22,12 +23,14 @@ from src.contracts.net_load import (
     assemble_net_load_from_real_component_outputs,
     assemble_net_load_from_components,
     build_net_load_result,
+    validate_component_adapter_skeletons,
     validate_real_component_adapter_readiness,
     validate_net_load_result,
 )
 
 __all__ = [
     "ALLOWED_COMPONENT_ARTIFACT_STATUSES",
+    "ComponentAdapterSkeleton",
     "ComponentKind",
     "ComponentProvenance",
     "LoadingTrajectoryResult",
@@ -42,6 +45,7 @@ __all__ = [
     "assemble_net_load_from_components",
     "build_net_load_result",
     "validate_loading_trajectory_result",
+    "validate_component_adapter_skeletons",
     "validate_net_load_result",
     "validate_real_component_adapter_readiness",
 ]

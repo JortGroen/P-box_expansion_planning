@@ -203,6 +203,81 @@ class NetLoadAssemblyPlan:
 
 
 @dataclass(frozen=True)
+class ComponentAdapterSkeleton:
+    """Metadata-only readiness record for one future real component adapter.
+
+    The skeleton is intentionally array-free. It documents whether a baseline,
+    EV, HP, or PV adapter is still scaffold-only or can later emit
+    ``ComponentAdapterOutput`` values for a given calendar and node mapping.
+    """
+
+    kind: ComponentKind
+    artifact_status: ComponentArtifactStatus
+    source_id: str
+    member_id: str
+    node_ids: tuple[str, ...]
+    calendar_id: str
+    timestep_seconds: int = 900
+    shared_weather_driver_id: str | None = None
+    blocking_items: tuple[str, ...] = ()
+    metadata: Mapping[str, object] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        if self.kind not in _VALID_COMPONENT_KINDS:
+            raise ValueError("kind must be a valid net-load component kind")
+        if self.artifact_status not in ALLOWED_COMPONENT_ARTIFACT_STATUSES:
+            raise ValueError("artifact_status must be accepted, scaffold, or synthetic_fixture")
+        source_id = _require_nonempty(self.source_id, name="source_id")
+        member_id = _require_nonempty(self.member_id, name="member_id")
+        calendar_id = _require_nonempty(self.calendar_id, name="calendar_id")
+        if not self.node_ids:
+            raise ValueError("node_ids must not be empty")
+        node_ids = tuple(_require_nonempty(node_id, name="node_id") for node_id in self.node_ids)
+        if len(set(node_ids)) != len(node_ids):
+            raise ValueError("node_ids must not contain duplicates")
+        if (
+            isinstance(self.timestep_seconds, bool)
+            or not isinstance(self.timestep_seconds, int)
+            or self.timestep_seconds != 900
+        ):
+            raise ValueError("timestep_seconds must be the 900-second IC-1 cadence")
+        if self.shared_weather_driver_id is not None:
+            _require_nonempty(self.shared_weather_driver_id, name="shared_weather_driver_id")
+        if self.kind in {"hp", "pv"} and self.shared_weather_driver_id is None:
+            raise ValueError("weather-dependent adapter skeletons require shared_weather_driver_id")
+        blocking_items = tuple(
+            _require_nonempty(item, name="blocking_item")
+            for item in self.blocking_items
+        )
+        if self.artifact_status == "accepted" and blocking_items:
+            raise ValueError("accepted adapter skeletons must not list blocking_items")
+        _validate_nonempty_mapping_values(self.metadata, name="metadata")
+        object.__setattr__(self, "source_id", source_id)
+        object.__setattr__(self, "member_id", member_id)
+        object.__setattr__(self, "node_ids", node_ids)
+        object.__setattr__(self, "calendar_id", calendar_id)
+        object.__setattr__(self, "timestep_seconds", int(self.timestep_seconds))
+        object.__setattr__(self, "blocking_items", blocking_items)
+        object.__setattr__(self, "metadata", MappingProxyType(dict(self.metadata)))
+
+    def manifest_record(self) -> dict[str, object]:
+        """Return a JSON-manifestable metadata record for readiness reports."""
+
+        return {
+            "kind": self.kind,
+            "artifact_status": self.artifact_status,
+            "source_id": self.source_id,
+            "member_id": self.member_id,
+            "node_ids": self.node_ids,
+            "calendar_id": self.calendar_id,
+            "timestep_seconds": self.timestep_seconds,
+            "shared_weather_driver_id": self.shared_weather_driver_id,
+            "blocking_items": self.blocking_items,
+            "metadata": dict(self.metadata),
+        }
+
+
+@dataclass(frozen=True)
 class ComponentAdapterOutput:
     """Normalized output from a future E2 component adapter.
 
@@ -619,6 +694,77 @@ def validate_real_component_adapter_readiness(
         "required_real_component_kinds": tuple(required),
         "present_component_kinds": tuple(sorted(by_kind)),
         "artifact_status_by_component_id": dict(sorted(status_by_component_id.items())),
+    }
+
+
+def validate_component_adapter_skeletons(
+    skeletons: Sequence[ComponentAdapterSkeleton],
+    *,
+    required_component_kinds: Sequence[ComponentKind] = REAL_COMPONENT_WIRING_KINDS,
+) -> dict[str, object]:
+    """Return manifestable metadata-only readiness for future real adapters."""
+
+    if not skeletons:
+        raise ValueError("skeletons must not be empty")
+    required = tuple(required_component_kinds)
+    if not required:
+        raise ValueError("required_component_kinds must not be empty")
+    for kind in required:
+        if kind not in _VALID_COMPONENT_KINDS:
+            raise ValueError("required_component_kinds must contain valid component kinds")
+
+    by_kind: dict[ComponentKind, ComponentAdapterSkeleton] = {}
+    for skeleton in skeletons:
+        if skeleton.kind in by_kind:
+            raise ValueError("component adapter skeleton kinds must be unique")
+        by_kind[skeleton.kind] = skeleton
+
+    missing = [kind for kind in required if kind not in by_kind]
+    if missing:
+        raise ValueError(f"missing component adapter skeleton kind(s): {', '.join(missing)}")
+
+    calendar_ids = {skeleton.calendar_id for skeleton in skeletons}
+    if len(calendar_ids) != 1:
+        raise ValueError("component adapter skeletons must share one calendar_id")
+
+    weather_ids = {
+        by_kind[kind].shared_weather_driver_id
+        for kind in ("hp", "pv")
+        if kind in by_kind
+    }
+    # WEATHER-001 pairing is checked at metadata-readiness time so a future real
+    # adapter cannot pass review with HP/PV placeholders that later diverge.
+    if weather_ids and (None in weather_ids or len(weather_ids) != 1):
+        raise ValueError("HP and PV adapter skeletons must share one weather driver")
+
+    required_skeletons = tuple(by_kind[kind] for kind in required)
+    ready_for_real_arrays = all(
+        skeleton.artifact_status == "accepted" and not skeleton.blocking_items
+        for skeleton in required_skeletons
+    )
+    return {
+        "required_component_kinds": tuple(required),
+        "present_component_kinds": tuple(sorted(by_kind)),
+        "ready_for_real_arrays": ready_for_real_arrays,
+        "artifact_status_by_kind": {
+            kind: by_kind[kind].artifact_status
+            for kind in sorted(by_kind)
+        },
+        "blocking_items_by_kind": {
+            kind: by_kind[kind].blocking_items
+            for kind in sorted(by_kind)
+            if by_kind[kind].blocking_items
+        },
+        "calendar_id_by_kind": {
+            kind: by_kind[kind].calendar_id
+            for kind in sorted(by_kind)
+        },
+        "node_ids_by_kind": {
+            kind: by_kind[kind].node_ids
+            for kind in sorted(by_kind)
+        },
+        "shared_weather_driver_id": next(iter(weather_ids)) if weather_ids else None,
+        "skeletons": [skeleton.manifest_record() for skeleton in required_skeletons],
     }
 
 
