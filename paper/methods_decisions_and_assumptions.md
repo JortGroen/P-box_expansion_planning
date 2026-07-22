@@ -568,7 +568,7 @@ points reviewers to a PI decision packet for the unresolved 2025 ElaadNL
 source-calendar to 2035 planning-calendar mapping, and blocks implementation
 until that deterministic mapping rule is signed.
 
-The EV calendar-mapping decision route keeps `EV-CAL-001` unsigned while making
+The EV-CAL-001 calendar-mapping decision is now approved as Option A while keeping
 the choice auditable before implementation. It compares ordinal timestep,
 weekday-class, source-year computational-calendar, and weather-year matched
 routes for moving complete 2025 ElaadNL candidate members onto the common 2035
@@ -581,6 +581,22 @@ semantics, energy preservation or signed correction, rejection of unsigned rules
 and exclusion of held-out/quarantined partitions. No mapping algorithm is
 implemented until the PI signs the rule.
 
+
+<!-- methods-id: EV-CAL-001 -->
+### EV-CAL-001 - EV Source-To-Planning Calendar Mapping
+
+**Status: Approved.** EV-CAL-001 maps complete 2025 ElaadNL EV source profiles
+to the 2035 planning-year calendar by ordinal timestep index: target timestep
+`i` receives source timestep `i`. The rule preserves the full 35,040-step
+15-minute demand trajectory, member IDs, batch seed, returned profile index,
+source-library identity, processed-checksum provenance, and candidate/held-out
+partition separation. It does not preserve actual 2035 weekday/weekend or
+holiday labels when those differ from the 2025 source calendar, so mapping
+provenance records `weekday_weekend_preserved = false` and
+`source_timestamp_index_policy = target_index_i_uses_source_index_i`. This
+approval authorizes readiness/adapter mapping code only; held-out adequacy,
+finite-library sufficiency, within-realization replacement, net-load/event/
+`P(E)`, capacity-screen, and manuscript-result work remain outside this step.
 <!-- methods-id: EV-004 -->
 ### EV-004 - Fixed Residential Charge-Point Distribution
 

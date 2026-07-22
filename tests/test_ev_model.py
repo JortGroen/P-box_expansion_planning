@@ -11,21 +11,24 @@ import pytest
 
 import src.ev_model as ev_model
 from src.ev_model import (
+    EV_CALENDAR_MAPPING_RULE_ID,
     EV_HOME_COMPONENT,
     EV_PUBLIC_COMPONENT,
-    EVProfileLibrary,
     EVProfileBootstrapSampler,
+    EVProfileLibrary,
     EXPECTED_FULL_YEAR_STEPS,
     a014_node_weights_from_load_table,
     adoption_node_allocations,
     adoption_scenarios,
     allocate_charge_points_to_nodes,
+    apply_ev_cal001_ordinal_mapping,
     build_ev_integration_readiness_artifact,
+    canonical_ev_planning_calendar_2035,
     charge_point_range_by_year,
     distinct_member_count,
     ev_candidate_checksum_expectations,
-    ev_ic1_candidate_adapter_artifact,
     ev_ic1_adapter_guardrail_packet,
+    ev_ic1_candidate_adapter_artifact,
     ev_library_integration_artifact_from_manifest,
     ev_planning_calendar_mapping_expectation,
     load_adoption_scenarios_config,
@@ -60,6 +63,80 @@ def _payload(n_profiles: int = 3, timesteps: int = EXPECTED_FULL_YEAR_STEPS) -> 
             "demands_kw": demands,
         },
     }
+
+
+def test_ev_cal001_canonical_target_calendar_is_complete_2035() -> None:
+    datetimes_utc, datetimes_local = canonical_ev_planning_calendar_2035()
+
+    assert len(datetimes_utc) == EXPECTED_FULL_YEAR_STEPS
+    assert len(datetimes_local) == EXPECTED_FULL_YEAR_STEPS
+    assert datetimes_local[0].isoformat() == "2035-01-01T00:00:00+01:00"
+    assert datetimes_utc[0].isoformat() == "2034-12-31T23:00:00+00:00"
+    assert all(
+        later - earlier == timedelta(minutes=15)
+        for earlier, later in zip(datetimes_utc, datetimes_utc[1:])
+    )
+
+
+def test_ev_cal001_ordinal_mapping_preserves_members_demands_and_provenance() -> None:
+    batch = parse_elaad_profile_response(_payload(n_profiles=2), batch_seed=140001, expected_n_profiles=2)
+
+    mapped = apply_ev_cal001_ordinal_mapping(
+        batch,
+        component_id=EV_HOME_COMPONENT,
+        library_id="A_home_vancar_cp_y2030",
+        processed_path="data/processed/elaad_profiles/candidate.npz",
+        processed_sha256_file="a" * 64,
+    )
+
+    assert mapped.member_ids == batch.member_ids
+    assert mapped.batch_seed == batch.batch_seed
+    assert mapped.n_timesteps == EXPECTED_FULL_YEAR_STEPS
+    assert mapped.n_profiles == 2
+    np.testing.assert_array_equal(mapped.demands_kw, batch.demands_kw)
+    assert mapped.source_datetimes_utc == batch.datetimes_utc
+    assert mapped.target_datetimes_local[0].year == 2035
+    assert mapped.mapping_provenance["calendar_mapping_rule_id"] == EV_CALENDAR_MAPPING_RULE_ID
+    assert mapped.mapping_provenance["source_timestamp_index_policy"] == (
+        "target_index_i_uses_source_index_i"
+    )
+    assert mapped.mapping_provenance["unmapped_or_repeated_source_timestep_count"] == 0
+    assert mapped.mapping_provenance["weekday_weekend_preserved"] is False
+    assert mapped.mapping_provenance["annual_energy_preserved"] is True
+    assert mapped.mapping_provenance["held_out_access"] is False
+    assert mapped.mapping_provenance["m_sufficiency_claimed"] is False
+    assert mapped.demands_kw is not batch.demands_kw
+
+
+def test_ev_cal001_ordinal_mapping_rejects_non_candidate_and_incomplete_batches() -> None:
+    batch = parse_elaad_profile_response(_payload(n_profiles=1), batch_seed=140001, expected_n_profiles=1)
+
+    with pytest.raises(ValueError, match="candidate batches only"):
+        apply_ev_cal001_ordinal_mapping(
+            batch,
+            component_id=EV_HOME_COMPONENT,
+            library_id="A_home_vancar_cp_y2030",
+            processed_path="data/processed/elaad_profiles/held_out.npz",
+            processed_sha256_file="a" * 64,
+            partition="held_out",
+        )
+
+    incomplete = ev_model.ElaadProfileBatch(
+        member_ids=batch.member_ids,
+        datetimes_utc=batch.datetimes_utc[:-1],
+        datetimes_local=batch.datetimes_local[:-1],
+        demands_kw=batch.demands_kw[:-1, :],
+        batch_seed=batch.batch_seed,
+        response_config={},
+    )
+    with pytest.raises(ValueError, match="complete 35,040-step"):
+        apply_ev_cal001_ordinal_mapping(
+            incomplete,
+            component_id=EV_HOME_COMPONENT,
+            library_id="A_home_vancar_cp_y2030",
+            processed_path="data/processed/elaad_profiles/candidate.npz",
+            processed_sha256_file="a" * 64,
+        )
 
 
 def test_parse_time_major_response_and_timezone() -> None:
@@ -677,9 +754,7 @@ def test_ev_ic1_candidate_adapter_artifact_materializes_allocations_and_members(
         "verification_required_before_loading"
     )
     assert artifact["checksum_preconditions"]["profile_arrays_loaded"] is False
-    assert artifact["calendar_mapping_decision"]["status"] == (
-        "pi_decision_required_before_implementation"
-    )
+    assert artifact["calendar_mapping_decision"]["status"] == "approved"
     assert artifact["policy"]["held_out_access"] is False
     libraries = {item["component_id"]: item for item in artifact["candidate_libraries"]}
     assert libraries[EV_HOME_COMPONENT]["candidate_batches"][0]["member_id_pattern"] == (
@@ -791,9 +866,7 @@ def test_committed_ev_ic1_candidate_adapter_artifact_is_candidate_only() -> None
         "verified_in_agent_c_worktree"
     )
     assert artifact["checksum_preconditions"]["profile_arrays_loaded"] is False
-    assert artifact["calendar_mapping_decision"]["status"] == (
-        "pi_decision_required_before_implementation"
-    )
+    assert artifact["calendar_mapping_decision"]["status"] == "approved"
     assert artifact["policy"]["held_out_access"] is False
     assert artifact["policy"]["m_sufficiency_claimed"] is False
     assert len(artifact["node_allocations"]) == 3
@@ -814,7 +887,8 @@ def test_committed_ev_ic1_candidate_adapter_artifact_is_candidate_only() -> None
         for batch in library["candidate_batches"]
     )
 
-def test_committed_ev_calendar_mapping_decision_route_requires_pi_signoff() -> None:
+
+def test_committed_ev_calendar_mapping_decision_route_records_approved_option_a() -> None:
     route = json.loads(
         Path("data/metadata/ev_adoption/e2_s2_ev_calendar_mapping_decision_route.json").read_text(
             encoding="utf-8"
@@ -823,7 +897,13 @@ def test_committed_ev_calendar_mapping_decision_route_requires_pi_signoff() -> N
 
     assert route["artifact_type"] == "ev_calendar_mapping_decision_route"
     assert route["decision_id"] == "EV-CAL-001"
-    assert route["implementation_authorized"] is False
+    assert route["implementation_authorized"] is True
+    assert route["approved_option"] == "A"
+    assert route["approved_rule"]["id"] == "EV-CAL-001"
+    assert route["approved_rule"]["source_timestamp_index_policy"] == (
+        "target_index_i_uses_source_index_i"
+    )
+    assert route["approved_rule"]["weekday_weekend_preserved"] is False
     assert route["source_calendar"] == {
         "calendar_id": "elaad-2025-europe-amsterdam-15min",
         "n_timesteps": EXPECTED_FULL_YEAR_STEPS,
@@ -837,7 +917,9 @@ def test_committed_ev_calendar_mapping_decision_route_requires_pi_signoff() -> N
         "year": 2035,
     }
     assert {option["id"] for option in route["options"]} == {"A", "B", "C", "D"}
-    assert all(option["pi_signed"] is False for option in route["options"])
+    by_option = {option["id"]: option for option in route["options"]}
+    assert by_option["A"]["pi_signed"] is True
+    assert all(by_option[key]["pi_signed"] is False for key in ("B", "C", "D"))
     assert route["non_claims"] == {
         "event_or_p_e_analysis_performed": False,
         "held_out_access": False,
@@ -868,21 +950,46 @@ def test_committed_ev_calendar_mapping_decision_route_requires_pi_signoff() -> N
         "held_out_or_quarantined_partition_rejection",
     } <= set(route["tests_required_before_implementation"])
 
-
-def test_ev_calendar_mapping_decision_packet_stops_before_implementation() -> None:
+def test_ev_calendar_mapping_decision_packet_records_approved_readiness_boundary() -> None:
     packet = Path("reports/e2_s2_ev_calendar_mapping_decision_packet.md").read_text(
         encoding="utf-8"
     )
 
-    assert "Status: PI decision required before implementation" in packet
+    assert "Status: Approved as EV-CAL-001 Option A" in packet
     assert "Option A: Ordinal Timestep Mapping" in packet
     assert "Option B: Weekday-Class Calendar Mapping" in packet
     assert "Option C: Source-Year Computational Calendar" in packet
     assert "Option D: Weather-Year Matched Calendar" in packet
-    assert "Implementation of any calendar mapping rule should stop" in packet
-    assert "does not implement a mapping" in packet
+    assert "EV-CAL-001 Option A is approved for candidate/readiness mapping code" in packet
     assert "estimate `P(E)`" in packet
 
+def test_committed_ev_cal001_decision_and_methods_are_signed() -> None:
+    decisions = Path("registers/DECISIONS.md").read_text(encoding="utf-8")
+    methods = Path("paper/methods_decisions_and_assumptions.md").read_text(encoding="utf-8")
+
+    assert "| EV-CAL-001 | 2026-07-22 | EV source-to-planning calendar mapping |" in decisions
+    assert "Approved Option A: map complete 2025 ElaadNL EV source profiles" in decisions
+    assert "PI approved Option A in chat, 2026-07-22" in decisions
+    assert "<!-- methods-id: EV-CAL-001 -->" in methods
+    assert "target timestep" in methods and "source timestep `i`" in methods
+    assert "weekday_weekend_preserved = false" in methods
+
+
+def test_committed_candidate_adapter_artifact_references_approved_ev_cal001() -> None:
+    artifact = json.loads(
+        Path("data/metadata/ev_adoption/e2_s2_ev_ic1_candidate_adapter_artifact.json").read_text(
+            encoding="utf-8"
+        )
+    )
+
+    decision = artifact["calendar_mapping_decision"]
+    assert decision["status"] == "approved"
+    assert decision["approved_rule_id"] == "EV-CAL-001"
+    assert decision["approved_rule_version"] == "ordinal-v1"
+    assert decision["approved_option"] == "A_ordinal_timestep_mapping"
+    assert decision["expectation"]["mapping_status"] == (
+        "approved_ordinal_timestep_mapping_before_ic1_results"
+    )
 
 def _adoption_config() -> dict:
     return {

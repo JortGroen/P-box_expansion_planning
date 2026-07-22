@@ -1,17 +1,15 @@
 # E2.S2 EV Calendar Mapping Decision Packet
 
-Status: PI decision required before implementation
+Status: Approved as EV-CAL-001 Option A; implementation authorized for candidate/readiness code only
 Machine-readable route: `data/metadata/ev_adoption/e2_s2_ev_calendar_mapping_decision_route.json`
 
 ## Decision Needed
 
 The approved EV source libraries are complete annual ElaadNL profiles on the
 2025 Europe/Amsterdam generator calendar. The primary planning layer for
-integrated analysis is 2035 under G0-A4. Before Agent A can consume EV profiles
-through IC-1, the PI needs to sign a deterministic rule for mapping complete
-2025 EV source trajectories onto the common 2035 planning-year calendar.
+integrated analysis is 2035 under G0-A4. The PI approved Option A on 2026-07-22: complete 2025 EV source trajectories are mapped onto the common 2035 planning-year calendar by ordinal timestep index.
 
-This packet frames the scientific route only. It does not implement a mapping,
+This packet records the signed scientific route and readiness implementation boundary. It does not
 load profile arrays, inspect held-out batches, aggregate net load, evaluate
 events, estimate `P(E)`, certify finite-library adequacy, or produce manuscript
 numbers.
@@ -175,21 +173,13 @@ Checks before implementation:
 
 ## Agent C Recommendation
 
-Agent C recommends that the PI choose between Option A and Option B before any
-mapping code is implemented.
+Agent C recommendation is resolved: the PI approved Option A, ordinal timestep
+mapping, on 2026-07-22.
 
 Option A is the smallest deterministic bridge and best preserves complete EV
-member order. It is easiest to audit, but it knowingly sacrifices exact
-weekday/weekend alignment between EV and 2035 baseline/weather components.
-
-Option B better satisfies the ALEA-001 language about common weekday/weekend
-alignment, but only if the PI signs a precise algorithm for repeated/skipped
-source days, DST, holidays, and energy conservation. It should not be improvised
-inside an implementation PR.
-
-Option C should be used only if the PI wants the whole IC-1 stack to use a
-source-year computational calendar. Option D should remain an escalation unless
-the PI wants weather-year identity to drive EV calendar mapping.
+member order. It is easiest to audit, and its weekday/weekend limitation is
+recorded explicitly instead of hidden in implementation. Options B, C, and D are
+not approved by EV-CAL-001 and would require a signed amendment before use.
 
 ## Proposed Decision Text
 
@@ -223,5 +213,7 @@ Any implementation PR should include tests for:
 
 ## Stop Condition
 
-Implementation of any calendar mapping rule should stop until `EV-CAL-001` or
-an equivalent PI decision is approved.
+EV-CAL-001 Option A is approved for candidate/readiness mapping code. Stop
+before held-out adequacy, M sufficiency claims, net-load/event/`P(E)`,
+capacity-screen, manuscript numbers, or any non-ordinal calendar mapping
+amendment.

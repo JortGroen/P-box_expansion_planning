@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 import gzip
 import hashlib
 import json
@@ -20,6 +20,10 @@ ADOPTION_SCHEMA_VERSION = 1
 EV_HOME_COMPONENT = "ev_home"
 EV_PUBLIC_COMPONENT = "ev_public"
 EV_INTEGRATION_READINESS_SCHEMA_VERSION = 1
+EV_CALENDAR_MAPPING_RULE_ID = "EV-CAL-001"
+EV_CALENDAR_MAPPING_RULE_VERSION = "ordinal-v1"
+EV_SOURCE_CALENDAR_ID = "elaad-2025-europe-amsterdam-15min"
+EV_TARGET_CALENDAR_ID = "planning-2035-europe-amsterdam-15min"
 
 
 @dataclass(frozen=True)
@@ -64,6 +68,27 @@ class ElaadProfileBatch:
         return self.demands_kw.max(axis=0)
 
 
+
+@dataclass(frozen=True)
+class EVMappedProfileBatch:
+    """EV profile batch after approved EV-CAL-001 ordinal calendar mapping."""
+
+    member_ids: tuple[str, ...]
+    source_datetimes_utc: tuple[datetime, ...]
+    source_datetimes_local: tuple[datetime, ...]
+    target_datetimes_utc: tuple[datetime, ...]
+    target_datetimes_local: tuple[datetime, ...]
+    demands_kw: np.ndarray
+    batch_seed: int
+    mapping_provenance: dict[str, object]
+
+    @property
+    def n_timesteps(self) -> int:
+        return int(self.demands_kw.shape[0])
+
+    @property
+    def n_profiles(self) -> int:
+        return int(self.demands_kw.shape[1])
 def parse_elaad_profile_response(
     payload: bytes | str | dict[str, Any],
     *,
@@ -150,6 +175,94 @@ def load_processed_batch_npz(path: Path) -> ElaadProfileBatch:
         demands_kw=demands,
         batch_seed=batch_seed,
         response_config={},
+    )
+
+
+
+def canonical_ev_planning_calendar_2035() -> tuple[tuple[datetime, ...], tuple[datetime, ...]]:
+    """Return the signed 2035 IC-1 EV target calendar for EV-CAL-001."""
+
+    first_local = datetime(2035, 1, 1, 0, 0, tzinfo=_local_zone())
+    first_utc = first_local.astimezone(UTC)
+    datetimes_utc = tuple(
+        first_utc + timedelta(minutes=15 * index) for index in range(EXPECTED_FULL_YEAR_STEPS)
+    )
+    datetimes_local = tuple(item.astimezone(_local_zone()) for item in datetimes_utc)
+    _validate_utc_time_axis(datetimes_utc, EXPECTED_FULL_YEAR_STEPS, label="2035 EV target calendar")
+    return datetimes_utc, datetimes_local
+
+
+def apply_ev_cal001_ordinal_mapping(
+    batch: ElaadProfileBatch,
+    *,
+    component_id: str,
+    library_id: str,
+    processed_path: str,
+    processed_sha256_file: str,
+    partition: str = "candidate",
+    target_datetimes_utc: Sequence[datetime] | None = None,
+    target_datetimes_local: Sequence[datetime] | None = None,
+) -> EVMappedProfileBatch:
+    """Map complete EV source profiles to 2035 by signed ordinal timestep index."""
+
+    if partition != "candidate":
+        raise ValueError("EV-CAL-001 readiness mapping accepts candidate batches only")
+    if component_id not in {EV_HOME_COMPONENT, EV_PUBLIC_COMPONENT}:
+        raise ValueError("EV-CAL-001 mapping requires a supported EV component_id")
+    _require_non_empty_string(library_id, "library_id")
+    _require_non_empty_string(processed_path, "processed_path")
+    _require_sha256(processed_sha256_file, "processed_sha256_file")
+    if batch.n_timesteps != EXPECTED_FULL_YEAR_STEPS:
+        raise ValueError("EV-CAL-001 requires complete 35,040-step source profiles")
+    if len(batch.member_ids) != batch.n_profiles:
+        raise ValueError("EV-CAL-001 requires one member ID per source profile")
+    _validate_utc_time_axis(batch.datetimes_utc, EXPECTED_FULL_YEAR_STEPS, label="EV source calendar")
+
+    if target_datetimes_utc is None or target_datetimes_local is None:
+        target_utc, target_local = canonical_ev_planning_calendar_2035()
+    else:
+        target_utc = tuple(target_datetimes_utc)
+        target_local = tuple(target_datetimes_local)
+    _validate_utc_time_axis(target_utc, EXPECTED_FULL_YEAR_STEPS, label="2035 EV target calendar")
+    if len(target_local) != EXPECTED_FULL_YEAR_STEPS:
+        raise ValueError("2035 EV target local calendar must have 35,040 timestamps")
+
+    provenance = {
+        "calendar_mapping_rule_id": EV_CALENDAR_MAPPING_RULE_ID,
+        "calendar_mapping_rule_version": EV_CALENDAR_MAPPING_RULE_VERSION,
+        "mapping_option": "ordinal_timestep_mapping",
+        "source_calendar_id": EV_SOURCE_CALENDAR_ID,
+        "target_calendar_id": EV_TARGET_CALENDAR_ID,
+        "source_timestamp_index_policy": "target_index_i_uses_source_index_i",
+        "source_timestep_count": EXPECTED_FULL_YEAR_STEPS,
+        "target_timestep_count": EXPECTED_FULL_YEAR_STEPS,
+        "unmapped_or_repeated_source_timestep_count": 0,
+        "weekday_weekend_preserved": False,
+        "season_order_preserved": True,
+        "serial_order_preserved": True,
+        "annual_energy_preserved": True,
+        "dst_policy": "target calendar is a contiguous UTC 15-minute axis converted to Europe/Amsterdam local time",
+        "holiday_policy": "no holiday remapping in ordinal EV-CAL-001",
+        "component_id": component_id,
+        "library_id": library_id,
+        "batch_seed": batch.batch_seed,
+        "member_id_policy": "member IDs are preserved from source batch",
+        "candidate_processed_path": processed_path,
+        "candidate_processed_sha256_file": processed_sha256_file,
+        "partition": partition,
+        "held_out_access": False,
+        "m_sufficiency_claimed": False,
+        "integrated_analysis_performed": False,
+    }
+    return EVMappedProfileBatch(
+        member_ids=tuple(batch.member_ids),
+        source_datetimes_utc=tuple(batch.datetimes_utc),
+        source_datetimes_local=tuple(batch.datetimes_local),
+        target_datetimes_utc=target_utc,
+        target_datetimes_local=target_local,
+        demands_kw=np.array(batch.demands_kw, copy=True),
+        batch_seed=batch.batch_seed,
+        mapping_provenance=provenance,
     )
 
 
@@ -1132,7 +1245,10 @@ def ev_ic1_candidate_adapter_artifact(
             "profile_arrays_loaded": False,
         },
         "calendar_mapping_decision": {
-            "status": "pi_decision_required_before_implementation",
+            "status": "approved",
+            "approved_rule_id": EV_CALENDAR_MAPPING_RULE_ID,
+            "approved_rule_version": EV_CALENDAR_MAPPING_RULE_VERSION,
+            "approved_option": "A_ordinal_timestep_mapping",
             "packet_path": "reports/e2_s2_ev_calendar_mapping_decision_packet.md",
             "expectation": calendar.manifest_record(),
         },
@@ -1876,6 +1992,22 @@ def _require_int_mapping(value: Any, label: str) -> dict[str, int]:
         raise ValueError(f"{label} must be non-empty")
     return result
 
+
+
+def _validate_utc_time_axis(
+    datetimes_utc: Sequence[datetime],
+    expected_timesteps: int,
+    *,
+    label: str,
+) -> None:
+    if len(datetimes_utc) != expected_timesteps:
+        raise ValueError(f"{label} must have {expected_timesteps} timestamps")
+    for item in datetimes_utc:
+        if item.tzinfo is None:
+            raise ValueError(f"{label} timestamps must be timezone-aware")
+    for previous, current in zip(datetimes_utc, datetimes_utc[1:]):
+        if current.astimezone(UTC) - previous.astimezone(UTC) != timedelta(minutes=15):
+            raise ValueError(f"{label} must have 900-second cadence")
 
 def _load_response_payload(payload: bytes | str | dict[str, Any]) -> dict[str, Any]:
     if isinstance(payload, dict):

@@ -2,7 +2,7 @@
   "artifact_type": "ev_calendar_mapping_decision_route",
   "candidate_artifact": "data/metadata/ev_adoption/e2_s2_ev_ic1_candidate_adapter_artifact.json",
   "decision_id": "EV-CAL-001",
-  "implementation_authorized": false,
+  "implementation_authorized": true,
   "non_claims": {
     "event_or_p_e_analysis_performed": false,
     "held_out_access": false,
@@ -14,7 +14,7 @@
     {
       "id": "A",
       "name": "ordinal_timestep_mapping",
-      "pi_signed": false,
+      "pi_signed": true,
       "preserves": [
         "complete_source_order",
         "serial_dependence",
@@ -92,7 +92,7 @@
     "holiday_policy",
     "mapping_created_by_code_sha"
   ],
-  "recommended_next_step": "PI chooses Option A or Option B with exact parameters before Agent C implements mapping code.",
+  "recommended_next_step": "Implement and test EV-CAL-001 ordinal timestep mapping in candidate/readiness code; keep held-out adequacy, M sufficiency, and integrated analysis blocked.",
   "schema_version": 1,
   "source_calendar": {
     "calendar_id": "elaad-2025-europe-amsterdam-15min",
@@ -117,5 +117,16 @@
     "weekday_weekend_season_time_dst_holiday_diagnostics",
     "unsigned_mapping_rule_rejection",
     "held_out_or_quarantined_partition_rejection"
-  ]
+  ],
+  "approved_option": "A",
+  "approved_rule": {
+    "id": "EV-CAL-001",
+    "option": "A",
+    "name": "ordinal_timestep_mapping",
+    "version": "ordinal-v1",
+    "source_timestamp_index_policy": "target_index_i_uses_source_index_i",
+    "weekday_weekend_preserved": false,
+    "annual_energy_preserved": true,
+    "candidate_readiness_only": true
+  }
 }
