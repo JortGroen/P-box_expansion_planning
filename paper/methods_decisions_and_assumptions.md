@@ -519,7 +519,7 @@ use stops and the issue escalates to the PI before further analysis.
 <!-- methods-id: EV-003 -->
 ### EV-003 - Direct Empirical EV-Profile Bootstrap
 
-**Status: Approved primary route; within-realization replacement rule pending.**
+**Status: Approved primary route; replacement rule resolved by EV-005B for candidate member-selection only.**
 The EV aleatory layer samples complete annual members directly from the frozen,
 checksummed ElaadNL profile library rather than fitting a second behavioral
 distribution to generated profiles. This retains the generator's session
@@ -661,25 +661,26 @@ before invalidating or repeating work.
 
 
 <!-- methods-id: EV-005B -->
-### EV-005B - Within-Realization EV Replacement Policy Packet
+### EV-005B - Within-Realization EV Replacement Policy
 
-**Status: Proposed packet; PI decision required before implementation.**
-EV-005B frames the remaining replacement/no-replacement choice for sampling
-physical EV charge points from the finite ElaadNL candidate libraries. The
-approved 2035 Alkmaar EV-007A cohorts exceed the available candidate library
-sizes: home charge-point counts are 7,992 to 10,343 versus `M = 1,000`, and
-each EV-008A public capacity class requires more than 1,000 physical charge
-points while only 300 candidate source members exist per class. Whole-grid
-no-replacement sampling is therefore not executable for the declared 2035
-branches. Agent C recommends, for PI review, explicit charge-point-level
-sampling with replacement from the verified candidate library for each
-component and public capacity class, with duplicate source members recorded as
-bootstrap multiplicities in downstream manifests. This proposed rule preserves
-RNG-001 component-stream provenance and EV-CAL-001 calendar mapping requirements
-but does not implement real member draws, inspect held-out or quarantined
-batches, load generated profile arrays, certify library sufficiency, or run
-net-load/event analysis. Finite-library adequacy remains governed by EV-005 and
-E3.S2a after integrated downstream criteria are signed.
+**Status: Approved for candidate member-selection implementation only.**
+EV-005B approves charge-point-level sampling with replacement from the verified
+candidate ElaadNL profile libraries for each EV component and EV-008A public
+capacity class. The approved 2035 Alkmaar EV-007A cohorts exceed the available
+candidate library sizes: home charge-point counts are 7,992 to 10,343 versus
+`M = 1,000`, and each EV-008A public capacity class requires more than 1,000
+physical charge points while only 300 candidate source members exist per class.
+Whole-grid no-replacement is therefore rejected for the declared 2035 branches.
+Each selected row must preserve the RNG-001 component-stream identity, source
+member ID, source-library ID, batch seed, returned profile index, processed-file
+checksum, EV-CAL-001 calendar provenance, and duplicate-member multiplicity.
+Duplicate source members are interpreted as bootstrap multiplicities for
+physical charge points, not as new unique profiles and not as evidence that the
+finite library is adequate. This approval does not certify home `M = 1,000` or
+public `M = 1,200`, open held-out or quarantined batches, load generated profile
+arrays for integrated use, run net-load/event/`P(E)`, produce manuscript
+numbers, or bypass the downstream E3.S2a adequacy criterion governed by EV-005
+and ALEA-002.
 <!-- methods-id: EV-006 -->
 ### EV-006 - Matched Smart-Charging Counterfactuals
 

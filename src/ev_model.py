@@ -1597,14 +1597,14 @@ def ev_downstream_adequacy_criterion_packet() -> dict[str, object]:
 
 
 def ev005_within_realization_replacement_policy_packet() -> dict[str, object]:
-    """Return the unsigned EV-005 replacement-policy decision packet."""
+    """Return the EV-005B replacement-policy decision packet."""
 
     return {
         "schema_version": 1,
         "artifact_type": "ev005_within_realization_replacement_policy_packet",
         "decision_id": "EV-005B",
         "task_id": "E2.S2",
-        "status": "pi_decision_required_before_sampling_policy_use",
+        "status": "approved_for_candidate_member_selection_only",
         "governing_decisions": [
             "EV-003",
             "EV-005",
@@ -1658,7 +1658,7 @@ def ev005_within_realization_replacement_policy_packet() -> dict[str, object]:
         "options": [
             {
                 "id": "A_charge_point_level_with_replacement",
-                "status": "recommended_unsigned",
+                "status": "approved_ev005b_policy",
                 "replacement": True,
                 "selection_unit": "physical_charge_point",
                 "selection_scope": "scenario_node_component_capacity_class",
@@ -1672,11 +1672,7 @@ def ev005_within_realization_replacement_policy_packet() -> dict[str, object]:
                     "It is executable for K greater than M, matches the usual empirical-bootstrap interpretation, "
                     "and keeps finite-library adequacy separate through EV-005 downstream candidate/held-out checks."
                 ),
-                "requires_pi_signoff": [
-                    "accept duplicate source members within one realization as bootstrap multiplicities",
-                    "confirm public capacity-class sampling uses each class-specific candidate library",
-                    "confirm manifests must record per-selection multiplicity and component-stream identity",
-                ],
+                "pi_approval": "Approved in chat on 2026-07-22 for candidate member-selection implementation only",
             },
             {
                 "id": "B_whole_grid_without_replacement",
@@ -1708,10 +1704,10 @@ def ev005_within_realization_replacement_policy_packet() -> dict[str, object]:
             "EV home sampling requires the ev_home component stream and public sampling requires ev_public",
             "candidate processed checksums are verified in the consuming worktree before profile arrays load",
             "held-out and quarantined partitions remain inaccessible until traceable E3.S2a authorization exists",
-            "selection manifests record scenario, node_id, component_id, capacity_class, selection_index, source_member_id, batch_seed, returned_profile_index, stream_id, and replacement flag",
+            "selection manifests record scenario, node_id, component_id, capacity_class, selection_index, source_member_id, library_id, batch_seed, returned_profile_index, processed checksum, stream_id, replacement flag, and multiplicity",
         ],
         "non_claims": {
-            "policy_signed": False,
+            "policy_signed": True,
             "held_out_access": False,
             "profile_arrays_loaded": False,
             "integrated_analysis_performed": False,
@@ -1773,14 +1769,14 @@ def ev_candidate_member_selection_manifest(
     else:
         rng = component_stream.rng()
         selected_indices = [int(index) for index in rng.choice(len(pool), size=requested, replace=True)]
-    selected_rows = [pool[index] for index in selected_indices]
-    multiplicities = Counter(str(row["source_member_id"]) for row in selected_rows)
+    selected_pairs = [(pool_index, pool[pool_index]) for pool_index in selected_indices]
+    multiplicities = Counter(str(row["source_member_id"]) for _pool_index, row in selected_pairs)
     positions: dict[str, list[int]] = {}
-    for selection_index, row in enumerate(selected_rows):
+    for selection_index, (_pool_index, row) in enumerate(selected_pairs):
         positions.setdefault(str(row["source_member_id"]), []).append(selection_index)
 
     selections: list[dict[str, object]] = []
-    for selection_index, row in enumerate(selected_rows):
+    for selection_index, (pool_index, row) in enumerate(selected_pairs):
         member_id = str(row["source_member_id"])
         multiplicity = int(multiplicities[member_id])
         selections.append(
@@ -1795,16 +1791,25 @@ def ev_candidate_member_selection_manifest(
                 "capacity_class": capacity_name,
                 "cp_capacity_kw": capacity_kw,
                 "selection_index": selection_index,
+                "selection_pool_index": pool_index,
                 "selection_count_at_node": requested,
                 "replacement_policy_id": "EV-005B",
                 "replacement_enabled": True,
                 "source_member_id": member_id,
+                "library_id": str(row["library_id"]),
+                "partition": str(row["partition"]),
+                "control_mode": str(row["control_mode"]),
                 "batch_seed": int(row["batch_seed"]),
                 "returned_profile_index": int(row["returned_profile_index"]),
                 "candidate_processed_path": str(row["processed_path"]),
                 "candidate_processed_sha256_file": str(row["candidate_processed_sha256_file"]),
                 "calendar_mapping_rule_id": str(row["calendar_mapping_rule_id"]),
+                "calendar_mapping_rule_version": str(row["calendar_mapping_rule_version"]),
+                "source_calendar_id": str(row["source_calendar_id"]),
+                "target_calendar_id": str(row["target_calendar_id"]),
                 "source_timestamp_index_policy": str(row["source_timestamp_index_policy"]),
+                "n_timesteps": int(row["n_timesteps"]),
+                "weekday_weekend_preserved": bool(row["weekday_weekend_preserved"]),
                 "duplicate_within_realization": multiplicity > 1,
                 "duplicate_multiplicity": multiplicity,
             }
@@ -1867,6 +1872,8 @@ def _validated_candidate_member_rows(candidate_member_reference: Mapping[str, An
         if item.get("partition") != "candidate":
             raise ValueError("EV member selection refuses non-candidate partitions")
         component_id = _require_non_empty_string(item.get("component_id"), "component_id")
+        if component_id not in {EV_HOME_COMPONENT, EV_PUBLIC_COMPONENT}:
+            raise ValueError("EV candidate member rows require a supported EV component_id")
         library_id = _require_non_empty_string(item.get("library_id"), "library_id")
         member_id = _require_non_empty_string(item.get("source_member_id"), "source_member_id")
         path = _require_non_empty_string(item.get("processed_path"), "processed_path")
@@ -1879,8 +1886,19 @@ def _validated_candidate_member_rows(candidate_member_reference: Mapping[str, An
         )
         if item.get("calendar_mapping_rule_id") != EV_CALENDAR_MAPPING_RULE_ID:
             raise ValueError("EV member selection requires EV-CAL-001 calendar provenance")
+        if item.get("calendar_mapping_rule_version") != EV_CALENDAR_MAPPING_RULE_VERSION:
+            raise ValueError("EV member selection requires EV-CAL-001 rule-version provenance")
+        if item.get("source_calendar_id") != EV_SOURCE_CALENDAR_ID:
+            raise ValueError("EV member selection requires source-calendar provenance")
+        if item.get("target_calendar_id") != EV_TARGET_CALENDAR_ID:
+            raise ValueError("EV member selection requires target-calendar provenance")
         if item.get("source_timestamp_index_policy") != "target_index_i_uses_source_index_i":
             raise ValueError("EV member selection requires ordinal source-index provenance")
+        if _require_int(item.get("n_timesteps"), "n_timesteps") != EXPECTED_FULL_YEAR_STEPS:
+            raise ValueError("EV member selection requires complete 35,040-step member metadata")
+        if item.get("weekday_weekend_preserved") is not False:
+            raise ValueError("EV member selection requires EV-CAL-001 weekday/weekend limitation provenance")
+        _require_non_empty_string(item.get("control_mode"), "control_mode")
         key = (component_id, library_id, member_id)
         if key in seen:
             raise ValueError("EV candidate source-member identity must be unique")
@@ -1910,20 +1928,21 @@ def _require_ev005b_approved(decisions_text: str) -> None:
             raise PermissionError("EV-005B remains unapproved; EV member selection is blocked")
     raise PermissionError("EV-005B approval row is required before EV member selection")
 def ev_member_selection_implementation_plan() -> dict[str, object]:
-    """Return the PI-facing plan for future EV member-selection implementation."""
+    """Return the EV-005B candidate member-selection implementation status."""
 
     return {
         "schema_version": 1,
         "artifact_type": "ev_member_selection_implementation_plan",
         "task_id": "E2.S2",
-        "status": "planning_only_ev005b_not_approved",
-        "depends_on_unsigned_decision": "EV-005B",
+        "status": "ev005b_approved_candidate_member_selection_ready",
+        "approved_decision": "EV-005B",
         "proposed_policy_assumption": "A_charge_point_level_with_replacement",
         "implementation_authorization": {
-            "real_member_draws_allowed": False,
-            "reason": "EV-005B is proposed but not PI-approved",
-            "next_step_after_approval": (
-                "Implement candidate-only member-selection rows from committed manifests and "
+            "candidate_member_selection_allowed": True,
+            "profile_array_loading_allowed": False,
+            "reason": "EV-005B is PI-approved for candidate member-selection implementation only",
+            "current_authorized_step": (
+                "Produce candidate-only member-selection metadata rows from committed manifests and "
                 "RNG-001 ComponentStream objects without changing source-library adequacy claims."
             ),
         },
@@ -1938,7 +1957,7 @@ def ev_member_selection_implementation_plan() -> dict[str, object]:
             "verify committed candidate manifest paths and processed SHA-256 expectations before any array load",
             "derive scenario/node/component/capacity-class required counts from the candidate adapter artifacts",
             "require EV home draws to use the ev_home ComponentStream and public draws to use ev_public",
-            "select source-member rows with explicit replacement only if EV-005B is approved as proposed",
+            "select source-member rows with explicit charge-point-level replacement under approved EV-005B",
             "preserve duplicate source-member selections as repeated manifest rows with multiplicity counters",
             "materialize selection metadata separately from mapped profile arrays so provenance can be reviewed first",
         ],
@@ -1962,7 +1981,14 @@ def ev_member_selection_implementation_plan() -> dict[str, object]:
             "returned_profile_index",
             "candidate_processed_path",
             "candidate_processed_sha256_file",
+            "selection_pool_index",
+            "library_id",
+            "partition",
+            "control_mode",
             "calendar_mapping_rule_id",
+            "calendar_mapping_rule_version",
+            "source_calendar_id",
+            "target_calendar_id",
             "source_timestamp_index_policy",
             "duplicate_within_realization",
             "duplicate_multiplicity",
@@ -1995,15 +2021,14 @@ def ev_member_selection_implementation_plan() -> dict[str, object]:
             "alpha_endpoint_treatment_labels_do_not_change_aleatory_identity": True,
         },
         "preimplementation_checks": [
-            "EV-005B status is approved or amended in DECISIONS.md before real draws",
+            "EV-005B status is approved in DECISIONS.md before candidate member-selection manifests are produced",
             "candidate-only adapter artifact blocks held-out and quarantined partitions",
             "candidate processed checksums verify in the consuming worktree before profile arrays load",
             "scenario/node totals conserve EV-007A/A-014 counts after capacity-class allocation",
             "member IDs, batch seeds, and returned profile indices are unique in source-member reference rows",
             "duplicate-member report is produced for every realized sample when replacement is enabled",
         ],
-        "blocked_actions_until_ev005b_approval": [
-            "real_member_draws",
+        "blocked_actions_after_ev005b_approval": [
             "profile_array_loading",
             "held_out_or_quarantined_partition_access",
             "integrated_net_load_or_event_analysis",
@@ -2011,8 +2036,8 @@ def ev_member_selection_implementation_plan() -> dict[str, object]:
             "manuscript_number_generation",
         ],
         "non_claims": {
-            "ev005b_approved": False,
-            "real_member_draws_performed": False,
+            "ev005b_approved": True,
+            "production_member_draws_performed_in_this_plan": False,
             "held_out_access": False,
             "profile_arrays_loaded": False,
             "integrated_analysis_performed": False,

@@ -1,7 +1,7 @@
 # E2.S2 EV-005 Replacement Policy Packet
 
 Task: E2.S2 EV model
-Status: PI decision required before EV member-selection implementation
+Status: approved by EV-005B for candidate member-selection implementation only
 Artifact: `data/metadata/ev_adoption/e2_s2_ev005_replacement_policy_packet.json`
 
 ## Why This Packet Exists
@@ -31,11 +31,9 @@ The candidate libraries contain `M = 1,000` home members and `M = 300` members
 per public EV-008A capacity class. Whole-grid no-replacement sampling is
 therefore not executable for the approved 2035 branches.
 
-## Recommended Unsigned Option
+## Approved Option
 
-Agent C recommends PI review of Option A: charge-point-level sampling with
-replacement from the verified candidate library for the relevant component and,
-for public charging, capacity class.
+EV-005B approves Option A: charge-point-level sampling with replacement from the verified candidate library for the relevant component and, for public charging, capacity class.
 
 Under this option, duplicate source members inside one realization are explicit
 bootstrap multiplicities. Future manifests must preserve scenario, node,
@@ -60,14 +58,13 @@ not recommend it over explicit bootstrap multiplicity.
 
 ## Non-Claims
 
-- No policy is signed by this packet.
+- EV-005B is signed for candidate member-selection implementation only.
 - No held-out or quarantined EV batches were opened.
 - No generated profile arrays were loaded.
 - No integrated net-load, event, `P(E)`, capacity-screen, or manuscript result
   was produced.
 - No claim is made that home `M = 1,000` or public `M = 1,200` is sufficient.
 
-## PI Decision Needed
+## Remaining Boundaries
 
-Approve, amend, or reject EV-005B before EV IC-1 member-selection code
-materializes real per-realization source-member draws.
+EV-005B does not authorize held-out adequacy use, profile-array loading for integrated use, net-load/event/`P(E)` analysis, manuscript numbers, or any claim that home `M = 1,000` or public `M = 1,200` is sufficient.
