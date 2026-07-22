@@ -31,6 +31,7 @@ from src.ev_model import (
     distinct_member_count,
     ev_candidate_checksum_expectations,
     ev_candidate_member_selection_manifest,
+    ev_candidate_member_selection_manifest_set,
     ev_ic1_adapter_guardrail_packet,
     ev_downstream_adequacy_criterion_packet,
     ev005_within_realization_replacement_policy_packet,
@@ -1320,6 +1321,190 @@ def test_ev_ic1_candidate_member_reference_expands_synthetic_batches(tmp_path: P
     assert reference["policy"]["m_sufficiency_claimed"] is False
 
 
+
+def test_ev_candidate_member_selection_manifest_set_materializes_declared_branches() -> None:
+    reference = json.loads(
+        Path("data/metadata/ev_adoption/e2_s2_ev_ic1_candidate_member_reference.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    decisions = Path("registers/DECISIONS.md").read_text(encoding="utf-8")
+
+    artifact = ev_candidate_member_selection_manifest_set(
+        reference,
+        decisions_text=decisions,
+        root_seed=20260722,
+        sample_index=0,
+        materialized_timestamp_utc="2026-07-22T17:45:00Z",
+    )
+
+    assert artifact["artifact_type"] == "ev_candidate_member_selection_manifest_set"
+    assert artifact["decision_id"] == "EV-005B"
+    assert artifact["root_seed"] == 20260722
+    assert artifact["sample_index"] == 0
+    assert artifact["policy"] == {
+        "candidate_only": True,
+        "replacement_policy_id": "EV-005B",
+        "replacement_enabled": True,
+        "held_out_access": False,
+        "quarantined_access": False,
+        "profile_arrays_loaded": False,
+        "integrated_analysis_performed": False,
+        "event_or_p_e_analysis_performed": False,
+        "capacity_screen_performed": False,
+        "manuscript_numbers_produced": False,
+        "m_sufficiency_claimed": False,
+    }
+    assert artifact["calendar_mapping"] == {
+        "status": "approved",
+        "rule_id": EV_CALENDAR_MAPPING_RULE_ID,
+        "rule_version": "ordinal-v1",
+        "source_calendar_id": "elaad-2025-europe-amsterdam-15min",
+        "target_calendar_id": "planning-2035-europe-amsterdam-15min",
+        "source_timestamp_index_policy": "target_index_i_uses_source_index_i",
+        "n_timesteps": EXPECTED_FULL_YEAR_STEPS,
+        "weekday_weekend_preserved": False,
+    }
+    totals = {
+        item["scenario"]: {
+            "home": item["home_required_members"],
+            "public": item["public_required_members"],
+            "public_by_capacity": item["public_required_members_by_capacity_class"],
+        }
+        for item in artifact["scenarios"]
+    }
+    assert totals == {
+        "high": {
+            "home": 10343,
+            "public": 6138,
+            "public_by_capacity": {
+                "public_11kw": 1535,
+                "public_13kw": 1535,
+                "public_15kw": 1534,
+                "public_22kw": 1534,
+            },
+        },
+        "low": {
+            "home": 7992,
+            "public": 4183,
+            "public_by_capacity": {
+                "public_11kw": 1046,
+                "public_13kw": 1046,
+                "public_15kw": 1046,
+                "public_22kw": 1045,
+            },
+        },
+        "middle": {
+            "home": 9386,
+            "public": 5127,
+            "public_by_capacity": {
+                "public_11kw": 1282,
+                "public_13kw": 1282,
+                "public_15kw": 1282,
+                "public_22kw": 1281,
+            },
+        },
+    }
+    for scenario in artifact["scenarios"]:
+        node_selection_count = sum(
+            len(node["selections"])
+            for node in scenario["node_manifests"]
+        )
+        assert node_selection_count == scenario["home_required_members"] + scenario["public_required_members"]
+        assert scenario["component_streams"][EV_HOME_COMPONENT]["component"] == EV_HOME_COMPONENT
+        assert scenario["component_streams"][EV_PUBLIC_COMPONENT]["component"] == EV_PUBLIC_COMPONENT
+        for node in scenario["node_manifests"]:
+            assert len(node["selections"]) == node["home_required_members"] + node["public_required_members"]
+            for selection in node["selections"]:
+                assert selection["partition"] == "candidate"
+                assert selection["candidate_processed_path"].startswith("data/processed/elaad_profiles/")
+                assert "held_out" not in selection["candidate_processed_path"]
+                assert "quarantined" not in selection["candidate_processed_path"]
+    assert any(item["duplicate_source_member_count"] > 0 for item in artifact["duplicate_summary"])
+    source = inspect.getsource(ev_candidate_member_selection_manifest_set)
+    assert "load_processed_batch_npz" not in source
+    assert "np.load" not in source
+
+
+def test_ev_candidate_member_selection_manifest_set_is_deterministic_and_guarded() -> None:
+    reference = json.loads(
+        Path("data/metadata/ev_adoption/e2_s2_ev_ic1_candidate_member_reference.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    decisions = Path("registers/DECISIONS.md").read_text(encoding="utf-8")
+
+    first = ev_candidate_member_selection_manifest_set(
+        reference,
+        decisions_text=decisions,
+        root_seed=20260722,
+        sample_index=1,
+        scenarios=["low"],
+        materialized_timestamp_utc="2026-07-22T17:45:00Z",
+    )
+    repeated = ev_candidate_member_selection_manifest_set(
+        reference,
+        decisions_text=decisions,
+        root_seed=20260722,
+        sample_index=1,
+        scenarios=["low"],
+        materialized_timestamp_utc="2026-07-22T17:45:00Z",
+    )
+    different_sample = ev_candidate_member_selection_manifest_set(
+        reference,
+        decisions_text=decisions,
+        root_seed=20260722,
+        sample_index=2,
+        scenarios=["low"],
+        materialized_timestamp_utc="2026-07-22T17:45:00Z",
+    )
+
+    assert repeated == first
+    first_rows = first["scenarios"][0]["node_manifests"][0]["selections"][:10]
+    different_rows = different_sample["scenarios"][0]["node_manifests"][0]["selections"][:10]
+    assert [row["source_member_id"] for row in first_rows] != [row["source_member_id"] for row in different_rows]
+    assert first["scenarios"][0]["component_streams"] != different_sample["scenarios"][0]["component_streams"]
+
+    with pytest.raises(PermissionError, match="EV-005B remains unapproved"):
+        ev_candidate_member_selection_manifest_set(
+            reference,
+            decisions_text="| EV-005B | 2026-07-22 | x | x | x | x | proposed | -- |",
+            root_seed=20260722,
+            sample_index=1,
+            scenarios=["low"],
+            materialized_timestamp_utc="2026-07-22T17:45:00Z",
+        )
+    unsafe = json.loads(json.dumps(reference))
+    unsafe["scenario_node_requirements"][0]["public_required_members_by_capacity_class"]["public_11kw"] += 1
+    with pytest.raises(ValueError, match="conserve node public total"):
+        ev_candidate_member_selection_manifest_set(
+            unsafe,
+            decisions_text=decisions,
+            root_seed=20260722,
+            sample_index=1,
+            scenarios=["high"],
+            materialized_timestamp_utc="2026-07-22T17:45:00Z",
+        )
+
+
+def test_committed_ev005b_candidate_selection_manifest_set_matches_builder() -> None:
+    reference = json.loads(
+        Path("data/metadata/ev_adoption/e2_s2_ev_ic1_candidate_member_reference.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    decisions = Path("registers/DECISIONS.md").read_text(encoding="utf-8")
+    expected = ev_candidate_member_selection_manifest_set(
+        reference,
+        decisions_text=decisions,
+        root_seed=20260722,
+        sample_index=0,
+        materialized_timestamp_utc="2026-07-22T17:45:00Z",
+    )
+    committed_path = Path("data/metadata/ev_adoption/e2_s2_ev005b_candidate_selection_manifests.json.gz")
+    committed = json.loads(gzip.decompress(committed_path.read_bytes()).decode("utf-8"))
+
+    assert committed == expected
 def test_committed_ev_ic1_candidate_member_reference_is_candidate_only() -> None:
     adapter = json.loads(
         Path("data/metadata/ev_adoption/e2_s2_ev_ic1_candidate_adapter_artifact.json").read_text(
