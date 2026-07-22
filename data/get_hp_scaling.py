@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import argparse
+import csv
 from dataclasses import asdict, dataclass
 from datetime import UTC, datetime
 import hashlib
+import io
 import json
 from pathlib import Path
 import sys
@@ -23,6 +25,10 @@ MUNICIPALITY_NAME = "Alkmaar"
 CHECKPOINT_FILENAME = "hp001_alkmaar_gm0361_retrieval_checkpoint.json"
 RETRIEVAL_MANIFEST_FILENAME = "hp001_alkmaar_gm0361_retrieval_manifest.json"
 DOWNLOAD_TIMEOUT_S = 120.0
+PBL_HEAT_TERMS = ("warmte", "heat", "gas", "energie", "energy", "verbruik", "demand", "vraag")
+PBL_DHW_TERMS = ("tapwater", "warm_water", "dhw", "water")
+PBL_SFH_COLUMNS = ("Vrijstaande_woning", "2_onder_1_kap", "Rijwoning_hoek", "Rijwoning_tussen")
+PBL_MFH_COLUMNS = ("Meersgezinswoning_laag_midden", "Meersgezinswoning_hoog")
 
 
 @dataclass(frozen=True)
@@ -265,13 +271,95 @@ def _summarize_pbl_zip(path: Path) -> dict[str, Any]:
         for info in archive.infolist():
             if info.is_dir() or not info.filename.lower().endswith(".csv"):
                 continue
-            sample = archive.read(info)[:65536]
-            text = sample.decode("utf-8-sig", errors="replace")
+            raw = archive.read(info)
+            sample = raw[:65536]
+            text = raw.decode("utf-8-sig", errors="replace")
             first_line = text.splitlines()[0] if text.splitlines() else ""
             delimiter = ";" if first_line.count(";") >= first_line.count(",") else ","
             columns = first_line.split(delimiter) if first_line else []
-            csv_summaries.append({"filename": info.filename, "delimiter_guess": delimiter, "column_count": len(columns), "columns": columns, "sampled_bytes": len(sample)})
-    return {"zip_member_count": len(members), "zip_members": members, "csv_summaries": csv_summaries, "schema_inspection_scope": "ZIP directory and first 64 KiB of each CSV member only"}
+            csv_summaries.append(
+                {
+                    "filename": info.filename,
+                    "delimiter_guess": delimiter,
+                    "column_count": len(columns),
+                    "columns": columns,
+                    "sampled_bytes": len(sample),
+                    "full_file_rows_inspected": _count_csv_rows(text, delimiter),
+                    "column_classification": _classify_pbl_columns(columns),
+                    "indicator_unit_summary": _summarize_pbl_indicator_units(text, delimiter),
+                }
+            )
+    return {
+        "zip_member_count": len(members),
+        "zip_members": members,
+        "csv_summaries": csv_summaries,
+        "schema_inspection_scope": "ZIP directory plus full small CSV schema/indicator-unit inspection; no annual values produced",
+    }
+
+
+def _count_csv_rows(text: str, delimiter: str) -> int:
+    reader = csv.reader(io.StringIO(text), delimiter=delimiter)
+    row_count = sum(1 for _ in reader)
+    return max(0, row_count - 1)
+
+
+def _classify_pbl_columns(columns: Sequence[str]) -> dict[str, object]:
+    lower_by_column = {column: column.lower() for column in columns}
+    return {
+        "sfh_candidate_columns": [column for column in columns if column in PBL_SFH_COLUMNS],
+        "mfh_candidate_columns": [column for column in columns if column in PBL_MFH_COLUMNS],
+        "residential_stock_columns": [
+            column
+            for column, lower in lower_by_column.items()
+            if "woning" in lower and ("aantal" in lower or "totaal" in lower or "type" in lower)
+        ],
+        "strategy_or_pathway_columns": [
+            column
+            for column in columns
+            if column.startswith(("Strategie_", "Variant_", "Referentie_", "Laagste_Nationale_Kosten"))
+        ],
+        "heat_or_energy_candidate_columns": [
+            column
+            for column, lower in lower_by_column.items()
+            if any(term in lower for term in PBL_HEAT_TERMS) and not _is_pbl_administrative_energy_label(lower)
+        ],
+        "dhw_candidate_columns": [
+            column for column, lower in lower_by_column.items() if any(term in lower for term in PBL_DHW_TERMS)
+        ],
+    }
+
+
+def _is_pbl_administrative_energy_label(lower_column: str) -> bool:
+    return "energieregio" in lower_column or "energielabel" in lower_column
+
+
+def _summarize_pbl_indicator_units(text: str, delimiter: str) -> dict[str, object]:
+    reader = csv.DictReader(io.StringIO(text), delimiter=delimiter)
+    fieldnames = reader.fieldnames or []
+    if "Code_Indicator" not in fieldnames and "Eenheid" not in fieldnames:
+        return {"available": False}
+    pairs: set[tuple[str, str]] = set()
+    heat_pairs: set[tuple[str, str]] = set()
+    for row in reader:
+        code = str(row.get("Code_Indicator", "")).strip()
+        unit = str(row.get("Eenheid", "")).strip()
+        if not code and not unit:
+            continue
+        pair = (code, unit)
+        pairs.add(pair)
+        combined = f"{code} {unit}".lower()
+        if any(term in combined for term in PBL_HEAT_TERMS):
+            heat_pairs.add(pair)
+    return {
+        "available": True,
+        "pair_count": len(pairs),
+        "pairs": [{"code_indicator": code, "unit": unit} for code, unit in sorted(pairs)],
+        "heat_or_energy_pair_count": len(heat_pairs),
+        "heat_or_energy_pairs": [
+            {"code_indicator": code, "unit": unit} for code, unit in sorted(heat_pairs)
+        ],
+        "source_use_boundary": "indicator/unit evidence only; no value extraction or adoption interpretation",
+    }
 
 
 def _planned_metadata_path(spec: HpScalingSourceSpec, metadata_dir: Path) -> Path:
@@ -284,7 +372,17 @@ def _planned_metadata_path(spec: HpScalingSourceSpec, metadata_dir: Path) -> Pat
     return metadata_dir / "hp_scaling" / path.name
 
 
-def _write_source_metadata(*, spec: HpScalingSourceSpec, metadata_dir: Path, raw_path: Path, retrieved_url: str, schema_summary: dict[str, Any]) -> Path:
+def _write_source_metadata(
+    *,
+    spec: HpScalingSourceSpec,
+    metadata_dir: Path,
+    raw_path: Path,
+    retrieved_url: str,
+    schema_summary: dict[str, Any],
+    download_performed: bool = True,
+    status: str = "retrieved/checksummed for PI review; HP scaling values remain unsigned",
+    schema_refresh_network_performed: bool | None = None,
+) -> Path:
     metadata_path = _planned_metadata_path(spec, metadata_dir)
     payload = {
         "data_id": DATA_ID,
@@ -296,15 +394,17 @@ def _write_source_metadata(*, spec: HpScalingSourceSpec, metadata_dir: Path, raw
         "raw_path": raw_path.as_posix(),
         "size_bytes": raw_path.stat().st_size,
         "sha256_file": _sha256_path(raw_path),
-        "download_performed": True,
+        "download_performed": download_performed,
         "schema_summary": schema_summary,
-        "status": "retrieved/checksummed for PI review; HP scaling values remain unsigned",
+        "status": status,
         "non_claims": [
             "No annual HP TWh values are executable.",
             "No 2035 HP adoption value is signed.",
             "No D-004 acceptance, net-load, event, P(E), threshold, capacity-screen, or manuscript analysis is run.",
         ],
     }
+    if schema_refresh_network_performed is not None:
+        payload["schema_refresh_network_performed"] = schema_refresh_network_performed
     metadata_path.parent.mkdir(parents=True, exist_ok=True)
     metadata_path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     return metadata_path
@@ -405,16 +505,65 @@ def retrieve_hp_scaling_sources(*, raw_dir: Path, metadata_dir: Path, resume: bo
     return manifest_path
 
 
+def inspect_existing_hp_scaling_sources(*, raw_dir: Path, metadata_dir: Path) -> Path:
+    """Refresh schema metadata from already retrieved D-013 raw files without network."""
+    hp_metadata_dir = metadata_dir / "hp_scaling"
+    hp_metadata_dir.mkdir(parents=True, exist_ok=True)
+    refreshed: list[str] = []
+    for spec in HP_SCALING_SOURCES:
+        raw_path = raw_dir / Path(spec.planned_raw_path).name
+        if not raw_path.exists():
+            raise FileNotFoundError(f"Missing D-013 raw file for inspection: {raw_path}")
+        if spec.key.startswith("cbs_"):
+            source_payload = json.loads(raw_path.read_text(encoding="utf-8"))
+            schema_summary = _summarize_cbs_payload(spec, source_payload)
+        elif spec.key == "pbl_startanalyse_2025_alkmaar":
+            schema_summary = _summarize_pbl_zip(raw_path)
+        else:
+            raise ValueError(f"Unsupported D-013 source key: {spec.key}")
+        refreshed.append(
+            _write_source_metadata(
+                spec=spec,
+                metadata_dir=metadata_dir,
+                raw_path=raw_path,
+                retrieved_url=spec.url,
+                schema_summary=schema_summary,
+                status="schema refreshed from existing raw file; HP scaling values remain unsigned",
+                schema_refresh_network_performed=False,
+            ).as_posix()
+        )
+    packet_path = hp_metadata_dir / "hp001_alkmaar_gm0361_schema_inspection_packet.json"
+    packet = {
+        "data_id": DATA_ID,
+        "bundle_id": BUNDLE_ID,
+        "created_at_utc": _utc_now(),
+        "status": "schema inspection refreshed from existing raw files; values unsigned",
+        "metadata_paths": refreshed,
+        "raw_files_ignored": True,
+        "network_performed": False,
+        "non_claims": [
+            "No annual HP TWh values are executable.",
+            "No 2035 HP adoption value is signed.",
+            "No D-004 acceptance, paired-weather acceptance, net-load, event, P(E), threshold, capacity-screen, or manuscript analysis is run.",
+        ],
+    }
+    packet_path.write_text(json.dumps(packet, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    return packet_path
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Write or execute the HP-001 Alkmaar local scaling source route.")
     parser.add_argument("--metadata-dir", default="data/metadata")
     parser.add_argument("--write-plan", action="store_true", help="Write the approved retrieval/checksum/value route without downloading data.")
     parser.add_argument("--download", action="store_true", help="Retrieve/checksum the approved D-013 public sources; no values are produced.")
+    parser.add_argument("--inspect-existing", action="store_true", help="Refresh schema metadata from existing ignored D-013 raw files without network or values.")
     parser.add_argument("--resume", action="store_true", help="Skip completed sources whose raw files match checkpoint byte size and SHA-256.")
     parser.add_argument("--raw-dir", default="data/raw/hp_scaling")
     args = parser.parse_args(argv)
     if args.download:
         path = retrieve_hp_scaling_sources(raw_dir=Path(args.raw_dir), metadata_dir=Path(args.metadata_dir), resume=args.resume)
+    elif args.inspect_existing:
+        path = inspect_existing_hp_scaling_sources(raw_dir=Path(args.raw_dir), metadata_dir=Path(args.metadata_dir))
     else:
         path = write_hp_scaling_retrieval_plan(Path(args.metadata_dir))
     print(path)

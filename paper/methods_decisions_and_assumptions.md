@@ -1476,6 +1476,24 @@ EV-008A choice to use an amended equal-mix capacity-stratified public profile
 design instead of treating 22 kW as the only current-fleet representative
 capacity.
 
+
+<!-- methods-id: E2-S3-HP-SCALING-SCHEMA-INSPECTION -->
+### E2-S3-HP-SCALING-SCHEMA-INSPECTION - D-013 HP Scaling Schema Inspection
+
+**Status: Proposed schema-inspection evidence; values unsigned.** The D-013
+inspection workflow can refresh schema metadata from already retrieved CBS/PBL
+raw files without network access or value extraction. For the PBL Startanalyse
+2025 Alkmaar ZIP, it records full small-file CSV row counts, column
+classifications, and `Code_Indicator`/`Eenheid` pairs, including heat-demand-like
+H-series indicators such as `H01_Vraag_totaal`, `H02_Vraag_RV`, and
+`H03_Vraag_TW` with unit `[GJ/weq/jaar]`. It also records candidate residential
+building-type columns that could support a later PI-reviewed SFH/MFH crosswalk.
+This evidence helps the PI decide whether PBL can support local heat-demand
+scaling or should remain pathway/suitability context only. It does not select
+columns, convert units, approve a space/DHW split, sign 2035 adoption, produce
+annual TWh values, sign D-004, run cold-spell or paired-weather acceptance, run
+net-load/event analysis, estimate `P(E)`, or produce manuscript numbers.
+
 <!-- methods-id: D-013 -->
 ### D-013 - HP-001 Alkmaar Local Scaling Source Bundle
 
