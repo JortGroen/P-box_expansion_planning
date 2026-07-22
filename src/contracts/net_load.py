@@ -553,6 +553,87 @@ class NetLoadResult:
         object.__setattr__(self, "metadata", MappingProxyType(dict(self.metadata)))
 
 
+
+@dataclass(frozen=True)
+class NetLoadLoadingInputReadiness:
+    """Validated IC-1 payload metadata for a future IC-2 loading-input call.
+
+    The object is a readiness scaffold. It validates a net-load payload and
+    records manifestable metadata, but it does not calculate transformer
+    loading, thresholds, event episodes, adequacy, or probabilities.
+    """
+
+    net_load: NetLoadResult
+    registry_manifest: Mapping[str, object]
+    realization_context_manifest: Mapping[str, object]
+    planning_year: int = 2035
+    timestep_seconds: int = 900
+    time_domain: TimeDomain = "full_year"
+    metadata: Mapping[str, object] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        if isinstance(self.planning_year, bool) or not isinstance(self.planning_year, int):
+            raise TypeError("planning_year must be an integer")
+        if self.planning_year != 2035:
+            raise ValueError("loading-input readiness currently requires the G0-A4 2035 planning year")
+        if (
+            isinstance(self.timestep_seconds, bool)
+            or not isinstance(self.timestep_seconds, int)
+            or self.timestep_seconds != 900
+        ):
+            raise ValueError("timestep_seconds must be the 900-second IC-1 cadence")
+        if self.time_domain not in {"full_year", "window_set"}:
+            raise ValueError("time_domain must be 'full_year' or 'window_set'")
+        validate_net_load_result(self.net_load)
+        _validate_loading_input_calendar(
+            self.net_load.timestamps,
+            planning_year=self.planning_year,
+            timestep_seconds=self.timestep_seconds,
+        )
+        _validate_nonempty_mapping_values(self.registry_manifest, name="registry_manifest")
+        _validate_nonempty_mapping_values(
+            self.realization_context_manifest,
+            name="realization_context_manifest",
+        )
+        _validate_nonempty_mapping_values(self.metadata, name="metadata")
+        object.__setattr__(self, "registry_manifest", MappingProxyType(dict(self.registry_manifest)))
+        object.__setattr__(
+            self,
+            "realization_context_manifest",
+            MappingProxyType(dict(self.realization_context_manifest)),
+        )
+        object.__setattr__(self, "metadata", MappingProxyType(dict(self.metadata)))
+
+    def manifest_record(self) -> dict[str, object]:
+        """Return array-free metadata for later runner manifests."""
+
+        return {
+            "planning_year": self.planning_year,
+            "time_domain": self.time_domain,
+            "primary_probability_domain": self.time_domain == "full_year",
+            "timestep_seconds": self.timestep_seconds,
+            "timestep_count": int(self.net_load.timestamps.size),
+            "calendar_start": str(self.net_load.timestamps[0]),
+            "calendar_end": str(self.net_load.timestamps[-1]),
+            "node_ids": self.net_load.node_ids,
+            "component_provenance": [
+                {
+                    "component_id": item.component_id,
+                    "kind": item.kind,
+                    "node_id": item.node_id,
+                    "member_id": item.member_id,
+                    "source_id": item.source_id,
+                    "shared_weather_driver_id": item.shared_weather_driver_id,
+                    "metadata": dict(item.metadata),
+                }
+                for item in self.net_load.component_provenance
+            ],
+            "shared_weather_driver_ids": self.net_load.shared_weather_driver_ids,
+            "registry_manifest": dict(self.registry_manifest),
+            "realization_context_manifest": dict(self.realization_context_manifest),
+            "metadata": dict(self.metadata),
+        }
+
 class NetLoadProvider(Protocol):
     """Structural IC-1 provider protocol for future E2/E3 implementations."""
 
@@ -910,6 +991,43 @@ def assemble_net_load_from_registry_outputs(
     )
 
 
+def prepare_loading_input_from_registry_outputs(
+    registry: ComponentAdapterRegistry,
+    context: NetLoadRealizationContext,
+    adapter_outputs: Sequence[ComponentAdapterOutput],
+    *,
+    planning_year: int = 2035,
+    time_domain: TimeDomain = "full_year",
+    metadata: Mapping[str, object] | None = None,
+) -> NetLoadLoadingInputReadiness:
+    """Validate accepted-artifact outputs up to the loading-input boundary."""
+
+    if context.planning_year != planning_year:
+        raise ValueError("realization context planning_year must match loading-input planning_year")
+    if context.time_domain != time_domain:
+        raise ValueError("realization context time_domain must match loading-input time_domain")
+    net_load = assemble_net_load_from_registry_outputs(
+        registry,
+        context,
+        adapter_outputs,
+        metadata={"loading_input_readiness": True},
+    )
+    readiness_metadata = {
+        "source": "accepted_artifact_bridge",
+        "scaffold_only": True,
+    }
+    if metadata is not None:
+        readiness_metadata.update(metadata)
+    return NetLoadLoadingInputReadiness(
+        net_load=net_load,
+        registry_manifest=registry.manifest_record(),
+        realization_context_manifest=context.manifest_metadata(),
+        planning_year=planning_year,
+        timestep_seconds=900,
+        time_domain=time_domain,
+        metadata=readiness_metadata,
+    )
+
 def validate_real_component_adapter_readiness(
     adapter_outputs: Sequence[ComponentAdapterOutput],
     *,
@@ -1176,6 +1294,21 @@ def _validate_registry_outputs(
         if output.metadata.get("calendar_id") != skeleton.calendar_id:
             raise ValueError("adapter output calendar_id must match the matching skeleton")
 
+
+def _validate_loading_input_calendar(
+    timestamps: np.ndarray,
+    *,
+    planning_year: int,
+    timestep_seconds: int,
+) -> None:
+    calendar = _as_15_minute_calendar(timestamps)
+    years = calendar.astype("datetime64[Y]").astype(int) + 1970
+    if not np.all(years == planning_year):
+        raise ValueError("loading-input timestamps must stay within the planning year")
+    if calendar.size > 1:
+        cadence_s = np.diff(calendar).astype("timedelta64[s]").astype(np.int64)
+        if not np.all(cadence_s == timestep_seconds):
+            raise ValueError("loading-input timestamps must use the declared cadence")
 
 def _component_streams_by_name(context: NetLoadRealizationContext) -> dict[str, ComponentStream]:
     return {stream.component: stream for stream in context.component_streams}
