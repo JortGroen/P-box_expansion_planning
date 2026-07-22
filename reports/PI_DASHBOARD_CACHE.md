@@ -85,6 +85,11 @@ Leave PI Lite and inspect broader context when:
   year. Persistent-event sensitivities at `1.1` and `1.2 p.u.` are predeclared;
   no separate 1.0-1.1 cumulative-exposure rule is primary. Event analysis still
   needs all other gates, signed values, manifests, and capacity conventions.
+- `FLEX-001` is approved as a scaffold protocol. `rho` may only reduce positive
+  controllable demand components; PV/export and non-controllable components are
+  unchanged. Flexibility-factor values, fuzzy corners, smart-charging control
+  parameters, final rebound behavior, event analysis, and manuscript results
+  remain unsigned.
 - `EV-008` is superseded. `EV-008A` approves equal-mix capacity-stratified
   public Set B source generation only: uncontrolled ElaadNL public `cp`, fixed
   generator year 2030, native public car/van mix, 25% each for AC capacity
