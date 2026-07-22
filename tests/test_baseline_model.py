@@ -10,7 +10,13 @@ from src.baseline_model import (
     BASELINE_COMPONENT,
     BaselineLoadTrajectory,
     BaselineTrajectoryLibrary,
+    component_calendar_footprint,
     validate_canonical_calendar,
+    validate_component_calendar_readiness,
+)
+from src.weather_model import (
+    canonical_15min_local_axis_for_year,
+    canonical_15min_utc_axis_for_local_year,
 )
 
 
@@ -124,4 +130,150 @@ def test_load_validation_reports_clear_errors() -> None:
             load_kw=values,
             trajectory_id="nan",
             source_id="fixture",
+        )
+
+
+def test_component_calendar_readiness_aligns_baseline_ev_hp_and_pv_on_canonical_year() -> None:
+    utc_axis = canonical_15min_utc_axis_for_local_year(2035)
+    local_axis = canonical_15min_local_axis_for_year(2035)
+    records = (
+        component_calendar_footprint(
+            component="baseline",
+            timestamps=local_axis,
+            member_id="simbench-baseline-s0",
+            source_id="D-001",
+        ),
+        component_calendar_footprint(
+            component="ev",
+            timestamps=utc_axis,
+            member_id="ev-candidate-profile_140001_000",
+            source_id="D-002",
+        ),
+        component_calendar_footprint(
+            component="hp",
+            timestamps=utc_axis,
+            member_id="hp-weather-member-1997",
+            source_id="D-003",
+            shared_weather_driver_id="weather:knmi-1997",
+        ),
+        component_calendar_footprint(
+            component="pv",
+            timestamps=local_axis,
+            member_id="pv-weather-member-1997",
+            source_id="D-004",
+            shared_weather_driver_id="weather:knmi-1997",
+        ),
+    )
+
+    readiness = validate_component_calendar_readiness(records, local_year=2035)
+    manifest = readiness.manifest_record()
+
+    assert manifest["calendar_id"] == "e2_s5_common_15min_2035_Europe/Amsterdam"
+    assert manifest["n_timesteps"] == 35_040
+    assert manifest["cadence_seconds"] == 900
+    assert manifest["shared_weather_driver_id"] == "weather:knmi-1997"
+    assert manifest["aligned_on_common_calendar"] is True
+    assert manifest["congestion_evaluated"] is False
+    assert manifest["adequacy_certified"] is False
+    assert manifest["manuscript_numbers_produced"] is False
+    assert {
+        record["component"]
+        for record in manifest["component_records"]  # type: ignore[index]
+    } == {"baseline", "ev", "hp", "pv"}
+
+
+def test_component_calendar_readiness_rejects_mismatched_component_calendar() -> None:
+    utc_axis = canonical_15min_utc_axis_for_local_year(2035)
+    shifted = tuple(item + timedelta(minutes=15) for item in utc_axis)
+    records = (
+        component_calendar_footprint(
+            component="baseline",
+            timestamps=utc_axis,
+            member_id="baseline",
+            source_id="D-001",
+        ),
+        component_calendar_footprint(
+            component="ev",
+            timestamps=shifted,
+            member_id="ev",
+            source_id="D-002",
+        ),
+        component_calendar_footprint(
+            component="hp",
+            timestamps=utc_axis,
+            member_id="hp",
+            source_id="D-003",
+            shared_weather_driver_id="weather-a",
+        ),
+        component_calendar_footprint(
+            component="pv",
+            timestamps=utc_axis,
+            member_id="pv",
+            source_id="D-004",
+            shared_weather_driver_id="weather-a",
+        ),
+    )
+
+    with pytest.raises(ValueError, match="ev does not match"):
+        validate_component_calendar_readiness(records, local_year=2035)
+
+
+def test_component_calendar_readiness_rejects_unpaired_hp_pv_weather() -> None:
+    utc_axis = canonical_15min_utc_axis_for_local_year(2035)
+    records = (
+        component_calendar_footprint(
+            component="baseline",
+            timestamps=utc_axis,
+            member_id="baseline",
+            source_id="D-001",
+        ),
+        component_calendar_footprint(
+            component="ev",
+            timestamps=utc_axis,
+            member_id="ev",
+            source_id="D-002",
+        ),
+        component_calendar_footprint(
+            component="hp",
+            timestamps=utc_axis,
+            member_id="hp",
+            source_id="D-003",
+            shared_weather_driver_id="weather-a",
+        ),
+        component_calendar_footprint(
+            component="pv",
+            timestamps=utc_axis,
+            member_id="pv",
+            source_id="D-004",
+            shared_weather_driver_id="weather-b",
+        ),
+    )
+
+    with pytest.raises(ValueError, match="same shared_weather_driver_id"):
+        validate_component_calendar_readiness(records, local_year=2035)
+
+
+def test_component_calendar_readiness_rejects_missing_component_and_duplicate_names() -> None:
+    utc_axis = canonical_15min_utc_axis_for_local_year(2035)
+    baseline = component_calendar_footprint(
+        component="baseline",
+        timestamps=utc_axis,
+        member_id="baseline-a",
+        source_id="D-001",
+    )
+
+    with pytest.raises(ValueError, match="Missing required"):
+        validate_component_calendar_readiness((baseline,), local_year=2035)
+
+    duplicate = component_calendar_footprint(
+        component="baseline",
+        timestamps=utc_axis,
+        member_id="baseline-b",
+        source_id="D-001",
+    )
+    with pytest.raises(ValueError, match="unique component names"):
+        validate_component_calendar_readiness(
+            (baseline, duplicate),
+            local_year=2035,
+            required_components=("baseline",),
         )

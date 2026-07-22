@@ -305,6 +305,22 @@ this construction misses, a shared latent factor, multivariate block bootstrap,
 or evidence-fitted copula is introduced only through a separately signed and
 manifested sensitivity protocol.
 
+The E2.S5 readiness scaffold implements this ALEA-001 handoff without adding a
+new scientific decision: baseline SimBench load, EV charging, heat-pump demand,
+and PV generation trajectories are represented as complete ordered 15-minute
+paths on the same Europe/Amsterdam planning-year calendar before Agent A
+aggregates them through IC-1. Each component contributes a manifestable calendar
+footprint with component name, member ID, source ID, UTC timestamps, cadence,
+first/last timestamp, and timestamp checksum. HP and PV footprints must also
+carry the same `shared_weather_driver_id`, implementing WEATHER-001 before
+net-load assembly. The validator checks exact equality to the canonical
+local-year UTC axis and rejects shifted, missing, duplicated, or unpaired
+components, but it does not compute net load, transformer loading, congestion,
+profile-library adequacy, or manuscript numbers. Household-diversity
+calibration remains open; this scaffold only preserves the selected baseline
+trajectory's temporal and weekday/weekend structure so later diversity choices
+cannot be hidden inside timestamp repair.
+
 <!-- methods-id: WEATHER-001 -->
 ### WEATHER-001 - Shared HP/PV Weather-Member Contract
 
