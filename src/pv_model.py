@@ -128,9 +128,12 @@ class PVGenerationProfile:
     def identity_record(self) -> dict[str, object]:
         """Return PV output identity fields for later HP/PV pairing checks."""
         return {
+            "member_id": self.weather_member_id,
             "weather_member_id": self.weather_member_id,
+            "source": self.weather_source,
             "weather_source": self.weather_source,
             "shared_weather_driver_id": self.shared_weather_driver_id,
+            "content_sha256": self.weather_content_sha256,
             "weather_content_sha256": self.weather_content_sha256,
             "first_timestamp_utc": self.timestamps_utc[0].isoformat(),
             "last_timestamp_utc": self.timestamps_utc[-1].isoformat(),
@@ -424,4 +427,3 @@ def _allowed_peak_months(
     if invalid:
         raise ValueError(f"allowed_peak_months contains invalid months: {invalid}")
     return months
-

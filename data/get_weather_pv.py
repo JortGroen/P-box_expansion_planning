@@ -47,6 +47,7 @@ D004_MEMBER_METADATA_TEMPLATE = f"{D004_SELECTION_ID}_member_{{year}}_metadata.j
 D004_RETRIEVAL_MANIFEST = f"{D004_SELECTION_ID}_retrieval_manifest.json"
 D004_MEMBER_READINESS_DIAGNOSTICS_NAME = f"{D004_SELECTION_ID}_member_readiness_diagnostics.json"
 D004_ACCEPTANCE_PACKET_NAME = f"{D004_SELECTION_ID}_acceptance_packet.json"
+D004_PAIRED_WEATHER_ACCEPTANCE_SCAFFOLD_NAME = f"{D004_SELECTION_ID}_paired_weather_acceptance_scaffold.json"
 
 
 @dataclass(frozen=True)
@@ -466,6 +467,140 @@ def write_d004_acceptance_packet(*, metadata_dir: str | Path = "data/metadata") 
     directory.mkdir(parents=True, exist_ok=True)
     return _write_json(directory / D004_ACCEPTANCE_PACKET_NAME, build_d004_acceptance_packet(metadata_dir=metadata_dir))
 
+
+def build_d004_paired_weather_acceptance_scaffold(*, metadata_dir: str | Path = "data/metadata") -> dict[str, Any]:
+    """Prepare the next D-004 acceptance layer without signing or running final acceptance."""
+    metadata_root = Path(metadata_dir)
+    weather_dir = metadata_root / "weather_pv"
+    acceptance = _load_json(weather_dir / D004_ACCEPTANCE_PACKET_NAME)
+    readiness = _load_json(weather_dir / D004_MEMBER_READINESS_DIAGNOSTICS_NAME)
+    member_manifest = _load_json(weather_dir / D004_MEMBER_MANIFEST_NAME)
+    members = [item for item in member_manifest.get("members", []) if isinstance(item, Mapping)]
+    member_checks = [item for item in readiness.get("member_checks", []) if isinstance(item, Mapping)]
+    source_summary = acceptance.get("source_completeness_summary", {})
+    member_summary = acceptance.get("member_readiness_summary", {})
+    seasonal_summary = acceptance.get("seasonal_peak_sanity_summary", {})
+    source_member_checks = {
+        "four_source_file_checksums_match": bool(source_summary.get("source_checksums_match")),
+        "four_source_file_sizes_match": bool(source_summary.get("source_sizes_match")),
+        "knmi_station_249_complete_2014_2023": bool(source_summary.get("knmi_years_complete_2014_2023")),
+        "weather_members_present_2014_2023": member_summary.get("member_years") == list(D004_YEARS)
+        and member_summary.get("members_present") == len(D004_YEARS),
+        "utc_local_calendar_and_15min_cadence_ok": bool(member_summary.get("calendar_cadence_ok")),
+        "knmi_hourly_q_energy_preserved": bool(member_summary.get("energy_preserved")),
+        "temperature_t_over_10_finite": bool(member_summary.get("temperature_finite")),
+        "knmi_q_derived_ghi_nonnegative": bool(member_summary.get("ghi_nonnegative")),
+        "pvgis_not_realized_weather_path": member_summary.get("pvgis_realized_weather_path") is False,
+        "weather_identity_roundtrip_ready": bool(member_summary.get("hp_pv_identity_roundtrip_ok")),
+    }
+    return {
+        "data_id": "D-004",
+        "selection_id": D004_SELECTION_ID,
+        "created_utc": _now_utc_iso(),
+        "status": "paired_weather_acceptance_scaffold_not_final",
+        "d004_final_acceptance": False,
+        "paired_hp_pv_acceptance_run": False,
+        "cold_spell_acceptance_run": False,
+        "no_integrated_analysis": True,
+        "no_manuscript_results": True,
+        "source_member_acceptance_candidate": {
+            "status": "candidate_for_pi_review_not_signed",
+            "all_scaffold_checks_passed": all(source_member_checks.values()),
+            "checks": source_member_checks,
+            "what_can_be_accepted_now_if_pi_agrees": [
+                "the four-file D-004 source bundle identity: URLs, local ignored raw paths, file sizes, and SHA-256 checksums",
+                "the 2014-2023 UTC-year WEATHER-001 member library produced from KNMI station 249 T and Q under D004-MC-001",
+                "calendar/cadence, finite temperature, nonnegative irradiance, Q-energy preservation, and member identity/provenance readiness",
+            ],
+        },
+        "blocked_acceptance_layers": [
+            {
+                "gate": "PVGIS seasonal/peak sanity acceptance",
+                "blocked_by": "PI has not signed numeric or qualitative tolerance criteria",
+                "current_evidence_status": seasonal_summary.get("status"),
+            },
+            {
+                "gate": "paired HP/PV validation",
+                "blocked_by": "requires PI-accepted D-004 source/member layer plus accepted HP scaling/validation inputs",
+                "scaffold_only": True,
+            },
+            {
+                "gate": "cold-spell acceptance",
+                "blocked_by": "E2-S3 design exists, but numerical pass/fail tolerances remain unsigned",
+                "scaffold_only": True,
+            },
+            {
+                "gate": "integrated net-load/event/P(E)/capacity/manuscript analysis",
+                "blocked_by": "later gates and signed inputs; explicitly out of E2.S4 follow-up scope",
+                "scaffold_only": True,
+            },
+        ],
+        "paired_weather_identity_contract": {
+            "weather_contract": "src/weather_model.py::WeatherMember",
+            "hp_record": "src.hp_model.HeatPumpProfile.weather_identity_record()",
+            "pv_record": "src.pv_model.PVGenerationProfile.identity_record()",
+            "required_equal_fields": [
+                "member_id",
+                "shared_weather_driver_id",
+                "source",
+                "first_timestamp_utc",
+                "last_timestamp_utc",
+                "n_timesteps",
+                "cadence_seconds",
+                "content_sha256",
+            ],
+            "pv_compatibility_aliases": {
+                "member_id": "weather_member_id",
+                "source": "weather_source",
+                "content_sha256": "weather_content_sha256",
+            },
+            "required_weather_fields": [
+                "temperature_c",
+                "pv_weather_fields.ghi_w_per_m2",
+                "timestamps_utc",
+                "timestamps_local",
+            ],
+            "synthetic_test_scope": "common-driver tests use synthetic profiles only and are not real D-003/D-004 acceptance",
+        },
+        "member_identity_records": [
+            {
+                "year": int(item["year"]),
+                "member_id": item.get("member_id"),
+                "shared_weather_driver_id": item.get("shared_weather_driver_id"),
+                "content_sha256": item.get("content_sha256"),
+                "metadata_path": item.get("metadata_path"),
+                "n_timesteps": item.get("n_timesteps"),
+                "first_timestamp_utc": item.get("first_timestamp_utc"),
+                "last_timestamp_utc": item.get("last_timestamp_utc"),
+                "checks": next((check for check in member_checks if check.get("year") == item.get("year")), {}),
+            }
+            for item in members
+        ],
+        "pvgis_boundary": {
+            "realized_weather_path": False,
+            "role": "PVGIS-SARAH3 is calibration/validation provenance context only under D004-MC-001",
+            "realized_weather_source": "KNMI station 249 hourly T and Q, expanded to 15-minute WEATHER-001 members",
+        },
+        "pi_decision_questions_carried_forward": acceptance.get("pi_decision_questions", []),
+        "evidence_artifacts": {
+            **dict(acceptance.get("evidence_artifacts", {})),
+            "acceptance_packet": f"data/metadata/weather_pv/{D004_ACCEPTANCE_PACKET_NAME}",
+            "paired_weather_acceptance_scaffold": f"data/metadata/weather_pv/{D004_PAIRED_WEATHER_ACCEPTANCE_SCAFFOLD_NAME}",
+            "followup_memo": "reports/e2_s4_d004_paired_weather_acceptance_scaffold.md",
+        },
+    }
+
+
+def write_d004_paired_weather_acceptance_scaffold(*, metadata_dir: str | Path = "data/metadata") -> Path:
+    """Write the D-004 paired-weather scaffold without final acceptance."""
+    directory = Path(metadata_dir) / "weather_pv"
+    directory.mkdir(parents=True, exist_ok=True)
+    return _write_json(
+        directory / D004_PAIRED_WEATHER_ACCEPTANCE_SCAFFOLD_NAME,
+        build_d004_paired_weather_acceptance_scaffold(metadata_dir=metadata_dir),
+    )
+
+
 def write_retrieval_plan(metadata_dir: str | Path = "data/metadata") -> Path:
     """Write the D-004 weather/PV retrieval protocol without downloading data."""
     directory = Path(metadata_dir) / "weather_pv"
@@ -757,6 +892,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--build-d004-weather-members", action="store_true")
     parser.add_argument("--write-d004-member-readiness-diagnostics", action="store_true")
     parser.add_argument("--write-d004-acceptance-packet", action="store_true")
+    parser.add_argument("--write-d004-paired-weather-acceptance-scaffold", action="store_true")
     parser.add_argument("--root-dir", default=".")
     args = parser.parse_args(argv)
 
@@ -801,6 +937,11 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     if args.write_d004_acceptance_packet:
         path = write_d004_acceptance_packet(metadata_dir=args.metadata_dir)
+        print(path)
+        return 0
+
+    if args.write_d004_paired_weather_acceptance_scaffold:
+        path = write_d004_paired_weather_acceptance_scaffold(metadata_dir=args.metadata_dir)
         print(path)
         return 0
 
@@ -1441,7 +1582,3 @@ def _utc_hour_endings_for_year(year: int) -> tuple[datetime, ...]:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
-
-
-
