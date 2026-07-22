@@ -416,3 +416,29 @@ def test_committed_d004_source_acceptance_evidence_is_readiness_only() -> None:
     }
     assert payload["weather_001_compatibility"]["pv_model_consumes_neutral_weather_member"] is True
     assert any("hourly-to-15-minute" in item for item in payload["remaining_before_final_d004_acceptance"])
+
+
+def test_committed_d004_member_construction_rule_packet_is_proposal_only() -> None:
+    packet_path = Path("data/metadata/weather_pv/d004_member_construction_rule_packet.json")
+    payload = json.loads(packet_path.read_text(encoding="utf-8"))
+    rule = payload["proposed_rule"]
+
+    assert payload["data_id"] == "D-004"
+    assert payload["decision_packet_status"] == "proposal_for_pi_review"
+    assert payload["member_construction_rule_status"] == "proposed_not_pi_signed"
+    assert payload["d004_status_after_packet"] == "proposed_not_signed"
+    assert payload["no_raw_download"] is True
+    assert payload["no_integrated_analysis"] is True
+    assert rule["calendar"]["calendar_year_basis"] == "UTC calendar year"
+    assert rule["calendar"]["step_seconds"] == 900
+    assert rule["calendar"]["timesteps_non_leap"] == 35_040
+    assert rule["calendar"]["timesteps_leap"] == 35_136
+    assert rule["knmi_hourly_source"]["temperature_field"]["target_field"] == "temperature_c"
+    assert rule["knmi_hourly_source"]["ghi_field"]["target_field"] == "ghi_w_per_m2"
+    assert rule["knmi_hourly_source"]["ghi_field"]["conversion"] == "Q * 10000 / 3600"
+    assert rule["pvgis_reference_source"]["not_realized_weather_member_source"] is True
+    assert rule["weather_member_identity"]["years"] == list(range(2014, 2024))
+    assert "pv_weather_fields.ghi_w_per_m2" in rule["weather_member_fields"]
+    assert "content_sha256" in rule["weather_member_fields"]
+    assert any("Q energy" in item for item in payload["acceptance_tests_after_pi_approval"])
+    assert any("PI approval" in item for item in payload["remaining_blockers"])

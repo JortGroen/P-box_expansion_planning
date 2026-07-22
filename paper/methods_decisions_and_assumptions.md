@@ -1128,7 +1128,12 @@ WEATHER-001. PV conversion parameters and PVGIS sanity-check tolerances are
 supplied explicitly by the caller; a PVGIS typical-year reference is used for
 calibration or validation only, not as an independently sampled realized weather
 path. Seasonal energy and peak timing are checked against PVGIS output before
-integration. D-004 remains proposed until the PI accepts the concrete files,
+integration. Agent C has proposed a separate `D004-MC-001` member-construction
+rule packet for PI review: UTC calendar-year members, Europe/Amsterdam local
+timestamps derived from the UTC axis, zero-order expansion of KNMI temperature,
+energy-preserving expansion of KNMI hourly `Q` into 15-minute GHI, and PVGIS as
+calibration/validation provenance only. That packet is not approved by this
+paragraph. D-004 remains proposed until the PI accepts the concrete files,
 versions, checksums, source-use evidence, completeness checks, and the
 hourly-to-15-minute member-construction rule.
 
