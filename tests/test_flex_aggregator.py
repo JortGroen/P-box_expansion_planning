@@ -22,10 +22,41 @@ def test_reduces_only_import_side_controllable_demand() -> None:
     np.testing.assert_allclose(pv.adjusted_p_kw, [-7.0, -8.0, -9.0])
     np.testing.assert_allclose(fixed.adjusted_p_kw, [3.0, 3.0, 3.0])
     assert ev.reason.startswith("reduced positive import demand")
-    assert pv.reason == "not marked as import-side controllable demand"
+    assert pv.reason == "PV/export components are never demand-side controllable"
     assert fixed.reason == "not marked as import-side controllable demand"
     np.testing.assert_allclose(result.aggregate_adjusted_p_kw, [4.0, 11.0, -11.0])
 
+
+
+
+def test_pv_or_export_labeled_components_are_never_reduced_when_marked_controllable() -> None:
+    result = apply_flexibility(
+        [
+            FlexComponent(
+                "pv-positive-error",
+                [2.0, -3.0, 4.0],
+                controllable_fraction=1.0,
+                is_import_controllable=True,
+                component_type="pv",
+            ),
+            FlexComponent(
+                "export-labelled",
+                [5.0, 6.0, 7.0],
+                controllable_fraction=1.0,
+                is_import_controllable=True,
+                component_type="export",
+            ),
+        ],
+        rho=1.0,
+    )
+
+    pv, export = result.component_results
+    np.testing.assert_allclose(pv.adjusted_p_kw, [2.0, -3.0, 4.0])
+    np.testing.assert_allclose(export.adjusted_p_kw, [5.0, 6.0, 7.0])
+    np.testing.assert_allclose(pv.reduction_p_kw, [0.0, 0.0, 0.0])
+    np.testing.assert_allclose(export.reduction_p_kw, [0.0, 0.0, 0.0])
+    assert pv.reason == "PV/export components are never demand-side controllable"
+    assert export.reason == "PV/export components are never demand-side controllable"
 
 def test_preserves_complete_trajectory_alignment_and_metadata() -> None:
     timestamps = ("t0", "t1", "t2")
