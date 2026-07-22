@@ -247,6 +247,178 @@ def output_error_alpha_crosscheck_records(
 
 
 @dataclass(frozen=True)
+class BootstrapProbabilityInterval:
+    """Rank-bootstrap CI for a synthetic Bernoulli event probability."""
+
+    probability: float
+    ci_lower: float
+    ci_upper: float
+    confidence_level: float
+    replicate_count: int
+
+    def __post_init__(self) -> None:
+        if self.replicate_count <= 0:
+            raise ValueError("replicate_count must be positive")
+        for name, value in (
+            ("probability", self.probability),
+            ("ci_lower", self.ci_lower),
+            ("ci_upper", self.ci_upper),
+        ):
+            if not math.isfinite(value) or not 0.0 <= value <= 1.0:
+                raise ValueError(f"{name} must be finite and in [0, 1]")
+        if not math.isfinite(self.confidence_level) or not 0.0 < self.confidence_level < 1.0:
+            raise ValueError("confidence_level must be in (0, 1)")
+        if self.ci_lower > self.probability or self.probability > self.ci_upper:
+            raise ValueError("expected ci_lower <= probability <= ci_upper")
+
+
+@dataclass(frozen=True)
+class MonotonicitySweepPoint:
+    """One synthetic rho-grid event-probability point."""
+
+    rho: float
+    probability: float
+    ci_lower: float
+    ci_upper: float
+    successes: int
+    sample_count: int
+
+    def __post_init__(self) -> None:
+        if not math.isfinite(self.rho):
+            raise ValueError("rho must be finite")
+        if self.sample_count <= 0:
+            raise ValueError("sample_count must be positive")
+        if not 0 <= self.successes <= self.sample_count:
+            raise ValueError("successes must be between 0 and sample_count")
+        for name, value in (
+            ("probability", self.probability),
+            ("ci_lower", self.ci_lower),
+            ("ci_upper", self.ci_upper),
+        ):
+            if not math.isfinite(value) or not 0.0 <= value <= 1.0:
+                raise ValueError(f"{name} must be finite and in [0, 1]")
+        if self.ci_lower > self.probability or self.probability > self.ci_upper:
+            raise ValueError("expected ci_lower <= probability <= ci_upper")
+
+
+@dataclass(frozen=True)
+class MonotonicitySweepResult:
+    """Synthetic monotonicity-sweep diagnostic, not a G3 verdict."""
+
+    expected_direction: str
+    points: tuple[MonotonicitySweepPoint, ...]
+    violations: tuple[tuple[float, float, float, float], ...]
+
+    def __post_init__(self) -> None:
+        if self.expected_direction not in {"nonincreasing", "nondecreasing"}:
+            raise ValueError("expected_direction must be 'nonincreasing' or 'nondecreasing'")
+        if not self.points:
+            raise ValueError("points must not be empty")
+        rhos = tuple(point.rho for point in self.points)
+        if rhos != tuple(sorted(rhos)) or len(set(rhos)) != len(rhos):
+            raise ValueError("points must use a strictly increasing rho grid")
+
+
+def bootstrap_probability_interval(
+    events: Sequence[bool],
+    *,
+    resample_indices: Sequence[Sequence[int]],
+    confidence_level: float = 0.95,
+) -> BootstrapProbabilityInterval:
+    """Return a deterministic rank-bootstrap interval for toy event indicators."""
+
+    event_tuple = _coerce_event_tuple(events)
+    if not math.isfinite(confidence_level) or not 0.0 < confidence_level < 1.0:
+        raise ValueError("confidence_level must be in (0, 1)")
+    if not resample_indices:
+        raise ValueError("resample_indices must contain at least one replicate")
+    replicate_probabilities = []
+    for replicate in resample_indices:
+        indices = tuple(replicate)
+        if not indices:
+            raise ValueError("bootstrap replicates must not be empty")
+        if any(isinstance(index, bool) or index < 0 or index >= len(event_tuple) for index in indices):
+            raise ValueError("bootstrap indices must address the event vector")
+        replicate_probabilities.append(sum(event_tuple[index] for index in indices) / len(indices))
+
+    probability = sum(event_tuple) / len(event_tuple)
+    sorted_probabilities = tuple(sorted(replicate_probabilities))
+    alpha = (1.0 - confidence_level) / 2.0
+    lower_index = math.floor(alpha * (len(sorted_probabilities) - 1))
+    upper_index = math.ceil((1.0 - alpha) * (len(sorted_probabilities) - 1))
+    # Rank endpoints make the tiny synthetic fixtures reproducible by hand;
+    # they are diagnostics only, not a paper-facing CI prescription.
+    return BootstrapProbabilityInterval(
+        probability=probability,
+        ci_lower=min(sorted_probabilities[lower_index], probability),
+        ci_upper=max(sorted_probabilities[upper_index], probability),
+        confidence_level=confidence_level,
+        replicate_count=len(sorted_probabilities),
+    )
+
+
+def monotonicity_sweep_from_events(
+    *,
+    events_by_rho: Mapping[float, Sequence[bool]],
+    resample_indices: Sequence[Sequence[int]],
+    expected_direction: str = "nonincreasing",
+    confidence_level: float = 0.95,
+) -> MonotonicitySweepResult:
+    """Evaluate a synthetic rho sweep from fixed-CRN event indicators."""
+
+    if expected_direction not in {"nonincreasing", "nondecreasing"}:
+        raise ValueError("expected_direction must be 'nonincreasing' or 'nondecreasing'")
+    if not events_by_rho:
+        raise ValueError("events_by_rho must contain at least one rho level")
+    ordered_rhos = tuple(sorted(events_by_rho))
+    if any(not math.isfinite(rho) for rho in ordered_rhos):
+        raise ValueError("rho values must be finite")
+    event_tuples = {rho: _coerce_event_tuple(events_by_rho[rho]) for rho in ordered_rhos}
+    sample_counts = {len(events) for events in event_tuples.values()}
+    if len(sample_counts) != 1:
+        raise ValueError("all rho levels must use the same sample count for CRN diagnostics")
+
+    points = []
+    for rho in ordered_rhos:
+        interval = bootstrap_probability_interval(
+            event_tuples[rho],
+            resample_indices=resample_indices,
+            confidence_level=confidence_level,
+        )
+        points.append(
+            MonotonicitySweepPoint(
+                rho=rho,
+                probability=interval.probability,
+                ci_lower=interval.ci_lower,
+                ci_upper=interval.ci_upper,
+                successes=sum(event_tuples[rho]),
+                sample_count=len(event_tuples[rho]),
+            )
+        )
+
+    violations: list[tuple[float, float, float, float]] = []
+    for left, right in zip(points, points[1:]):
+        if expected_direction == "nonincreasing" and right.probability > left.probability:
+            violations.append((left.rho, right.rho, left.probability, right.probability))
+        if expected_direction == "nondecreasing" and right.probability < left.probability:
+            violations.append((left.rho, right.rho, left.probability, right.probability))
+    return MonotonicitySweepResult(
+        expected_direction=expected_direction,
+        points=tuple(points),
+        violations=tuple(violations),
+    )
+
+
+def _coerce_event_tuple(events: Sequence[bool]) -> tuple[bool, ...]:
+    event_tuple = tuple(events)
+    if not event_tuple:
+        raise ValueError("events must not be empty")
+    if any(not isinstance(event, bool) for event in event_tuple):
+        raise TypeError("events must contain booleans")
+    return event_tuple
+
+
+@dataclass(frozen=True)
 class FiniteHybridState:
     """One aleatory state in a finite synthetic hybrid propagation fixture."""
 

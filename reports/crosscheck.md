@@ -77,6 +77,13 @@ The toy envelope keeps all values synthetic and explicitly unsigned. For each tr
 
 Alpha support is checked by evaluating separate alpha-indexed toy sample sets while requiring the same ordered sample identifiers at every alpha level. The check is about CRN identity and reporting discipline only: it does not defuzzify, infer monotonicity, or authorize the G3 vertex shortcut for paper-facing results.
 
+
+## Cross-Check 4: Synthetic Monotonicity And Bootstrap-CI Scaffold
+
+This scaffold prepares the E4.S1/G3 trust-certificate machinery without running a real rho sweep. It consumes synthetic fixed-CRN boolean event indicators indexed by `rho`, computes point probabilities, attaches deterministic rank-bootstrap intervals from explicit resample-index fixtures, and reports adjacent monotonicity violations as diagnostics only.
+
+The helper is intentionally not a G3 decision engine. A clean synthetic sweep shows that the diagnostic can preserve a nonincreasing event-probability pattern, while a second hand-computable fixture shows that a local increase is reported as a violation tuple. No real E3 trajectories, real `P(E)`, capacity convention, A-013/G2 values, or paper-facing vertex shortcut claim enters this check.
+
 ## Executable Synthetic Package
 
 The E5.S4 package lives in `src/pbox_crosscheck.py` with tests in `tests/test_pbox_crosscheck.py`.
@@ -85,6 +92,7 @@ The E5.S4 package lives in `src/pbox_crosscheck.py` with tests in `tests/test_pb
 - `estimate_gaussian_toy_pbox` routes the Gaussian toy through the existing p-box endpoint pathway using canonical RNG sample identities and `PRE_G3_SYNTHETIC` mode.
 - `FiniteHybridState` and `finite_hybrid_bounds` provide a small qualitative hybrid/p-box fixture with exact hand-summed lower/upper event probabilities.
 - `OutputErrorToyTrajectory` and `output_error_alpha_crosscheck_records` provide a synthetic output-error ordering check with manifest-ready endpoint counts and alpha-level CRN identity.
+- `bootstrap_probability_interval` and `monotonicity_sweep_from_events` provide synthetic fixed-CRN rho-sweep diagnostics with deterministic rank-bootstrap intervals and explicit violation reporting.
 
 This executable synthetic package does not use real net-load data, the project overload event, G0-A3 threshold sensitivities, signed A-013 values, G3 vertex authorization for paper-facing results, or manuscript numbers.
 
@@ -99,6 +107,8 @@ This executable synthetic package does not use real net-load data, the project o
 | Baudrit-style reporting discipline | Finite hybrid toy | Alpha-indexed lower/upper bounds only; no defuzzified answer | yes |
 | Output-error ordering | Synthetic loading trajectories with endpoint envelopes | Error endpoints act before event detection; probabilities are not shifted | yes |
 | Output-error CRN identity | Alpha-indexed synthetic loading samples with explicit sample IDs | Same ordered sample identities are preserved across alpha levels | yes |
+| Synthetic monotonicity sweep | Boolean toy event indicators over a rho grid | Probabilities are ordered, local violations are reported, and no G3 verdict is emitted | yes |
+| Bootstrap-CI helper | Explicit synthetic resample-index fixtures | Rank-bootstrap interval endpoints are deterministic and hand-computable | yes |
 
 ## Remaining Dependencies
 

@@ -6,13 +6,16 @@ import pytest
 
 from src.fuzzy import TrapezoidalFuzzyNumber
 from src.pbox_crosscheck import (
+    BootstrapProbabilityInterval,
     FiniteHybridState,
     GaussianToyParameters,
     OutputErrorToyTrajectory,
+    bootstrap_probability_interval,
     estimate_gaussian_toy_pbox,
     finite_hybrid_bounds,
     gaussian_closed_form_bounds,
     gaussian_tail_probability,
+    monotonicity_sweep_from_events,
     output_error_alpha_crosscheck_records,
 )
 from src.pbox_error import OutputErrorProtocolConfig
@@ -255,6 +258,82 @@ def test_output_error_crosscheck_rejects_broken_crn_identity_and_invalid_toys() 
     with pytest.raises(ValueError, match="p_signs"):
         OutputErrorToyTrajectory("bad-sign", (1.0,), (2,))
 
+
+def _bootstrap_resamples() -> list[list[int]]:
+    return [
+        [0, 1, 2, 3],
+        [0, 0, 1, 1],
+        [2, 2, 3, 3],
+    ]
+
+
+def test_bootstrap_probability_interval_uses_hand_computable_rank_endpoints() -> None:
+    interval = bootstrap_probability_interval(
+        [True, False, True, False],
+        resample_indices=_bootstrap_resamples(),
+        confidence_level=0.5,
+    )
+
+    assert isinstance(interval, BootstrapProbabilityInterval)
+    assert interval.probability == pytest.approx(0.5)
+    assert interval.ci_lower == pytest.approx(0.5)
+    assert interval.ci_upper == pytest.approx(0.5)
+    assert interval.replicate_count == 3
+
+
+def test_monotonicity_sweep_reports_no_violation_for_synthetic_decreasing_events() -> None:
+    sweep = monotonicity_sweep_from_events(
+        events_by_rho={
+            1.0: [True, False, False, False],
+            0.0: [True, True, True, False],
+            0.5: [True, True, False, False],
+        },
+        resample_indices=_bootstrap_resamples(),
+        confidence_level=0.5,
+    )
+
+    assert [point.rho for point in sweep.points] == [0.0, 0.5, 1.0]
+    assert [point.successes for point in sweep.points] == [3, 2, 1]
+    assert [point.probability for point in sweep.points] == [0.75, 0.5, 0.25]
+    assert sweep.expected_direction == "nonincreasing"
+    assert sweep.violations == ()
+    assert all(not hasattr(point, "g3_verdict") for point in sweep.points)
+
+
+def test_monotonicity_sweep_flags_synthetic_violation_without_g3_claim() -> None:
+    sweep = monotonicity_sweep_from_events(
+        events_by_rho={
+            0.0: [True, False, False, False],
+            0.5: [True, True, False, False],
+            1.0: [False, False, False, False],
+        },
+        resample_indices=_bootstrap_resamples(),
+        confidence_level=0.5,
+    )
+
+    assert sweep.violations == ((0.0, 0.5, 0.25, 0.5),)
+    assert not hasattr(sweep, "g3_verdict")
+
+
+def test_monotonicity_sweep_rejects_invalid_synthetic_inputs() -> None:
+    with pytest.raises(ValueError, match="same sample count"):
+        monotonicity_sweep_from_events(
+            events_by_rho={0.0: [True, False], 0.5: [True]},
+            resample_indices=[[0, 1]],
+        )
+
+    with pytest.raises(TypeError, match="booleans"):
+        bootstrap_probability_interval(
+            [True, 0],
+            resample_indices=[[0, 1]],
+        )
+
+    with pytest.raises(ValueError, match="bootstrap indices"):
+        bootstrap_probability_interval(
+            [True, False],
+            resample_indices=[[0, 2]],
+        )
+
 def test_crosscheck_helpers_reject_invalid_synthetic_inputs() -> None:
     with pytest.raises(ValueError, match="beta must be positive"):
         GaussianToyParameters(mu_0=1.0, beta=0.0, sigma=0.2, threshold=1.1)
@@ -283,6 +362,9 @@ def test_crosscheck_report_records_scaffold_only_guardrails() -> None:
         "no scalar defuzzified probability",
         "G3 remains pending",
         "Q-5 is resolved by G0-A3",
+        "Cross-Check 4: Synthetic Monotonicity",
+        "rank-bootstrap intervals",
+        "no G3 verdict",
     ]
     for phrase in required_phrases:
         assert phrase in report
