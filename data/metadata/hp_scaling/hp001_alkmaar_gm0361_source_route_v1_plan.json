@@ -18,7 +18,7 @@
   "geography": {
     "municipality_code": "GM0361",
     "municipality_name": "Alkmaar",
-    "service_area_status": "proposed proxy for PI review"
+    "service_area_status": "approved proxy for retrieval/checksum route; values unsigned"
   },
   "hp001_component_traceability": [
     {
@@ -123,7 +123,7 @@
       "url": "https://opendata.cbs.nl/ODataApi/OData/85523NED"
     }
   ],
-  "status": "proposed retrieval/checksum/value-proposal route; no values executable",
+  "status": "approved retrieval/checksum route; no values executable",
   "value_route": {
     "local_heat_demand": "Future value proposal should extract or document public local heat-demand evidence first, then preserve space and DHW separately if the schema supports that interpretation.",
     "suitability_pathway": "PBL Startanalyse pathway/cost outputs are kept separate from demand and adoption; they can justify scenario plausibility only after PI source-use approval.",

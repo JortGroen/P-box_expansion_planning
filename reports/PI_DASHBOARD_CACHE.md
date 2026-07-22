@@ -93,6 +93,12 @@ Leave PI Lite and inspect broader context when:
   use `reports/e2_s3_hp_private_thesis_source_discovery_note.md` to guide
   checks of underlying public sources such as local gas demand, dwelling stock,
   BAG/CBS/DEGO-like evidence, and standard load-profile references.
+- `D-013` is approved as a retrieval/checksum route for HP-001 Alkmaar local
+  scaling evidence. C.HP may retrieve and checksum CBS 85035NED, PBL
+  Startanalyse 2025 Alkmaar, and CBS 85523NED under `data/raw/hp_scaling/` and
+  `data/metadata/hp_scaling/`. Annual HP TWh values, 2035 HP adoption, D-004
+  acceptance, paired-weather acceptance, net-load/event analysis, and
+  manuscript results remain unsigned.
 - `WEATHER-001` resolves Q-8. HP and PV must use one neutral shared weather
   contract in `src/weather_model.py` / `tests/test_weather_model.py`, now owned
   by Agent C. This approves the interface route only; D-004 source acceptance,
