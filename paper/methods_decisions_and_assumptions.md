@@ -1099,6 +1099,26 @@ provenance before any aggregation. WEATHER-001 implementation, D-004
 acceptance, cold-spell tolerances, event analysis, `P(E)`, and manuscript
 results remain blocked.
 
+<!-- methods-id: E2-S3-HP-LOCAL-SCALING-ROUTE-PACKET -->
+### E2-S3-HP-LOCAL-SCALING-ROUTE-PACKET - HP-001 Local Annual Scaling Route
+
+**Status: Proposed packet; values unsigned.** The local annual heat-pump
+scaling route separates HP-001's approved residential shape/COP boundary from
+the still-unsigned local 2035 annual thermal volumes. The proposed route derives
+four explicit component inputs, SFH space heat, MFH space heat, SFH domestic
+hot water, and MFH domestic hot water, from a PI-signed local service-area
+proxy, source-backed residential stock or heat-demand denominators, and a
+signed 2035 heat-pump adoption/electrification scenario. The resulting annual
+TWh values would be passed explicitly into the HP-001 helper and preserved in
+component provenance before aggregation; commercial heat remains outside the
+primary route. National When2Heat `heat_demand_*` totals remain diagnostic
+anchors unless the PI separately signs them as a local scaling source. This
+packet proposes source classes, formulas, and sensitivity axes only. It does
+not sign any external HP scaling source, annual TWh value, adoption count,
+D-004 acceptance, cold-spell tolerance, net-load integration, event analysis,
+`P(E)`, capacity-screen result, Q-5-dependent threshold result, or manuscript
+number.
+
 <!-- methods-id: D-004 -->
 ### D-004 - Weather and PV Inputs
 
