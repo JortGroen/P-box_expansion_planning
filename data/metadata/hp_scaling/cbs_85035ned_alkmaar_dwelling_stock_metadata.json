@@ -1,0 +1,76 @@
+{
+  "bundle_id": "hp001_alkmaar_gm0361_source_route_v1",
+  "data_id": "D-013",
+  "download_performed": true,
+  "non_claims": [
+    "No annual HP TWh values are executable.",
+    "No 2035 HP adoption value is signed.",
+    "No D-004 acceptance, net-load, event, P(E), threshold, capacity-screen, or manuscript analysis is run."
+  ],
+  "raw_path": "data/raw/hp_scaling/cbs_85035ned_alkmaar_dwelling_stock.json",
+  "retrieved_at_utc": "2026-07-22T10:21:22Z",
+  "retrieved_url": "https://opendata.cbs.nl/ODataApi/OData/85035NED",
+  "schema_summary": {
+    "alkmaar_region_titles": [
+      "Alkmaar"
+    ],
+    "data_columns": [
+      "BeginstandWoningvoorraad_1",
+      "GemiddeldeOppervlakte_2"
+    ],
+    "periods": [
+      "2021JJ00",
+      "2022JJ00",
+      "2023JJ00",
+      "2024JJ00",
+      "2025JJ00",
+      "2026JJ00"
+    ],
+    "records_retrieved": 96,
+    "sfh_mfh_crosswalk": {
+      "MFH": "Meergezinswoningen totaal",
+      "SFH": "Eengezinswoningen totaal"
+    },
+    "table_identifier": "85035NED",
+    "table_modified": "2026-04-23T02:00:00",
+    "table_title": "Woningvoorraad; woningtype op 1 januari, regio",
+    "woningkenmerk_titles": {
+      "A053381": "Nieuwbouwwoningen",
+      "T001727": "Totaal woningen"
+    },
+    "woningtype_titles": {
+      "T001100": "Totaal woningen",
+      "ZW10290": "Eengezinswoningen totaal",
+      "ZW10300": "2-onder-1-kapwoning",
+      "ZW10320": "Vrijstaande woning",
+      "ZW10340": "Meergezinswoningen totaal",
+      "ZW25805": "Tussenwoning",
+      "ZW25806": "Hoekwoning",
+      "ZW25809": "Onbekend woningtype eengezinswoning"
+    }
+  },
+  "sha256_file": "3c57f72ff32bebb38cb4a371ba35b0702b840fed3a5ce5639970d733c640606e",
+  "size_bytes": 142792,
+  "source_key": "cbs_85035ned_dwelling_stock",
+  "source_spec": {
+    "boundary": "Provides stock/type evidence only; it does not provide heat demand, DHW demand, or 2035 HP adoption.",
+    "expected_runtime_note": "expected seconds to a few minutes; no >15 minute run expected",
+    "expected_size_note": "small filtered OData request for Alkmaar municipality and selected periods",
+    "key": "cbs_85035ned_dwelling_stock",
+    "license_or_terms": "CBS open data terms; cite CBS table page and retrieval timestamp",
+    "planned_metadata_path": "data/metadata/hp_scaling/cbs_85035ned_alkmaar_dwelling_stock_metadata.json",
+    "planned_raw_path": "data/raw/hp_scaling/cbs_85035ned_alkmaar_dwelling_stock.json",
+    "proposed_fields_or_filters": [
+      "RegioS == GM0361 / Alkmaar",
+      "Woningtype includes Eengezinswoningen totaal for SFH",
+      "Woningtype includes Meergezinswoningen totaal for MFH",
+      "Onderwerp: Beginstand woningvoorraad",
+      "latest available period and any signed planning-year proxy period"
+    ],
+    "role": "SFH/MFH dwelling-stock denominator and crosswalk evidence for GM0361",
+    "source": "CBS StatLine",
+    "title": "CBS StatLine 85035NED dwelling stock by type and region",
+    "url": "https://opendata.cbs.nl/ODataApi/OData/85035NED"
+  },
+  "status": "retrieved/checksummed for PI review; HP scaling values remain unsigned"
+}

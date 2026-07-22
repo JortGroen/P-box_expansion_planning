@@ -4,9 +4,9 @@
   "download_performed": false,
   "item": "HP-001 Alkmaar local scaling source bundle",
   "license": "CBS open data terms; PBL Startanalyse 2025 data portal states CC BY 4.0 NL",
-  "notes": "Approved retrieval/checksum route for Alkmaar GM0361 HP-001 local scaling evidence; no annual TWh values or 2035 adoption volumes are executable.",
+  "notes": "Proposed no-download route for Alkmaar GM0361 HP-001 local scaling evidence; no annual TWh values or 2035 adoption volumes are executable.",
   "raw_subdir": "hp_scaling",
   "retrieval_script": "data/get_hp_scaling.py",
   "source": "CBS StatLine dwelling stock and heat-pump context; PBL Startanalyse aardgasvrije buurten 2025 Alkmaar",
-  "status": "approved retrieval/checksum route; values unsigned"
+  "status": "metadata-only; pending license/API verification and PI sign-off before data use"
 }

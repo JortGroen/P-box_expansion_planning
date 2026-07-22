@@ -1,0 +1,37 @@
+{
+  "bundle_id": "hp001_alkmaar_gm0361_source_route_v1",
+  "completed_sources": [
+    {
+      "completed_at_utc": "2026-07-22T10:21:22Z",
+      "metadata_path": "data/metadata/hp_scaling/cbs_85035ned_alkmaar_dwelling_stock_metadata.json",
+      "raw_path": "data/raw/hp_scaling/cbs_85035ned_alkmaar_dwelling_stock.json",
+      "retrieved_url": "https://opendata.cbs.nl/ODataApi/OData/85035NED",
+      "sha256_file": "3c57f72ff32bebb38cb4a371ba35b0702b840fed3a5ce5639970d733c640606e",
+      "size_bytes": 142792,
+      "source_key": "cbs_85035ned_dwelling_stock"
+    },
+    {
+      "completed_at_utc": "2026-07-22T10:21:22Z",
+      "metadata_path": "data/metadata/hp_scaling/pbl_startanalyse_2025_alkmaar_metadata.json",
+      "raw_path": "data/raw/hp_scaling/pbl_startanalyse_2025_alkmaar.zip",
+      "retrieved_url": "https://dataportaal.pbl.nl/data/Startanalyse_aardgasvrije_buurten/2025/Gemeentes/Alkmaar.zip",
+      "sha256_file": "e022f3cfcc227b41359545e405ba8c194d48731fa802302b8f027ccab01b1ff7",
+      "size_bytes": 220262,
+      "source_key": "pbl_startanalyse_2025_alkmaar"
+    },
+    {
+      "completed_at_utc": "2026-07-22T10:21:23Z",
+      "metadata_path": "data/metadata/hp_scaling/cbs_85523ned_heat_pump_context_metadata.json",
+      "raw_path": "data/raw/hp_scaling/cbs_85523ned_heat_pump_context.json",
+      "retrieved_url": "https://opendata.cbs.nl/ODataApi/OData/85523NED",
+      "sha256_file": "739d32fc2f6721c1aabe5919ba8ee1efc8b3e328ffa3de44fd5308f42eba3e7b",
+      "size_bytes": 535260,
+      "source_key": "cbs_85523ned_heat_pump_context"
+    }
+  ],
+  "data_id": "D-013",
+  "next_source_key": null,
+  "resume_command": ".\\.venv\\Scripts\\python.exe data\\get_hp_scaling.py --download --resume",
+  "status": "complete",
+  "updated_at_utc": "2026-07-22T10:21:23Z"
+}

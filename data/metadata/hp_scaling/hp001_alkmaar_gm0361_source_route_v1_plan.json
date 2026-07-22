@@ -7,18 +7,18 @@
   ],
   "bundle_id": "hp001_alkmaar_gm0361_source_route_v1",
   "checksum_workflow": {
-    "atomic_write_behavior": "Future downloads should write .tmp files under data/raw/hp_scaling, checksum them, then atomically replace the final raw path.",
+    "atomic_write_behavior": "Downloads write .tmp files under data/raw/hp_scaling, checksum them, then atomically replace the final raw path.",
     "checkpoint_behavior": "After each source is retrieved, record URL, byte size, SHA-256, retrieval timestamp, and next pending source. Resume skips any source whose raw file still matches the checkpoint checksum.",
     "checkpoint_path": "data/metadata/hp_scaling/hp001_alkmaar_gm0361_retrieval_checkpoint.json",
     "future_command": ".\\.venv\\Scripts\\python.exe data\\get_hp_scaling.py --download --resume"
   },
-  "created_utc": "2026-07-22T08:51:37Z",
+  "created_utc": "2026-07-22T10:21:42Z",
   "data_id": "D-013",
   "download_performed": false,
   "geography": {
     "municipality_code": "GM0361",
     "municipality_name": "Alkmaar",
-    "service_area_status": "approved proxy for retrieval/checksum route; values unsigned"
+    "service_area_status": "approved retrieval proxy; final scaling interpretation unsigned"
   },
   "hp001_component_traceability": [
     {
@@ -101,7 +101,7 @@
       "role": "local heat-demand, neighbourhood, and pathway/suitability context for Alkmaar",
       "source": "PBL Planbureau voor de Leefomgeving",
       "title": "PBL Startanalyse aardgasvrije buurten 2025 Alkmaar municipality ZIP",
-      "url": "https://dataportaal.pbl.nl/Startanalyse_aardgasvrije_buurten/2025/Gemeentes"
+      "url": "https://dataportaal.pbl.nl/data/Startanalyse_aardgasvrije_buurten/2025/Gemeentes/Alkmaar.zip"
     },
     {
       "boundary": "Context only for this route; it is not a local Alkmaar 2035 adoption source and cannot make values executable.",
