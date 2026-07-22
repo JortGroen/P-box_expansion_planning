@@ -6,8 +6,9 @@ Status: scaffold/readiness only. This packet validates synthetic accepted
 adapter artifacts and synthetic adapter outputs up to the net-load/loading-input
 handoff. It does not load real component arrays, open EV held-out data, run
 E3.S2a adequacy, run E3.S2b/E3.S3 threshold screens, evaluate events, compute
-`P(E)`, or produce manuscript numbers. Q-5 remains a hard stop before
-event-based scientific analysis.
+P(E), or produce manuscript numbers. G0-A3 resolves Q-5 with the primary
+strict L_import > 1.0 p.u. event definition; this scaffold still does not
+run that criterion.
 
 ## Purpose
 
@@ -39,7 +40,8 @@ probability, capacity-screen, and manuscript-result fields.
 The tests use a four-step 2035 synthetic calendar and synthetic baseline, EV,
 HP, and PV outputs. This is a minimal contract fixture, not a real full-year
 scientific input. Full-year real component use remains blocked until the owning
-C artifacts are accepted and downstream Q-5-dependent criteria are resolved.
+C artifacts are accepted and remaining downstream gates, signed values,
+capacity conventions, and manifests are in place.
 
 ## Stop Conditions
 
@@ -47,7 +49,8 @@ Stop before real integration if any required component artifact is missing or
 not accepted, if metadata cannot prove one 2035 calendar and one HP/PV weather
 identity, if a future step would open EV held-out data, or if the next step
 would run event, threshold, probability, capacity-screen, or manuscript-number
-analysis while Q-5 is unresolved.
+analysis without accepted artifacts, manifests, signed values, capacity convention,
+and the required G2/A-013/G3 gates.
 
 ## No-Result Boundary
 
