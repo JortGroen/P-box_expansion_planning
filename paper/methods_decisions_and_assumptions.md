@@ -1275,7 +1275,7 @@ event, `P(E)`, threshold, capacity-screen, manuscript, or probability results.
 <!-- methods-id: D-004 -->
 ### D-004 - Weather and PV Inputs
 
-**Status: Proposed.** KNMI observations provide the Dutch weather ensemble,
+**Status: Approved for internal first-screen source/member use; final paired/cold-spell acceptance pending.** KNMI observations provide the Dutch weather ensemble,
 while PVGIS supplies the solar-generation reference used to construct or check
 PV profiles. The E2.S4 support code records official PVGIS/KNMI retrieval
 endpoints, a metadata-only raw retrieval execution plan, target raw/metadata
@@ -1318,11 +1318,16 @@ as PI-review evidence only. A subsequent proposed acceptance packet
 packages the concrete source files and checksums, member completeness and
 calendar evidence, KNMI `T`/`Q` conversion checks, PVGIS provenance boundary,
 seasonal and peak diagnostics, and explicit PI questions about source/member
-acceptance and unsigned sanity criteria. A paired-weather acceptance scaffold then records what source/member evidence could be accepted now if the PI agrees and what remains blocked by unsigned PVGIS seasonal/peak criteria, paired HP/PV validation, cold-spell tolerances, and later integrated analysis. A subsequent acceptance/tolerance packet makes those governance gates explicit for PI review: exact source/member audit checks appear satisfied for review, while PVGIS seasonal/peak criteria, paired HP/PV validation rules, and cold-spell numerical tolerances remain unsigned. A concise PI recommendation packet proposes signing source/member acceptance separately, using qualitative PVGIS seasonal/peak sanity for that gate, requiring exact WEATHER-001 identity/calendar equality before HP/PV paired diagnostics, and leaving HP cold-spell numerical tolerances to the HP acceptance lineage. D-004 itself remains proposed until the
+acceptance and unsigned sanity criteria. A paired-weather acceptance scaffold then records what source/member evidence could be accepted now if the PI agrees and what remains blocked by unsigned PVGIS seasonal/peak criteria, paired HP/PV validation, cold-spell tolerances, and later integrated analysis. A subsequent acceptance/tolerance packet makes those governance gates explicit for PI review: exact source/member audit checks appear satisfied for review, while PVGIS seasonal/peak criteria, paired HP/PV validation rules, and cold-spell numerical tolerances remain unsigned. A concise PI recommendation packet proposed signing source/member acceptance separately, using qualitative PVGIS seasonal/peak sanity for that gate, requiring exact WEATHER-001 identity/calendar equality before HP/PV paired diagnostics, and leaving HP cold-spell numerical tolerances to the HP acceptance lineage. The PI approved that recommendation for internal first-screen source/member use on 2026-07-22: KNMI remains the realized weather path, PVGIS remains qualitative sanity/provenance only, exact WEATHER-001 identity/calendar equality is required for paired HP/PV use, and numerical cold-spell tolerances remain deferred to the HP/cold-spell decision. D-004 final paired/cold-spell acceptance remains pending until the
 PI accepts the concrete files, versions, checksums, source-use evidence,
 completeness checks, PVGIS seasonal and peak-timing sanity checks, and final
 integrated HP/PV acceptance.
 
+
+<!-- methods-id: D004-SOURCE-MEMBER-ACCEPTANCE -->
+### D004-SOURCE-MEMBER-ACCEPTANCE - D-004 Source/Member Acceptance For Internal First-Screen Use
+
+**Status: Approved for internal first-screen source/member use; final paired/cold-spell acceptance pending.** The PI approved the D-004 recommendation packet on 2026-07-22. The approved scope accepts `d004_alkmaar_berkhout_2014_2023_v1` as the KNMI/PVGIS source/member bundle for internal first-screen use: KNMI station 249 Berkhout is the realized 2014-2023 WEATHER-001 weather path, PVGIS-SARAH3 remains qualitative seasonal/peak sanity and provenance/calibration context only, and paired HP/PV use requires exact WEATHER-001 identity/calendar equality before diagnostics are judged. The equality prerequisite covers `member_id`, `shared_weather_driver_id`, `source`, UTC span, timestep count, cadence, and `content_sha256`. Numerical cold-spell tolerances remain deferred to the HP/cold-spell acceptance decision. This approval does not run final paired HP/PV validation, approve cold-spell tolerances, authorize net-load integration, event analysis, `P(E)`, capacity screens, or manuscript results.
 <!-- methods-id: D004-MC-001 -->
 ### D004-MC-001 - D-004 Weather-Member Construction Rule
 

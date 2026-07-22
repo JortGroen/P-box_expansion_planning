@@ -869,6 +869,34 @@ def test_committed_d004_pi_recommendation_packet_keeps_decisions_with_pi() -> No
     assert "no capacity screen" in payload["out_of_scope_guards"]
 
 
+def test_committed_d004_source_member_acceptance_decision_is_partial() -> None:
+    metadata_path = Path(
+        "data/metadata/weather_pv/"
+        "d004_alkmaar_berkhout_2014_2023_v1_source_member_acceptance_decision.json"
+    )
+    payload = json.loads(metadata_path.read_text(encoding="utf-8"))
+    decisions = Path("registers/DECISIONS.md").read_text(encoding="utf-8")
+    data_register = Path("registers/DATA_REGISTER.md").read_text(encoding="utf-8")
+
+    assert payload["decision_id"] == "D004-SOURCE-MEMBER-ACCEPTANCE"
+    assert payload["status"] == "approved_for_internal_first_screen_source_member_use_final_paired_acceptance_pending"
+    assert payload["approved_scope"]["realized_weather_path"].startswith("KNMI station 249")
+    assert payload["approved_scope"]["pvgis_role"].startswith("qualitative")
+    assert payload["exact_weather_identity_fields"] == [
+        "member_id",
+        "shared_weather_driver_id",
+        "source",
+        "first_timestamp_utc",
+        "last_timestamp_utc",
+        "n_timesteps",
+        "cadence_seconds",
+        "content_sha256",
+    ]
+    assert "numerical HP cold-spell tolerances" in payload["deferred_decisions"]
+    assert "D004-SOURCE-MEMBER-ACCEPTANCE" in decisions
+    assert "approved for internal first-screen source/member use; final paired/cold-spell acceptance pending" in data_register
+    assert "final paired HP/PV validation" in data_register
+
 def test_d004_weather_member_builder_expands_knmi_hourly_fixture_to_utc_year(tmp_path: Path) -> None:
     metadata_dir = tmp_path / "metadata"
     _write_d004_fixture_manifest(tmp_path, metadata_dir, year=2014)
