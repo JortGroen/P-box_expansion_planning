@@ -32,6 +32,7 @@ from src.ev_model import (
     ev_candidate_checksum_expectations,
     ev_ic1_adapter_guardrail_packet,
     ev_downstream_adequacy_criterion_packet,
+    ev005_within_realization_replacement_policy_packet,
     ev_ic1_candidate_adapter_artifact,
     ev_ic1_candidate_member_reference_artifact,
     ev_library_integration_artifact_from_manifest,
@@ -760,6 +761,54 @@ def test_ev_downstream_adequacy_criterion_packet_is_unsigned_and_downstream() ->
         "manuscript_numbers_produced": False,
     }
 
+
+def test_ev005_replacement_policy_packet_is_unsigned_and_profile_free() -> None:
+    packet = ev005_within_realization_replacement_policy_packet()
+    committed = json.loads(
+        Path("data/metadata/ev_adoption/e2_s2_ev005_replacement_policy_packet.json").read_text(
+            encoding="utf-8"
+        )
+    )
+
+    assert committed == packet
+    assert packet["artifact_type"] == "ev005_within_realization_replacement_policy_packet"
+    assert packet["decision_id"] == "EV-005B"
+    assert packet["status"] == "pi_decision_required_before_sampling_policy_use"
+    assert packet["recommended_option_id"] == "A_charge_point_level_with_replacement"
+    assert packet["feasibility_findings"]["whole_grid_no_replacement_feasible_for_home"] is False
+    assert packet["feasibility_findings"]["whole_grid_no_replacement_feasible_for_public_capacity_classes"] is False
+    assert packet["candidate_library_context"]["candidate_library_sufficiency_claimed"] is False
+    assert packet["non_claims"] == {
+        "policy_signed": False,
+        "held_out_access": False,
+        "profile_arrays_loaded": False,
+        "integrated_analysis_performed": False,
+        "event_or_p_e_analysis_performed": False,
+        "m_sufficiency_claimed": False,
+        "manuscript_numbers_produced": False,
+    }
+
+
+def test_ev005_replacement_packet_options_keep_bootstrap_and_m_separate() -> None:
+    packet = ev005_within_realization_replacement_policy_packet()
+    by_option = {option["id"]: option for option in packet["options"]}
+
+    recommended = by_option["A_charge_point_level_with_replacement"]
+    assert recommended["status"] == "recommended_unsigned"
+    assert recommended["replacement"] is True
+    assert "finite-library adequacy separate" in recommended["why_defensible"]
+    assert by_option["B_whole_grid_without_replacement"]["status"] == (
+        "not_executable_for_approved_2035_counts"
+    )
+    assert by_option["C_node_local_without_replacement_with_cross_node_reuse"]["status"] == (
+        "unsigned_alternative_not_recommended"
+    )
+    expectations = packet["implementation_expectations_after_approval"]
+    assert any("RNG-001 ComponentStream" in item for item in expectations)
+    assert any("held-out and quarantined partitions remain inaccessible" in item for item in expectations)
+    source = inspect.getsource(ev005_within_realization_replacement_policy_packet)
+    assert "load_processed_batch_npz" not in source
+    assert "np.load" not in source
 def test_ev_ic1_candidate_adapter_artifact_materializes_allocations_and_members(
     tmp_path: Path,
 ) -> None:

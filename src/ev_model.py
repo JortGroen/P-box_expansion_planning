@@ -1594,6 +1594,131 @@ def ev_downstream_adequacy_criterion_packet() -> dict[str, object]:
         },
     }
 
+
+def ev005_within_realization_replacement_policy_packet() -> dict[str, object]:
+    """Return the unsigned EV-005 replacement-policy decision packet."""
+
+    return {
+        "schema_version": 1,
+        "artifact_type": "ev005_within_realization_replacement_policy_packet",
+        "decision_id": "EV-005B",
+        "task_id": "E2.S2",
+        "status": "pi_decision_required_before_sampling_policy_use",
+        "governing_decisions": [
+            "EV-003",
+            "EV-005",
+            "EV-007A",
+            "EV-008A",
+            "EV-CAL-001",
+            "RNG-001",
+            "ALEA-001",
+            "ALEA-002",
+        ],
+        "purpose": (
+            "Frame the within-realization EV source-member replacement rule that must be signed "
+            "before IC-1 materializes EV charge-point selections from candidate libraries."
+        ),
+        "cohort_context": {
+            "planning_year": 2035,
+            "local_proxy": "Alkmaar GM0361",
+            "scenario_totals": {
+                "low": {"home_charge_points": 7992, "public_charge_points": 4183},
+                "middle": {"home_charge_points": 9386, "public_charge_points": 5127},
+                "high": {"home_charge_points": 10343, "public_charge_points": 6138},
+            },
+            "public_capacity_class_totals": {
+                "low": {"public_11kw": 1046, "public_13kw": 1046, "public_15kw": 1046, "public_22kw": 1045},
+                "middle": {"public_11kw": 1282, "public_13kw": 1282, "public_15kw": 1282, "public_22kw": 1281},
+                "high": {"public_11kw": 1535, "public_13kw": 1535, "public_15kw": 1534, "public_22kw": 1534},
+            },
+        },
+        "candidate_library_context": {
+            "home_candidate_members": 1000,
+            "public_candidate_members_total": 1200,
+            "public_candidate_members_by_capacity_class": {
+                "public_11kw": 300,
+                "public_13kw": 300,
+                "public_15kw": 300,
+                "public_22kw": 300,
+            },
+            "candidate_library_sufficiency_claimed": False,
+        },
+        "feasibility_findings": {
+            "whole_grid_no_replacement_feasible_for_home": False,
+            "whole_grid_no_replacement_feasible_for_public_capacity_classes": False,
+            "reason": (
+                "The approved 2035 Alkmaar cohorts exceed the candidate member counts: home K is "
+                "7,992-10,343 versus M=1,000, and each public capacity class has K above 1,000 "
+                "versus M=300. Whole-grid no-replacement sampling would therefore fail before "
+                "any downstream adequacy test."
+            ),
+        },
+        "recommended_option_id": "A_charge_point_level_with_replacement",
+        "options": [
+            {
+                "id": "A_charge_point_level_with_replacement",
+                "status": "recommended_unsigned",
+                "replacement": True,
+                "selection_unit": "physical_charge_point",
+                "selection_scope": "scenario_node_component_capacity_class",
+                "rule": (
+                    "For each realization, draw each physical charge point independently with replacement "
+                    "from the verified candidate library for its component and, for public charging, its "
+                    "EV-008A capacity class. Preserve selection order, multiplicity, source_member_id, "
+                    "batch_seed, returned_profile_index, processed checksum, and RNG-001 component-stream identity."
+                ),
+                "why_defensible": (
+                    "It is executable for K greater than M, matches the usual empirical-bootstrap interpretation, "
+                    "and keeps finite-library adequacy separate through EV-005 downstream candidate/held-out checks."
+                ),
+                "requires_pi_signoff": [
+                    "accept duplicate source members within one realization as bootstrap multiplicities",
+                    "confirm public capacity-class sampling uses each class-specific candidate library",
+                    "confirm manifests must record per-selection multiplicity and component-stream identity",
+                ],
+            },
+            {
+                "id": "B_whole_grid_without_replacement",
+                "status": "not_executable_for_approved_2035_counts",
+                "replacement": False,
+                "selection_unit": "physical_charge_point",
+                "selection_scope": "whole_grid_component_capacity_class",
+                "why_not_recommended": (
+                    "Approved home and public capacity-class cohort sizes exceed their available candidate "
+                    "member counts, so this rule would block all 2035 Alkmaar branches unless the source "
+                    "library were expanded by an order of magnitude and then re-tested for adequacy."
+                ),
+            },
+            {
+                "id": "C_node_local_without_replacement_with_cross_node_reuse",
+                "status": "unsigned_alternative_not_recommended",
+                "replacement": False,
+                "selection_unit": "physical_charge_point",
+                "selection_scope": "node_component_capacity_class_only",
+                "why_not_recommended": (
+                    "It can avoid duplicates inside one node when node-level K is small, but the same source "
+                    "member may still appear at many nodes in the same realization. That hidden reuse rule is "
+                    "harder to explain than explicit bootstrap multiplicity and does not remove finite-library uncertainty."
+                ),
+            },
+        ],
+        "implementation_expectations_after_approval": [
+            "sampling uses RNG-001 ComponentStream objects supplied by the whole-system realization context",
+            "EV home sampling requires the ev_home component stream and public sampling requires ev_public",
+            "candidate processed checksums are verified in the consuming worktree before profile arrays load",
+            "held-out and quarantined partitions remain inaccessible until traceable E3.S2a authorization exists",
+            "selection manifests record scenario, node_id, component_id, capacity_class, selection_index, source_member_id, batch_seed, returned_profile_index, stream_id, and replacement flag",
+        ],
+        "non_claims": {
+            "policy_signed": False,
+            "held_out_access": False,
+            "profile_arrays_loaded": False,
+            "integrated_analysis_performed": False,
+            "event_or_p_e_analysis_performed": False,
+            "m_sufficiency_claimed": False,
+            "manuscript_numbers_produced": False,
+        },
+    }
 def a014_node_weights_from_load_table(
     load_table: Any,
     *,
