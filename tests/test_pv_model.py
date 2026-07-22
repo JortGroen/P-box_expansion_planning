@@ -15,11 +15,15 @@ from src.hp_model import HeatPumpProfile
 from src.pv_model import (
     PVGISReference,
     PVSystemConfig,
+    PVWeatherInputArtifact,
     WeatherMember,
     canonical_15min_local_axis_for_year,
     canonical_15min_utc_axis_for_local_year,
+    assert_weather_member_matches_input_artifact,
     check_profile_against_pvgis_reference,
     generate_pv_profile,
+    generate_pv_profile_from_input_artifact,
+    load_pv_weather_input_artifact,
     parse_pvgis_monthly_reference,
     seasonal_energy_kwh,
     summarize_pv_profile,
@@ -971,6 +975,122 @@ def test_committed_d004_weather_input_artifact_exposes_input_gate_but_blocks_fin
     }
 
 
+def test_pv_weather_input_artifact_adapter_loads_committed_source_member_gate() -> None:
+    artifact = load_pv_weather_input_artifact(
+        "data/metadata/weather_pv/d004_alkmaar_berkhout_2014_2023_v1_weather_input_artifact.json"
+    )
+    member = artifact.member_for_year(2020)
+
+    assert artifact.source_member_acceptance_id == "D004-SOURCE-MEMBER-ACCEPTANCE"
+    assert artifact.accepted_for_source_member_use is True
+    assert artifact.ready_for_executable_input_gate is True
+    assert artifact.pvgis_realized_weather_path is False
+    assert artifact.blocked_acceptance_gates["final_paired_hp_pv_acceptance"]["blocked"] is True
+    assert artifact.blocked_acceptance_gates["cold_spell_acceptance"]["blocked"] is True
+    assert member["member_id"] == "d004_alkmaar_berkhout_2020_v1"
+    assert member["calendar_id"] == "d004_alkmaar_berkhout_2014_2023_v1:utc_year_15min_europe_amsterdam:2020"
+    assert member["cadence_seconds"] == 900
+    assert member["shared_weather_driver_id"] == "d004_alkmaar_berkhout_2014_2023_v1:2020"
+    assert len(str(member["content_sha256"])) == 64
+
+
+def test_pv_weather_input_artifact_rejects_pvgis_as_realized_or_unblocked_final_gate(tmp_path: Path) -> None:
+    payload = json.loads(
+        Path("data/metadata/weather_pv/d004_alkmaar_berkhout_2014_2023_v1_weather_input_artifact.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    pvgis_path = tmp_path / "pvgis_realized.json"
+    pvgis_path.write_text(json.dumps({**payload, "pvgis_realized_weather_path": True}), encoding="utf-8")
+    with pytest.raises(ValueError, match="PVGIS"):
+        load_pv_weather_input_artifact(pvgis_path)
+
+    unsafe = json.loads(json.dumps(payload))
+    unsafe["blocked_acceptance_gates"]["final_paired_hp_pv_acceptance"]["blocked"] = False
+    unsafe_path = tmp_path / "final_gate_unblocked.json"
+    unsafe_path.write_text(json.dumps(unsafe), encoding="utf-8")
+    with pytest.raises(ValueError, match="final_paired_hp_pv_acceptance"):
+        load_pv_weather_input_artifact(unsafe_path)
+
+
+def test_pv_weather_input_artifact_matches_identity_and_blocks_checksum_drift() -> None:
+    artifact = load_pv_weather_input_artifact(
+        "data/metadata/weather_pv/d004_alkmaar_berkhout_2014_2023_v1_weather_input_artifact.json"
+    )
+    identity = dict(artifact.member_for_year(2019))
+
+    matched = assert_weather_member_matches_input_artifact(identity, artifact, year=2019)
+
+    assert matched["member_id"] == "d004_alkmaar_berkhout_2019_v1"
+    drifted = dict(identity)
+    drifted["content_sha256"] = "0" * 64
+    with pytest.raises(ValueError, match="content_sha256"):
+        assert_weather_member_matches_input_artifact(drifted, artifact, year=2019)
+
+
+def test_generate_pv_profile_from_input_artifact_preserves_weather_artifact_provenance() -> None:
+    weather = _short_weather(temperature_c=[15.0, 15.0, 15.0, 15.0], ghi_w_per_m2=[0.0, 100.0, 500.0, 1000.0])
+    base_payload = json.loads(
+        Path("data/metadata/weather_pv/d004_alkmaar_berkhout_2014_2023_v1_weather_input_artifact.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    identity = weather.identity_record()
+    member = dict(base_payload["members"][0])
+    member.update({key: identity[key] for key in base_payload["required_identity_fields_for_hp_pv_pairing"]})
+    member.update(
+        {
+            "year": 2025,
+            "first_timestamp_local": identity["first_timestamp_local"],
+            "last_timestamp_local": identity["last_timestamp_local"],
+            "calendar_id": "d004_test_weather:utc_year_15min_europe_amsterdam:2025",
+        }
+    )
+    base_payload["members"] = [member]
+    base_payload["calendar_contract"] = {
+        **base_payload["calendar_contract"],
+        "calendar_id_pattern": "d004_test_weather:utc_year_15min_europe_amsterdam:<YEAR>",
+        "years": [2025],
+    }
+    artifact_path = Path("data/metadata/weather_pv/d004_alkmaar_berkhout_2014_2023_v1_weather_input_artifact.json")
+    artifact = load_pv_weather_input_artifact(artifact_path)
+    artifact = type(artifact)(
+        data_id=artifact.data_id,
+        selection_id=artifact.selection_id,
+        status=artifact.status,
+        source_member_acceptance_id=artifact.source_member_acceptance_id,
+        weather_contract=artifact.weather_contract,
+        accepted_for_source_member_use=artifact.accepted_for_source_member_use,
+        ready_for_executable_input_gate=artifact.ready_for_executable_input_gate,
+        realized_weather_path=artifact.realized_weather_path,
+        pvgis_role=artifact.pvgis_role,
+        pvgis_realized_weather_path=artifact.pvgis_realized_weather_path,
+        required_identity_fields_for_hp_pv_pairing=artifact.required_identity_fields_for_hp_pv_pairing,
+        calendar_contract=base_payload["calendar_contract"],
+        members=base_payload["members"],
+        blocked_acceptance_gates=artifact.blocked_acceptance_gates,
+    )
+    config = PVSystemConfig(
+        installed_capacity_kw=2.0,
+        performance_ratio=0.9,
+        reference_irradiance_w_per_m2=1000.0,
+        temperature_coefficient_per_c=0.0,
+        reference_temperature_c=25.0,
+        clip_to_capacity=True,
+        config_id="artifact_adapter_fixture",
+    )
+
+    profile = generate_pv_profile_from_input_artifact(weather, config, artifact, year=2025)
+    record = profile.identity_record()
+
+    assert profile.shared_weather_driver_id == weather.shared_weather_driver_id
+    assert profile.weather_content_sha256 == weather.content_sha256
+    assert record["source_member_acceptance_id"] == "D004-SOURCE-MEMBER-ACCEPTANCE"
+    assert record["weather_input_artifact_status"] == "accepted_for_source_member_use_final_paired_cold_spell_pending"
+    assert record["calendar_id"] == "d004_test_weather:utc_year_15min_europe_amsterdam:2025"
+    assert record["pvgis_realized_weather_path"] is False
+    assert record["pvgis_role"].startswith("qualitative seasonal/peak sanity")
+    np.testing.assert_allclose(profile.generation_kw, [0.0, 0.18, 0.9, 1.8])
 def test_d004_weather_member_builder_expands_knmi_hourly_fixture_to_utc_year(tmp_path: Path) -> None:
     metadata_dir = tmp_path / "metadata"
     _write_d004_fixture_manifest(tmp_path, metadata_dir, year=2014)
