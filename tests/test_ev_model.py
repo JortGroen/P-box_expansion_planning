@@ -12,6 +12,7 @@ import pytest
 import src.ev_model as ev_model
 from src.ev_model import (
     EV_HOME_COMPONENT,
+    EV_PUBLIC_COMPONENT,
     EVProfileLibrary,
     EVProfileBootstrapSampler,
     EXPECTED_FULL_YEAR_STEPS,
@@ -19,8 +20,10 @@ from src.ev_model import (
     adoption_node_allocations,
     adoption_scenarios,
     allocate_charge_points_to_nodes,
+    build_ev_integration_readiness_artifact,
     charge_point_range_by_year,
     distinct_member_count,
+    ev_library_integration_artifact_from_manifest,
     load_adoption_scenarios_config,
     load_processed_batch_npz,
     national_outlook_projections,
@@ -30,6 +33,7 @@ from src.ev_model import (
     proposed_local_charge_point_counts,
     save_processed_batch_npz,
     validate_adoption_scenarios_config,
+    write_ev_integration_readiness_artifact,
 )
 from src.rng import SeedTree
 
@@ -315,6 +319,188 @@ def test_profile_library_loads_candidate_partitions_from_manifest(tmp_path: Path
     manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
     with pytest.raises(ValueError, match="checksum mismatch"):
         EVProfileLibrary.from_library_manifest(manifest_path, base_dir=tmp_path)
+
+
+def _library_manifest(
+    *,
+    candidate_seeds: tuple[int, ...],
+    held_out_seed: int = 190001,
+    component_prefix: str = "A_home",
+) -> dict:
+    batches = [
+        {
+            "partition": "candidate",
+            "seed": seed,
+            "n_profiles": 100,
+            "n_timesteps": EXPECTED_FULL_YEAR_STEPS,
+            "processed_path": f"data/processed/elaad_profiles/{component_prefix}_{seed}.npz",
+            "processed_sha256_file": f"{seed:064x}"[-64:],
+            "manifest_path": f"data/metadata/elaad_profiles/{component_prefix}_{seed}_manifest.json",
+            "distinct_member_count": 100,
+            "request_sha256": f"{seed + 1:064x}"[-64:],
+        }
+        for seed in candidate_seeds
+    ]
+    batches.append(
+        {
+            "partition": "held_out",
+            "seed": held_out_seed,
+            "n_profiles": 100,
+            "n_timesteps": EXPECTED_FULL_YEAR_STEPS,
+            "processed_path": f"data/processed/elaad_profiles/{component_prefix}_{held_out_seed}.npz",
+            "processed_sha256_file": f"{held_out_seed:064x}"[-64:],
+            "manifest_path": f"data/metadata/elaad_profiles/{component_prefix}_{held_out_seed}_manifest.json",
+            "distinct_member_count": 100,
+            "request_sha256": f"{held_out_seed + 1:064x}"[-64:],
+        }
+    )
+    return {
+        "data_id": "D-002",
+        "candidate_member_count": 100 * len(candidate_seeds),
+        "held_out_member_count": 100,
+        "held_out_unopened_for_adequacy": True,
+        "library_adequacy_proven": False,
+        "policy": {
+            "decisions": ["EV-003", "EV-005"],
+            "m_sufficiency_claimed": False,
+        },
+        "batches": batches,
+    }
+
+
+def test_ev_integration_library_artifact_filters_candidate_batches_without_profile_access(tmp_path: Path) -> None:
+    manifest_path = tmp_path / "library_manifest.json"
+    manifest_path.write_text(
+        json.dumps(_library_manifest(candidate_seeds=(140001, 140101))),
+        encoding="utf-8",
+    )
+
+    artifact = ev_library_integration_artifact_from_manifest(
+        manifest_path,
+        library_id="A_home_vancar_cp_y2030",
+        component_id=EV_HOME_COMPONENT,
+        expected_candidate_members=200,
+    )
+    record = artifact.manifest_record()
+
+    assert artifact.candidate_seeds == (140001, 140101)
+    assert record["candidate_member_count"] == 200
+    assert record["held_out_member_count"] == 100
+    assert record["held_out_unopened_for_adequacy"] is True
+    assert record["library_adequacy_proven"] is False
+    assert record["sampling_policy"]["source_profile_files_opened"] is False  # type: ignore[index]
+    assert record["candidate_batches"][0]["member_id_pattern"] == "profile_140001_<returned_profile_index:03d>"  # type: ignore[index]
+
+
+def test_ev_integration_library_artifact_rejects_bad_held_out_and_m_claims(tmp_path: Path) -> None:
+    manifest = _library_manifest(candidate_seeds=(140001,))
+    manifest["held_out_unopened_for_adequacy"] = False
+    manifest_path = tmp_path / "bad_manifest.json"
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+
+    with pytest.raises(ValueError, match="held-out batches"):
+        ev_library_integration_artifact_from_manifest(
+            manifest_path,
+            library_id="A_home_vancar_cp_y2030",
+            component_id=EV_HOME_COMPONENT,
+            expected_candidate_members=100,
+        )
+
+    manifest = _library_manifest(candidate_seeds=(140001,))
+    manifest["library_adequacy_proven"] = True
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+    with pytest.raises(ValueError, match="certify library adequacy"):
+        ev_library_integration_artifact_from_manifest(
+            manifest_path,
+            library_id="A_home_vancar_cp_y2030",
+            component_id=EV_HOME_COMPONENT,
+            expected_candidate_members=100,
+        )
+
+
+def test_ev_integration_readiness_artifact_combines_libraries_and_allocations(tmp_path: Path) -> None:
+    home_manifest = tmp_path / "home_manifest.json"
+    public_manifest = tmp_path / "public_manifest.json"
+    home_manifest.write_text(
+        json.dumps(_library_manifest(candidate_seeds=(140001,), component_prefix="A_home")),
+        encoding="utf-8",
+    )
+    public_manifest.write_text(
+        json.dumps(_library_manifest(candidate_seeds=(152001,), component_prefix="B_public")),
+        encoding="utf-8",
+    )
+    config_path = tmp_path / "scenarios.json"
+    config_path.write_text(json.dumps(_adoption_config()), encoding="utf-8")
+
+    artifact = build_ev_integration_readiness_artifact(
+        home_manifest_path=home_manifest,
+        public_manifest_path=public_manifest,
+        scenario_config_path=config_path,
+        expected_home_candidate_members=100,
+        expected_public_candidate_members=100,
+    )
+    record = artifact.manifest_record()
+
+    assert {library["component_id"] for library in record["libraries"]} == {
+        EV_HOME_COMPONENT,
+        EV_PUBLIC_COMPONENT,
+    }
+    assert record["scenario_totals"] == {
+        "low": {"home": 11, "public": 5},
+        "high": {"home": 17, "public": 9},
+    }
+    assert record["calendar_mapping"]["planning_year"] == 2035
+    assert record["policy"]["held_out_access"] is False
+    assert record["policy"]["integrated_analysis_performed"] is False
+
+    out_path = tmp_path / "readiness.json"
+    write_ev_integration_readiness_artifact(artifact, out_path)
+    written = json.loads(out_path.read_text(encoding="utf-8"))
+    assert written["artifact_type"] == "ev_to_ic1_integration_readiness"
+    assert written["policy"]["m_sufficiency_claimed"] is False
+
+
+def test_committed_ev_integration_readiness_artifact_exposes_candidate_libraries_only() -> None:
+    artifact = json.loads(
+        Path("data/metadata/ev_adoption/e2_s2_ev_integration_readiness.json").read_text(
+            encoding="utf-8"
+        )
+    )
+
+    assert artifact["artifact_type"] == "ev_to_ic1_integration_readiness"
+    assert artifact["schema_version"] == 1
+    assert artifact["policy"]["held_out_access"] is False
+    assert artifact["policy"]["candidate_profiles_opened"] is False
+    assert artifact["policy"]["integrated_analysis_performed"] is False
+    assert artifact["policy"]["m_sufficiency_claimed"] is False
+    assert artifact["scenario_totals"] == {
+        "low": {"home": 7992, "public": 4183},
+        "middle": {"home": 9386, "public": 5127},
+        "high": {"home": 10343, "public": 6138},
+    }
+
+    by_component = {library["component_id"]: library for library in artifact["libraries"]}
+    assert by_component[EV_HOME_COMPONENT]["candidate_member_count"] == 1000
+    assert by_component[EV_PUBLIC_COMPONENT]["candidate_member_count"] == 1200
+    assert by_component[EV_HOME_COMPONENT]["held_out_unopened_for_adequacy"] is True
+    assert by_component[EV_PUBLIC_COMPONENT]["held_out_unopened_for_adequacy"] is True
+    assert by_component[EV_HOME_COMPONENT]["library_adequacy_proven"] is False
+    assert by_component[EV_PUBLIC_COMPONENT]["library_adequacy_proven"] is False
+    assert {batch["seed"] for batch in by_component[EV_HOME_COMPONENT]["candidate_batches"]} == {
+        140001,
+        140101,
+        140201,
+        140301,
+        140401,
+        140501,
+        140601,
+        140701,
+        140801,
+        140901,
+    }
+    assert len(artifact["node_allocations"]) == 3
+    assert all(len(item["home_by_node"]) == 115 for item in artifact["node_allocations"])
+    assert all(len(item["public_by_node"]) == 115 for item in artifact["node_allocations"])
 
 
 def _adoption_config() -> dict:

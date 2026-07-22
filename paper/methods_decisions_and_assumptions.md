@@ -531,6 +531,18 @@ sizes are reconciled. If direct bootstrapping cannot satisfy those conditions,
 the calibrated stochastic sampler remains an explicit fallback rather than an
 unreported substitution.
 
+The EV-to-integration readiness artifact records the approved candidate source
+libraries and A-014 allocations in a manifest-only adapter shape for later IC-1
+use. It exposes home and public EV component identifiers, candidate batch seeds,
+processed-file checksums, source manifest paths, member ID patterns based on
+batch seed and returned profile index, and the EV-007A/A-014 per-node charge
+point counts. This readiness record does not load generated profile arrays,
+open held-out batches, choose the within-realization replacement rule, certify
+`M`, aggregate net load, evaluate events, estimate `P(E)`, or produce manuscript
+numbers. Its calendar note preserves the 2025 ElaadNL source calendar and
+requires deterministic mapping onto the common planning-year calendar before
+IC-1 aggregation.
+
 <!-- methods-id: EV-004 -->
 ### EV-004 - Fixed Residential Charge-Point Distribution
 
