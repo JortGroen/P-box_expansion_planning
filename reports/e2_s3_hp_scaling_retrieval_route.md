@@ -36,7 +36,7 @@ minutes, Agent C must post the project long-run notice before launch.
 
 ## Checksum And Resume Workflow
 
-Future retrieval command after PI approval:
+Future retrieval command after this approval:
 
 ```powershell
 .\.venv\Scripts\python.exe data\get_hp_scaling.py --download --resume
@@ -119,7 +119,7 @@ sensitivity axes but must not write executable annual TWh values.
 
 ## Suggested STATUS Update
 
-E2.S3 HP local scaling: proposed public-source retrieval/checksum route
+E2.S3 HP local scaling: approved public-source retrieval/checksum route
 prepared for Alkmaar `GM0361` using CBS dwelling-stock/type evidence, PBL
 Startanalyse 2025 Alkmaar evidence, and CBS heat-pump context. No source files,
 checksums, annual TWh values, 2035 HP adoption, D-004 acceptance, paired-weather
