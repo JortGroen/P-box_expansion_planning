@@ -976,9 +976,14 @@ def assemble_net_load_from_registry_outputs(
     loading, event detection, held-out adequacy, or probability calculations.
     """
 
-    _validate_registry_outputs(registry, context, adapter_outputs)
+    registry_output_readiness = validate_registry_adapter_output_readiness(
+        registry,
+        context,
+        adapter_outputs,
+    )
     combined_metadata = {
         "adapter_registry": registry.manifest_record(),
+        "registry_output_readiness": registry_output_readiness,
         "scaffold_only": True,
     }
     if metadata is not None:
@@ -992,6 +997,55 @@ def assemble_net_load_from_registry_outputs(
     )
 
 
+def validate_registry_adapter_output_readiness(
+    registry: ComponentAdapterRegistry,
+    context: NetLoadRealizationContext,
+    adapter_outputs: Sequence[ComponentAdapterOutput],
+) -> dict[str, object]:
+    """Return array-free readiness metadata for registry-backed adapter outputs."""
+
+    _validate_registry_outputs(registry, context, adapter_outputs)
+    stream_by_component = _component_streams_by_name(context)
+    output_records: list[dict[str, object]] = []
+    for output in adapter_outputs:
+        if output.kind not in stream_by_component:
+            raise ValueError("adapter output kind must have a matching realization component stream")
+        expected_stream = stream_by_component[output.kind]
+        # Registry/source metadata can match while CRN provenance drifts; record
+        # and validate stream identity before arrays are aggregated away.
+        if output.stream_id != expected_stream.stream_id:
+            raise ValueError("adapter output stream_id must match the realization context")
+        if output.kind in {"hp", "pv"} and output.shared_weather_driver_id != context.shared_weather_driver_id:
+            raise ValueError("weather-dependent adapter outputs must use the context shared_weather_driver_id")
+        output_records.append(
+            {
+                "component_id": output.component_id,
+                "kind": output.kind,
+                "node_id": output.node_id,
+                "source_id": output.source_id,
+                "member_id": output.member_id,
+                "stream_id": output.stream_id,
+                "shared_weather_driver_id": output.shared_weather_driver_id,
+                "artifact_status": output.metadata.get("artifact_status"),
+                "calendar_id": output.metadata.get("calendar_id"),
+            }
+        )
+
+    real_component_readiness = validate_real_component_adapter_readiness(
+        adapter_outputs,
+        required_real_component_kinds=registry.required_component_kinds,
+    )
+    return {
+        "registry_id": registry.registry_id,
+        "context_aleatory_identity": context.aleatory_identity(),
+        "planning_year": context.planning_year,
+        "time_domain": context.time_domain,
+        "shared_weather_driver_id": context.shared_weather_driver_id,
+        "node_ids": registry.node_ids,
+        "component_count": len(output_records),
+        "component_outputs": tuple(output_records),
+        "real_component_readiness": real_component_readiness,
+    }
 def prepare_loading_input_from_registry_outputs(
     registry: ComponentAdapterRegistry,
     context: NetLoadRealizationContext,
