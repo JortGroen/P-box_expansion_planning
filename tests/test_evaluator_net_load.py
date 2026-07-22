@@ -5,6 +5,7 @@ import pytest
 
 from src.contracts.net_load import (
     AdapterBackedNetLoadProvider,
+    ComponentAdapterRegistry,
     ComponentAdapterOutput,
     ComponentAdapterSkeleton,
     ComponentProvenance,
@@ -17,6 +18,8 @@ from src.contracts.net_load import (
     assemble_net_load_from_adapter_outputs,
     assemble_net_load_from_components,
     assemble_net_load_from_real_component_outputs,
+    assemble_net_load_from_registry_outputs,
+    build_ic1_assembly_plan_from_registry,
     build_realization_context,
     build_net_load_result,
     net_load_component_from_adapter_output,
@@ -200,6 +203,108 @@ def _adapter_skeletons(
             blocking_items=blockers,
             metadata={"readiness_artifact": "E2.S4"},
         ),
+    ]
+
+
+def _accepted_adapter_registry() -> ComponentAdapterRegistry:
+    return ComponentAdapterRegistry(
+        registry_id="synthetic-accepted-registry",
+        node_ids=("node-a", "node-b"),
+        skeletons=tuple(
+            _adapter_skeletons(
+                artifact_status="accepted",
+                shared_weather_driver_id="weather-registry-1",
+            )
+        ),
+        metadata={"mapping_version": "synthetic-v1"},
+    )
+
+
+def _registry_context(registry: ComponentAdapterRegistry):
+    return build_realization_context(
+        scenario="scenario-a",
+        year=2035,
+        time_domain="full_year",
+        rho=0.5,
+        seed=7001,
+        shared_weather_driver_id=registry.manifest_record()["readiness"]["shared_weather_driver_id"],
+        calendar_metadata={"calendar_id": "calendar-2035-15min"},
+        mapping_version_metadata={"node_mapping_version": "synthetic-v1"},
+    )
+
+
+def _registry_adapter_output(
+    context,
+    skeleton: ComponentAdapterSkeleton,
+    component_id: str,
+    p_kw: list[float],
+    *,
+    node_id: str,
+) -> ComponentAdapterOutput:
+    return _adapter_output(
+        context,
+        component_id,
+        skeleton.kind,
+        p_kw,
+        node_id=node_id,
+        member_id=skeleton.member_id,
+        source_id=skeleton.source_id,
+        shared_weather_driver_id=(
+            context.shared_weather_driver_id
+            if skeleton.kind in {"hp", "pv"}
+            else None
+        ),
+        artifact_status=skeleton.artifact_status,
+    )
+
+
+def _registry_adapter_outputs(context, registry: ComponentAdapterRegistry) -> list[ComponentAdapterOutput]:
+    skeletons = {skeleton.kind: skeleton for skeleton in registry.skeletons}
+    outputs = [
+        _registry_adapter_output(
+            context,
+            skeletons["baseline"],
+            "baseline-a",
+            [10.0, 11.0, 12.0, 13.0],
+            node_id="node-a",
+        ),
+        _registry_adapter_output(
+            context,
+            skeletons["ev"],
+            "ev-a",
+            [1.0, 2.0, 3.0, 4.0],
+            node_id="node-a",
+        ),
+        _registry_adapter_output(
+            context,
+            skeletons["hp"],
+            "hp-b",
+            [4.0, 5.0, 6.0, 7.0],
+            node_id="node-b",
+        ),
+        _registry_adapter_output(
+            context,
+            skeletons["pv"],
+            "pv-b",
+            [0.0, -2.0, -3.0, 0.0],
+            node_id="node-b",
+        ),
+    ]
+    return [
+        ComponentAdapterOutput(
+            component_id=output.component_id,
+            kind=output.kind,
+            node_id=output.node_id,
+            p_kw=output.p_kw,
+            q_kvar=output.q_kvar,
+            timestamps=output.timestamps,
+            member_id=output.member_id,
+            source_id=output.source_id,
+            stream_id=output.stream_id,
+            shared_weather_driver_id=output.shared_weather_driver_id,
+            metadata={**dict(output.metadata), "calendar_id": skeletons[output.kind].calendar_id},
+        )
+        for output in outputs
     ]
 
 
@@ -1023,4 +1128,114 @@ def test_metadata_adapter_skeletons_enforce_weather_cadence_and_blocker_rules() 
             node_ids=("node-a",),
             calendar_id="calendar-2035-15min",
             blocking_items=("should not remain",),
+        )
+
+
+def test_adapter_registry_builds_manifestable_ic1_assembly_plan_from_accepted_metadata() -> None:
+    registry = _accepted_adapter_registry()
+    plan = build_ic1_assembly_plan_from_registry(registry)
+
+    assert plan.node_ids == ("node-a", "node-b")
+    assert plan.required_component_kinds == REAL_COMPONENT_WIRING_KINDS
+    assert plan.metadata["assembly"] == "ic1_adapter_registry_readiness"
+    manifest = plan.metadata["adapter_registry"]
+    assert manifest["registry_id"] == "synthetic-accepted-registry"
+    assert manifest["readiness"]["ready_for_real_arrays"] is True
+    assert manifest["readiness"]["calendar_id_by_kind"]["hp"] == "calendar-2035-15min"
+    assert manifest["readiness"]["shared_weather_driver_id"] == "weather-registry-1"
+
+
+def test_adapter_registry_assembles_synthetic_outputs_without_event_analysis() -> None:
+    registry = _accepted_adapter_registry()
+    context = _registry_context(registry)
+    result = assemble_net_load_from_registry_outputs(
+        registry,
+        context,
+        _registry_adapter_outputs(context, registry),
+        metadata={"dry_run": True},
+    )
+
+    assert result.metadata["assembly"] == "component_adapter_boundary_scaffold"
+    assert result.metadata["scaffold_only"] is True
+    assert result.metadata["dry_run"] is True
+    assert result.metadata["adapter_registry"]["registry_id"] == registry.registry_id
+    assert result.shared_weather_driver_ids == ("weather-registry-1",)
+    assert "threshold_pu" not in result.metadata
+    assert "overload" not in result.metadata
+    np.testing.assert_array_equal(
+        result.p_net_kw,
+        np.array(
+            [
+                [11.0, 13.0, 15.0, 17.0],
+                [4.0, 3.0, 3.0, 7.0],
+            ]
+        ),
+    )
+
+
+def test_adapter_registry_rejects_unaccepted_or_misaligned_metadata() -> None:
+    with pytest.raises(ValueError, match="requires accepted component metadata"):
+        ComponentAdapterRegistry(
+            registry_id="not-ready",
+            node_ids=("node-a", "node-b"),
+            skeletons=tuple(_adapter_skeletons()),
+        )
+
+    with pytest.raises(ValueError, match="missing from registry node_ids"):
+        ComponentAdapterRegistry(
+            registry_id="missing-node",
+            node_ids=("node-a",),
+            skeletons=tuple(_adapter_skeletons(artifact_status="accepted")),
+        )
+
+
+def test_adapter_registry_rejects_output_metadata_drift_before_assembly() -> None:
+    registry = _accepted_adapter_registry()
+    context = _registry_context(registry)
+    outputs = _registry_adapter_outputs(context, registry)
+    outputs[1] = ComponentAdapterOutput(
+        component_id=outputs[1].component_id,
+        kind=outputs[1].kind,
+        node_id=outputs[1].node_id,
+        p_kw=outputs[1].p_kw,
+        q_kvar=outputs[1].q_kvar,
+        timestamps=outputs[1].timestamps,
+        member_id="different-ev-member",
+        source_id=outputs[1].source_id,
+        stream_id=outputs[1].stream_id,
+        metadata=dict(outputs[1].metadata),
+    )
+
+    with pytest.raises(ValueError, match="member_id must match"):
+        assemble_net_load_from_registry_outputs(registry, context, outputs)
+
+    outputs = _registry_adapter_outputs(context, registry)
+    outputs[0] = ComponentAdapterOutput(
+        component_id=outputs[0].component_id,
+        kind=outputs[0].kind,
+        node_id=outputs[0].node_id,
+        p_kw=outputs[0].p_kw,
+        q_kvar=outputs[0].q_kvar,
+        timestamps=outputs[0].timestamps,
+        member_id=outputs[0].member_id,
+        source_id=outputs[0].source_id,
+        stream_id=outputs[0].stream_id,
+        metadata={**dict(outputs[0].metadata), "calendar_id": "different-calendar"},
+    )
+    with pytest.raises(ValueError, match="calendar_id must match"):
+        assemble_net_load_from_registry_outputs(registry, context, outputs)
+
+    wrong_weather_context = build_realization_context(
+        scenario="scenario-a",
+        year=2035,
+        time_domain="full_year",
+        rho=0.5,
+        seed=7001,
+        shared_weather_driver_id="different-weather",
+    )
+    with pytest.raises(ValueError, match="weather identity must match"):
+        assemble_net_load_from_registry_outputs(
+            registry,
+            wrong_weather_context,
+            _registry_adapter_outputs(context, registry),
         )
