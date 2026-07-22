@@ -4,7 +4,7 @@
   "d004_status": "proposed_pending_pi_review",
   "no_analysis_performed": true,
   "pi_approval_scope": "PI approved narrow checksum-recording retrieval in chat on 2026-07-21 for source bundle d004_alkmaar_berkhout_2014_2023_v1 only.",
-  "q8_shared_weather_implementation": "not implemented; Q-8 remains open",
+  "q8_shared_weather_implementation": "implemented separately through WEATHER-001; D-004 source completeness and accepted member construction remain pending PI review",
   "raw_data_committed": false,
   "retrieval_scope": "four approved files only: two PVGIS-SARAH3 JSON reference files and two KNMI station 249 validated hourly ZIP files",
   "selection_id": "d004_alkmaar_berkhout_2014_2023_v1",
@@ -50,7 +50,7 @@
     "checksums and file sizes are recorded for PI review",
     "D-004 remains proposed and not PI-signed",
     "PVGIS TMY remains calibration/validation reference only, not a realized sampled weather path",
-    "no Q-8 shared-weather contract implementation",
+    "WEATHER-001 shared-weather contract implemented separately; no accepted D-004 weather members created here",
     "no net-load, congestion, event, P(E), or manuscript-result analysis"
   ]
 }

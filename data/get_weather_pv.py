@@ -218,11 +218,12 @@ def build_d004_execution_plan() -> dict[str, Any]:
         "download_performed": False,
         "raw_data_committed": False,
         "data_register_status": "proposed",
-        "shared_weather_blocker": {
+        "shared_weather_contract": {
+            "decision_id": "WEATHER-001",
             "question_id": "Q-8",
-            "neutral_paths_owned": False,
-            "blocked_paths": ["src/weather_model.py", "tests/test_weather_model.py"],
-            "effect": "raw weather members may be retrieved only after PI approval, but final HP/PV consumption still requires the shared weather contract",
+            "neutral_paths_owned": True,
+            "implemented_paths": ["src/weather_model.py", "tests/test_weather_model.py"],
+            "effect": "D-004 member builders must emit the neutral WeatherMember contract so HP and PV consume one shared weather realization",
         },
         "official_source_verification": {
             "verified_on": "2026-07-21",
@@ -324,7 +325,7 @@ def build_d004_execution_plan() -> dict[str, Any]:
         "acceptance_boundary": [
             "This plan does not approve site, station, year, PV system, or radiation-database choices.",
             "This plan does not make PVGIS TMY a realized weather member.",
-            "This plan does not resolve Q-8 or implement shared weather contract paths.",
+            "WEATHER-001 resolves Q-8 at the contract level; this plan does not create accepted D-004 weather members.",
             "DATA_REGISTER D-004 must be updated only after concrete file/version/checksum selections are made for PI review.",
         ],
     }
