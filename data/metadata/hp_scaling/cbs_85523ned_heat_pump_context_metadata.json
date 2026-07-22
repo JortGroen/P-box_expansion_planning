@@ -1,0 +1,71 @@
+{
+  "bundle_id": "hp001_alkmaar_gm0361_source_route_v1",
+  "data_id": "D-013",
+  "download_performed": true,
+  "non_claims": [
+    "No annual HP TWh values are executable.",
+    "No 2035 HP adoption value is signed.",
+    "No D-004 acceptance, net-load, event, P(E), threshold, capacity-screen, or manuscript analysis is run."
+  ],
+  "raw_path": "data/raw/hp_scaling/cbs_85523ned_heat_pump_context.json",
+  "retrieved_at_utc": "2026-07-22T10:21:23Z",
+  "retrieved_url": "https://opendata.cbs.nl/ODataApi/OData/85523NED",
+  "schema_summary": {
+    "context_only": true,
+    "data_columns": [
+      "BrutoEindverbruik_9",
+      "BrutoWarmteproductieWarmtepompen_7",
+      "InGebruikGenomenThermischVermogen_4",
+      "InGebruikGenomenWarmtepompen_1",
+      "OpgesteldThermischVermogenEindeJaar_6",
+      "OpgesteldeWarmtepompenEindeVanJaar_3",
+      "UitGebruikGenomenThermischVermogen_5",
+      "UitGebruikGenomenWarmtepompen_2",
+      "VerbruikVanElektriciteitEnAardgas_8",
+      "VermedenEmissieKooldioxideCO2_11",
+      "VermedenVerbruikVanFossieleEnergie_10"
+    ],
+    "period_count": 32,
+    "records_retrieved": 672,
+    "sector_titles": {
+      "E007037": "Woningen",
+      "E007040": "Utiliteitsgebouwen, kassen en stallen",
+      "E007041": "Totaal gebouwen"
+    },
+    "table_identifier": "85523NED",
+    "table_modified": "2026-04-30T02:00:00",
+    "table_title": "Warmtepompen; aantallen, thermisch vermogen en energiestromen",
+    "warmtepompen_titles": {
+      "A043945": "Warmtepompen bodem of water; totaal",
+      "A043948": "Warmtepompen buitenlucht; totaal",
+      "A043949": "Warmtepompen buitenlucht-lucht",
+      "A043950": "Warmtepompen buitenlucht-water; totaal",
+      "A052045": "Warmtepompen bodem of water; wv hybride",
+      "A052046": "Warmtepomp buitenlucht-water; wv hybride",
+      "T001364": "Warmtepompen; totaal"
+    }
+  },
+  "sha256_file": "739d32fc2f6721c1aabe5919ba8ee1efc8b3e328ffa3de44fd5308f42eba3e7b",
+  "size_bytes": 535260,
+  "source_key": "cbs_85523ned_heat_pump_context",
+  "source_spec": {
+    "boundary": "Context only for this route; it is not a local Alkmaar 2035 adoption source and cannot make values executable.",
+    "expected_runtime_note": "expected seconds to a few minutes; no >15 minute run expected",
+    "expected_size_note": "small national/context table request after field filtering",
+    "key": "cbs_85523ned_heat_pump_context",
+    "license_or_terms": "CBS open data terms; cite CBS table page and retrieval timestamp",
+    "planned_metadata_path": "data/metadata/hp_scaling/cbs_85523ned_heat_pump_context_metadata.json",
+    "planned_raw_path": "data/raw/hp_scaling/cbs_85523ned_heat_pump_context.json",
+    "proposed_fields_or_filters": [
+      "sector == Woningen where available",
+      "air-source and ground/water-source categories",
+      "in-use counts, thermal capacity, heat production, and energy-flow fields",
+      "periods available through the latest public table version"
+    ],
+    "role": "national/current heat-pump context and uncertainty framing",
+    "source": "CBS StatLine",
+    "title": "CBS StatLine 85523NED heat pumps by sector, capacity, and energy flows",
+    "url": "https://opendata.cbs.nl/ODataApi/OData/85523NED"
+  },
+  "status": "retrieved/checksummed for PI review; HP scaling values remain unsigned"
+}

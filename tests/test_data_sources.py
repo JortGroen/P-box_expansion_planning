@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
+import io
 import gzip
 import hashlib
 import json
 from pathlib import Path
 import subprocess
 import sys
+import zipfile
 
 import numpy as np
 import pytest
@@ -763,3 +765,83 @@ def test_data_entrypoints_run_directly() -> None:
 
         assert result.returncode == 0, result.stderr
         assert Path(result.stdout.strip()).is_file()
+
+def _fake_hp_scaling_zip_bytes() -> bytes:
+    payload = io.BytesIO()
+    with zipfile.ZipFile(payload, "w") as archive:
+        archive.writestr("Alkmaar/test.csv", "bu_code;heat_demand;pathway\nBU0001;1,2;S1\n")
+    return payload.getvalue()
+
+
+def _fake_hp_scaling_cbs_json(url: str, *, timeout_s: float) -> dict[str, object]:
+    del timeout_s
+    if "/TableInfos" in url:
+        identifier = "85035NED" if "85035NED" in url else "85523NED"
+        return {"value": [{"Identifier": identifier, "Title": f"title {identifier}", "Modified": "2026-01-01T00:00:00"}]}
+    if "/DataProperties" in url:
+        return {"value": []}
+    if "/RegioS" in url:
+        return {"value": [{"Key": "GM0361", "Title": "Alkmaar"}]}
+    if "/Woningtype" in url:
+        return {"value": [{"Key": "ZW10290", "Title": "Eengezinswoningen totaal"}, {"Key": "ZW10340", "Title": "Meergezinswoningen totaal"}]}
+    if "/Woningkenmerk" in url:
+        return {"value": [{"Key": "T001727", "Title": "Totaal woningen"}]}
+    if "/Warmtepompen" in url:
+        return {"value": [{"Key": "T001364 ", "Title": "Totaal warmtepompen"}]}
+    if "/Sector" in url:
+        return {"value": [{"Key": "E007041 ", "Title": "Woningen"}]}
+    if "/Perioden" in url:
+        return {"value": [{"Key": "2026JJ00", "Title": "2026"}]}
+    if "/TypedDataSet" in url and "85035NED" in url:
+        return {"value": [{"ID": 1, "RegioS": "GM0361", "Woningtype": "ZW10290", "Woningkenmerk": "T001727", "Perioden": "2026JJ00", "BeginstandWoningvoorraad_1": 10}]}
+    if "/TypedDataSet" in url and "85523NED" in url:
+        return {"value": [{"ID": 1, "Warmtepompen": "T001364 ", "Sector": "E007041 ", "Perioden": "2025JJ00", "OpgesteldeWarmtepompenEindeVanJaar_3": 10}]}
+    raise AssertionError(url)
+
+
+def test_hp_scaling_download_writes_manifest_and_keeps_values_unsigned(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(hp_scaling, "_read_json_url", _fake_hp_scaling_cbs_json)
+    monkeypatch.setattr(hp_scaling, "_read_url_bytes", lambda url, *, timeout_s: _fake_hp_scaling_zip_bytes())
+
+    manifest_path = hp_scaling.retrieve_hp_scaling_sources(
+        raw_dir=tmp_path / "raw",
+        metadata_dir=tmp_path / "metadata",
+        resume=False,
+    )
+
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    assert manifest["data_id"] == "D-013"
+    assert manifest["download_performed"] is True
+    assert manifest["raw_files_ignored"] is True
+    assert len(manifest["sources"]) == 3
+    assert all(source["sha256_file"] for source in manifest["sources"])
+    assert "No annual HP TWh values" in " ".join(manifest["non_claims"])
+    assert {component["end_use"] for component in manifest["hp001_component_traceability"]} == {"space", "water"}
+
+    metadata_payloads = [json.loads(Path(path).read_text(encoding="utf-8")) for path in manifest["metadata_paths"]]
+    assert all(payload["status"].endswith("HP scaling values remain unsigned") for payload in metadata_payloads)
+    pbl_metadata = next(payload for payload in metadata_payloads if payload["source_key"] == "pbl_startanalyse_2025_alkmaar")
+    assert pbl_metadata["schema_summary"]["csv_summaries"][0]["columns"] == ["bu_code", "heat_demand", "pathway"]
+
+
+def test_hp_scaling_resume_skips_verified_sources(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(hp_scaling, "_read_json_url", _fake_hp_scaling_cbs_json)
+    monkeypatch.setattr(hp_scaling, "_read_url_bytes", lambda url, *, timeout_s: _fake_hp_scaling_zip_bytes())
+    first = hp_scaling.retrieve_hp_scaling_sources(
+        raw_dir=tmp_path / "raw",
+        metadata_dir=tmp_path / "metadata",
+        resume=False,
+    )
+
+    def fail_fetch(*args, **kwargs):  # noqa: ANN002, ANN003
+        raise AssertionError("resume should skip verified sources")
+
+    monkeypatch.setattr(hp_scaling, "_read_json_url", fail_fetch)
+    monkeypatch.setattr(hp_scaling, "_read_url_bytes", fail_fetch)
+    second = hp_scaling.retrieve_hp_scaling_sources(
+        raw_dir=tmp_path / "raw",
+        metadata_dir=tmp_path / "metadata",
+        resume=True,
+    )
+
+    assert second == first

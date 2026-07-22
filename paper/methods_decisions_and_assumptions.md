@@ -1425,26 +1425,30 @@ capacity.
 ### D-013 - HP-001 Alkmaar Local Scaling Source Bundle
 
 **Status: Approved retrieval/checksum route; values unsigned.** D-013 records
-the approved public source bundle for retrieving and inspecting local annual
-heat-pump scaling evidence for HP-001 in Alkmaar municipality `GM0361`. CBS
-StatLine 85035NED provides the public dwelling-stock/type evidence used to
-construct the SFH/MFH denominator; PBL Startanalyse aardgasvrije buurten 2025
-Alkmaar provides local heat-demand, neighbourhood, and heat-transition pathway
-evidence after the public file schema is inspected; and CBS StatLine 85523NED
-is retained as national/current heat-pump context rather than as a local 2035
-adoption source. The methods rationale is deliberately conservative: dwelling
-stock, heat-demand/pathway evidence, and future 2035 adoption are different
-quantities, so the retrieval route records them separately before any numerical
-scaling value is proposed. Retrieval metadata must record exact URLs, byte
-sizes, SHA-256 checksums, timestamps, and resume checkpoints before any value
-proposal is reviewed. The four HP-001 components, SFH/MFH crossed with
-space/DHW, must retain their separate annual-scaling provenance before
-aggregation. The PI-supplied private student thesis is not a D-013 source and
-may be used only as confidential source-discovery guidance for public
-underlying sources. D-013 approval does not select concrete annual TWh values,
-make 2035 adoption executable, approve D-004, run paired-weather cold-spell
-checks, run net-load integration, event analysis, `P(E)`, threshold runs,
-capacity-screen results, manuscript numbers, or probability results.
+public source evidence for later deriving local annual heat-pump scaling inputs
+for HP-001 in Alkmaar municipality `GM0361`. CBS StatLine 85035NED has now
+been retrieved as filtered Alkmaar dwelling-stock/type evidence, with metadata
+recording table version, periods 2021-2026, the SFH/MFH crosswalk to
+`Eengezinswoningen totaal` and `Meergezinswoningen totaal`, byte size, URL, and
+SHA-256 checksum. PBL Startanalyse aardgasvrije buurten 2025 `Alkmaar.zip` has
+been retrieved from the public municipality data portal and inspected cheaply at
+ZIP-directory and CSV-header level; the metadata records the `Alkmaar_bebouwing`,
+`Alkmaar_strategie`, and `Alkmaar_totaalbebouwing` CSV schemas as evidence for
+future heat-demand/pathway/suitability review. CBS StatLine 85523NED has been
+retrieved as national/current heat-pump context only, not as a local 2035
+adoption source. The retrieval manifest and per-source metadata record exact
+URLs, byte sizes, SHA-256 checksums, timestamps, raw ignored paths, and resume
+checkpoint state. This source bundle keeps local heat demand,
+suitability/pathway evidence, and unsigned 2035 heat-pump adoption separate so
+pathway suitability cannot become adoption volume by implication. The four
+HP-001 components, SFH/MFH crossed with space/DHW, retain separate
+annual-scaling provenance before aggregation. The PI-supplied private student
+thesis is not a D-013 source and may be used only as confidential
+source-discovery guidance for public underlying sources. D-013 does not approve
+annual TWh values, 2035 HP adoption, final scaling choices, D-004 acceptance,
+paired-weather cold-spell checks, net-load integration, event analysis, `P(E)`,
+threshold runs, capacity-screen results, manuscript numbers, or probability
+results.
 <!-- methods-id: OWN-001 -->
 ### OWN-001 - Machine-Enforced Agent Ownership
 
