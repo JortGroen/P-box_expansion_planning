@@ -1,0 +1,18 @@
+{
+  "bundle_id": "hp001_alkmaar_gm0361_source_route_v1",
+  "created_at_utc": "2026-07-22T12:26:16Z",
+  "data_id": "D-013",
+  "metadata_paths": [
+    "data/metadata/hp_scaling/cbs_85035ned_alkmaar_dwelling_stock_metadata.json",
+    "data/metadata/hp_scaling/pbl_startanalyse_2025_alkmaar_metadata.json",
+    "data/metadata/hp_scaling/cbs_85523ned_heat_pump_context_metadata.json"
+  ],
+  "network_performed": false,
+  "non_claims": [
+    "No annual HP TWh values are executable.",
+    "No 2035 HP adoption value is signed.",
+    "No D-004 acceptance, paired-weather acceptance, net-load, event, P(E), threshold, capacity-screen, or manuscript analysis is run."
+  ],
+  "raw_files_ignored": true,
+  "status": "schema inspection refreshed from existing raw files; values unsigned"
+}

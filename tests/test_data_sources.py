@@ -821,7 +821,62 @@ def test_hp_scaling_download_writes_manifest_and_keeps_values_unsigned(tmp_path:
     metadata_payloads = [json.loads(Path(path).read_text(encoding="utf-8")) for path in manifest["metadata_paths"]]
     assert all(payload["status"].endswith("HP scaling values remain unsigned") for payload in metadata_payloads)
     pbl_metadata = next(payload for payload in metadata_payloads if payload["source_key"] == "pbl_startanalyse_2025_alkmaar")
-    assert pbl_metadata["schema_summary"]["csv_summaries"][0]["columns"] == ["bu_code", "heat_demand", "pathway"]
+    csv_summary = pbl_metadata["schema_summary"]["csv_summaries"][0]
+    assert csv_summary["columns"] == ["bu_code", "heat_demand", "pathway"]
+    assert csv_summary["full_file_rows_inspected"] == 1
+    assert csv_summary["column_classification"]["heat_or_energy_candidate_columns"] == ["heat_demand"]
+
+
+def test_hp_scaling_inspect_existing_refreshes_pbl_indicator_units(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(hp_scaling, "_read_json_url", _fake_hp_scaling_cbs_json)
+    raw_dir = tmp_path / "raw"
+    metadata_dir = tmp_path / "metadata"
+    raw_dir.mkdir()
+    for spec in hp_scaling.HP_SCALING_SOURCES:
+        raw_path = raw_dir / Path(spec.planned_raw_path).name
+        if spec.key == "pbl_startanalyse_2025_alkmaar":
+            payload = io.BytesIO()
+            with zipfile.ZipFile(payload, "w") as archive:
+                archive.writestr(
+                    "Alkmaar_strategie.csv",
+                    "I01_buurtcode;Code_Indicator;Eenheid;Referentie_2030;Strategie_1;Variant_s1a_B_LuchtWP\n"
+                    "BU0001;Warmtevraag woningen;GJ per yr;1,0;2,0;3,0\n"
+                    "BU0002;Aantal woningen;Aansluiting;4;5;6\n",
+                )
+                archive.writestr(
+                    "Alkmaar_totaalbebouwing.csv",
+                    "I01_buurtcode;I09_aantal_woningen;Vrijstaande_woning;Rijwoning_tussen;Meersgezinswoning_hoog\n"
+                    "BU0001;10;1;7;2\n",
+                )
+            raw_path.write_bytes(payload.getvalue())
+        else:
+            spec_payload = hp_scaling._cbs_table_payload(spec)
+            raw_path.write_text(json.dumps(spec_payload), encoding="utf-8")
+
+    packet_path = hp_scaling.inspect_existing_hp_scaling_sources(raw_dir=raw_dir, metadata_dir=metadata_dir)
+
+    packet = json.loads(packet_path.read_text(encoding="utf-8"))
+    assert packet["network_performed"] is False
+    assert packet["status"].endswith("values unsigned")
+    pbl_metadata_path = next(path for path in packet["metadata_paths"] if "pbl_startanalyse" in path)
+    pbl_metadata = json.loads(Path(pbl_metadata_path).read_text(encoding="utf-8"))
+    summaries = {item["filename"]: item for item in pbl_metadata["schema_summary"]["csv_summaries"]}
+    strategie = summaries["Alkmaar_strategie.csv"]
+    assert strategie["indicator_unit_summary"]["available"] is True
+    assert strategie["indicator_unit_summary"]["heat_or_energy_pairs"] == [
+        {"code_indicator": "Warmtevraag woningen", "unit": "GJ per yr"}
+    ]
+    assert strategie["column_classification"]["strategy_or_pathway_columns"] == [
+        "Referentie_2030",
+        "Strategie_1",
+        "Variant_s1a_B_LuchtWP",
+    ]
+    bebouwing = summaries["Alkmaar_totaalbebouwing.csv"]
+    assert bebouwing["column_classification"]["sfh_candidate_columns"] == [
+        "Vrijstaande_woning",
+        "Rijwoning_tussen",
+    ]
+    assert bebouwing["column_classification"]["mfh_candidate_columns"] == ["Meersgezinswoning_hoog"]
 
 
 def test_hp_scaling_resume_skips_verified_sources(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

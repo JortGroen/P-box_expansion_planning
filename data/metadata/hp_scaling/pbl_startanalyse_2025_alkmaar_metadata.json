@@ -8,11 +8,24 @@
     "No D-004 acceptance, net-load, event, P(E), threshold, capacity-screen, or manuscript analysis is run."
   ],
   "raw_path": "data/raw/hp_scaling/pbl_startanalyse_2025_alkmaar.zip",
-  "retrieved_at_utc": "2026-07-22T10:21:22Z",
+  "retrieved_at_utc": "2026-07-22T12:26:15Z",
   "retrieved_url": "https://dataportaal.pbl.nl/data/Startanalyse_aardgasvrije_buurten/2025/Gemeentes/Alkmaar.zip",
+  "schema_refresh_network_performed": false,
   "schema_summary": {
     "csv_summaries": [
       {
+        "column_classification": {
+          "dhw_candidate_columns": [],
+          "heat_or_energy_candidate_columns": [],
+          "mfh_candidate_columns": [],
+          "residential_stock_columns": [
+            "Woningtype_bouwjaar",
+            "Woningtype",
+            "Woningtype_energielabel"
+          ],
+          "sfh_candidate_columns": [],
+          "strategy_or_pathway_columns": []
+        },
         "column_count": 56,
         "columns": [
           "I01_buurtcode",
@@ -74,9 +87,53 @@
         ],
         "delimiter_guess": ";",
         "filename": "Alkmaar_bebouwing.csv",
+        "full_file_rows_inspected": 726,
+        "indicator_unit_summary": {
+          "available": false
+        },
         "sampled_bytes": 65536
       },
       {
+        "column_classification": {
+          "dhw_candidate_columns": [],
+          "heat_or_energy_candidate_columns": [
+            "Variant_s2a_B_Restwarmte",
+            "Variant_s2d_D_Restwarmte"
+          ],
+          "mfh_candidate_columns": [],
+          "residential_stock_columns": [
+            "I09_aantal_woningen [Aansluiting]",
+            "I25_aantal_woningen_na2019 [Aansluiting]"
+          ],
+          "sfh_candidate_columns": [],
+          "strategy_or_pathway_columns": [
+            "Laagste_Nationale_Kosten",
+            "Referentie_2023",
+            "Referentie_2030",
+            "Strategie_1",
+            "Strategie_2",
+            "Strategie_3",
+            "Strategie_4",
+            "Variant_s1a_B_LuchtWP",
+            "Variant_s1b_B_BodemWP",
+            "Variant_s2a_B_Restwarmte",
+            "Variant_s2b_B_Geo_contour",
+            "Variant_s2c_B_Geo_overal",
+            "Variant_s2d_D_Restwarmte",
+            "Variant_s2e_D_Geo_contour",
+            "Variant_s2f_D_Geo_overal",
+            "Variant_s3a_B_LT30_30",
+            "Variant_s3b_B_WKO15_15",
+            "Variant_s3c_B_WKO15_70",
+            "Variant_s3d_B_WKO15_50",
+            "Variant_s3e_B_TEO_15_15",
+            "Variant_s3f_D_LT30_70",
+            "Variant_s3g_D_WKO15_15",
+            "Variant_s3h_D_WKO15_70",
+            "Variant_s4a_KG_B_hWP",
+            "Variant_s4b_KG_D_hWP"
+          ]
+        },
         "column_count": 59,
         "columns": [
           "I01_buurtcode",
@@ -141,9 +198,520 @@
         ],
         "delimiter_guess": ";",
         "filename": "Alkmaar_strategie.csv",
+        "full_file_rows_inspected": 5346,
+        "indicator_unit_summary": {
+          "available": true,
+          "heat_or_energy_pair_count": 39,
+          "heat_or_energy_pairs": [
+            {
+              "code_indicator": "A01_Aansl_aardgas",
+              "unit": "[aantal]"
+            },
+            {
+              "code_indicator": "G01_Toekenning_klimaatneutraal_gas_1_5",
+              "unit": "-"
+            },
+            {
+              "code_indicator": "G02_Toekenning_klimaatneutraal_gas_1_0",
+              "unit": "-"
+            },
+            {
+              "code_indicator": "G03_Nat_meerkost_energiekosten_laag",
+              "unit": "[euro/tonCO2]"
+            },
+            {
+              "code_indicator": "G04_Nat_meerkost_energiekosten_hoog",
+              "unit": "[euro/tonCO2]"
+            },
+            {
+              "code_indicator": "G05_Nat_meerkost_energiebesparing_opt",
+              "unit": "[euro/tonCO2]"
+            },
+            {
+              "code_indicator": "H01_Vraag_totaal",
+              "unit": "[GJ/weq/jaar]"
+            },
+            {
+              "code_indicator": "H02_Vraag_RV",
+              "unit": "[GJ/weq/jaar]"
+            },
+            {
+              "code_indicator": "H03_Vraag_TW",
+              "unit": "[GJ/weq/jaar]"
+            },
+            {
+              "code_indicator": "H04_Vraag_Vent",
+              "unit": "[GJ/weq/jaar]"
+            },
+            {
+              "code_indicator": "H05_Vraag_K",
+              "unit": "[GJ/weq/jaar]"
+            },
+            {
+              "code_indicator": "H06_Vraag_App",
+              "unit": "[GJ/weq/jaar]"
+            },
+            {
+              "code_indicator": "H07_vraag_tot_ha",
+              "unit": "[GJ/ha/jaar]"
+            },
+            {
+              "code_indicator": "H09_Input_aardgas",
+              "unit": "[GJ/weq/jaar]"
+            },
+            {
+              "code_indicator": "H10_Input_KlimaatneutraalGas",
+              "unit": "[GJ/weq/jaar]"
+            },
+            {
+              "code_indicator": "H12_input_MTwarmtebronnen",
+              "unit": "[GJ/weq/jaar]"
+            },
+            {
+              "code_indicator": "H13_input_LTwarmtebronnen",
+              "unit": "[GJ/weq/jaar]"
+            },
+            {
+              "code_indicator": "H14_Saldo_Omgevingswarmte",
+              "unit": "[GJ/weq/jaar]"
+            },
+            {
+              "code_indicator": "H19_Waarde_klimaatneutraal_gas",
+              "unit": "[euro/m3/jaar]"
+            },
+            {
+              "code_indicator": "H20_Toekenning_klimaatneutraal_gas",
+              "unit": "-"
+            },
+            {
+              "code_indicator": "H22_Vraag_totaal_w",
+              "unit": "[GJ/weq/jaar]"
+            },
+            {
+              "code_indicator": "H23_Vraag_RV_w",
+              "unit": "[GJ/weq/jaar]"
+            },
+            {
+              "code_indicator": "H24_Vraag_TW_w",
+              "unit": "[GJ/weq/jaar]"
+            },
+            {
+              "code_indicator": "H25_Vraag_Vent_w",
+              "unit": "[GJ/weq/jaar]"
+            },
+            {
+              "code_indicator": "H26_Vraag_K_w",
+              "unit": "[GJ/weq/jaar]"
+            },
+            {
+              "code_indicator": "H27_Vraag_App_w",
+              "unit": "[GJ/weq/jaar]"
+            },
+            {
+              "code_indicator": "H28_Vraag_totaal_u",
+              "unit": "[GJ/weq/jaar]"
+            },
+            {
+              "code_indicator": "H29_Vraag_RV_u",
+              "unit": "[GJ/weq/jaar]"
+            },
+            {
+              "code_indicator": "H30_Vraag_TW_u",
+              "unit": "[GJ/weq/jaar]"
+            },
+            {
+              "code_indicator": "H31_Vraag_Vent_u",
+              "unit": "[GJ/weq/jaar]"
+            },
+            {
+              "code_indicator": "H32_Vraag_K_u",
+              "unit": "[GJ/weq/jaar]"
+            },
+            {
+              "code_indicator": "H33_Vraag_App_u",
+              "unit": "[GJ/weq/jaar]"
+            },
+            {
+              "code_indicator": "H35_Input_aardgas_w",
+              "unit": "[GJ/weq/jaar]"
+            },
+            {
+              "code_indicator": "H36_Input_KlimaatneutraalGas_w",
+              "unit": "[GJ/weq/jaar]"
+            },
+            {
+              "code_indicator": "H39_Input_aardgas_u",
+              "unit": "[GJ/weq/jaar]"
+            },
+            {
+              "code_indicator": "H40_Input_KlimaatneutraalGas_u",
+              "unit": "[GJ/weq/jaar]"
+            },
+            {
+              "code_indicator": "K11_Inkoop_Warmte",
+              "unit": "[euro/jaar]"
+            },
+            {
+              "code_indicator": "K12_Inkoop_Gas",
+              "unit": "[euro/jaar]"
+            },
+            {
+              "code_indicator": "K23_winst_warmtebedrijven",
+              "unit": "[euro/jaar]"
+            }
+          ],
+          "pair_count": 81,
+          "pairs": [
+            {
+              "code_indicator": "A01_Aansl_aardgas",
+              "unit": "[aantal]"
+            },
+            {
+              "code_indicator": "A02_Aansl_eWP",
+              "unit": "[aantal]"
+            },
+            {
+              "code_indicator": "A03_Aansl_MT",
+              "unit": "[aantal]"
+            },
+            {
+              "code_indicator": "A04_Aansl_LT",
+              "unit": "[aantal]"
+            },
+            {
+              "code_indicator": "A05_Aansl_hWP_HG",
+              "unit": "[aantal]"
+            },
+            {
+              "code_indicator": "A06_Aansl_HR_HG",
+              "unit": "[aantal]"
+            },
+            {
+              "code_indicator": "A07_Aandeel_eWP_WEQ",
+              "unit": "[%]"
+            },
+            {
+              "code_indicator": "A08_Aandeel_eWP_GJ",
+              "unit": "[%]"
+            },
+            {
+              "code_indicator": "G01_Toekenning_klimaatneutraal_gas_1_5",
+              "unit": "-"
+            },
+            {
+              "code_indicator": "G02_Toekenning_klimaatneutraal_gas_1_0",
+              "unit": "-"
+            },
+            {
+              "code_indicator": "G03_Nat_meerkost_energiekosten_laag",
+              "unit": "[euro/tonCO2]"
+            },
+            {
+              "code_indicator": "G04_Nat_meerkost_energiekosten_hoog",
+              "unit": "[euro/tonCO2]"
+            },
+            {
+              "code_indicator": "G05_Nat_meerkost_energiebesparing_opt",
+              "unit": "[euro/tonCO2]"
+            },
+            {
+              "code_indicator": "G06_Nat_meerkost_proceskosten_laag",
+              "unit": "[euro/tonCO2]"
+            },
+            {
+              "code_indicator": "G07_Nat_meerkost_proceskosten_hoog",
+              "unit": "[euro/tonCO2]"
+            },
+            {
+              "code_indicator": "H01_Vraag_totaal",
+              "unit": "[GJ/weq/jaar]"
+            },
+            {
+              "code_indicator": "H02_Vraag_RV",
+              "unit": "[GJ/weq/jaar]"
+            },
+            {
+              "code_indicator": "H03_Vraag_TW",
+              "unit": "[GJ/weq/jaar]"
+            },
+            {
+              "code_indicator": "H04_Vraag_Vent",
+              "unit": "[GJ/weq/jaar]"
+            },
+            {
+              "code_indicator": "H05_Vraag_K",
+              "unit": "[GJ/weq/jaar]"
+            },
+            {
+              "code_indicator": "H06_Vraag_App",
+              "unit": "[GJ/weq/jaar]"
+            },
+            {
+              "code_indicator": "H07_vraag_tot_ha",
+              "unit": "[GJ/ha/jaar]"
+            },
+            {
+              "code_indicator": "H08_Input_totaal",
+              "unit": "[GJ/weq/jaar]"
+            },
+            {
+              "code_indicator": "H09_Input_aardgas",
+              "unit": "[GJ/weq/jaar]"
+            },
+            {
+              "code_indicator": "H10_Input_KlimaatneutraalGas",
+              "unit": "[GJ/weq/jaar]"
+            },
+            {
+              "code_indicator": "H11_Input_elektriciteit",
+              "unit": "[GJ/weq/jaar]"
+            },
+            {
+              "code_indicator": "H12_input_MTwarmtebronnen",
+              "unit": "[GJ/weq/jaar]"
+            },
+            {
+              "code_indicator": "H13_input_LTwarmtebronnen",
+              "unit": "[GJ/weq/jaar]"
+            },
+            {
+              "code_indicator": "H14_Saldo_Omgevingswarmte",
+              "unit": "[GJ/weq/jaar]"
+            },
+            {
+              "code_indicator": "H15_CO2_uitstoot",
+              "unit": "[tonCO2/jaar]"
+            },
+            {
+              "code_indicator": "H16_Nat_meerkost",
+              "unit": "[euro/jaar]"
+            },
+            {
+              "code_indicator": "H17_Nat_meerkost_CO2",
+              "unit": "[euro/tonCO2]"
+            },
+            {
+              "code_indicator": "H18_Nat_meerkost_WEQ",
+              "unit": "[euro/weq/jaar]"
+            },
+            {
+              "code_indicator": "H19_Waarde_klimaatneutraal_gas",
+              "unit": "[euro/m3/jaar]"
+            },
+            {
+              "code_indicator": "H20_Toekenning_klimaatneutraal_gas",
+              "unit": "-"
+            },
+            {
+              "code_indicator": "H21_Input_elektriciteit_WD_OW",
+              "unit": "[GJ/weq/jaar]"
+            },
+            {
+              "code_indicator": "H22_Vraag_totaal_w",
+              "unit": "[GJ/weq/jaar]"
+            },
+            {
+              "code_indicator": "H23_Vraag_RV_w",
+              "unit": "[GJ/weq/jaar]"
+            },
+            {
+              "code_indicator": "H24_Vraag_TW_w",
+              "unit": "[GJ/weq/jaar]"
+            },
+            {
+              "code_indicator": "H25_Vraag_Vent_w",
+              "unit": "[GJ/weq/jaar]"
+            },
+            {
+              "code_indicator": "H26_Vraag_K_w",
+              "unit": "[GJ/weq/jaar]"
+            },
+            {
+              "code_indicator": "H27_Vraag_App_w",
+              "unit": "[GJ/weq/jaar]"
+            },
+            {
+              "code_indicator": "H28_Vraag_totaal_u",
+              "unit": "[GJ/weq/jaar]"
+            },
+            {
+              "code_indicator": "H29_Vraag_RV_u",
+              "unit": "[GJ/weq/jaar]"
+            },
+            {
+              "code_indicator": "H30_Vraag_TW_u",
+              "unit": "[GJ/weq/jaar]"
+            },
+            {
+              "code_indicator": "H31_Vraag_Vent_u",
+              "unit": "[GJ/weq/jaar]"
+            },
+            {
+              "code_indicator": "H32_Vraag_K_u",
+              "unit": "[GJ/weq/jaar]"
+            },
+            {
+              "code_indicator": "H33_Vraag_App_u",
+              "unit": "[GJ/weq/jaar]"
+            },
+            {
+              "code_indicator": "H34_Input_totaal_w",
+              "unit": "[GJ/weq/jaar]"
+            },
+            {
+              "code_indicator": "H35_Input_aardgas_w",
+              "unit": "[GJ/weq/jaar]"
+            },
+            {
+              "code_indicator": "H36_Input_KlimaatneutraalGas_w",
+              "unit": "[GJ/weq/jaar]"
+            },
+            {
+              "code_indicator": "H37_Input_elektriciteit_w",
+              "unit": "[GJ/weq/jaar]"
+            },
+            {
+              "code_indicator": "H38_Input_totaal_u",
+              "unit": "[GJ/weq/jaar]"
+            },
+            {
+              "code_indicator": "H39_Input_aardgas_u",
+              "unit": "[GJ/weq/jaar]"
+            },
+            {
+              "code_indicator": "H40_Input_KlimaatneutraalGas_u",
+              "unit": "[GJ/weq/jaar]"
+            },
+            {
+              "code_indicator": "H41_Input_elektriciteit_u",
+              "unit": "[GJ/weq/jaar]"
+            },
+            {
+              "code_indicator": "K01_Enet_verzwaren",
+              "unit": "[euro/jaar]"
+            },
+            {
+              "code_indicator": "K02_Gnet_verwijderen",
+              "unit": "[euro/jaar]"
+            },
+            {
+              "code_indicator": "K03_Gnet_aanpassen",
+              "unit": "[euro/jaar]"
+            },
+            {
+              "code_indicator": "K04_Wnet_buurt",
+              "unit": "[euro/jaar]"
+            },
+            {
+              "code_indicator": "K05_Wnet_pand",
+              "unit": "[euro/jaar]"
+            },
+            {
+              "code_indicator": "K06_Wnet_transport",
+              "unit": "[euro/jaar]"
+            },
+            {
+              "code_indicator": "K07_Wnet_opwekking",
+              "unit": "[euro/jaar]"
+            },
+            {
+              "code_indicator": "K08_Gebouw_schil",
+              "unit": "[euro/jaar]"
+            },
+            {
+              "code_indicator": "K09_Gebouw_installatie",
+              "unit": "[euro/jaar]"
+            },
+            {
+              "code_indicator": "K10_Totaal_Kapitaalslasten",
+              "unit": "[euro/jaar]"
+            },
+            {
+              "code_indicator": "K11_Inkoop_Warmte",
+              "unit": "[euro/jaar]"
+            },
+            {
+              "code_indicator": "K12_Inkoop_Gas",
+              "unit": "[euro/jaar]"
+            },
+            {
+              "code_indicator": "K13_Inkoop_Elek",
+              "unit": "[euro/jaar]"
+            },
+            {
+              "code_indicator": "K14_Gebouw_OenM",
+              "unit": "[euro/jaar]"
+            },
+            {
+              "code_indicator": "K15_Wnet_OenM",
+              "unit": "[euro/jaar]"
+            },
+            {
+              "code_indicator": "K16_Enet_Gnet_OenM",
+              "unit": "[euro/jaar]"
+            },
+            {
+              "code_indicator": "K17_Totaal_VariabeleKosten",
+              "unit": "[euro/jaar]"
+            },
+            {
+              "code_indicator": "K18_Extra_VariabeleKosten",
+              "unit": "[euro/jaar]"
+            },
+            {
+              "code_indicator": "K19_Gebouw_schil_w",
+              "unit": "[euro/jaar]"
+            },
+            {
+              "code_indicator": "K20_Gebouw_installatie_w",
+              "unit": "[euro/jaar]"
+            },
+            {
+              "code_indicator": "K21_Gebouw_schil_u",
+              "unit": "[euro/jaar]"
+            },
+            {
+              "code_indicator": "K22_Gebouw_installatie_u",
+              "unit": "[euro/jaar]"
+            },
+            {
+              "code_indicator": "K23_winst_warmtebedrijven",
+              "unit": "[euro/jaar]"
+            },
+            {
+              "code_indicator": "V01_Strategievariant",
+              "unit": "[code]"
+            },
+            {
+              "code_indicator": "V02_Strategievariant_label_B",
+              "unit": "[code]"
+            }
+          ],
+          "source_use_boundary": "indicator/unit evidence only; no value extraction or adoption interpretation"
+        },
         "sampled_bytes": 65536
       },
       {
+        "column_classification": {
+          "dhw_candidate_columns": [],
+          "heat_or_energy_candidate_columns": [],
+          "mfh_candidate_columns": [
+            "Meersgezinswoning_laag_midden",
+            "Meersgezinswoning_hoog"
+          ],
+          "residential_stock_columns": [
+            "I09_aantal_woningen",
+            "Woningtype_bouwjaar",
+            "Woning_Typegebouw"
+          ],
+          "sfh_candidate_columns": [
+            "Vrijstaande_woning",
+            "2_onder_1_kap",
+            "Rijwoning_hoek",
+            "Rijwoning_tussen"
+          ],
+          "strategy_or_pathway_columns": []
+        },
         "column_count": 71,
         "columns": [
           "I08_provincienaam",
@@ -220,10 +788,14 @@
         ],
         "delimiter_guess": ";",
         "filename": "Alkmaar_totaalbebouwing.csv",
+        "full_file_rows_inspected": 67,
+        "indicator_unit_summary": {
+          "available": false
+        },
         "sampled_bytes": 35923
       }
     ],
-    "schema_inspection_scope": "ZIP directory and first 64 KiB of each CSV member only",
+    "schema_inspection_scope": "ZIP directory plus full small CSV schema/indicator-unit inspection; no annual values produced",
     "zip_member_count": 4,
     "zip_members": [
       {
@@ -271,5 +843,5 @@
     "title": "PBL Startanalyse aardgasvrije buurten 2025 Alkmaar municipality ZIP",
     "url": "https://dataportaal.pbl.nl/data/Startanalyse_aardgasvrije_buurten/2025/Gemeentes/Alkmaar.zip"
   },
-  "status": "retrieved/checksummed for PI review; HP scaling values remain unsigned"
+  "status": "schema refreshed from existing raw file; HP scaling values remain unsigned"
 }

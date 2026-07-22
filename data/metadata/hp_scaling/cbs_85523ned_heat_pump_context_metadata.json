@@ -8,8 +8,9 @@
     "No D-004 acceptance, net-load, event, P(E), threshold, capacity-screen, or manuscript analysis is run."
   ],
   "raw_path": "data/raw/hp_scaling/cbs_85523ned_heat_pump_context.json",
-  "retrieved_at_utc": "2026-07-22T10:21:23Z",
+  "retrieved_at_utc": "2026-07-22T12:26:16Z",
   "retrieved_url": "https://opendata.cbs.nl/ODataApi/OData/85523NED",
+  "schema_refresh_network_performed": false,
   "schema_summary": {
     "context_only": true,
     "data_columns": [
@@ -67,5 +68,5 @@
     "title": "CBS StatLine 85523NED heat pumps by sector, capacity, and energy flows",
     "url": "https://opendata.cbs.nl/ODataApi/OData/85523NED"
   },
-  "status": "retrieved/checksummed for PI review; HP scaling values remain unsigned"
+  "status": "schema refreshed from existing raw file; HP scaling values remain unsigned"
 }
