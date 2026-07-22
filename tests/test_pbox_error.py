@@ -151,6 +151,86 @@ def test_output_error_probability_counts_endpoint_events_not_shifted_margins() -
     assert [event.sample_index for event in estimate.samples] == [0, 1, 2]
 
 
+def test_output_error_probability_uses_hand_computed_endpoint_event_counts() -> None:
+    envelope = OutputErrorEnvelope(
+        epsilon_grid=0.0,
+        epsilon_tier1_minus=0.2,
+        epsilon_tier1_plus=0.2,
+    )
+    estimate = estimate_output_error_probability(
+        [
+            _trajectory([1.0, 1.0, 1.0, 1.0], p_signs=[1, 1, 1, 1]),
+            _trajectory([1.05, 1.05, 1.05, 1.05], p_signs=[1, 1, 1, 1]),
+            _trajectory([1.35, 1.35, 1.35, 1.35], p_signs=[1, 1, 1, 1]),
+            _trajectory([1.4, 1.4, 1.4, 1.4], p_signs=[1, 1, 1, 1]),
+        ],
+        envelope,
+    )
+
+    assert estimate.lower.successes == 2
+    assert estimate.upper.successes == 4
+    assert estimate.lower.probability == pytest.approx(0.5)
+    assert estimate.upper.probability == pytest.approx(1.0)
+    assert [(event.lower_event, event.upper_event) for event in estimate.samples] == [
+        (False, True),
+        (False, True),
+        (True, True),
+        (True, True),
+    ]
+
+
+def test_output_error_endpoint_detection_resets_on_unwidened_direction_flips() -> None:
+    result = _trajectory([1.4, 1.4, 1.4, 1.4, 1.4], p_signs=[1, 1, -1, 1, 1])
+    envelope = OutputErrorEnvelope(
+        epsilon_grid=0.0,
+        epsilon_tier1_minus=0.0,
+        epsilon_tier1_plus=0.0,
+    )
+
+    event = evaluate_output_error_endpoint_event(result, envelope)
+
+    assert event.upper_event is False
+    assert event.upper_episode_count == 0
+    assert event.upper_longest_run_steps == 2
+
+
+def test_output_error_endpoint_sample_identity_is_reused_without_resampling() -> None:
+    envelope = OutputErrorEnvelope(
+        epsilon_grid=0.0,
+        epsilon_tier1_minus=0.1,
+        epsilon_tier1_plus=0.1,
+    )
+    first = [
+        _trajectory([1.0, 1.0, 1.0, 1.0], p_signs=[1, 1, 1, 1]),
+        _trajectory([1.3, 1.3, 1.3, 1.3], p_signs=[1, 1, 1, 1]),
+    ]
+    second = list(first)
+
+    first_estimate = estimate_output_error_probability(first, envelope)
+    second_estimate = estimate_output_error_probability(second, envelope)
+
+    assert [event.sample_index for event in first_estimate.samples] == [0, 1]
+    assert [event.sample_index for event in second_estimate.samples] == [0, 1]
+    assert [
+        (
+            event.sample_index,
+            event.lower_event,
+            event.upper_event,
+            event.lower_longest_run_steps,
+            event.upper_longest_run_steps,
+        )
+        for event in first_estimate.samples
+    ] == [
+        (
+            event.sample_index,
+            event.lower_event,
+            event.upper_event,
+            event.lower_longest_run_steps,
+            event.upper_longest_run_steps,
+        )
+        for event in second_estimate.samples
+    ]
+
 def test_output_error_alpha_estimator_keeps_separate_endpoint_counts() -> None:
     envelope = OutputErrorEnvelope(
         epsilon_grid=0.0,
