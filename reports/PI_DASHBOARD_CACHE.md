@@ -98,6 +98,12 @@ Leave PI Lite and inspect broader context when:
   by Agent C. This approves the interface route only; D-004 source acceptance,
   completeness checks, cold-spell tolerances, paired-weather acceptance
   results, net-load/event analysis, and manuscript results remain blocked.
+- `D004-MC-001` is approved. Agent C may implement the D-004 member builder for
+  the approved 2014-2023 Alkmaar/Berkhout KNMI/PVGIS bundle using UTC-year
+  15-minute members, derived Europe/Amsterdam timestamps, KNMI `T/10`, and
+  energy-preserving repeated KNMI `Q` as GHI. D-004 source acceptance, final
+  completeness tolerances, HP/PV paired acceptance, net-load/event analysis,
+  and manuscript results remain separate blockers.
 - `E2-S3-COLD-SPELL-ACCEPTANCE-DESIGN` is approved as a design, with numerical
   tolerances still pending. The future HP/PV acceptance report must check both
   coldest-window behavior and near-freezing/defrost-risk behavior around
