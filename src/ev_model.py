@@ -18,6 +18,8 @@ STEP_HOURS = 0.25
 LOCAL_TIMEZONE = "Europe/Amsterdam"
 ADOPTION_SCHEMA_VERSION = 1
 EV_HOME_COMPONENT = "ev_home"
+EV_PUBLIC_COMPONENT = "ev_public"
+EV_INTEGRATION_READINESS_SCHEMA_VERSION = 1
 
 
 @dataclass(frozen=True)
@@ -514,6 +516,205 @@ class NodeChargePointAllocation:
         return sum(self.public_by_node.values())
 
 
+@dataclass(frozen=True)
+class EVLibraryCandidateBatchRef:
+    """Manifest-only reference to one candidate EV source batch."""
+
+    library_id: str
+    component_id: str
+    seed: int
+    n_profiles: int
+    n_timesteps: int
+    processed_path: str
+    processed_sha256_file: str
+    manifest_path: str
+    distinct_member_count: int
+    capacity_class: str | None = None
+    cp_capacity_kw: int | None = None
+    request_sha256: str | None = None
+
+    def __post_init__(self) -> None:
+        _require_non_empty_string(self.library_id, "library_id")
+        _require_non_empty_string(self.component_id, "component_id")
+        if self.component_id not in {EV_HOME_COMPONENT, EV_PUBLIC_COMPONENT}:
+            raise ValueError("EV integration batch component_id must be ev_home or ev_public")
+        _require_int(self.seed, "seed")
+        profiles = _require_int(self.n_profiles, "n_profiles")
+        timesteps = _require_int(self.n_timesteps, "n_timesteps")
+        distinct = _require_int(self.distinct_member_count, "distinct_member_count")
+        if profiles <= 0:
+            raise ValueError("n_profiles must be positive")
+        if timesteps != EXPECTED_FULL_YEAR_STEPS:
+            raise ValueError(f"EV candidate batches must contain {EXPECTED_FULL_YEAR_STEPS} timesteps")
+        if distinct != profiles:
+            raise ValueError("EV candidate batches must record all returned members as distinct")
+        _require_non_empty_string(self.processed_path, "processed_path")
+        _require_sha256(self.processed_sha256_file, "processed_sha256_file")
+        _require_non_empty_string(self.manifest_path, "manifest_path")
+        if self.cp_capacity_kw is not None and _require_int(self.cp_capacity_kw, "cp_capacity_kw") <= 0:
+            raise ValueError("cp_capacity_kw must be positive")
+        if self.request_sha256 is not None:
+            _require_sha256(self.request_sha256, "request_sha256")
+
+    @property
+    def member_id_pattern(self) -> str:
+        return f"profile_{self.seed}_<returned_profile_index:03d>"
+
+    def manifest_record(self) -> dict[str, int | str | None | list[int]]:
+        return {
+            "library_id": self.library_id,
+            "component_id": self.component_id,
+            "seed": self.seed,
+            "n_profiles": self.n_profiles,
+            "n_timesteps": self.n_timesteps,
+            "processed_path": self.processed_path,
+            "processed_sha256_file": self.processed_sha256_file,
+            "manifest_path": self.manifest_path,
+            "distinct_member_count": self.distinct_member_count,
+            "capacity_class": self.capacity_class,
+            "cp_capacity_kw": self.cp_capacity_kw,
+            "request_sha256": self.request_sha256,
+            "member_id_pattern": self.member_id_pattern,
+            "returned_profile_index_range": [0, self.n_profiles - 1],
+        }
+
+
+@dataclass(frozen=True)
+class EVLibraryIntegrationArtifact:
+    """Candidate-only EV library description for later IC-1 adapters."""
+
+    library_id: str
+    component_id: str
+    source_manifest_path: str
+    data_id: str
+    governing_decisions: tuple[str, ...]
+    candidate_batches: tuple[EVLibraryCandidateBatchRef, ...]
+    candidate_member_count: int
+    held_out_member_count: int
+    held_out_unopened_for_adequacy: bool
+    library_adequacy_proven: bool
+    calendar_assumption: dict[str, int | str]
+    sampling_policy: dict[str, bool | str]
+
+    def __post_init__(self) -> None:
+        _require_non_empty_string(self.library_id, "library_id")
+        _require_non_empty_string(self.component_id, "component_id")
+        _require_non_empty_string(self.source_manifest_path, "source_manifest_path")
+        _require_non_empty_string(self.data_id, "data_id")
+        if not self.governing_decisions:
+            raise ValueError("EV library artifact must record governing decisions")
+        if not self.candidate_batches:
+            raise ValueError("EV library artifact must include candidate batches")
+        if self.candidate_member_count != sum(batch.n_profiles for batch in self.candidate_batches):
+            raise ValueError("candidate_member_count must equal candidate batch profile total")
+        if self.held_out_member_count < 0:
+            raise ValueError("held_out_member_count must be non-negative")
+        if not self.held_out_unopened_for_adequacy:
+            raise ValueError("EV held-out batches must remain unopened for adequacy")
+        if self.library_adequacy_proven:
+            raise ValueError("EV integration readiness must not certify library adequacy")
+
+    @property
+    def candidate_seeds(self) -> tuple[int, ...]:
+        return tuple(batch.seed for batch in self.candidate_batches)
+
+    def manifest_record(self) -> dict[str, object]:
+        return {
+            "library_id": self.library_id,
+            "component_id": self.component_id,
+            "source_manifest_path": self.source_manifest_path,
+            "data_id": self.data_id,
+            "governing_decisions": self.governing_decisions,
+            "candidate_member_count": self.candidate_member_count,
+            "candidate_seeds": self.candidate_seeds,
+            "candidate_batches": tuple(batch.manifest_record() for batch in self.candidate_batches),
+            "held_out_member_count": self.held_out_member_count,
+            "held_out_unopened_for_adequacy": self.held_out_unopened_for_adequacy,
+            "library_adequacy_proven": self.library_adequacy_proven,
+            "calendar_assumption": self.calendar_assumption,
+            "sampling_policy": self.sampling_policy,
+        }
+
+
+@dataclass(frozen=True)
+class EVScenarioNodeAllocationRecord:
+    """Approved A-014 node allocation record for one EV adoption scenario."""
+
+    year: int
+    scenario: str
+    home_by_node: dict[str, int]
+    public_by_node: dict[str, int]
+    provenance: dict[str, str]
+
+    @property
+    def total_home_charge_points(self) -> int:
+        return sum(self.home_by_node.values())
+
+    @property
+    def total_public_charge_points(self) -> int:
+        return sum(self.public_by_node.values())
+
+    def manifest_record(self) -> dict[str, object]:
+        return {
+            "year": self.year,
+            "scenario": self.scenario,
+            "home_charge_points": self.total_home_charge_points,
+            "public_charge_points": self.total_public_charge_points,
+            "home_by_node": dict(sorted(self.home_by_node.items())),
+            "public_by_node": dict(sorted(self.public_by_node.items())),
+            "provenance": dict(sorted(self.provenance.items())),
+        }
+
+
+@dataclass(frozen=True)
+class EVIntegrationReadinessArtifact:
+    """Complete EV artifact handoff description for future IC-1 consumption."""
+
+    libraries: tuple[EVLibraryIntegrationArtifact, ...]
+    node_allocations: tuple[EVScenarioNodeAllocationRecord, ...]
+    allocation_method_id: str
+    scenario_config_path: str
+    calendar_mapping: dict[str, str | int | bool]
+    policy: dict[str, bool | str]
+
+    def __post_init__(self) -> None:
+        if not self.libraries:
+            raise ValueError("EV integration readiness requires at least one library")
+        component_ids = {library.component_id for library in self.libraries}
+        if component_ids != {EV_HOME_COMPONENT, EV_PUBLIC_COMPONENT}:
+            raise ValueError("EV integration readiness requires home and public EV libraries")
+        if not self.node_allocations:
+            raise ValueError("EV integration readiness requires approved node allocations")
+        if self.allocation_method_id != "A-014":
+            raise ValueError("EV integration readiness requires A-014 allocations")
+        if self.policy.get("held_out_access") is not False:
+            raise ValueError("EV integration readiness must block held-out access")
+        if self.policy.get("m_sufficiency_claimed") is not False:
+            raise ValueError("EV integration readiness must not claim M sufficiency")
+        if self.policy.get("integrated_analysis_performed") is not False:
+            raise ValueError("EV integration readiness must not include integrated analysis")
+
+    def manifest_record(self) -> dict[str, object]:
+        totals = {
+            allocation.scenario: {
+                "home": allocation.total_home_charge_points,
+                "public": allocation.total_public_charge_points,
+            }
+            for allocation in self.node_allocations
+        }
+        return {
+            "schema_version": EV_INTEGRATION_READINESS_SCHEMA_VERSION,
+            "artifact_type": "ev_to_ic1_integration_readiness",
+            "libraries": tuple(library.manifest_record() for library in self.libraries),
+            "allocation_method_id": self.allocation_method_id,
+            "scenario_config_path": self.scenario_config_path,
+            "scenario_totals": totals,
+            "node_allocations": tuple(allocation.manifest_record() for allocation in self.node_allocations),
+            "calendar_mapping": self.calendar_mapping,
+            "policy": self.policy,
+        }
+
+
 def a014_node_weights_from_load_table(
     load_table: Any,
     *,
@@ -772,6 +973,174 @@ def proposed_a014_allocation_preview(
     return tuple(allocations)
 
 
+def ev_library_integration_artifact_from_manifest(
+    manifest_path: Path,
+    *,
+    library_id: str,
+    component_id: str,
+    expected_candidate_members: int,
+) -> EVLibraryIntegrationArtifact:
+    """Return a candidate-only EV library reference without opening profiles."""
+
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    if not isinstance(manifest, dict):
+        raise ValueError("EV library manifest must be a mapping")
+    batches: list[EVLibraryCandidateBatchRef] = []
+    for item in manifest.get("batches", []):
+        if not isinstance(item, dict):
+            raise ValueError("EV library manifest batches must be mappings")
+        partition = str(item.get("partition", ""))
+        if partition in {"held_out", "quarantined_precriterion_diagnostic"}:
+            continue
+        if partition != "candidate":
+            raise ValueError(f"Unsupported EV library partition {partition!r}")
+        batches.append(
+            EVLibraryCandidateBatchRef(
+                library_id=library_id,
+                component_id=component_id,
+                seed=_require_int(item.get("seed"), "seed"),
+                n_profiles=_require_int(item.get("n_profiles"), "n_profiles"),
+                n_timesteps=_require_int(item.get("n_timesteps"), "n_timesteps"),
+                processed_path=str(item.get("processed_path", "")),
+                processed_sha256_file=str(item.get("processed_sha256_file", "")),
+                manifest_path=str(item.get("manifest_path", "")),
+                distinct_member_count=_require_int(
+                    item.get("distinct_member_count"),
+                    "distinct_member_count",
+                ),
+                capacity_class=(
+                    None if item.get("capacity_class") is None else str(item["capacity_class"])
+                ),
+                cp_capacity_kw=(
+                    None
+                    if item.get("cp_capacity_kw") is None
+                    else _require_int(item.get("cp_capacity_kw"), "cp_capacity_kw")
+                ),
+                request_sha256=(
+                    None if item.get("request_sha256") is None else str(item["request_sha256"])
+                ),
+            )
+        )
+    candidate_members = _require_int(
+        manifest.get("candidate_member_count"),
+        "candidate_member_count",
+    )
+    if candidate_members != expected_candidate_members:
+        raise ValueError("EV candidate member count does not match the expected approved library size")
+    held_out_members = _require_int(
+        manifest.get("held_out_member_count", 0),
+        "held_out_member_count",
+    )
+    policy = manifest.get("policy")
+    if not isinstance(policy, dict):
+        raise ValueError("EV library manifest must include policy")
+    decisions = tuple(str(item) for item in policy.get("decisions", ()))
+    return EVLibraryIntegrationArtifact(
+        library_id=library_id,
+        component_id=component_id,
+        source_manifest_path=manifest_path.as_posix(),
+        data_id=str(manifest.get("data_id", "")),
+        governing_decisions=decisions,
+        candidate_batches=tuple(batches),
+        candidate_member_count=candidate_members,
+        held_out_member_count=held_out_members,
+        held_out_unopened_for_adequacy=bool(manifest.get("held_out_unopened_for_adequacy")),
+        library_adequacy_proven=bool(manifest.get("library_adequacy_proven")),
+        calendar_assumption=_ev_profile_calendar_assumption(),
+        sampling_policy={
+            "candidate_only": True,
+            "held_out_access": False,
+            "m_sufficiency_claimed": False,
+            "within_realization_replacement_rule": "explicit_and_still_pending",
+            "member_identity": "batch_seed_plus_returned_profile_index",
+            "source_profile_files_opened": False,
+        },
+    )
+
+
+def build_ev_integration_readiness_artifact(
+    *,
+    home_manifest_path: Path,
+    public_manifest_path: Path,
+    scenario_config_path: Path,
+    expected_home_candidate_members: int = 1000,
+    expected_public_candidate_members: int = 1200,
+) -> EVIntegrationReadinessArtifact:
+    """Build the EV-to-IC-1 readiness artifact from committed metadata only."""
+
+    config = load_adoption_scenarios_config(scenario_config_path)
+    allocations = adoption_node_allocations(config)
+    scenarios = {item.scenario: item for item in adoption_scenarios(config)}
+    allocation_records: list[EVScenarioNodeAllocationRecord] = []
+    for allocation in allocations:
+        scenario = scenarios[allocation.scenario]
+        allocation_records.append(
+            EVScenarioNodeAllocationRecord(
+                year=allocation.year,
+                scenario=allocation.scenario,
+                home_by_node=allocation.home_by_node,
+                public_by_node=allocation.public_by_node,
+                provenance=scenario.provenance,
+            )
+        )
+
+    return EVIntegrationReadinessArtifact(
+        libraries=(
+            ev_library_integration_artifact_from_manifest(
+                home_manifest_path,
+                library_id="A_home_vancar_cp_y2030",
+                component_id=EV_HOME_COMPONENT,
+                expected_candidate_members=expected_home_candidate_members,
+            ),
+            ev_library_integration_artifact_from_manifest(
+                public_manifest_path,
+                library_id="B_public_vancar_cp_y2030_equal_mix",
+                component_id=EV_PUBLIC_COMPONENT,
+                expected_candidate_members=expected_public_candidate_members,
+            ),
+        ),
+        node_allocations=tuple(allocation_records),
+        allocation_method_id=str(config["allocation"]["method_id"]),
+        scenario_config_path=scenario_config_path.as_posix(),
+        calendar_mapping={
+            "profile_generator_calendar_local_year": 2025,
+            "profile_generator_first_timestamp_local": "2025-01-01T00:00:00+01:00",
+            "profile_generator_first_timestamp_utc": "2024-12-31T23:00:00+00:00",
+            "n_timesteps": EXPECTED_FULL_YEAR_STEPS,
+            "step_seconds": 900,
+            "timezone": LOCAL_TIMEZONE,
+            "planning_year": 2035,
+            "planning_year_mapping_status": "deterministic_calendar_mapping_required_before_ic1_results",
+        },
+        policy={
+            "held_out_access": False,
+            "candidate_profiles_opened": False,
+            "integrated_analysis_performed": False,
+            "threshold_or_event_analysis_performed": False,
+            "p_e_estimated": False,
+            "manuscript_numbers_produced": False,
+            "m_sufficiency_claimed": False,
+            "public_smart_profiles_included": False,
+        },
+    )
+
+
+def write_ev_integration_readiness_artifact(
+    artifact: EVIntegrationReadinessArtifact,
+    path: Path,
+) -> None:
+    """Write a stable JSON EV readiness artifact."""
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+    payload = json.dumps(
+        artifact.manifest_record(),
+        sort_keys=True,
+        indent=2,
+        ensure_ascii=True,
+    )
+    path.write_text(payload + "\n", encoding="utf-8")
+
+
 def charge_point_range_by_year(
     scenarios: Sequence[ChargePointScenario],
 ) -> dict[int, dict[str, int]]:
@@ -1026,6 +1395,32 @@ def _validate_node_weight_records(weights: Any) -> None:
 
 def _validate_weight_pairs(weights: Sequence[tuple[str, float]]) -> None:
     allocate_charge_points_to_nodes(0, weights)
+
+
+def _ev_profile_calendar_assumption() -> dict[str, int | str]:
+    return {
+        "source_calendar_local_year": 2025,
+        "source_first_timestamp_utc": "2024-12-31T23:00:00+00:00",
+        "source_first_timestamp_local": "2025-01-01T00:00:00+01:00",
+        "n_timesteps": EXPECTED_FULL_YEAR_STEPS,
+        "step_seconds": 900,
+        "timezone": LOCAL_TIMEZONE,
+        "planning_year_use": "mapped_to_planning_year_calendar_before_ic1_aggregation",
+    }
+
+
+def _require_non_empty_string(value: Any, label: str) -> str:
+    text = str(value).strip()
+    if not text:
+        raise ValueError(f"{label} must be a non-empty string")
+    return text
+
+
+def _require_sha256(value: Any, label: str) -> str:
+    text = _require_non_empty_string(value, label)
+    if len(text) != 64 or any(character not in "0123456789abcdef" for character in text.lower()):
+        raise ValueError(f"{label} must be a sha256 hex digest")
+    return text
 
 
 def _require_int(value: Any, label: str) -> int:
