@@ -18,6 +18,55 @@ Status labels have the following meaning:
 - **Pending gate:** no decision exists yet; the placeholder must be replaced in
   the same PR that records the decision.
 
+## Assumption and Inference Inventory
+
+This inventory is a reviewer-facing index of modelling assumptions and inferred
+data meanings that materially affect the analysis. It does not replace the
+same-ID paragraphs below or the authority of the registers; it is included so
+the manuscript methods cannot hide an assumption inside a data-loader choice,
+column name, or implementation convention. When an item is only proposed or
+inferred, paper-facing results must keep it labelled that way until the PI signs
+the corresponding register row.
+
+### Formal Assumption Register Inventory
+
+<!-- assumption-inventory-start -->
+| ID | Methods issue to keep visible | Register status |
+|---|---|---|
+| `A-001` | `P_crit` and sensitivity thresholds used to define decision relevance. | proposed |
+| `A-002` | Alpha-grid resolution for fuzzy/p-box reporting. | proposed |
+| `A-003` | Benchmark network family and fallback network candidates. | proposed |
+| `A-004` | Report alpha-indexed bounds only; no defuzzified probability answer. | proposed |
+| `A-005` | Parallel decision-transformer aggregation as one substation asset. | proposed |
+| `A-006` | Tier-1 reactive-power treatment through assigned nodal power factors. | proposed |
+| `A-007` | Dutch weather applied to German-measured SimBench baseline profiles. | proposed |
+| `A-008` | Grid-routing thresholds are case-selection heuristics, not standards. | proposed |
+| `A-009` | Superseded EV generator-year fallback. | superseded |
+| `A-010` | Superseded combined EV charging-power assumption. | superseded |
+| `A-011` | Superseded vehicle-level Elaad profile scaling assumption. | superseded |
+| `A-012` | Import/export sign convention and direction-flip episode reset. | proposed |
+| `A-013` | Symmetric relative grid-model discrepancy with unknown dependence; numerical values unsigned. | proposed |
+| `A-014` | Load-proportional EV adoption allocation across SimBench load nodes. | approved for second-stage use after local totals |
+<!-- assumption-inventory-end -->
+
+### Additional Modelling and Data-Inference Boundaries
+
+| Scope | Assumption or inference | Current methods treatment |
+|---|---|---|
+| G0/G0-A1/G0-A3 | The study is scoped to import-direction planning congestion, with a strict persistent `L_import > 1.0` p.u. primary event and `1.1`/`1.2` p.u. sensitivities. | Approved by G0-A1/G0-A3; export congestion is reported as a diagnostic, not solved by the demand-flexibility instrument. |
+| G0-A4/EV-004 | The primary planning year is 2035, while the residential ElaadNL behaviour library uses fixed generator year 2030. | Approved distinction; avoids double counting generator-year growth and external 2035 adoption. |
+| G1/G1-A2/E5-S3-T1 | Tier-1 is the Monte Carlo evaluator only after G2 validates its envelope; grid-model discrepancy is an interval with arbitrary unknown dependence, not an independent random variable. | Approved protocol; numerical A-013 and G2 Tier-1 values remain unsigned. |
+| G1-A2 | Total 80 MVA versus firm 40 MVA capacity remains open until the manifested future-layer screen and any required one-transformer-out AC validation. | Approved protocol; no paper-facing capacity convention has been selected. |
+| ALEA-001/ALEA-002 | Known dependence is preserved through complete calendars and paired weather members; congestion and library adequacy are evaluated only after aggregation. | Approved protocol; component percentiles remain diagnostics only. |
+| EV-003/EV-005/EV-005B | EV libraries are finite candidate samples; EV-005B approves charge-point-level replacement for candidate member selection only, not proof that `M` is sufficient. | EV-005B is approved only for candidate selection metadata; held-out adequacy and `M` sufficiency remain deferred to E3.S2a. |
+| EV-CAL-001 | EV source profiles are mapped to the planning calendar by ordinal timestep, preserving annual sequence but not actual 2035 weekday/holiday identity. | Approved limitation; provenance must record the mismatch. |
+| EV-008A/D-012 | Public EV profiles use an equal 25% split across 11/13/15/22 kW AC classes. | Approved for source generation only; it simplifies an NDW snapshot and is not a precise fleet forecast. |
+| HP-001/D-003 | When2Heat provides Dutch residential shape/COP trajectories for SFH/MFH space heat and domestic hot water; commercial heat is excluded. | Approved source/technology boundary; local annual scaling and paired-weather acceptance remain separate gates. |
+| D-013/HP local scaling | PBL `H23_Vraag_RV_w` and `H24_Vraag_TW_w` are candidate residential space-heat and hot-water indicators, but the exact raw-code meaning is presently inferred from code pattern plus Startanalyse documentation unless C.HP finds an explicit dictionary. | Proposed only; this inference must not become executable or manuscript-facing until explicit evidence is found or a PI-signed assumption records the limitation. |
+| D-013/CBS split | HP local heat is split over SFH/MFH using CBS Alkmaar dwelling counts, not measured class-specific heat demand. | Proposed route; count-share versus area-weighted split requires PI sign-off before executable values. |
+| D004-MC-001/D004-SOURCE-MEMBER-ACCEPTANCE | KNMI Berkhout is the realized weather path for Alkmaar; hourly `T` and `Q` are expanded to 15-minute members, and PVGIS remains sanity/provenance only. | Approved for internal source/member use; final paired HP/PV validation and cold-spell tolerances remain pending. |
+| EV-007A/A-014/D-010 | Alkmaar municipality is the local proxy for the synthetic SimBench case, and local counts are allocated across grid loads by static `p_mw`. | EV local totals and A-014 allocation are approved; this remains an illustrative-case transfer assumption. |
+| A-013 | The candidate `epsilon_grid = 5%` with `2%`/`10%` sensitivities is not empirical or expert-signed. | Proposed only; E9.S5a evidence review is required before numerical use as a scientific claim. |
 ## Decisions
 
 <!-- methods-id: G0 -->
@@ -1487,7 +1536,9 @@ capacity.
 <!-- methods-id: E2-S3-HP-LOCAL-SCALING-SOURCE-USE-PROPOSAL -->
 ### E2-S3-HP-LOCAL-SCALING-SOURCE-USE-PROPOSAL - HP-001 D-013 Local Scaling Source-Use Proposal
 
-**Status: Proposed packet; values unsigned.** The D-013 local scaling source-use proposal uses the retrieved CBS/PBL schema evidence to define a candidate route for later HP-001 annual thermal scaling, without making any value executable. The proposed PBL fields are `H23_Vraag_RV_w` for residential space heat and `H24_Vraag_TW_w` for residential domestic hot water in `Alkmaar_strategie.csv`, both with unit `[GJ/weq/jaar]`; `H22_Vraag_totaal_w` is retained only as a residential-total diagnostic. The candidate conversion multiplies those intensities by PBL `I11_woningequivalenten [Woning]` and converts GJ to TWh, then allocates space and water separately to SFH/MFH using a PI-signed CBS 85035NED class split for Alkmaar `GM0361`. The packet records CBS `2026JJ00` `Eengezinswoningen totaal` and `Meergezinswoningen totaal` as denominator/crosswalk evidence and gives unsigned illustrative count-share and area-weighted allocations only to make the PI decision concrete. A separate signed 2035 HP adoption/electrification multiplier remains required before HP component values can be used. This proposal does not approve PBL columns, value columns, unit conversions, split rules, annual TWh values, adoption fractions, D-004 acceptance, cold-spell tolerances, net-load/event analysis, `P(E)`, threshold or capacity-screen analysis, manuscript numbers, or probability results.
+**Status: Proposed packet; values unsigned; PBL raw-code meaning not yet proven.** The D-013 local scaling source-use proposal uses the retrieved CBS/PBL schema evidence to define a candidate route for later HP-001 annual thermal scaling, without making any value executable. The proposed PBL fields are `H23_Vraag_RV_w` as candidate residential space heat and `H24_Vraag_TW_w` as candidate residential domestic hot water in `Alkmaar_strategie.csv`, both with unit `[GJ/weq/jaar]`; `H22_Vraag_totaal_w` is retained only as a residential-total diagnostic. The exact meanings of `H23`, `H24`, and the `_w` suffix are currently inferred from the raw-code pattern, the Dutch abbreviations for `ruimteverwarming` and `tapwater`, and Startanalyse documentation that explains the base heat-demand indicators and the 2025 woning/utiliteit split. Because no explicit PBL dictionary line has yet been found for these raw names, the mapping is not approved as a settled data definition. C.HP must either find explicit PBL evidence for the raw-code meanings or return a PI-facing assumption/alternative-source decision before any executable annual HP value is produced.
+
+If the indicator mapping is later approved, the candidate conversion multiplies those intensities by PBL `I11_woningequivalenten [Woning]` and converts GJ to TWh, then allocates space and water separately to SFH/MFH using a PI-signed CBS 85035NED class split for Alkmaar `GM0361`. The packet records CBS `2026JJ00` `Eengezinswoningen totaal` and `Meergezinswoningen totaal` as denominator/crosswalk evidence and gives unsigned illustrative count-share and area-weighted allocations only to make the PI decision concrete. A separate signed 2035 HP adoption/electrification multiplier remains required before HP component values can be used. This proposal does not approve PBL columns, value columns, unit conversions, split rules, annual TWh values, adoption fractions, D-004 acceptance, cold-spell tolerances, net-load/event analysis, `P(E)`, threshold or capacity-screen analysis, manuscript numbers, or probability results.
 <!-- methods-id: E2-S3-HP-SCALING-SCHEMA-INSPECTION -->
 ### E2-S3-HP-SCALING-SCHEMA-INSPECTION - D-013 HP Scaling Schema Inspection
 
