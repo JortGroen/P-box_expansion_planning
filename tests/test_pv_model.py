@@ -442,3 +442,19 @@ def test_committed_d004_member_construction_rule_packet_is_proposal_only() -> No
     assert "content_sha256" in rule["weather_member_fields"]
     assert any("Q energy" in item for item in payload["acceptance_tests_after_pi_approval"])
     assert any("PI approval" in item for item in payload["remaining_blockers"])
+
+
+def test_committed_d004_member_construction_clarification_blocks_implementation() -> None:
+    path = Path("data/metadata/weather_pv/d004_member_construction_pi_clarification.json")
+    payload = json.loads(path.read_text(encoding="utf-8"))
+
+    assert payload["data_id"] == "D-004"
+    assert payload["question_id"] == "Q-9"
+    assert payload["member_construction_rule_id"] == "D004-MC-001"
+    assert payload["clarification_status"] == "proposal_only_waiting_for_pi"
+    assert payload["implementation_allowed_before_approval"] is False
+    assert payload["d004_status"] == "proposed_not_signed"
+    assert payload["recommended_approval_summary"]["calendar_basis"] == "UTC calendar year"
+    assert payload["recommended_approval_summary"]["pvgis_use"] == "calibration_or_validation_provenance_only"
+    assert any("no D-004 signoff" in item for item in payload["scope_boundaries"])
+    assert any("no net-load/event/P(E)" in item for item in payload["scope_boundaries"])
