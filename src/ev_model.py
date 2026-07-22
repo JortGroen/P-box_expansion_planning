@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections import Counter
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 import gzip
@@ -1720,6 +1721,194 @@ def ev005_within_realization_replacement_policy_packet() -> dict[str, object]:
         },
     }
 
+
+def ev_candidate_member_selection_manifest(
+    candidate_member_reference: Mapping[str, Any],
+    *,
+    decisions_text: str,
+    scenario: str,
+    node_id: str,
+    component_id: str,
+    required_members: int,
+    component_stream: ComponentStream,
+    capacity_class: str | None = None,
+    cp_capacity_kw: int | None = None,
+    planning_year: int = 2035,
+) -> dict[str, object]:
+    """Select candidate EV source members only after EV-005B approval.
+
+    This function intentionally works from committed member metadata rather than
+    profile arrays; generated NPZ loading remains a later IC-1 consumption step.
+    """
+
+    members = _validated_candidate_member_rows(candidate_member_reference)
+    scenario_name = _require_non_empty_string(scenario, "scenario")
+    node_name = _require_non_empty_string(node_id, "node_id")
+    component_name = _require_non_empty_string(component_id, "component_id")
+    if component_name not in {EV_HOME_COMPONENT, EV_PUBLIC_COMPONENT}:
+        raise ValueError("EV member selection requires a supported EV component_id")
+    if component_stream.component != component_name:
+        raise ValueError("EV member selection requires the matching RNG-001 component stream")
+    requested = _require_int(required_members, "required_members")
+    if requested < 0:
+        raise ValueError("required_members must be non-negative")
+    if component_name == EV_PUBLIC_COMPONENT:
+        capacity_name = _require_non_empty_string(capacity_class, "capacity_class")
+        capacity_kw = _require_int(cp_capacity_kw, "cp_capacity_kw")
+    else:
+        capacity_name = None
+        capacity_kw = None if cp_capacity_kw is None else _require_int(cp_capacity_kw, "cp_capacity_kw")
+    pool = [
+        row
+        for row in members
+        if row["component_id"] == component_name
+        and (capacity_name is None or row.get("capacity_class") == capacity_name)
+    ]
+    if not pool and requested:
+        raise ValueError("No candidate EV source members match the requested component/capacity class")
+
+    _require_ev005b_approved(decisions_text)
+    if requested == 0:
+        selected_indices: list[int] = []
+    else:
+        rng = component_stream.rng()
+        selected_indices = [int(index) for index in rng.choice(len(pool), size=requested, replace=True)]
+    selected_rows = [pool[index] for index in selected_indices]
+    multiplicities = Counter(str(row["source_member_id"]) for row in selected_rows)
+    positions: dict[str, list[int]] = {}
+    for selection_index, row in enumerate(selected_rows):
+        positions.setdefault(str(row["source_member_id"]), []).append(selection_index)
+
+    selections: list[dict[str, object]] = []
+    for selection_index, row in enumerate(selected_rows):
+        member_id = str(row["source_member_id"])
+        multiplicity = int(multiplicities[member_id])
+        selections.append(
+            {
+                "scenario": scenario_name,
+                "planning_year": planning_year,
+                "sample_index": component_stream.sample_index,
+                "component_id": component_name,
+                "component_stream_id": component_stream.stream_id,
+                "component_seed": component_stream.seed,
+                "node_id": node_name,
+                "capacity_class": capacity_name,
+                "cp_capacity_kw": capacity_kw,
+                "selection_index": selection_index,
+                "selection_count_at_node": requested,
+                "replacement_policy_id": "EV-005B",
+                "replacement_enabled": True,
+                "source_member_id": member_id,
+                "batch_seed": int(row["batch_seed"]),
+                "returned_profile_index": int(row["returned_profile_index"]),
+                "candidate_processed_path": str(row["processed_path"]),
+                "candidate_processed_sha256_file": str(row["candidate_processed_sha256_file"]),
+                "calendar_mapping_rule_id": str(row["calendar_mapping_rule_id"]),
+                "source_timestamp_index_policy": str(row["source_timestamp_index_policy"]),
+                "duplicate_within_realization": multiplicity > 1,
+                "duplicate_multiplicity": multiplicity,
+            }
+        )
+    duplicate_groups = [
+        {
+            "source_member_id": member_id,
+            "duplicate_multiplicity": len(indices),
+            "duplicate_selection_indices": indices,
+        }
+        for member_id, indices in sorted(positions.items())
+        if len(indices) > 1
+    ]
+    return {
+        "schema_version": 1,
+        "artifact_type": "ev_candidate_member_selection_manifest",
+        "status": "candidate_member_selection_metadata_only",
+        "decision_id": "EV-005B",
+        "scenario": scenario_name,
+        "planning_year": planning_year,
+        "node_id": node_name,
+        "component_id": component_name,
+        "capacity_class": capacity_name,
+        "cp_capacity_kw": capacity_kw,
+        "required_members": requested,
+        "component_stream": component_stream.manifest_record(),
+        "replacement_enabled": True,
+        "candidate_pool_member_count": len(pool),
+        "selections": selections,
+        "duplicate_member_groups": duplicate_groups,
+        "policy": {
+            "candidate_only": True,
+            "held_out_access": False,
+            "profile_arrays_loaded": False,
+            "integrated_analysis_performed": False,
+            "event_or_p_e_analysis_performed": False,
+            "m_sufficiency_claimed": False,
+        },
+    }
+
+
+def _validated_candidate_member_rows(candidate_member_reference: Mapping[str, Any]) -> list[dict[str, object]]:
+    if candidate_member_reference.get("artifact_type") != "ev_ic1_candidate_member_reference":
+        raise ValueError("Expected EV IC-1 candidate member reference metadata")
+    policy = candidate_member_reference.get("policy")
+    if not isinstance(policy, dict) or policy.get("held_out_access") is not False:
+        raise ValueError("EV member selection requires candidate-only metadata with held-out access blocked")
+    if policy.get("profile_arrays_loaded") is not False:
+        raise ValueError("EV member selection metadata must not load profile arrays")
+    if policy.get("m_sufficiency_claimed") is not False:
+        raise ValueError("EV member selection metadata must not claim M sufficiency")
+    members = candidate_member_reference.get("candidate_members")
+    if not isinstance(members, list):
+        raise ValueError("EV member selection requires candidate_members rows")
+    validated: list[dict[str, object]] = []
+    seen: set[tuple[str, str, str]] = set()
+    for item in members:
+        if not isinstance(item, dict):
+            raise ValueError("EV candidate member rows must be mappings")
+        if item.get("partition") != "candidate":
+            raise ValueError("EV member selection refuses non-candidate partitions")
+        component_id = _require_non_empty_string(item.get("component_id"), "component_id")
+        library_id = _require_non_empty_string(item.get("library_id"), "library_id")
+        member_id = _require_non_empty_string(item.get("source_member_id"), "source_member_id")
+        path = _require_non_empty_string(item.get("processed_path"), "processed_path")
+        normalized_path = path.replace("\\", "/")
+        if "/raw/" in normalized_path or "held_out" in normalized_path or "quarantined" in normalized_path:
+            raise ValueError("EV member selection refuses raw, held-out, or quarantined paths")
+        processed_sha = _require_sha256(
+            item.get("candidate_processed_sha256_file"),
+            "candidate_processed_sha256_file",
+        )
+        if item.get("calendar_mapping_rule_id") != EV_CALENDAR_MAPPING_RULE_ID:
+            raise ValueError("EV member selection requires EV-CAL-001 calendar provenance")
+        if item.get("source_timestamp_index_policy") != "target_index_i_uses_source_index_i":
+            raise ValueError("EV member selection requires ordinal source-index provenance")
+        key = (component_id, library_id, member_id)
+        if key in seen:
+            raise ValueError("EV candidate source-member identity must be unique")
+        seen.add(key)
+        row = dict(item)
+        row["processed_path"] = path
+        row["candidate_processed_sha256_file"] = processed_sha
+        row["batch_seed"] = _require_int(item.get("batch_seed"), "batch_seed")
+        row["returned_profile_index"] = _require_int(
+            item.get("returned_profile_index"),
+            "returned_profile_index",
+        )
+        validated.append(row)
+    return validated
+
+
+def _require_ev005b_approved(decisions_text: str) -> None:
+    if not isinstance(decisions_text, str) or "EV-005B" not in decisions_text:
+        raise PermissionError("EV-005B approval is required before EV member selection")
+    for line in decisions_text.splitlines():
+        if line.startswith("| EV-005B |"):
+            cells = [cell.strip().lower() for cell in line.strip().strip("|").split("|")]
+            status = cells[6] if len(cells) > 6 else ""
+            signoff = cells[7] if len(cells) > 7 else ""
+            if status.startswith("approved") and signoff not in {"", "--"}:
+                return
+            raise PermissionError("EV-005B remains unapproved; EV member selection is blocked")
+    raise PermissionError("EV-005B approval row is required before EV member selection")
 def ev_member_selection_implementation_plan() -> dict[str, object]:
     """Return the PI-facing plan for future EV member-selection implementation."""
 
