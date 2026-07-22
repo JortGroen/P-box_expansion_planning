@@ -21,6 +21,9 @@ from src.ev_model import (
     adoption_node_allocations,
     adoption_scenarios,
     allocate_charge_points_to_nodes,
+    allocate_public_charge_points_by_capacity_class,
+    public_set_b_capacity_allocation_readiness_artifact,
+    public_set_b_capacity_class_totals,
     apply_ev_cal001_ordinal_mapping,
     build_ev_integration_readiness_artifact,
     canonical_ev_planning_calendar_2035,
@@ -1300,6 +1303,121 @@ def test_allocate_charge_points_validates_inputs_directly() -> None:
     with pytest.raises(ValueError, match="positive"):
         allocate_charge_points_to_nodes(2, (("load_a", 0.0),))
 
+
+def test_public_set_b_capacity_class_totals_use_ev008a_largest_remainder() -> None:
+    assert public_set_b_capacity_class_totals(5) == {
+        "public_11kw": 2,
+        "public_13kw": 1,
+        "public_15kw": 1,
+        "public_22kw": 1,
+    }
+    assert public_set_b_capacity_class_totals(8) == {
+        "public_11kw": 2,
+        "public_13kw": 2,
+        "public_15kw": 2,
+        "public_22kw": 2,
+    }
+
+
+def test_public_set_b_capacity_allocation_conserves_node_and_class_totals() -> None:
+    public_by_node = {"load_b": 3, "load_a": 5}
+
+    allocation = allocate_public_charge_points_by_capacity_class(public_by_node)
+
+    assert list(allocation) == ["load_a", "load_b"]
+    assert {node_id: sum(row.values()) for node_id, row in allocation.items()} == {
+        "load_a": 5,
+        "load_b": 3,
+    }
+    assert {
+        capacity_class: sum(row[capacity_class] for row in allocation.values())
+        for capacity_class in ("public_11kw", "public_13kw", "public_15kw", "public_22kw")
+    } == public_set_b_capacity_class_totals(8)
+    assert allocate_public_charge_points_by_capacity_class(public_by_node) == allocation
+
+
+def test_public_set_b_capacity_allocation_validates_inputs_directly() -> None:
+    with pytest.raises(ValueError, match="true integer"):
+        allocate_public_charge_points_by_capacity_class({"load_a": 1.2})
+    with pytest.raises(ValueError, match="non-negative"):
+        allocate_public_charge_points_by_capacity_class({"load_a": -1})
+    with pytest.raises(ValueError, match="non-empty"):
+        allocate_public_charge_points_by_capacity_class({})
+    with pytest.raises(ValueError, match="unique"):
+        allocate_public_charge_points_by_capacity_class(
+            {"load_a": 1},
+            capacity_mix=(("public_11kw", 11, 0.5), ("public_11kw", 13, 0.5)),
+        )
+
+
+def test_public_set_b_readiness_artifact_from_committed_candidate_adapter() -> None:
+    adapter = json.loads(
+        Path("data/metadata/ev_adoption/e2_s2_ev_ic1_candidate_adapter_artifact.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    artifact = public_set_b_capacity_allocation_readiness_artifact(adapter)
+    committed = json.loads(
+        Path("data/metadata/ev_adoption/e2_s2_public_set_b_capacity_allocation_readiness.json").read_text(
+            encoding="utf-8"
+        )
+    )
+
+    assert committed == artifact
+    assert artifact["artifact_type"] == "ev_public_set_b_capacity_allocation_readiness"
+    assert artifact["decision_id"] == "EV-008A"
+    assert artifact["library_id"] == "B_public_vancar_cp_y2030_equal_mix"
+    assert artifact["policy"] == {
+        "candidate_libraries_only": True,
+        "held_out_access": False,
+        "profile_arrays_loaded": False,
+        "integrated_analysis_performed": False,
+        "event_or_p_e_analysis_performed": False,
+        "m_sufficiency_claimed": False,
+        "public_smart_profiles_included": False,
+        "dc_or_fast_charging_included": False,
+    }
+    assert set(artifact["scenario_totals"]) == {"low", "middle", "high"}
+    expected_public = {"low": 4183, "middle": 5127, "high": 6138}
+    for scenario_record in artifact["scenario_allocations"]:
+        scenario = scenario_record["scenario"]
+        by_node = scenario_record["public_by_node"]
+        by_class = scenario_record["public_by_node_by_capacity_class"]
+        class_totals = scenario_record["capacity_class_totals"]
+
+        assert scenario_record["node_count"] == 115
+        assert scenario_record["public_charge_points"] == expected_public[scenario]
+        assert sum(by_node.values()) == expected_public[scenario]
+        assert sum(class_totals.values()) == expected_public[scenario]
+        assert class_totals == public_set_b_capacity_class_totals(expected_public[scenario])
+        assert set(by_node) == set(by_class)
+        for node_id, node_total in by_node.items():
+            assert sum(by_class[node_id].values()) == node_total
+    classes = artifact["candidate_library"]["capacity_classes"]
+    assert {record["cp_capacity_kw"] for record in classes.values()} == {11, 13, 15, 22}
+    assert {record["candidate_member_count"] for record in classes.values()} == {300}
+
+
+def test_public_set_b_readiness_rejects_held_out_or_wrong_library() -> None:
+    adapter = json.loads(
+        Path("data/metadata/ev_adoption/e2_s2_ev_ic1_candidate_adapter_artifact.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    adapter["policy"]["held_out_access"] = True
+    with pytest.raises(ValueError, match="held-out"):
+        public_set_b_capacity_allocation_readiness_artifact(adapter)
+
+    adapter = json.loads(
+        Path("data/metadata/ev_adoption/e2_s2_ev_ic1_candidate_adapter_artifact.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    for library in adapter["candidate_libraries"]:
+        if library["component_id"] == EV_PUBLIC_COMPONENT:
+            library["library_id"] = "wrong"
+    with pytest.raises(ValueError, match="EV-008A Set B"):
+        public_set_b_capacity_allocation_readiness_artifact(adapter)
 
 def test_adoption_node_allocations_conserve_home_and_public_counts() -> None:
     allocations = adoption_node_allocations(_adoption_config())

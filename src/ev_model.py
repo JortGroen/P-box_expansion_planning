@@ -24,6 +24,13 @@ EV_CALENDAR_MAPPING_RULE_ID = "EV-CAL-001"
 EV_CALENDAR_MAPPING_RULE_VERSION = "ordinal-v1"
 EV_SOURCE_CALENDAR_ID = "elaad-2025-europe-amsterdam-15min"
 EV_TARGET_CALENDAR_ID = "planning-2035-europe-amsterdam-15min"
+EV_PUBLIC_SET_B_LIBRARY_ID = "B_public_vancar_cp_y2030_equal_mix"
+EV_PUBLIC_SET_B_CAPACITY_MIX = (
+    ("public_11kw", 11, 0.25),
+    ("public_13kw", 13, 0.25),
+    ("public_15kw", 15, 0.25),
+    ("public_22kw", 22, 0.25),
+)
 
 
 @dataclass(frozen=True)
@@ -1451,6 +1458,176 @@ def allocate_charge_points_to_nodes(
     return floors
 
 
+def public_set_b_capacity_class_totals(
+    total_public_charge_points: int,
+    capacity_mix: Sequence[tuple[str, int, float]] = EV_PUBLIC_SET_B_CAPACITY_MIX,
+) -> dict[str, int]:
+    """Split a public charge-point total across signed EV-008A capacity classes."""
+
+    validated = _validate_public_set_b_capacity_mix(capacity_mix)
+    weights = tuple((capacity_class, share) for capacity_class, _, share in validated)
+    return allocate_charge_points_to_nodes(total_public_charge_points, weights)
+
+
+def allocate_public_charge_points_by_capacity_class(
+    public_by_node: Mapping[str, int],
+    capacity_mix: Sequence[tuple[str, int, float]] = EV_PUBLIC_SET_B_CAPACITY_MIX,
+) -> dict[str, dict[str, int]]:
+    """Allocate public node counts into EV-008A capacity classes deterministically."""
+
+    node_totals = _require_int_mapping(dict(public_by_node), "public_by_node")
+    validated = _validate_public_set_b_capacity_mix(capacity_mix)
+    total_public = sum(node_totals.values())
+    class_totals = public_set_b_capacity_class_totals(total_public, validated)
+    class_ids = tuple(capacity_class for capacity_class, _, _ in validated)
+    total_share = sum(share for _, _, share in validated)
+    cells: dict[tuple[str, str], int] = {}
+    row_remaining = dict(node_totals)
+    col_remaining = dict(class_totals)
+    fractional_ranks: list[tuple[float, str, str]] = []
+
+    for node_id in sorted(node_totals):
+        for capacity_class, _, share in validated:
+            quota = node_totals[node_id] * share / total_share
+            floor = int(np.floor(quota))
+            cells[(node_id, capacity_class)] = floor
+            row_remaining[node_id] -= floor
+            col_remaining[capacity_class] -= floor
+            fractional_ranks.append((quota - floor, node_id, capacity_class))
+
+    # The matrix rounding must conserve both the per-node public count and the
+    # EV-008A class totals, otherwise IC-1 could silently sample the wrong mix.
+    ranked = sorted(fractional_ranks, key=lambda item: (-item[0], item[1], item[2]))
+    while any(value > 0 for value in row_remaining.values()):
+        changed = False
+        for _, node_id, capacity_class in ranked:
+            if row_remaining[node_id] > 0 and col_remaining[capacity_class] > 0:
+                cells[(node_id, capacity_class)] += 1
+                row_remaining[node_id] -= 1
+                col_remaining[capacity_class] -= 1
+                changed = True
+                if not any(value > 0 for value in row_remaining.values()):
+                    break
+        if not changed:
+            raise ValueError("Unable to conserve public capacity-class allocation totals")
+
+    if any(value != 0 for value in row_remaining.values()) or any(value != 0 for value in col_remaining.values()):
+        raise ValueError("Public capacity-class allocation failed conservation checks")
+    allocation = {
+        node_id: {capacity_class: cells[(node_id, capacity_class)] for capacity_class in class_ids}
+        for node_id in sorted(node_totals)
+    }
+    for node_id, row in allocation.items():
+        if sum(row.values()) != node_totals[node_id]:
+            raise ValueError("Public capacity-class allocation changed a node total")
+    for capacity_class in class_ids:
+        if sum(row[capacity_class] for row in allocation.values()) != class_totals[capacity_class]:
+            raise ValueError("Public capacity-class allocation changed a class total")
+    return allocation
+
+
+def public_set_b_capacity_allocation_readiness_artifact(
+    candidate_adapter_artifact: Mapping[str, Any],
+) -> dict[str, object]:
+    """Build candidate-only public Set B capacity allocations from IC-1 readiness metadata."""
+
+    if candidate_adapter_artifact.get("artifact_type") != "ev_to_ic1_candidate_adapter_artifact":
+        raise ValueError("Expected an EV-to-IC-1 candidate adapter artifact")
+    policy = candidate_adapter_artifact.get("policy")
+    if not isinstance(policy, dict) or policy.get("held_out_access") is not False:
+        raise ValueError("Public Set B readiness must not use held-out profiles")
+    if policy.get("m_sufficiency_claimed") is not False or policy.get("integrated_analysis_performed") is not False:
+        raise ValueError("Public Set B readiness cannot include M sufficiency or integrated analysis")
+
+    libraries = candidate_adapter_artifact.get("candidate_libraries")
+    if not isinstance(libraries, (list, tuple)):
+        raise ValueError("Candidate adapter artifact must include candidate_libraries")
+    public_libraries = [
+        library for library in libraries
+        if isinstance(library, dict) and library.get("component_id") == EV_PUBLIC_COMPONENT
+    ]
+    if len(public_libraries) != 1:
+        raise ValueError("Expected exactly one public EV candidate library")
+    public_library = public_libraries[0]
+    if public_library.get("library_id") != EV_PUBLIC_SET_B_LIBRARY_ID:
+        raise ValueError("Public readiness requires the EV-008A Set B library")
+    if public_library.get("candidate_member_count") != 1200:
+        raise ValueError("EV-008A public Set B candidate member count must be 1200")
+
+    class_metadata = _public_set_b_candidate_class_metadata(public_library)
+    allocations = candidate_adapter_artifact.get("node_allocations")
+    if not isinstance(allocations, (list, tuple)):
+        raise ValueError("Candidate adapter artifact must include node_allocations")
+    scenario_records: list[dict[str, object]] = []
+    scenario_totals: dict[str, dict[str, int]] = {}
+    for allocation in allocations:
+        if not isinstance(allocation, dict):
+            raise ValueError("Node allocation records must be mappings")
+        scenario = _require_non_empty_string(allocation.get("scenario"), "scenario")
+        public_by_node = _require_int_mapping(allocation.get("public_by_node"), "public_by_node")
+        class_by_node = allocate_public_charge_points_by_capacity_class(public_by_node)
+        class_totals = {
+            capacity_class: sum(row[capacity_class] for row in class_by_node.values())
+            for capacity_class, _, _ in EV_PUBLIC_SET_B_CAPACITY_MIX
+        }
+        public_total = sum(public_by_node.values())
+        scenario_totals[scenario] = {"public": public_total, "classes": class_totals}
+        scenario_records.append(
+            {
+                "scenario": scenario,
+                "year": _require_int(allocation.get("year"), "year"),
+                "node_count": len(public_by_node),
+                "public_charge_points": public_total,
+                "capacity_class_totals": class_totals,
+                "public_by_node": dict(sorted(public_by_node.items())),
+                "public_by_node_by_capacity_class": class_by_node,
+                "node_total_conservation_verified": True,
+                "capacity_class_total_conservation_verified": True,
+            }
+        )
+
+    return {
+        "schema_version": 1,
+        "artifact_type": "ev_public_set_b_capacity_allocation_readiness",
+        "decision_id": "EV-008A",
+        "source_candidate_adapter_artifact": "data/metadata/ev_adoption/e2_s2_ev_ic1_candidate_adapter_artifact.json",
+        "planning_year": _require_int(candidate_adapter_artifact.get("planning_year"), "planning_year"),
+        "allocation_method_id": candidate_adapter_artifact.get("allocation_method_id"),
+        "library_id": EV_PUBLIC_SET_B_LIBRARY_ID,
+        "component_id": EV_PUBLIC_COMPONENT,
+        "capacity_mix": [
+            {"capacity_class": capacity_class, "cp_capacity_kw": cp_capacity_kw, "share": share}
+            for capacity_class, cp_capacity_kw, share in EV_PUBLIC_SET_B_CAPACITY_MIX
+        ],
+        "candidate_library": class_metadata,
+        "scenario_totals": dict(sorted(scenario_totals.items())),
+        "scenario_allocations": sorted(scenario_records, key=lambda item: str(item["scenario"])),
+        "provenance_fields_required_later": [
+            "scenario",
+            "node_id",
+            "capacity_class",
+            "cp_capacity_kw",
+            "component_id",
+            "library_id",
+            "batch_seed",
+            "returned_profile_index",
+            "source_member_id",
+            "component_stream_id",
+            "candidate_processed_sha256_file",
+            "calendar_mapping_rule_id",
+        ],
+        "policy": {
+            "candidate_libraries_only": True,
+            "held_out_access": False,
+            "profile_arrays_loaded": False,
+            "integrated_analysis_performed": False,
+            "event_or_p_e_analysis_performed": False,
+            "m_sufficiency_claimed": False,
+            "public_smart_profiles_included": False,
+            "dc_or_fast_charging_included": False,
+        },
+    }
+
 def adoption_node_allocations(config: dict[str, Any]) -> tuple[NodeChargePointAllocation, ...]:
     """Derive deterministic per-node home/public charge-point allocations."""
 
@@ -1754,6 +1931,73 @@ def read_gzip_json(path: Path) -> bytes:
 def _sha256_file(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
+
+def _validate_public_set_b_capacity_mix(
+    capacity_mix: Sequence[tuple[str, int, float]],
+) -> tuple[tuple[str, int, float], ...]:
+    if not capacity_mix:
+        raise ValueError("EV-008A capacity mix must be non-empty")
+    validated: list[tuple[str, int, float]] = []
+    seen_classes: set[str] = set()
+    for raw_capacity_class, raw_cp_capacity_kw, raw_share in capacity_mix:
+        capacity_class = _require_non_empty_string(raw_capacity_class, "capacity_class")
+        if capacity_class in seen_classes:
+            raise ValueError("EV-008A capacity classes must be unique")
+        seen_classes.add(capacity_class)
+        cp_capacity_kw = _require_int(raw_cp_capacity_kw, f"{capacity_class} cp_capacity_kw")
+        if cp_capacity_kw <= 0:
+            raise ValueError("EV-008A cp_capacity_kw values must be positive")
+        share = float(raw_share)
+        if not np.isfinite(share) or share <= 0.0:
+            raise ValueError("EV-008A capacity shares must be finite and positive")
+        validated.append((capacity_class, cp_capacity_kw, share))
+    return tuple(validated)
+
+
+def _public_set_b_candidate_class_metadata(public_library: Mapping[str, Any]) -> dict[str, object]:
+    batches = public_library.get("candidate_batches")
+    if not isinstance(batches, (list, tuple)):
+        raise ValueError("Public Set B library must include candidate_batches")
+    by_class: dict[str, dict[str, object]] = {}
+    expected_mix = {capacity_class: cp_capacity_kw for capacity_class, cp_capacity_kw, _ in EV_PUBLIC_SET_B_CAPACITY_MIX}
+    for batch in batches:
+        if not isinstance(batch, dict):
+            raise ValueError("Public Set B candidate batches must be mappings")
+        capacity_class = _require_non_empty_string(batch.get("capacity_class"), "capacity_class")
+        cp_capacity_kw = _require_int(batch.get("cp_capacity_kw"), f"{capacity_class} cp_capacity_kw")
+        if capacity_class not in expected_mix or expected_mix[capacity_class] != cp_capacity_kw:
+            raise ValueError("Public Set B candidate batch does not match EV-008A capacity mix")
+        n_profiles = _require_int(batch.get("n_profiles"), f"{capacity_class} n_profiles")
+        if n_profiles != 100:
+            raise ValueError("Public Set B candidate batches must contain 100 profiles")
+        seed = _require_int(batch.get("seed"), f"{capacity_class} seed")
+        processed_sha = _require_sha256(batch.get("processed_sha256_file"), "processed_sha256_file")
+        record = by_class.setdefault(
+            capacity_class,
+            {
+                "capacity_class": capacity_class,
+                "cp_capacity_kw": cp_capacity_kw,
+                "candidate_member_count": 0,
+                "candidate_seeds": [],
+                "processed_sha256_files": [],
+            },
+        )
+        record["candidate_member_count"] = int(record["candidate_member_count"]) + n_profiles
+        record["candidate_seeds"].append(seed)  # type: ignore[index]
+        record["processed_sha256_files"].append(processed_sha)  # type: ignore[index]
+    if set(by_class) != set(expected_mix):
+        raise ValueError("Public Set B candidate library must cover all EV-008A capacity classes")
+    for capacity_class, record in by_class.items():
+        if record["candidate_member_count"] != 300:
+            raise ValueError(f"Public Set B class {capacity_class} must have 300 candidate members")
+        record["candidate_seeds"] = sorted(record["candidate_seeds"])  # type: ignore[index]
+        record["processed_sha256_files"] = sorted(record["processed_sha256_files"])  # type: ignore[index]
+    return {
+        "candidate_member_count": public_library.get("candidate_member_count"),
+        "candidate_batch_count": public_library.get("candidate_batch_count"),
+        "capacity_classes": dict(sorted(by_class.items())),
+        "member_reference": public_library.get("member_reference", {}),
+    }
 
 def _national_projection_from_mapping(item: Any, *, outlook_id: str) -> NationalOutlookProjection:
     if not isinstance(item, dict):

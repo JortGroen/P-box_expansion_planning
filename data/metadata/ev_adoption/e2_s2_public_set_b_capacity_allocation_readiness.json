@@ -1,0 +1,2627 @@
+{
+  "allocation_method_id": "A-014",
+  "artifact_type": "ev_public_set_b_capacity_allocation_readiness",
+  "candidate_library": {
+    "candidate_batch_count": 12,
+    "candidate_member_count": 1200,
+    "capacity_classes": {
+      "public_11kw": {
+        "candidate_member_count": 300,
+        "candidate_seeds": [
+          152001,
+          152101,
+          152201
+        ],
+        "capacity_class": "public_11kw",
+        "cp_capacity_kw": 11,
+        "processed_sha256_files": [
+          "355dc279aaaae3951ca6f1b12998e271fd0af00cda4bbaaf73f5899492715273",
+          "3e6a59a852ca720afd7501c5e24d1d10c961effba4595c47686fdba7c9d4b70b",
+          "d6af85428f4e34b8a7b1a87a5f661317e3ee61d370a57e91450a28fdfd48ea22"
+        ]
+      },
+      "public_13kw": {
+        "candidate_member_count": 300,
+        "candidate_seeds": [
+          152301,
+          152401,
+          152501
+        ],
+        "capacity_class": "public_13kw",
+        "cp_capacity_kw": 13,
+        "processed_sha256_files": [
+          "3c3b4c60fde7c3fc22c03aa88c025f8bdb4c63cd55ace3af92cd7f39c2f4221f",
+          "5d69d13adda8b1ffa7019a756d63cb68a38019fb60c92b32da2cf64d209565f9",
+          "fc3ab1ef7eefd60bc8b65c0176d8123ec5467379203621841bddaac2b370c1df"
+        ]
+      },
+      "public_15kw": {
+        "candidate_member_count": 300,
+        "candidate_seeds": [
+          152601,
+          152701,
+          152801
+        ],
+        "capacity_class": "public_15kw",
+        "cp_capacity_kw": 15,
+        "processed_sha256_files": [
+          "00035179b1012e9f0ce32ba98aedcffe6e050214838d70eab581fd811b94050f",
+          "274bf965e6f0c07d8c33c86f62b2febb7ff8fe21026884aae89213b89735a7ac",
+          "5dd5651cded0974e23b6d0934c7ba467b42d74b62b643ee8ed83b80aed108f9c"
+        ]
+      },
+      "public_22kw": {
+        "candidate_member_count": 300,
+        "candidate_seeds": [
+          152901,
+          153001,
+          153101
+        ],
+        "capacity_class": "public_22kw",
+        "cp_capacity_kw": 22,
+        "processed_sha256_files": [
+          "21476f45e867b37be0dc9e78c4d17faa41fd6eeb58acc1d971e3449ce61b8437",
+          "ce6558b4ed9a12f0f8fa36d9a69a46f560f6f9297464c4d3052dad869e059737",
+          "f28f83f190b8c0c8d66f7eee7efa6e27009743403bbb27a88a35695f5c49a377"
+        ]
+      }
+    },
+    "member_reference": {
+      "compact_representation": "Members are the Cartesian expansion of each candidate batch seed and returned_profile_index_range; no profile arrays are loaded.",
+      "member_id_rule": "profile_<batch_seed>_<returned_profile_index:03d>",
+      "member_rows_materialized": false
+    }
+  },
+  "capacity_mix": [
+    {
+      "capacity_class": "public_11kw",
+      "cp_capacity_kw": 11,
+      "share": 0.25
+    },
+    {
+      "capacity_class": "public_13kw",
+      "cp_capacity_kw": 13,
+      "share": 0.25
+    },
+    {
+      "capacity_class": "public_15kw",
+      "cp_capacity_kw": 15,
+      "share": 0.25
+    },
+    {
+      "capacity_class": "public_22kw",
+      "cp_capacity_kw": 22,
+      "share": 0.25
+    }
+  ],
+  "component_id": "ev_public",
+  "decision_id": "EV-008A",
+  "library_id": "B_public_vancar_cp_y2030_equal_mix",
+  "planning_year": 2035,
+  "policy": {
+    "candidate_libraries_only": true,
+    "dc_or_fast_charging_included": false,
+    "event_or_p_e_analysis_performed": false,
+    "held_out_access": false,
+    "integrated_analysis_performed": false,
+    "m_sufficiency_claimed": false,
+    "profile_arrays_loaded": false,
+    "public_smart_profiles_included": false
+  },
+  "provenance_fields_required_later": [
+    "scenario",
+    "node_id",
+    "capacity_class",
+    "cp_capacity_kw",
+    "component_id",
+    "library_id",
+    "batch_seed",
+    "returned_profile_index",
+    "source_member_id",
+    "component_stream_id",
+    "candidate_processed_sha256_file",
+    "calendar_mapping_rule_id"
+  ],
+  "scenario_allocations": [
+    {
+      "capacity_class_total_conservation_verified": true,
+      "capacity_class_totals": {
+        "public_11kw": 1535,
+        "public_13kw": 1535,
+        "public_15kw": 1534,
+        "public_22kw": 1534
+      },
+      "node_count": 115,
+      "node_total_conservation_verified": true,
+      "public_by_node": {
+        "load_000": 66,
+        "load_001": 86,
+        "load_002": 80,
+        "load_003": 80,
+        "load_004": 47,
+        "load_005": 47,
+        "load_006": 80,
+        "load_007": 39,
+        "load_008": 47,
+        "load_009": 64,
+        "load_010": 47,
+        "load_011": 80,
+        "load_012": 80,
+        "load_013": 80,
+        "load_014": 80,
+        "load_015": 80,
+        "load_016": 47,
+        "load_017": 47,
+        "load_018": 80,
+        "load_019": 80,
+        "load_020": 47,
+        "load_021": 64,
+        "load_022": 64,
+        "load_023": 47,
+        "load_024": 47,
+        "load_025": 47,
+        "load_026": 64,
+        "load_027": 39,
+        "load_028": 39,
+        "load_029": 64,
+        "load_030": 47,
+        "load_031": 47,
+        "load_032": 64,
+        "load_033": 39,
+        "load_034": 39,
+        "load_035": 39,
+        "load_036": 39,
+        "load_037": 39,
+        "load_038": 39,
+        "load_039": 47,
+        "load_040": 64,
+        "load_041": 47,
+        "load_042": 64,
+        "load_043": 39,
+        "load_044": 47,
+        "load_045": 39,
+        "load_046": 47,
+        "load_047": 47,
+        "load_048": 47,
+        "load_049": 47,
+        "load_050": 47,
+        "load_051": 39,
+        "load_052": 39,
+        "load_053": 39,
+        "load_054": 47,
+        "load_055": 64,
+        "load_056": 47,
+        "load_057": 47,
+        "load_058": 47,
+        "load_059": 64,
+        "load_060": 39,
+        "load_061": 16,
+        "load_062": 16,
+        "load_063": 16,
+        "load_064": 39,
+        "load_065": 16,
+        "load_066": 80,
+        "load_067": 47,
+        "load_068": 64,
+        "load_069": 64,
+        "load_070": 16,
+        "load_071": 39,
+        "load_072": 39,
+        "load_073": 39,
+        "load_074": 39,
+        "load_075": 47,
+        "load_076": 80,
+        "load_077": 80,
+        "load_078": 39,
+        "load_079": 39,
+        "load_080": 64,
+        "load_081": 64,
+        "load_082": 47,
+        "load_083": 86,
+        "load_084": 80,
+        "load_085": 80,
+        "load_086": 80,
+        "load_087": 79,
+        "load_088": 79,
+        "load_089": 79,
+        "load_090": 47,
+        "load_091": 79,
+        "load_092": 47,
+        "load_093": 47,
+        "load_094": 79,
+        "load_095": 47,
+        "load_096": 64,
+        "load_097": 79,
+        "load_098": 47,
+        "load_099": 47,
+        "load_100": 79,
+        "load_101": 47,
+        "load_102": 39,
+        "load_103": 39,
+        "load_104": 47,
+        "load_105": 64,
+        "load_106": 47,
+        "load_107": 39,
+        "load_108": 16,
+        "load_109": 64,
+        "load_110": 64,
+        "load_111": 41,
+        "load_112": 17,
+        "load_113": 46,
+        "load_114": 48
+      },
+      "public_by_node_by_capacity_class": {
+        "load_000": {
+          "public_11kw": 16,
+          "public_13kw": 16,
+          "public_15kw": 16,
+          "public_22kw": 18
+        },
+        "load_001": {
+          "public_11kw": 21,
+          "public_13kw": 21,
+          "public_15kw": 21,
+          "public_22kw": 23
+        },
+        "load_002": {
+          "public_11kw": 20,
+          "public_13kw": 20,
+          "public_15kw": 20,
+          "public_22kw": 20
+        },
+        "load_003": {
+          "public_11kw": 20,
+          "public_13kw": 20,
+          "public_15kw": 20,
+          "public_22kw": 20
+        },
+        "load_004": {
+          "public_11kw": 12,
+          "public_13kw": 12,
+          "public_15kw": 12,
+          "public_22kw": 11
+        },
+        "load_005": {
+          "public_11kw": 12,
+          "public_13kw": 12,
+          "public_15kw": 12,
+          "public_22kw": 11
+        },
+        "load_006": {
+          "public_11kw": 20,
+          "public_13kw": 20,
+          "public_15kw": 20,
+          "public_22kw": 20
+        },
+        "load_007": {
+          "public_11kw": 10,
+          "public_13kw": 10,
+          "public_15kw": 10,
+          "public_22kw": 9
+        },
+        "load_008": {
+          "public_11kw": 12,
+          "public_13kw": 12,
+          "public_15kw": 12,
+          "public_22kw": 11
+        },
+        "load_009": {
+          "public_11kw": 16,
+          "public_13kw": 16,
+          "public_15kw": 16,
+          "public_22kw": 16
+        },
+        "load_010": {
+          "public_11kw": 12,
+          "public_13kw": 12,
+          "public_15kw": 12,
+          "public_22kw": 11
+        },
+        "load_011": {
+          "public_11kw": 20,
+          "public_13kw": 20,
+          "public_15kw": 20,
+          "public_22kw": 20
+        },
+        "load_012": {
+          "public_11kw": 20,
+          "public_13kw": 20,
+          "public_15kw": 20,
+          "public_22kw": 20
+        },
+        "load_013": {
+          "public_11kw": 20,
+          "public_13kw": 20,
+          "public_15kw": 20,
+          "public_22kw": 20
+        },
+        "load_014": {
+          "public_11kw": 20,
+          "public_13kw": 20,
+          "public_15kw": 20,
+          "public_22kw": 20
+        },
+        "load_015": {
+          "public_11kw": 20,
+          "public_13kw": 20,
+          "public_15kw": 20,
+          "public_22kw": 20
+        },
+        "load_016": {
+          "public_11kw": 12,
+          "public_13kw": 12,
+          "public_15kw": 12,
+          "public_22kw": 11
+        },
+        "load_017": {
+          "public_11kw": 12,
+          "public_13kw": 12,
+          "public_15kw": 12,
+          "public_22kw": 11
+        },
+        "load_018": {
+          "public_11kw": 20,
+          "public_13kw": 20,
+          "public_15kw": 20,
+          "public_22kw": 20
+        },
+        "load_019": {
+          "public_11kw": 20,
+          "public_13kw": 20,
+          "public_15kw": 20,
+          "public_22kw": 20
+        },
+        "load_020": {
+          "public_11kw": 12,
+          "public_13kw": 12,
+          "public_15kw": 12,
+          "public_22kw": 11
+        },
+        "load_021": {
+          "public_11kw": 16,
+          "public_13kw": 16,
+          "public_15kw": 16,
+          "public_22kw": 16
+        },
+        "load_022": {
+          "public_11kw": 16,
+          "public_13kw": 16,
+          "public_15kw": 16,
+          "public_22kw": 16
+        },
+        "load_023": {
+          "public_11kw": 12,
+          "public_13kw": 12,
+          "public_15kw": 12,
+          "public_22kw": 11
+        },
+        "load_024": {
+          "public_11kw": 12,
+          "public_13kw": 12,
+          "public_15kw": 12,
+          "public_22kw": 11
+        },
+        "load_025": {
+          "public_11kw": 12,
+          "public_13kw": 12,
+          "public_15kw": 12,
+          "public_22kw": 11
+        },
+        "load_026": {
+          "public_11kw": 16,
+          "public_13kw": 16,
+          "public_15kw": 16,
+          "public_22kw": 16
+        },
+        "load_027": {
+          "public_11kw": 10,
+          "public_13kw": 10,
+          "public_15kw": 10,
+          "public_22kw": 9
+        },
+        "load_028": {
+          "public_11kw": 10,
+          "public_13kw": 10,
+          "public_15kw": 10,
+          "public_22kw": 9
+        },
+        "load_029": {
+          "public_11kw": 16,
+          "public_13kw": 16,
+          "public_15kw": 16,
+          "public_22kw": 16
+        },
+        "load_030": {
+          "public_11kw": 12,
+          "public_13kw": 12,
+          "public_15kw": 12,
+          "public_22kw": 11
+        },
+        "load_031": {
+          "public_11kw": 12,
+          "public_13kw": 12,
+          "public_15kw": 12,
+          "public_22kw": 11
+        },
+        "load_032": {
+          "public_11kw": 16,
+          "public_13kw": 16,
+          "public_15kw": 16,
+          "public_22kw": 16
+        },
+        "load_033": {
+          "public_11kw": 10,
+          "public_13kw": 10,
+          "public_15kw": 10,
+          "public_22kw": 9
+        },
+        "load_034": {
+          "public_11kw": 10,
+          "public_13kw": 10,
+          "public_15kw": 10,
+          "public_22kw": 9
+        },
+        "load_035": {
+          "public_11kw": 10,
+          "public_13kw": 10,
+          "public_15kw": 10,
+          "public_22kw": 9
+        },
+        "load_036": {
+          "public_11kw": 10,
+          "public_13kw": 10,
+          "public_15kw": 10,
+          "public_22kw": 9
+        },
+        "load_037": {
+          "public_11kw": 10,
+          "public_13kw": 10,
+          "public_15kw": 10,
+          "public_22kw": 9
+        },
+        "load_038": {
+          "public_11kw": 10,
+          "public_13kw": 10,
+          "public_15kw": 10,
+          "public_22kw": 9
+        },
+        "load_039": {
+          "public_11kw": 12,
+          "public_13kw": 12,
+          "public_15kw": 12,
+          "public_22kw": 11
+        },
+        "load_040": {
+          "public_11kw": 16,
+          "public_13kw": 16,
+          "public_15kw": 16,
+          "public_22kw": 16
+        },
+        "load_041": {
+          "public_11kw": 12,
+          "public_13kw": 12,
+          "public_15kw": 12,
+          "public_22kw": 11
+        },
+        "load_042": {
+          "public_11kw": 16,
+          "public_13kw": 16,
+          "public_15kw": 16,
+          "public_22kw": 16
+        },
+        "load_043": {
+          "public_11kw": 10,
+          "public_13kw": 10,
+          "public_15kw": 10,
+          "public_22kw": 9
+        },
+        "load_044": {
+          "public_11kw": 12,
+          "public_13kw": 12,
+          "public_15kw": 12,
+          "public_22kw": 11
+        },
+        "load_045": {
+          "public_11kw": 10,
+          "public_13kw": 10,
+          "public_15kw": 10,
+          "public_22kw": 9
+        },
+        "load_046": {
+          "public_11kw": 12,
+          "public_13kw": 12,
+          "public_15kw": 12,
+          "public_22kw": 11
+        },
+        "load_047": {
+          "public_11kw": 12,
+          "public_13kw": 12,
+          "public_15kw": 12,
+          "public_22kw": 11
+        },
+        "load_048": {
+          "public_11kw": 12,
+          "public_13kw": 12,
+          "public_15kw": 12,
+          "public_22kw": 11
+        },
+        "load_049": {
+          "public_11kw": 12,
+          "public_13kw": 12,
+          "public_15kw": 12,
+          "public_22kw": 11
+        },
+        "load_050": {
+          "public_11kw": 12,
+          "public_13kw": 12,
+          "public_15kw": 12,
+          "public_22kw": 11
+        },
+        "load_051": {
+          "public_11kw": 10,
+          "public_13kw": 10,
+          "public_15kw": 10,
+          "public_22kw": 9
+        },
+        "load_052": {
+          "public_11kw": 10,
+          "public_13kw": 10,
+          "public_15kw": 10,
+          "public_22kw": 9
+        },
+        "load_053": {
+          "public_11kw": 10,
+          "public_13kw": 10,
+          "public_15kw": 10,
+          "public_22kw": 9
+        },
+        "load_054": {
+          "public_11kw": 12,
+          "public_13kw": 12,
+          "public_15kw": 12,
+          "public_22kw": 11
+        },
+        "load_055": {
+          "public_11kw": 16,
+          "public_13kw": 16,
+          "public_15kw": 16,
+          "public_22kw": 16
+        },
+        "load_056": {
+          "public_11kw": 12,
+          "public_13kw": 12,
+          "public_15kw": 12,
+          "public_22kw": 11
+        },
+        "load_057": {
+          "public_11kw": 12,
+          "public_13kw": 12,
+          "public_15kw": 12,
+          "public_22kw": 11
+        },
+        "load_058": {
+          "public_11kw": 12,
+          "public_13kw": 12,
+          "public_15kw": 12,
+          "public_22kw": 11
+        },
+        "load_059": {
+          "public_11kw": 16,
+          "public_13kw": 16,
+          "public_15kw": 16,
+          "public_22kw": 16
+        },
+        "load_060": {
+          "public_11kw": 10,
+          "public_13kw": 10,
+          "public_15kw": 10,
+          "public_22kw": 9
+        },
+        "load_061": {
+          "public_11kw": 4,
+          "public_13kw": 4,
+          "public_15kw": 4,
+          "public_22kw": 4
+        },
+        "load_062": {
+          "public_11kw": 4,
+          "public_13kw": 4,
+          "public_15kw": 4,
+          "public_22kw": 4
+        },
+        "load_063": {
+          "public_11kw": 4,
+          "public_13kw": 4,
+          "public_15kw": 4,
+          "public_22kw": 4
+        },
+        "load_064": {
+          "public_11kw": 10,
+          "public_13kw": 10,
+          "public_15kw": 10,
+          "public_22kw": 9
+        },
+        "load_065": {
+          "public_11kw": 4,
+          "public_13kw": 4,
+          "public_15kw": 4,
+          "public_22kw": 4
+        },
+        "load_066": {
+          "public_11kw": 20,
+          "public_13kw": 20,
+          "public_15kw": 20,
+          "public_22kw": 20
+        },
+        "load_067": {
+          "public_11kw": 12,
+          "public_13kw": 12,
+          "public_15kw": 12,
+          "public_22kw": 11
+        },
+        "load_068": {
+          "public_11kw": 16,
+          "public_13kw": 16,
+          "public_15kw": 16,
+          "public_22kw": 16
+        },
+        "load_069": {
+          "public_11kw": 16,
+          "public_13kw": 16,
+          "public_15kw": 16,
+          "public_22kw": 16
+        },
+        "load_070": {
+          "public_11kw": 4,
+          "public_13kw": 4,
+          "public_15kw": 4,
+          "public_22kw": 4
+        },
+        "load_071": {
+          "public_11kw": 10,
+          "public_13kw": 10,
+          "public_15kw": 10,
+          "public_22kw": 9
+        },
+        "load_072": {
+          "public_11kw": 10,
+          "public_13kw": 10,
+          "public_15kw": 10,
+          "public_22kw": 9
+        },
+        "load_073": {
+          "public_11kw": 10,
+          "public_13kw": 10,
+          "public_15kw": 10,
+          "public_22kw": 9
+        },
+        "load_074": {
+          "public_11kw": 10,
+          "public_13kw": 10,
+          "public_15kw": 10,
+          "public_22kw": 9
+        },
+        "load_075": {
+          "public_11kw": 12,
+          "public_13kw": 12,
+          "public_15kw": 12,
+          "public_22kw": 11
+        },
+        "load_076": {
+          "public_11kw": 20,
+          "public_13kw": 20,
+          "public_15kw": 20,
+          "public_22kw": 20
+        },
+        "load_077": {
+          "public_11kw": 20,
+          "public_13kw": 20,
+          "public_15kw": 20,
+          "public_22kw": 20
+        },
+        "load_078": {
+          "public_11kw": 10,
+          "public_13kw": 10,
+          "public_15kw": 10,
+          "public_22kw": 9
+        },
+        "load_079": {
+          "public_11kw": 10,
+          "public_13kw": 10,
+          "public_15kw": 10,
+          "public_22kw": 9
+        },
+        "load_080": {
+          "public_11kw": 16,
+          "public_13kw": 16,
+          "public_15kw": 16,
+          "public_22kw": 16
+        },
+        "load_081": {
+          "public_11kw": 16,
+          "public_13kw": 16,
+          "public_15kw": 16,
+          "public_22kw": 16
+        },
+        "load_082": {
+          "public_11kw": 12,
+          "public_13kw": 12,
+          "public_15kw": 12,
+          "public_22kw": 11
+        },
+        "load_083": {
+          "public_11kw": 21,
+          "public_13kw": 21,
+          "public_15kw": 21,
+          "public_22kw": 23
+        },
+        "load_084": {
+          "public_11kw": 20,
+          "public_13kw": 20,
+          "public_15kw": 20,
+          "public_22kw": 20
+        },
+        "load_085": {
+          "public_11kw": 20,
+          "public_13kw": 20,
+          "public_15kw": 20,
+          "public_22kw": 20
+        },
+        "load_086": {
+          "public_11kw": 20,
+          "public_13kw": 20,
+          "public_15kw": 20,
+          "public_22kw": 20
+        },
+        "load_087": {
+          "public_11kw": 20,
+          "public_13kw": 20,
+          "public_15kw": 20,
+          "public_22kw": 19
+        },
+        "load_088": {
+          "public_11kw": 20,
+          "public_13kw": 20,
+          "public_15kw": 20,
+          "public_22kw": 19
+        },
+        "load_089": {
+          "public_11kw": 20,
+          "public_13kw": 20,
+          "public_15kw": 20,
+          "public_22kw": 19
+        },
+        "load_090": {
+          "public_11kw": 12,
+          "public_13kw": 12,
+          "public_15kw": 12,
+          "public_22kw": 11
+        },
+        "load_091": {
+          "public_11kw": 20,
+          "public_13kw": 20,
+          "public_15kw": 19,
+          "public_22kw": 20
+        },
+        "load_092": {
+          "public_11kw": 11,
+          "public_13kw": 11,
+          "public_15kw": 11,
+          "public_22kw": 14
+        },
+        "load_093": {
+          "public_11kw": 11,
+          "public_13kw": 11,
+          "public_15kw": 11,
+          "public_22kw": 14
+        },
+        "load_094": {
+          "public_11kw": 19,
+          "public_13kw": 19,
+          "public_15kw": 19,
+          "public_22kw": 22
+        },
+        "load_095": {
+          "public_11kw": 11,
+          "public_13kw": 11,
+          "public_15kw": 11,
+          "public_22kw": 14
+        },
+        "load_096": {
+          "public_11kw": 16,
+          "public_13kw": 16,
+          "public_15kw": 16,
+          "public_22kw": 16
+        },
+        "load_097": {
+          "public_11kw": 19,
+          "public_13kw": 19,
+          "public_15kw": 19,
+          "public_22kw": 22
+        },
+        "load_098": {
+          "public_11kw": 11,
+          "public_13kw": 11,
+          "public_15kw": 11,
+          "public_22kw": 14
+        },
+        "load_099": {
+          "public_11kw": 11,
+          "public_13kw": 11,
+          "public_15kw": 11,
+          "public_22kw": 14
+        },
+        "load_100": {
+          "public_11kw": 19,
+          "public_13kw": 19,
+          "public_15kw": 19,
+          "public_22kw": 22
+        },
+        "load_101": {
+          "public_11kw": 11,
+          "public_13kw": 11,
+          "public_15kw": 11,
+          "public_22kw": 14
+        },
+        "load_102": {
+          "public_11kw": 9,
+          "public_13kw": 9,
+          "public_15kw": 9,
+          "public_22kw": 12
+        },
+        "load_103": {
+          "public_11kw": 9,
+          "public_13kw": 9,
+          "public_15kw": 9,
+          "public_22kw": 12
+        },
+        "load_104": {
+          "public_11kw": 11,
+          "public_13kw": 11,
+          "public_15kw": 11,
+          "public_22kw": 14
+        },
+        "load_105": {
+          "public_11kw": 16,
+          "public_13kw": 16,
+          "public_15kw": 16,
+          "public_22kw": 16
+        },
+        "load_106": {
+          "public_11kw": 11,
+          "public_13kw": 11,
+          "public_15kw": 11,
+          "public_22kw": 14
+        },
+        "load_107": {
+          "public_11kw": 9,
+          "public_13kw": 9,
+          "public_15kw": 9,
+          "public_22kw": 12
+        },
+        "load_108": {
+          "public_11kw": 4,
+          "public_13kw": 4,
+          "public_15kw": 4,
+          "public_22kw": 4
+        },
+        "load_109": {
+          "public_11kw": 16,
+          "public_13kw": 16,
+          "public_15kw": 16,
+          "public_22kw": 16
+        },
+        "load_110": {
+          "public_11kw": 16,
+          "public_13kw": 16,
+          "public_15kw": 16,
+          "public_22kw": 16
+        },
+        "load_111": {
+          "public_11kw": 10,
+          "public_13kw": 10,
+          "public_15kw": 10,
+          "public_22kw": 11
+        },
+        "load_112": {
+          "public_11kw": 4,
+          "public_13kw": 4,
+          "public_15kw": 4,
+          "public_22kw": 5
+        },
+        "load_113": {
+          "public_11kw": 11,
+          "public_13kw": 11,
+          "public_15kw": 11,
+          "public_22kw": 13
+        },
+        "load_114": {
+          "public_11kw": 12,
+          "public_13kw": 12,
+          "public_15kw": 12,
+          "public_22kw": 12
+        }
+      },
+      "public_charge_points": 6138,
+      "scenario": "high",
+      "year": 2035
+    },
+    {
+      "capacity_class_total_conservation_verified": true,
+      "capacity_class_totals": {
+        "public_11kw": 1046,
+        "public_13kw": 1046,
+        "public_15kw": 1046,
+        "public_22kw": 1045
+      },
+      "node_count": 115,
+      "node_total_conservation_verified": true,
+      "public_by_node": {
+        "load_000": 45,
+        "load_001": 58,
+        "load_002": 54,
+        "load_003": 54,
+        "load_004": 32,
+        "load_005": 32,
+        "load_006": 54,
+        "load_007": 27,
+        "load_008": 32,
+        "load_009": 44,
+        "load_010": 32,
+        "load_011": 54,
+        "load_012": 54,
+        "load_013": 54,
+        "load_014": 54,
+        "load_015": 54,
+        "load_016": 32,
+        "load_017": 32,
+        "load_018": 54,
+        "load_019": 54,
+        "load_020": 32,
+        "load_021": 44,
+        "load_022": 44,
+        "load_023": 32,
+        "load_024": 32,
+        "load_025": 32,
+        "load_026": 44,
+        "load_027": 27,
+        "load_028": 27,
+        "load_029": 44,
+        "load_030": 32,
+        "load_031": 32,
+        "load_032": 44,
+        "load_033": 27,
+        "load_034": 27,
+        "load_035": 27,
+        "load_036": 27,
+        "load_037": 27,
+        "load_038": 27,
+        "load_039": 32,
+        "load_040": 44,
+        "load_041": 32,
+        "load_042": 44,
+        "load_043": 27,
+        "load_044": 32,
+        "load_045": 27,
+        "load_046": 32,
+        "load_047": 32,
+        "load_048": 32,
+        "load_049": 32,
+        "load_050": 32,
+        "load_051": 27,
+        "load_052": 27,
+        "load_053": 27,
+        "load_054": 32,
+        "load_055": 44,
+        "load_056": 32,
+        "load_057": 32,
+        "load_058": 32,
+        "load_059": 44,
+        "load_060": 27,
+        "load_061": 10,
+        "load_062": 10,
+        "load_063": 10,
+        "load_064": 27,
+        "load_065": 10,
+        "load_066": 54,
+        "load_067": 32,
+        "load_068": 44,
+        "load_069": 44,
+        "load_070": 10,
+        "load_071": 27,
+        "load_072": 27,
+        "load_073": 27,
+        "load_074": 27,
+        "load_075": 32,
+        "load_076": 54,
+        "load_077": 54,
+        "load_078": 27,
+        "load_079": 27,
+        "load_080": 44,
+        "load_081": 44,
+        "load_082": 32,
+        "load_083": 58,
+        "load_084": 54,
+        "load_085": 54,
+        "load_086": 54,
+        "load_087": 54,
+        "load_088": 54,
+        "load_089": 54,
+        "load_090": 32,
+        "load_091": 54,
+        "load_092": 32,
+        "load_093": 32,
+        "load_094": 54,
+        "load_095": 32,
+        "load_096": 44,
+        "load_097": 54,
+        "load_098": 32,
+        "load_099": 32,
+        "load_100": 54,
+        "load_101": 32,
+        "load_102": 27,
+        "load_103": 27,
+        "load_104": 32,
+        "load_105": 44,
+        "load_106": 32,
+        "load_107": 26,
+        "load_108": 10,
+        "load_109": 44,
+        "load_110": 44,
+        "load_111": 28,
+        "load_112": 11,
+        "load_113": 31,
+        "load_114": 32
+      },
+      "public_by_node_by_capacity_class": {
+        "load_000": {
+          "public_11kw": 11,
+          "public_13kw": 11,
+          "public_15kw": 11,
+          "public_22kw": 12
+        },
+        "load_001": {
+          "public_11kw": 15,
+          "public_13kw": 15,
+          "public_15kw": 14,
+          "public_22kw": 14
+        },
+        "load_002": {
+          "public_11kw": 14,
+          "public_13kw": 14,
+          "public_15kw": 13,
+          "public_22kw": 13
+        },
+        "load_003": {
+          "public_11kw": 14,
+          "public_13kw": 14,
+          "public_15kw": 13,
+          "public_22kw": 13
+        },
+        "load_004": {
+          "public_11kw": 8,
+          "public_13kw": 8,
+          "public_15kw": 8,
+          "public_22kw": 8
+        },
+        "load_005": {
+          "public_11kw": 8,
+          "public_13kw": 8,
+          "public_15kw": 8,
+          "public_22kw": 8
+        },
+        "load_006": {
+          "public_11kw": 14,
+          "public_13kw": 14,
+          "public_15kw": 13,
+          "public_22kw": 13
+        },
+        "load_007": {
+          "public_11kw": 7,
+          "public_13kw": 7,
+          "public_15kw": 7,
+          "public_22kw": 6
+        },
+        "load_008": {
+          "public_11kw": 8,
+          "public_13kw": 8,
+          "public_15kw": 8,
+          "public_22kw": 8
+        },
+        "load_009": {
+          "public_11kw": 11,
+          "public_13kw": 11,
+          "public_15kw": 11,
+          "public_22kw": 11
+        },
+        "load_010": {
+          "public_11kw": 8,
+          "public_13kw": 8,
+          "public_15kw": 8,
+          "public_22kw": 8
+        },
+        "load_011": {
+          "public_11kw": 14,
+          "public_13kw": 14,
+          "public_15kw": 13,
+          "public_22kw": 13
+        },
+        "load_012": {
+          "public_11kw": 14,
+          "public_13kw": 14,
+          "public_15kw": 13,
+          "public_22kw": 13
+        },
+        "load_013": {
+          "public_11kw": 14,
+          "public_13kw": 14,
+          "public_15kw": 13,
+          "public_22kw": 13
+        },
+        "load_014": {
+          "public_11kw": 14,
+          "public_13kw": 14,
+          "public_15kw": 13,
+          "public_22kw": 13
+        },
+        "load_015": {
+          "public_11kw": 14,
+          "public_13kw": 14,
+          "public_15kw": 13,
+          "public_22kw": 13
+        },
+        "load_016": {
+          "public_11kw": 8,
+          "public_13kw": 8,
+          "public_15kw": 8,
+          "public_22kw": 8
+        },
+        "load_017": {
+          "public_11kw": 8,
+          "public_13kw": 8,
+          "public_15kw": 8,
+          "public_22kw": 8
+        },
+        "load_018": {
+          "public_11kw": 14,
+          "public_13kw": 14,
+          "public_15kw": 13,
+          "public_22kw": 13
+        },
+        "load_019": {
+          "public_11kw": 13,
+          "public_13kw": 13,
+          "public_15kw": 14,
+          "public_22kw": 14
+        },
+        "load_020": {
+          "public_11kw": 8,
+          "public_13kw": 8,
+          "public_15kw": 8,
+          "public_22kw": 8
+        },
+        "load_021": {
+          "public_11kw": 11,
+          "public_13kw": 11,
+          "public_15kw": 11,
+          "public_22kw": 11
+        },
+        "load_022": {
+          "public_11kw": 11,
+          "public_13kw": 11,
+          "public_15kw": 11,
+          "public_22kw": 11
+        },
+        "load_023": {
+          "public_11kw": 8,
+          "public_13kw": 8,
+          "public_15kw": 8,
+          "public_22kw": 8
+        },
+        "load_024": {
+          "public_11kw": 8,
+          "public_13kw": 8,
+          "public_15kw": 8,
+          "public_22kw": 8
+        },
+        "load_025": {
+          "public_11kw": 8,
+          "public_13kw": 8,
+          "public_15kw": 8,
+          "public_22kw": 8
+        },
+        "load_026": {
+          "public_11kw": 11,
+          "public_13kw": 11,
+          "public_15kw": 11,
+          "public_22kw": 11
+        },
+        "load_027": {
+          "public_11kw": 7,
+          "public_13kw": 7,
+          "public_15kw": 7,
+          "public_22kw": 6
+        },
+        "load_028": {
+          "public_11kw": 7,
+          "public_13kw": 7,
+          "public_15kw": 7,
+          "public_22kw": 6
+        },
+        "load_029": {
+          "public_11kw": 11,
+          "public_13kw": 11,
+          "public_15kw": 11,
+          "public_22kw": 11
+        },
+        "load_030": {
+          "public_11kw": 8,
+          "public_13kw": 8,
+          "public_15kw": 8,
+          "public_22kw": 8
+        },
+        "load_031": {
+          "public_11kw": 8,
+          "public_13kw": 8,
+          "public_15kw": 8,
+          "public_22kw": 8
+        },
+        "load_032": {
+          "public_11kw": 11,
+          "public_13kw": 11,
+          "public_15kw": 11,
+          "public_22kw": 11
+        },
+        "load_033": {
+          "public_11kw": 7,
+          "public_13kw": 7,
+          "public_15kw": 7,
+          "public_22kw": 6
+        },
+        "load_034": {
+          "public_11kw": 7,
+          "public_13kw": 7,
+          "public_15kw": 7,
+          "public_22kw": 6
+        },
+        "load_035": {
+          "public_11kw": 7,
+          "public_13kw": 7,
+          "public_15kw": 7,
+          "public_22kw": 6
+        },
+        "load_036": {
+          "public_11kw": 7,
+          "public_13kw": 7,
+          "public_15kw": 7,
+          "public_22kw": 6
+        },
+        "load_037": {
+          "public_11kw": 7,
+          "public_13kw": 7,
+          "public_15kw": 7,
+          "public_22kw": 6
+        },
+        "load_038": {
+          "public_11kw": 7,
+          "public_13kw": 7,
+          "public_15kw": 7,
+          "public_22kw": 6
+        },
+        "load_039": {
+          "public_11kw": 8,
+          "public_13kw": 8,
+          "public_15kw": 8,
+          "public_22kw": 8
+        },
+        "load_040": {
+          "public_11kw": 11,
+          "public_13kw": 11,
+          "public_15kw": 11,
+          "public_22kw": 11
+        },
+        "load_041": {
+          "public_11kw": 8,
+          "public_13kw": 8,
+          "public_15kw": 8,
+          "public_22kw": 8
+        },
+        "load_042": {
+          "public_11kw": 11,
+          "public_13kw": 11,
+          "public_15kw": 11,
+          "public_22kw": 11
+        },
+        "load_043": {
+          "public_11kw": 7,
+          "public_13kw": 7,
+          "public_15kw": 7,
+          "public_22kw": 6
+        },
+        "load_044": {
+          "public_11kw": 8,
+          "public_13kw": 8,
+          "public_15kw": 8,
+          "public_22kw": 8
+        },
+        "load_045": {
+          "public_11kw": 7,
+          "public_13kw": 7,
+          "public_15kw": 7,
+          "public_22kw": 6
+        },
+        "load_046": {
+          "public_11kw": 8,
+          "public_13kw": 8,
+          "public_15kw": 8,
+          "public_22kw": 8
+        },
+        "load_047": {
+          "public_11kw": 8,
+          "public_13kw": 8,
+          "public_15kw": 8,
+          "public_22kw": 8
+        },
+        "load_048": {
+          "public_11kw": 8,
+          "public_13kw": 8,
+          "public_15kw": 8,
+          "public_22kw": 8
+        },
+        "load_049": {
+          "public_11kw": 8,
+          "public_13kw": 8,
+          "public_15kw": 8,
+          "public_22kw": 8
+        },
+        "load_050": {
+          "public_11kw": 8,
+          "public_13kw": 8,
+          "public_15kw": 8,
+          "public_22kw": 8
+        },
+        "load_051": {
+          "public_11kw": 7,
+          "public_13kw": 7,
+          "public_15kw": 7,
+          "public_22kw": 6
+        },
+        "load_052": {
+          "public_11kw": 7,
+          "public_13kw": 7,
+          "public_15kw": 7,
+          "public_22kw": 6
+        },
+        "load_053": {
+          "public_11kw": 7,
+          "public_13kw": 7,
+          "public_15kw": 7,
+          "public_22kw": 6
+        },
+        "load_054": {
+          "public_11kw": 8,
+          "public_13kw": 8,
+          "public_15kw": 8,
+          "public_22kw": 8
+        },
+        "load_055": {
+          "public_11kw": 11,
+          "public_13kw": 11,
+          "public_15kw": 11,
+          "public_22kw": 11
+        },
+        "load_056": {
+          "public_11kw": 8,
+          "public_13kw": 8,
+          "public_15kw": 8,
+          "public_22kw": 8
+        },
+        "load_057": {
+          "public_11kw": 8,
+          "public_13kw": 8,
+          "public_15kw": 8,
+          "public_22kw": 8
+        },
+        "load_058": {
+          "public_11kw": 8,
+          "public_13kw": 8,
+          "public_15kw": 8,
+          "public_22kw": 8
+        },
+        "load_059": {
+          "public_11kw": 11,
+          "public_13kw": 11,
+          "public_15kw": 11,
+          "public_22kw": 11
+        },
+        "load_060": {
+          "public_11kw": 7,
+          "public_13kw": 7,
+          "public_15kw": 7,
+          "public_22kw": 6
+        },
+        "load_061": {
+          "public_11kw": 2,
+          "public_13kw": 2,
+          "public_15kw": 3,
+          "public_22kw": 3
+        },
+        "load_062": {
+          "public_11kw": 2,
+          "public_13kw": 2,
+          "public_15kw": 3,
+          "public_22kw": 3
+        },
+        "load_063": {
+          "public_11kw": 2,
+          "public_13kw": 2,
+          "public_15kw": 3,
+          "public_22kw": 3
+        },
+        "load_064": {
+          "public_11kw": 7,
+          "public_13kw": 7,
+          "public_15kw": 7,
+          "public_22kw": 6
+        },
+        "load_065": {
+          "public_11kw": 2,
+          "public_13kw": 2,
+          "public_15kw": 3,
+          "public_22kw": 3
+        },
+        "load_066": {
+          "public_11kw": 13,
+          "public_13kw": 13,
+          "public_15kw": 14,
+          "public_22kw": 14
+        },
+        "load_067": {
+          "public_11kw": 8,
+          "public_13kw": 8,
+          "public_15kw": 8,
+          "public_22kw": 8
+        },
+        "load_068": {
+          "public_11kw": 11,
+          "public_13kw": 11,
+          "public_15kw": 11,
+          "public_22kw": 11
+        },
+        "load_069": {
+          "public_11kw": 11,
+          "public_13kw": 11,
+          "public_15kw": 11,
+          "public_22kw": 11
+        },
+        "load_070": {
+          "public_11kw": 2,
+          "public_13kw": 2,
+          "public_15kw": 3,
+          "public_22kw": 3
+        },
+        "load_071": {
+          "public_11kw": 7,
+          "public_13kw": 7,
+          "public_15kw": 7,
+          "public_22kw": 6
+        },
+        "load_072": {
+          "public_11kw": 7,
+          "public_13kw": 7,
+          "public_15kw": 7,
+          "public_22kw": 6
+        },
+        "load_073": {
+          "public_11kw": 7,
+          "public_13kw": 7,
+          "public_15kw": 7,
+          "public_22kw": 6
+        },
+        "load_074": {
+          "public_11kw": 7,
+          "public_13kw": 7,
+          "public_15kw": 7,
+          "public_22kw": 6
+        },
+        "load_075": {
+          "public_11kw": 8,
+          "public_13kw": 8,
+          "public_15kw": 8,
+          "public_22kw": 8
+        },
+        "load_076": {
+          "public_11kw": 13,
+          "public_13kw": 13,
+          "public_15kw": 14,
+          "public_22kw": 14
+        },
+        "load_077": {
+          "public_11kw": 13,
+          "public_13kw": 13,
+          "public_15kw": 14,
+          "public_22kw": 14
+        },
+        "load_078": {
+          "public_11kw": 7,
+          "public_13kw": 7,
+          "public_15kw": 7,
+          "public_22kw": 6
+        },
+        "load_079": {
+          "public_11kw": 7,
+          "public_13kw": 7,
+          "public_15kw": 7,
+          "public_22kw": 6
+        },
+        "load_080": {
+          "public_11kw": 11,
+          "public_13kw": 11,
+          "public_15kw": 11,
+          "public_22kw": 11
+        },
+        "load_081": {
+          "public_11kw": 11,
+          "public_13kw": 11,
+          "public_15kw": 11,
+          "public_22kw": 11
+        },
+        "load_082": {
+          "public_11kw": 8,
+          "public_13kw": 8,
+          "public_15kw": 8,
+          "public_22kw": 8
+        },
+        "load_083": {
+          "public_11kw": 14,
+          "public_13kw": 14,
+          "public_15kw": 15,
+          "public_22kw": 15
+        },
+        "load_084": {
+          "public_11kw": 13,
+          "public_13kw": 13,
+          "public_15kw": 13,
+          "public_22kw": 15
+        },
+        "load_085": {
+          "public_11kw": 13,
+          "public_13kw": 13,
+          "public_15kw": 13,
+          "public_22kw": 15
+        },
+        "load_086": {
+          "public_11kw": 13,
+          "public_13kw": 13,
+          "public_15kw": 13,
+          "public_22kw": 15
+        },
+        "load_087": {
+          "public_11kw": 13,
+          "public_13kw": 13,
+          "public_15kw": 13,
+          "public_22kw": 15
+        },
+        "load_088": {
+          "public_11kw": 13,
+          "public_13kw": 13,
+          "public_15kw": 13,
+          "public_22kw": 15
+        },
+        "load_089": {
+          "public_11kw": 13,
+          "public_13kw": 13,
+          "public_15kw": 13,
+          "public_22kw": 15
+        },
+        "load_090": {
+          "public_11kw": 8,
+          "public_13kw": 8,
+          "public_15kw": 8,
+          "public_22kw": 8
+        },
+        "load_091": {
+          "public_11kw": 13,
+          "public_13kw": 13,
+          "public_15kw": 13,
+          "public_22kw": 15
+        },
+        "load_092": {
+          "public_11kw": 8,
+          "public_13kw": 8,
+          "public_15kw": 8,
+          "public_22kw": 8
+        },
+        "load_093": {
+          "public_11kw": 8,
+          "public_13kw": 8,
+          "public_15kw": 8,
+          "public_22kw": 8
+        },
+        "load_094": {
+          "public_11kw": 13,
+          "public_13kw": 13,
+          "public_15kw": 13,
+          "public_22kw": 15
+        },
+        "load_095": {
+          "public_11kw": 8,
+          "public_13kw": 8,
+          "public_15kw": 8,
+          "public_22kw": 8
+        },
+        "load_096": {
+          "public_11kw": 11,
+          "public_13kw": 11,
+          "public_15kw": 11,
+          "public_22kw": 11
+        },
+        "load_097": {
+          "public_11kw": 13,
+          "public_13kw": 13,
+          "public_15kw": 13,
+          "public_22kw": 15
+        },
+        "load_098": {
+          "public_11kw": 8,
+          "public_13kw": 8,
+          "public_15kw": 8,
+          "public_22kw": 8
+        },
+        "load_099": {
+          "public_11kw": 8,
+          "public_13kw": 8,
+          "public_15kw": 8,
+          "public_22kw": 8
+        },
+        "load_100": {
+          "public_11kw": 13,
+          "public_13kw": 13,
+          "public_15kw": 13,
+          "public_22kw": 15
+        },
+        "load_101": {
+          "public_11kw": 8,
+          "public_13kw": 8,
+          "public_15kw": 8,
+          "public_22kw": 8
+        },
+        "load_102": {
+          "public_11kw": 7,
+          "public_13kw": 7,
+          "public_15kw": 7,
+          "public_22kw": 6
+        },
+        "load_103": {
+          "public_11kw": 7,
+          "public_13kw": 7,
+          "public_15kw": 7,
+          "public_22kw": 6
+        },
+        "load_104": {
+          "public_11kw": 8,
+          "public_13kw": 8,
+          "public_15kw": 8,
+          "public_22kw": 8
+        },
+        "load_105": {
+          "public_11kw": 11,
+          "public_13kw": 11,
+          "public_15kw": 11,
+          "public_22kw": 11
+        },
+        "load_106": {
+          "public_11kw": 8,
+          "public_13kw": 8,
+          "public_15kw": 8,
+          "public_22kw": 8
+        },
+        "load_107": {
+          "public_11kw": 6,
+          "public_13kw": 6,
+          "public_15kw": 6,
+          "public_22kw": 8
+        },
+        "load_108": {
+          "public_11kw": 2,
+          "public_13kw": 2,
+          "public_15kw": 2,
+          "public_22kw": 4
+        },
+        "load_109": {
+          "public_11kw": 11,
+          "public_13kw": 11,
+          "public_15kw": 11,
+          "public_22kw": 11
+        },
+        "load_110": {
+          "public_11kw": 11,
+          "public_13kw": 11,
+          "public_15kw": 11,
+          "public_22kw": 11
+        },
+        "load_111": {
+          "public_11kw": 7,
+          "public_13kw": 7,
+          "public_15kw": 7,
+          "public_22kw": 7
+        },
+        "load_112": {
+          "public_11kw": 3,
+          "public_13kw": 3,
+          "public_15kw": 3,
+          "public_22kw": 2
+        },
+        "load_113": {
+          "public_11kw": 8,
+          "public_13kw": 8,
+          "public_15kw": 8,
+          "public_22kw": 7
+        },
+        "load_114": {
+          "public_11kw": 8,
+          "public_13kw": 8,
+          "public_15kw": 8,
+          "public_22kw": 8
+        }
+      },
+      "public_charge_points": 4183,
+      "scenario": "low",
+      "year": 2035
+    },
+    {
+      "capacity_class_total_conservation_verified": true,
+      "capacity_class_totals": {
+        "public_11kw": 1282,
+        "public_13kw": 1282,
+        "public_15kw": 1282,
+        "public_22kw": 1281
+      },
+      "node_count": 115,
+      "node_total_conservation_verified": true,
+      "public_by_node": {
+        "load_000": 55,
+        "load_001": 72,
+        "load_002": 66,
+        "load_003": 66,
+        "load_004": 40,
+        "load_005": 40,
+        "load_006": 66,
+        "load_007": 33,
+        "load_008": 40,
+        "load_009": 54,
+        "load_010": 40,
+        "load_011": 66,
+        "load_012": 66,
+        "load_013": 66,
+        "load_014": 66,
+        "load_015": 66,
+        "load_016": 40,
+        "load_017": 39,
+        "load_018": 66,
+        "load_019": 66,
+        "load_020": 39,
+        "load_021": 54,
+        "load_022": 54,
+        "load_023": 39,
+        "load_024": 39,
+        "load_025": 39,
+        "load_026": 54,
+        "load_027": 33,
+        "load_028": 33,
+        "load_029": 54,
+        "load_030": 39,
+        "load_031": 39,
+        "load_032": 54,
+        "load_033": 33,
+        "load_034": 33,
+        "load_035": 33,
+        "load_036": 33,
+        "load_037": 33,
+        "load_038": 33,
+        "load_039": 39,
+        "load_040": 54,
+        "load_041": 39,
+        "load_042": 54,
+        "load_043": 33,
+        "load_044": 39,
+        "load_045": 33,
+        "load_046": 39,
+        "load_047": 39,
+        "load_048": 39,
+        "load_049": 39,
+        "load_050": 39,
+        "load_051": 33,
+        "load_052": 33,
+        "load_053": 33,
+        "load_054": 39,
+        "load_055": 54,
+        "load_056": 39,
+        "load_057": 39,
+        "load_058": 39,
+        "load_059": 54,
+        "load_060": 33,
+        "load_061": 13,
+        "load_062": 13,
+        "load_063": 13,
+        "load_064": 33,
+        "load_065": 13,
+        "load_066": 66,
+        "load_067": 39,
+        "load_068": 54,
+        "load_069": 54,
+        "load_070": 13,
+        "load_071": 33,
+        "load_072": 33,
+        "load_073": 33,
+        "load_074": 33,
+        "load_075": 39,
+        "load_076": 66,
+        "load_077": 66,
+        "load_078": 33,
+        "load_079": 33,
+        "load_080": 54,
+        "load_081": 54,
+        "load_082": 39,
+        "load_083": 72,
+        "load_084": 66,
+        "load_085": 66,
+        "load_086": 66,
+        "load_087": 66,
+        "load_088": 66,
+        "load_089": 66,
+        "load_090": 39,
+        "load_091": 66,
+        "load_092": 39,
+        "load_093": 39,
+        "load_094": 66,
+        "load_095": 39,
+        "load_096": 54,
+        "load_097": 66,
+        "load_098": 39,
+        "load_099": 39,
+        "load_100": 66,
+        "load_101": 39,
+        "load_102": 33,
+        "load_103": 33,
+        "load_104": 39,
+        "load_105": 54,
+        "load_106": 39,
+        "load_107": 33,
+        "load_108": 13,
+        "load_109": 54,
+        "load_110": 54,
+        "load_111": 34,
+        "load_112": 14,
+        "load_113": 38,
+        "load_114": 40
+      },
+      "public_by_node_by_capacity_class": {
+        "load_000": {
+          "public_11kw": 14,
+          "public_13kw": 14,
+          "public_15kw": 14,
+          "public_22kw": 13
+        },
+        "load_001": {
+          "public_11kw": 18,
+          "public_13kw": 18,
+          "public_15kw": 18,
+          "public_22kw": 18
+        },
+        "load_002": {
+          "public_11kw": 17,
+          "public_13kw": 17,
+          "public_15kw": 16,
+          "public_22kw": 16
+        },
+        "load_003": {
+          "public_11kw": 17,
+          "public_13kw": 17,
+          "public_15kw": 16,
+          "public_22kw": 16
+        },
+        "load_004": {
+          "public_11kw": 10,
+          "public_13kw": 10,
+          "public_15kw": 10,
+          "public_22kw": 10
+        },
+        "load_005": {
+          "public_11kw": 10,
+          "public_13kw": 10,
+          "public_15kw": 10,
+          "public_22kw": 10
+        },
+        "load_006": {
+          "public_11kw": 17,
+          "public_13kw": 17,
+          "public_15kw": 16,
+          "public_22kw": 16
+        },
+        "load_007": {
+          "public_11kw": 8,
+          "public_13kw": 8,
+          "public_15kw": 8,
+          "public_22kw": 9
+        },
+        "load_008": {
+          "public_11kw": 10,
+          "public_13kw": 10,
+          "public_15kw": 10,
+          "public_22kw": 10
+        },
+        "load_009": {
+          "public_11kw": 14,
+          "public_13kw": 14,
+          "public_15kw": 13,
+          "public_22kw": 13
+        },
+        "load_010": {
+          "public_11kw": 10,
+          "public_13kw": 10,
+          "public_15kw": 10,
+          "public_22kw": 10
+        },
+        "load_011": {
+          "public_11kw": 17,
+          "public_13kw": 17,
+          "public_15kw": 16,
+          "public_22kw": 16
+        },
+        "load_012": {
+          "public_11kw": 17,
+          "public_13kw": 17,
+          "public_15kw": 16,
+          "public_22kw": 16
+        },
+        "load_013": {
+          "public_11kw": 17,
+          "public_13kw": 17,
+          "public_15kw": 16,
+          "public_22kw": 16
+        },
+        "load_014": {
+          "public_11kw": 17,
+          "public_13kw": 17,
+          "public_15kw": 16,
+          "public_22kw": 16
+        },
+        "load_015": {
+          "public_11kw": 17,
+          "public_13kw": 17,
+          "public_15kw": 16,
+          "public_22kw": 16
+        },
+        "load_016": {
+          "public_11kw": 10,
+          "public_13kw": 10,
+          "public_15kw": 10,
+          "public_22kw": 10
+        },
+        "load_017": {
+          "public_11kw": 10,
+          "public_13kw": 10,
+          "public_15kw": 10,
+          "public_22kw": 9
+        },
+        "load_018": {
+          "public_11kw": 17,
+          "public_13kw": 17,
+          "public_15kw": 16,
+          "public_22kw": 16
+        },
+        "load_019": {
+          "public_11kw": 17,
+          "public_13kw": 17,
+          "public_15kw": 16,
+          "public_22kw": 16
+        },
+        "load_020": {
+          "public_11kw": 10,
+          "public_13kw": 10,
+          "public_15kw": 10,
+          "public_22kw": 9
+        },
+        "load_021": {
+          "public_11kw": 14,
+          "public_13kw": 14,
+          "public_15kw": 13,
+          "public_22kw": 13
+        },
+        "load_022": {
+          "public_11kw": 14,
+          "public_13kw": 14,
+          "public_15kw": 13,
+          "public_22kw": 13
+        },
+        "load_023": {
+          "public_11kw": 10,
+          "public_13kw": 10,
+          "public_15kw": 10,
+          "public_22kw": 9
+        },
+        "load_024": {
+          "public_11kw": 10,
+          "public_13kw": 10,
+          "public_15kw": 10,
+          "public_22kw": 9
+        },
+        "load_025": {
+          "public_11kw": 10,
+          "public_13kw": 10,
+          "public_15kw": 10,
+          "public_22kw": 9
+        },
+        "load_026": {
+          "public_11kw": 14,
+          "public_13kw": 14,
+          "public_15kw": 13,
+          "public_22kw": 13
+        },
+        "load_027": {
+          "public_11kw": 8,
+          "public_13kw": 8,
+          "public_15kw": 8,
+          "public_22kw": 9
+        },
+        "load_028": {
+          "public_11kw": 8,
+          "public_13kw": 8,
+          "public_15kw": 8,
+          "public_22kw": 9
+        },
+        "load_029": {
+          "public_11kw": 14,
+          "public_13kw": 14,
+          "public_15kw": 13,
+          "public_22kw": 13
+        },
+        "load_030": {
+          "public_11kw": 10,
+          "public_13kw": 10,
+          "public_15kw": 10,
+          "public_22kw": 9
+        },
+        "load_031": {
+          "public_11kw": 10,
+          "public_13kw": 10,
+          "public_15kw": 10,
+          "public_22kw": 9
+        },
+        "load_032": {
+          "public_11kw": 14,
+          "public_13kw": 14,
+          "public_15kw": 13,
+          "public_22kw": 13
+        },
+        "load_033": {
+          "public_11kw": 8,
+          "public_13kw": 8,
+          "public_15kw": 8,
+          "public_22kw": 9
+        },
+        "load_034": {
+          "public_11kw": 8,
+          "public_13kw": 8,
+          "public_15kw": 8,
+          "public_22kw": 9
+        },
+        "load_035": {
+          "public_11kw": 8,
+          "public_13kw": 8,
+          "public_15kw": 8,
+          "public_22kw": 9
+        },
+        "load_036": {
+          "public_11kw": 8,
+          "public_13kw": 8,
+          "public_15kw": 8,
+          "public_22kw": 9
+        },
+        "load_037": {
+          "public_11kw": 8,
+          "public_13kw": 8,
+          "public_15kw": 8,
+          "public_22kw": 9
+        },
+        "load_038": {
+          "public_11kw": 8,
+          "public_13kw": 8,
+          "public_15kw": 8,
+          "public_22kw": 9
+        },
+        "load_039": {
+          "public_11kw": 10,
+          "public_13kw": 10,
+          "public_15kw": 10,
+          "public_22kw": 9
+        },
+        "load_040": {
+          "public_11kw": 14,
+          "public_13kw": 14,
+          "public_15kw": 13,
+          "public_22kw": 13
+        },
+        "load_041": {
+          "public_11kw": 10,
+          "public_13kw": 10,
+          "public_15kw": 10,
+          "public_22kw": 9
+        },
+        "load_042": {
+          "public_11kw": 14,
+          "public_13kw": 14,
+          "public_15kw": 13,
+          "public_22kw": 13
+        },
+        "load_043": {
+          "public_11kw": 8,
+          "public_13kw": 8,
+          "public_15kw": 8,
+          "public_22kw": 9
+        },
+        "load_044": {
+          "public_11kw": 10,
+          "public_13kw": 10,
+          "public_15kw": 10,
+          "public_22kw": 9
+        },
+        "load_045": {
+          "public_11kw": 8,
+          "public_13kw": 8,
+          "public_15kw": 8,
+          "public_22kw": 9
+        },
+        "load_046": {
+          "public_11kw": 10,
+          "public_13kw": 10,
+          "public_15kw": 10,
+          "public_22kw": 9
+        },
+        "load_047": {
+          "public_11kw": 10,
+          "public_13kw": 10,
+          "public_15kw": 10,
+          "public_22kw": 9
+        },
+        "load_048": {
+          "public_11kw": 10,
+          "public_13kw": 10,
+          "public_15kw": 10,
+          "public_22kw": 9
+        },
+        "load_049": {
+          "public_11kw": 10,
+          "public_13kw": 10,
+          "public_15kw": 10,
+          "public_22kw": 9
+        },
+        "load_050": {
+          "public_11kw": 10,
+          "public_13kw": 10,
+          "public_15kw": 10,
+          "public_22kw": 9
+        },
+        "load_051": {
+          "public_11kw": 8,
+          "public_13kw": 8,
+          "public_15kw": 8,
+          "public_22kw": 9
+        },
+        "load_052": {
+          "public_11kw": 8,
+          "public_13kw": 8,
+          "public_15kw": 8,
+          "public_22kw": 9
+        },
+        "load_053": {
+          "public_11kw": 8,
+          "public_13kw": 8,
+          "public_15kw": 8,
+          "public_22kw": 9
+        },
+        "load_054": {
+          "public_11kw": 10,
+          "public_13kw": 10,
+          "public_15kw": 10,
+          "public_22kw": 9
+        },
+        "load_055": {
+          "public_11kw": 14,
+          "public_13kw": 14,
+          "public_15kw": 13,
+          "public_22kw": 13
+        },
+        "load_056": {
+          "public_11kw": 10,
+          "public_13kw": 10,
+          "public_15kw": 10,
+          "public_22kw": 9
+        },
+        "load_057": {
+          "public_11kw": 10,
+          "public_13kw": 10,
+          "public_15kw": 10,
+          "public_22kw": 9
+        },
+        "load_058": {
+          "public_11kw": 10,
+          "public_13kw": 10,
+          "public_15kw": 10,
+          "public_22kw": 9
+        },
+        "load_059": {
+          "public_11kw": 14,
+          "public_13kw": 14,
+          "public_15kw": 13,
+          "public_22kw": 13
+        },
+        "load_060": {
+          "public_11kw": 8,
+          "public_13kw": 8,
+          "public_15kw": 8,
+          "public_22kw": 9
+        },
+        "load_061": {
+          "public_11kw": 3,
+          "public_13kw": 3,
+          "public_15kw": 3,
+          "public_22kw": 4
+        },
+        "load_062": {
+          "public_11kw": 3,
+          "public_13kw": 3,
+          "public_15kw": 3,
+          "public_22kw": 4
+        },
+        "load_063": {
+          "public_11kw": 3,
+          "public_13kw": 3,
+          "public_15kw": 3,
+          "public_22kw": 4
+        },
+        "load_064": {
+          "public_11kw": 8,
+          "public_13kw": 8,
+          "public_15kw": 8,
+          "public_22kw": 9
+        },
+        "load_065": {
+          "public_11kw": 3,
+          "public_13kw": 3,
+          "public_15kw": 3,
+          "public_22kw": 4
+        },
+        "load_066": {
+          "public_11kw": 17,
+          "public_13kw": 17,
+          "public_15kw": 16,
+          "public_22kw": 16
+        },
+        "load_067": {
+          "public_11kw": 10,
+          "public_13kw": 10,
+          "public_15kw": 10,
+          "public_22kw": 9
+        },
+        "load_068": {
+          "public_11kw": 14,
+          "public_13kw": 14,
+          "public_15kw": 13,
+          "public_22kw": 13
+        },
+        "load_069": {
+          "public_11kw": 13,
+          "public_13kw": 13,
+          "public_15kw": 14,
+          "public_22kw": 14
+        },
+        "load_070": {
+          "public_11kw": 3,
+          "public_13kw": 3,
+          "public_15kw": 3,
+          "public_22kw": 4
+        },
+        "load_071": {
+          "public_11kw": 8,
+          "public_13kw": 8,
+          "public_15kw": 8,
+          "public_22kw": 9
+        },
+        "load_072": {
+          "public_11kw": 8,
+          "public_13kw": 8,
+          "public_15kw": 8,
+          "public_22kw": 9
+        },
+        "load_073": {
+          "public_11kw": 8,
+          "public_13kw": 8,
+          "public_15kw": 8,
+          "public_22kw": 9
+        },
+        "load_074": {
+          "public_11kw": 8,
+          "public_13kw": 8,
+          "public_15kw": 8,
+          "public_22kw": 9
+        },
+        "load_075": {
+          "public_11kw": 10,
+          "public_13kw": 10,
+          "public_15kw": 10,
+          "public_22kw": 9
+        },
+        "load_076": {
+          "public_11kw": 16,
+          "public_13kw": 16,
+          "public_15kw": 17,
+          "public_22kw": 17
+        },
+        "load_077": {
+          "public_11kw": 16,
+          "public_13kw": 16,
+          "public_15kw": 17,
+          "public_22kw": 17
+        },
+        "load_078": {
+          "public_11kw": 8,
+          "public_13kw": 8,
+          "public_15kw": 8,
+          "public_22kw": 9
+        },
+        "load_079": {
+          "public_11kw": 8,
+          "public_13kw": 8,
+          "public_15kw": 8,
+          "public_22kw": 9
+        },
+        "load_080": {
+          "public_11kw": 13,
+          "public_13kw": 13,
+          "public_15kw": 14,
+          "public_22kw": 14
+        },
+        "load_081": {
+          "public_11kw": 13,
+          "public_13kw": 13,
+          "public_15kw": 14,
+          "public_22kw": 14
+        },
+        "load_082": {
+          "public_11kw": 10,
+          "public_13kw": 10,
+          "public_15kw": 10,
+          "public_22kw": 9
+        },
+        "load_083": {
+          "public_11kw": 18,
+          "public_13kw": 18,
+          "public_15kw": 18,
+          "public_22kw": 18
+        },
+        "load_084": {
+          "public_11kw": 16,
+          "public_13kw": 16,
+          "public_15kw": 17,
+          "public_22kw": 17
+        },
+        "load_085": {
+          "public_11kw": 16,
+          "public_13kw": 16,
+          "public_15kw": 17,
+          "public_22kw": 17
+        },
+        "load_086": {
+          "public_11kw": 16,
+          "public_13kw": 16,
+          "public_15kw": 17,
+          "public_22kw": 17
+        },
+        "load_087": {
+          "public_11kw": 16,
+          "public_13kw": 16,
+          "public_15kw": 17,
+          "public_22kw": 17
+        },
+        "load_088": {
+          "public_11kw": 16,
+          "public_13kw": 16,
+          "public_15kw": 17,
+          "public_22kw": 17
+        },
+        "load_089": {
+          "public_11kw": 16,
+          "public_13kw": 16,
+          "public_15kw": 17,
+          "public_22kw": 17
+        },
+        "load_090": {
+          "public_11kw": 10,
+          "public_13kw": 10,
+          "public_15kw": 10,
+          "public_22kw": 9
+        },
+        "load_091": {
+          "public_11kw": 16,
+          "public_13kw": 16,
+          "public_15kw": 17,
+          "public_22kw": 17
+        },
+        "load_092": {
+          "public_11kw": 10,
+          "public_13kw": 10,
+          "public_15kw": 10,
+          "public_22kw": 9
+        },
+        "load_093": {
+          "public_11kw": 10,
+          "public_13kw": 10,
+          "public_15kw": 10,
+          "public_22kw": 9
+        },
+        "load_094": {
+          "public_11kw": 16,
+          "public_13kw": 16,
+          "public_15kw": 17,
+          "public_22kw": 17
+        },
+        "load_095": {
+          "public_11kw": 10,
+          "public_13kw": 10,
+          "public_15kw": 10,
+          "public_22kw": 9
+        },
+        "load_096": {
+          "public_11kw": 13,
+          "public_13kw": 13,
+          "public_15kw": 14,
+          "public_22kw": 14
+        },
+        "load_097": {
+          "public_11kw": 16,
+          "public_13kw": 16,
+          "public_15kw": 17,
+          "public_22kw": 17
+        },
+        "load_098": {
+          "public_11kw": 10,
+          "public_13kw": 10,
+          "public_15kw": 10,
+          "public_22kw": 9
+        },
+        "load_099": {
+          "public_11kw": 10,
+          "public_13kw": 10,
+          "public_15kw": 10,
+          "public_22kw": 9
+        },
+        "load_100": {
+          "public_11kw": 16,
+          "public_13kw": 16,
+          "public_15kw": 17,
+          "public_22kw": 17
+        },
+        "load_101": {
+          "public_11kw": 10,
+          "public_13kw": 10,
+          "public_15kw": 10,
+          "public_22kw": 9
+        },
+        "load_102": {
+          "public_11kw": 8,
+          "public_13kw": 8,
+          "public_15kw": 8,
+          "public_22kw": 9
+        },
+        "load_103": {
+          "public_11kw": 8,
+          "public_13kw": 8,
+          "public_15kw": 8,
+          "public_22kw": 9
+        },
+        "load_104": {
+          "public_11kw": 10,
+          "public_13kw": 10,
+          "public_15kw": 10,
+          "public_22kw": 9
+        },
+        "load_105": {
+          "public_11kw": 13,
+          "public_13kw": 13,
+          "public_15kw": 14,
+          "public_22kw": 14
+        },
+        "load_106": {
+          "public_11kw": 10,
+          "public_13kw": 10,
+          "public_15kw": 10,
+          "public_22kw": 9
+        },
+        "load_107": {
+          "public_11kw": 8,
+          "public_13kw": 8,
+          "public_15kw": 8,
+          "public_22kw": 9
+        },
+        "load_108": {
+          "public_11kw": 3,
+          "public_13kw": 3,
+          "public_15kw": 3,
+          "public_22kw": 4
+        },
+        "load_109": {
+          "public_11kw": 13,
+          "public_13kw": 13,
+          "public_15kw": 14,
+          "public_22kw": 14
+        },
+        "load_110": {
+          "public_11kw": 13,
+          "public_13kw": 13,
+          "public_15kw": 14,
+          "public_22kw": 14
+        },
+        "load_111": {
+          "public_11kw": 8,
+          "public_13kw": 8,
+          "public_15kw": 9,
+          "public_22kw": 9
+        },
+        "load_112": {
+          "public_11kw": 3,
+          "public_13kw": 3,
+          "public_15kw": 4,
+          "public_22kw": 4
+        },
+        "load_113": {
+          "public_11kw": 9,
+          "public_13kw": 9,
+          "public_15kw": 10,
+          "public_22kw": 10
+        },
+        "load_114": {
+          "public_11kw": 10,
+          "public_13kw": 10,
+          "public_15kw": 10,
+          "public_22kw": 10
+        }
+      },
+      "public_charge_points": 5127,
+      "scenario": "middle",
+      "year": 2035
+    }
+  ],
+  "scenario_totals": {
+    "high": {
+      "classes": {
+        "public_11kw": 1535,
+        "public_13kw": 1535,
+        "public_15kw": 1534,
+        "public_22kw": 1534
+      },
+      "public": 6138
+    },
+    "low": {
+      "classes": {
+        "public_11kw": 1046,
+        "public_13kw": 1046,
+        "public_15kw": 1046,
+        "public_22kw": 1045
+      },
+      "public": 4183
+    },
+    "middle": {
+      "classes": {
+        "public_11kw": 1282,
+        "public_13kw": 1282,
+        "public_15kw": 1282,
+        "public_22kw": 1281
+      },
+      "public": 5127
+    }
+  },
+  "schema_version": 1,
+  "source_candidate_adapter_artifact": "data/metadata/ev_adoption/e2_s2_ev_ic1_candidate_adapter_artifact.json"
+}

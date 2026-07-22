@@ -751,7 +751,12 @@ four 100-profile API calls: 100 members per class. Candidate seeds are
 `153301`, `153401`, and `153501`. Each member is identified by partition,
 capacity class, `cp_capacity_kw`, batch seed, returned profile index, request
 checksum, raw and processed checksums, and control mode. The approval
-authorizes only source generation and structural validation. It does not
+authorizes only source generation and structural validation. The follow-up
+public Set B readiness artifact splits approved A-014 public node counts across
+the four EV-008A capacity classes with deterministic largest-remainder rounding
+while conserving both per-node totals and global class totals, and records the
+member, seed, checksum, and EV-CAL-001 provenance fields later required by
+IC-1. It does not
 approve public smart charging, DC/fast charging, held-out adequacy use,
 integrated net-load or event analysis, manuscript results, or a claim that the
 generated `M` is sufficient.
