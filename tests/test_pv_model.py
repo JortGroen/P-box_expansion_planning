@@ -747,6 +747,74 @@ def test_committed_d004_paired_weather_acceptance_scaffold_keeps_final_gates_blo
     assert any(item["gate"] == "paired HP/PV validation" for item in payload["blocked_acceptance_layers"])
 
 
+def test_d004_acceptance_tolerance_packet_is_metadata_only(tmp_path: Path) -> None:
+    metadata_src = Path("data/metadata/weather_pv")
+    metadata_dst = tmp_path / "metadata" / "weather_pv"
+    metadata_dst.mkdir(parents=True)
+    for name in [
+        weather_pv.D004_ACCEPTANCE_PACKET_NAME,
+        weather_pv.D004_PAIRED_WEATHER_ACCEPTANCE_SCAFFOLD_NAME,
+        weather_pv.D004_MEMBER_READINESS_DIAGNOSTICS_NAME,
+    ]:
+        (metadata_dst / name).write_text((metadata_src / name).read_text(encoding="utf-8"), encoding="utf-8")
+
+    payload = weather_pv.build_d004_acceptance_tolerance_packet(metadata_dir=tmp_path / "metadata")
+
+    assert payload["status"] == "pi_acceptance_tolerance_packet_proposed_not_signed"
+    assert payload["d004_final_acceptance"] is False
+    assert payload["paired_hp_pv_acceptance_run"] is False
+    assert {item["id"] for item in payload["satisfied_evidence_for_pi_review"]} == {
+        "D004-EVIDENCE-SOURCE-FILES",
+        "D004-EVIDENCE-KNMI-COMPLETENESS",
+        "D004-EVIDENCE-WEATHER-MEMBERS",
+        "D004-EVIDENCE-PVGIS-BOUNDARY",
+        "D004-EVIDENCE-WEATHER-IDENTITY",
+    }
+    assert all(item["status"] == "satisfied_for_pi_review_not_signed" for item in payload["satisfied_evidence_for_pi_review"])
+    assert {item["id"] for item in payload["unsigned_tolerance_decisions"]} == {
+        "D004-TOL-SOURCE-MEMBER",
+        "D004-TOL-PVGIS-SEASONAL-PEAK",
+        "D004-TOL-PAIRED-HP-PV",
+        "D004-TOL-COLD-SPELL",
+    }
+    assert any("HP annual local scaling" in item for item in payload["must_wait_for_hp_pv_validation"])
+    assert any("no event detection" in item for item in payload["out_of_scope_guards"])
+
+
+def test_committed_d004_acceptance_tolerance_packet_keeps_tolerances_unsigned() -> None:
+    path = Path(
+        "data/metadata/weather_pv/"
+        "d004_alkmaar_berkhout_2014_2023_v1_acceptance_tolerance_packet.json"
+    )
+    payload = json.loads(path.read_text(encoding="utf-8"))
+
+    assert payload["data_id"] == "D-004"
+    assert payload["status"] == "pi_acceptance_tolerance_packet_proposed_not_signed"
+    assert payload["source_member_acceptance_candidate"]["all_scaffold_checks_passed"] is True
+    assert payload["d004_final_acceptance"] is False
+    assert payload["cold_spell_acceptance_run"] is False
+    assert payload["no_integrated_analysis"] is True
+    assert payload["no_manuscript_results"] is True
+    assert all(item["status"] == "satisfied_for_pi_review_not_signed" for item in payload["satisfied_evidence_for_pi_review"])
+    seasonal = next(item for item in payload["unsigned_tolerance_decisions"] if item["id"] == "D004-TOL-PVGIS-SEASONAL-PEAK")
+    assert seasonal["current_diagnostic_range"]["annual_ghi_to_pvgis_gi_ratio_min"] == pytest.approx(0.806128)
+    assert seasonal["current_diagnostic_range"]["annual_ghi_to_pvgis_gi_ratio_max"] == pytest.approx(0.848755)
+    assert "PI supplies explicit" in " ".join(seasonal["options_for_pi"])
+    paired = next(item for item in payload["unsigned_tolerance_decisions"] if item["id"] == "D004-TOL-PAIRED-HP-PV")
+    assert paired["strict_identity_fields"] == [
+        "member_id",
+        "shared_weather_driver_id",
+        "source",
+        "first_timestamp_utc",
+        "last_timestamp_utc",
+        "n_timesteps",
+        "cadence_seconds",
+        "content_sha256",
+    ]
+    assert "no net-load aggregation" in payload["out_of_scope_guards"]
+    assert "no event detection or P(E)" in payload["out_of_scope_guards"]
+
+
 def test_d004_weather_member_builder_expands_knmi_hourly_fixture_to_utc_year(tmp_path: Path) -> None:
     metadata_dir = tmp_path / "metadata"
     _write_d004_fixture_manifest(tmp_path, metadata_dir, year=2014)
