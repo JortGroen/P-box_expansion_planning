@@ -1269,6 +1269,228 @@ def ev_ic1_candidate_adapter_artifact(
     }
 
 
+
+def ev_ic1_candidate_member_reference_artifact(
+    candidate_adapter_artifact: Mapping[str, Any],
+    *,
+    public_capacity_artifact: Mapping[str, Any] | None = None,
+) -> dict[str, object]:
+    """Expand candidate EV batch ranges into IC-1 source-member references."""
+
+    if candidate_adapter_artifact.get("artifact_type") != "ev_to_ic1_candidate_adapter_artifact":
+        raise ValueError("Expected an EV-to-IC-1 candidate adapter artifact")
+    policy = candidate_adapter_artifact.get("policy")
+    if not isinstance(policy, dict) or policy.get("held_out_access") is not False:
+        raise ValueError("Candidate member references must not include held-out access")
+    if policy.get("m_sufficiency_claimed") is not False or policy.get("integrated_analysis_performed") is not False:
+        raise ValueError("Candidate member references cannot claim M sufficiency or integrated analysis")
+    checksum = candidate_adapter_artifact.get("checksum_preconditions")
+    if not isinstance(checksum, dict) or checksum.get("candidate_only") is not True:
+        raise ValueError("Candidate member references require candidate-only checksum preconditions")
+    if checksum.get("profile_arrays_loaded") is not False:
+        raise ValueError("Candidate member references must not load profile arrays")
+    calendar = candidate_adapter_artifact.get("calendar_mapping_decision")
+    if not isinstance(calendar, dict) or calendar.get("approved_rule_id") != EV_CALENDAR_MAPPING_RULE_ID:
+        raise ValueError("Candidate member references require approved EV-CAL-001 mapping metadata")
+
+    libraries = candidate_adapter_artifact.get("candidate_libraries")
+    if not isinstance(libraries, (list, tuple)):
+        raise ValueError("Candidate adapter artifact must include candidate_libraries")
+    member_rows: list[dict[str, object]] = []
+    member_counts_by_component: dict[str, int] = {}
+    member_counts_by_public_capacity_class: dict[str, int] = {}
+    seen_keys: set[tuple[str, str, str]] = set()
+    for library in libraries:
+        if not isinstance(library, dict):
+            raise ValueError("Candidate library records must be mappings")
+        component_id = _require_non_empty_string(library.get("component_id"), "component_id")
+        library_id = _require_non_empty_string(library.get("library_id"), "library_id")
+        batches = library.get("candidate_batches")
+        if not isinstance(batches, (list, tuple)):
+            raise ValueError("Candidate library records must include candidate_batches")
+        for batch in batches:
+            if not isinstance(batch, dict):
+                raise ValueError("Candidate batch records must be mappings")
+            checksum_record = batch.get("checksum_verification")
+            if not isinstance(checksum_record, dict) or checksum_record.get("checksum_verified") is not True:
+                raise ValueError("Candidate member references require verified candidate checksums")
+            processed_sha = _require_sha256(batch.get("processed_sha256_file"), "processed_sha256_file")
+            processed_path = _require_non_empty_string(batch.get("processed_path"), "processed_path")
+            seed = _require_int(batch.get("seed"), "batch seed")
+            n_profiles = _require_int(batch.get("n_profiles"), "n_profiles")
+            n_timesteps = _require_int(batch.get("n_timesteps"), "n_timesteps")
+            if n_timesteps != EXPECTED_FULL_YEAR_STEPS:
+                raise ValueError("Candidate members must reference complete annual profiles")
+            returned_range = batch.get("returned_profile_index_range")
+            if not isinstance(returned_range, list) or len(returned_range) != 2:
+                raise ValueError("Candidate batches must record returned_profile_index_range")
+            start = _require_int(returned_range[0], "returned_profile_index start")
+            stop = _require_int(returned_range[1], "returned_profile_index stop")
+            if start != 0 or stop != n_profiles - 1:
+                raise ValueError("Candidate returned profile range must cover every profile exactly once")
+            capacity_class = batch.get("capacity_class")
+            capacity_class_value = None if capacity_class is None else _require_non_empty_string(capacity_class, "capacity_class")
+            cp_capacity_kw = batch.get("cp_capacity_kw")
+            cp_capacity_value = None if cp_capacity_kw is None else _require_int(cp_capacity_kw, "cp_capacity_kw")
+            for returned_profile_index in range(start, stop + 1):
+                source_member_id = f"profile_{seed}_{returned_profile_index:03d}"
+                key = (component_id, library_id, source_member_id)
+                if key in seen_keys:
+                    raise ValueError("Candidate source member IDs must be unique within a component library")
+                seen_keys.add(key)
+                row = {
+                    "partition": "candidate",
+                    "component_id": component_id,
+                    "library_id": library_id,
+                    "source_member_id": source_member_id,
+                    "batch_seed": seed,
+                    "returned_profile_index": returned_profile_index,
+                    "capacity_class": capacity_class_value,
+                    "cp_capacity_kw": cp_capacity_value,
+                    "processed_path": processed_path,
+                    "candidate_processed_sha256_file": processed_sha,
+                    "n_timesteps": n_timesteps,
+                    "calendar_mapping_rule_id": EV_CALENDAR_MAPPING_RULE_ID,
+                    "calendar_mapping_rule_version": EV_CALENDAR_MAPPING_RULE_VERSION,
+                    "source_calendar_id": EV_SOURCE_CALENDAR_ID,
+                    "target_calendar_id": EV_TARGET_CALENDAR_ID,
+                    "source_timestamp_index_policy": "target_index_i_uses_source_index_i",
+                    "weekday_weekend_preserved": False,
+                    "control_mode": "uncontrolled",
+                }
+                member_rows.append(row)
+                member_counts_by_component[component_id] = member_counts_by_component.get(component_id, 0) + 1
+                if component_id == EV_PUBLIC_COMPONENT:
+                    if capacity_class_value is None:
+                        raise ValueError("Public candidate members must record capacity_class")
+                    member_counts_by_public_capacity_class[capacity_class_value] = (
+                        member_counts_by_public_capacity_class.get(capacity_class_value, 0) + 1
+                    )
+    for library in libraries:
+        if isinstance(library, dict):
+            component_id = str(library.get("component_id"))
+            expected = _require_int(library.get("candidate_member_count"), "candidate_member_count")
+            if member_counts_by_component.get(component_id, 0) != expected:
+                raise ValueError("Expanded member count does not match candidate library metadata")
+
+    scenario_node_requirements = _ev_scenario_node_member_requirements(
+        candidate_adapter_artifact,
+        public_capacity_artifact=public_capacity_artifact,
+    )
+    return {
+        "schema_version": 1,
+        "artifact_type": "ev_ic1_candidate_member_reference",
+        "source_candidate_adapter_artifact": "data/metadata/ev_adoption/e2_s2_ev_ic1_candidate_adapter_artifact.json",
+        "source_public_capacity_artifact": (
+            "data/metadata/ev_adoption/e2_s2_public_set_b_capacity_allocation_readiness.json"
+            if public_capacity_artifact is not None
+            else None
+        ),
+        "planning_year": _require_int(candidate_adapter_artifact.get("planning_year"), "planning_year"),
+        "candidate_member_count_by_component": dict(sorted(member_counts_by_component.items())),
+        "public_candidate_member_count_by_capacity_class": dict(
+            sorted(member_counts_by_public_capacity_class.items())
+        ),
+        "candidate_members": sorted(
+            member_rows,
+            key=lambda item: (
+                str(item["component_id"]),
+                str(item["capacity_class"]),
+                int(item["batch_seed"]),
+                int(item["returned_profile_index"]),
+            ),
+        ),
+        "scenario_node_requirements": scenario_node_requirements,
+        "calendar_mapping": {
+            "status": "approved",
+            "rule_id": EV_CALENDAR_MAPPING_RULE_ID,
+            "rule_version": EV_CALENDAR_MAPPING_RULE_VERSION,
+            "source_calendar_id": EV_SOURCE_CALENDAR_ID,
+            "target_calendar_id": EV_TARGET_CALENDAR_ID,
+            "source_timestamp_index_policy": "target_index_i_uses_source_index_i",
+            "n_timesteps": EXPECTED_FULL_YEAR_STEPS,
+            "weekday_weekend_preserved": False,
+        },
+        "selection_boundary": {
+            "replacement_rule_chosen": False,
+            "component_stream_required": True,
+            "sample_rows_materialized": False,
+            "realization_selection_performed": False,
+        },
+        "policy": {
+            "candidate_libraries_only": True,
+            "held_out_access": False,
+            "profile_arrays_loaded": False,
+            "integrated_analysis_performed": False,
+            "event_or_p_e_analysis_performed": False,
+            "m_sufficiency_claimed": False,
+        },
+    }
+
+
+def _ev_scenario_node_member_requirements(
+    candidate_adapter_artifact: Mapping[str, Any],
+    *,
+    public_capacity_artifact: Mapping[str, Any] | None,
+) -> list[dict[str, object]]:
+    allocations = candidate_adapter_artifact.get("node_allocations")
+    if not isinstance(allocations, (list, tuple)):
+        raise ValueError("Candidate adapter artifact must include node_allocations")
+    public_by_scenario: dict[str, dict[str, dict[str, int]]] = {}
+    if public_capacity_artifact is not None:
+        if public_capacity_artifact.get("artifact_type") != "ev_public_set_b_capacity_allocation_readiness":
+            raise ValueError("Expected public Set B capacity allocation readiness artifact")
+        policy = public_capacity_artifact.get("policy")
+        if not isinstance(policy, dict) or policy.get("held_out_access") is not False:
+            raise ValueError("Public capacity artifact must not include held-out access")
+        scenario_allocations = public_capacity_artifact.get("scenario_allocations")
+        if not isinstance(scenario_allocations, (list, tuple)):
+            raise ValueError("Public capacity artifact must include scenario_allocations")
+        for item in scenario_allocations:
+            if not isinstance(item, dict):
+                raise ValueError("Public scenario allocation records must be mappings")
+            scenario = _require_non_empty_string(item.get("scenario"), "scenario")
+            by_node_raw = item.get("public_by_node_by_capacity_class")
+            if not isinstance(by_node_raw, dict):
+                raise ValueError("Public capacity artifact must include node-by-class public counts")
+            public_by_scenario[scenario] = {
+                _require_non_empty_string(node_id, "node_id"): _require_int_mapping(value, "public_by_capacity_class")
+                for node_id, value in by_node_raw.items()
+            }
+    records: list[dict[str, object]] = []
+    for allocation in allocations:
+        if not isinstance(allocation, dict):
+            raise ValueError("EV node allocation records must be mappings")
+        scenario = _require_non_empty_string(allocation.get("scenario"), "scenario")
+        home_by_node = _require_int_mapping(allocation.get("home_by_node"), "home_by_node")
+        public_by_node = _require_int_mapping(allocation.get("public_by_node"), "public_by_node")
+        if set(home_by_node) != set(public_by_node):
+            raise ValueError("Home and public node requirements must cover the same nodes")
+        public_capacity_by_node = public_by_scenario.get(scenario)
+        if public_capacity_artifact is not None and public_capacity_by_node is None:
+            raise ValueError("Public capacity artifact does not cover every scenario")
+        for node_id in sorted(home_by_node):
+            capacity_counts = None
+            if public_capacity_by_node is not None:
+                capacity_counts = public_capacity_by_node.get(node_id)
+                if capacity_counts is None:
+                    raise ValueError("Public capacity artifact does not cover every node")
+                if sum(capacity_counts.values()) != public_by_node[node_id]:
+                    raise ValueError("Public capacity-class requirements must conserve node public totals")
+            records.append(
+                {
+                    "scenario": scenario,
+                    "year": _require_int(allocation.get("year"), "year"),
+                    "node_id": node_id,
+                    "home_required_members": home_by_node[node_id],
+                    "public_required_members": public_by_node[node_id],
+                    "public_required_members_by_capacity_class": capacity_counts,
+                    "allocation_method_id": str(allocation.get("allocation_method_id", "")),
+                    "source_type": "required_member_counts_not_realization_draws",
+                }
+            )
+    return sorted(records, key=lambda item: (str(item["scenario"]), str(item["node_id"])))
+
 def a014_node_weights_from_load_table(
     load_table: Any,
     *,

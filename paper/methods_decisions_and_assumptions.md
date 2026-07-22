@@ -595,10 +595,7 @@ source-library identity, processed-checksum provenance, and candidate/held-out
 partition separation. It does not preserve actual 2035 weekday/weekend or
 holiday labels when those differ from the 2025 source calendar, so mapping
 provenance records `weekday_weekend_preserved = false` and
-`source_timestamp_index_policy = target_index_i_uses_source_index_i`. This
-approval authorizes readiness/adapter mapping code only; held-out adequacy,
-finite-library sufficiency, within-realization replacement, net-load/event/
-`P(E)`, capacity-screen, and manuscript-result work remain outside this step.
+`source_timestamp_index_policy = target_index_i_uses_source_index_i`. This approval authorizes readiness/adapter mapping code only. The candidate member-reference artifact materializes source-member IDs, batch seeds, returned profile indices, processed checksums, component identity, and EV-CAL-001 calendar provenance for home Set A and public Set B without loading profile arrays or selecting a realization. Held-out adequacy, finite-library sufficiency, within-realization replacement, net-load/event/`P(E)`, capacity-screen, and manuscript-result work remain outside this step.
 <!-- methods-id: EV-004 -->
 ### EV-004 - Fixed Residential Charge-Point Distribution
 
@@ -1481,4 +1478,3 @@ base policy as well. The sole code-level bootstrap exception is the initial
 `codex/ownership-enforcement` pull request when neither policy file exists on
 its base; after that first merge, the same branch is governed by the base
 policy like every other branch.
-

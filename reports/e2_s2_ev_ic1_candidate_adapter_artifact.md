@@ -61,15 +61,7 @@ repeat checksum verification before loading ignored local processed-profile
 files. This matters because the generated profile files are intentionally not
 committed or redistributed.
 
-## Calendar Mapping Blocker
-
-The source profiles remain on the 2025 ElaadNL Europe/Amsterdam calendar with
-35,040 15-minute timesteps. The target planning layer is 2035 per G0-A4.
-
-No calendar-mapping rule is implemented here. The companion PI decision packet
-`reports/e2_s2_ev_calendar_mapping_decision_packet.md` frames the required
-choice. EV profile loading into IC-1 remains blocked until the PI signs a
-deterministic 2025-source to 2035-planning calendar mapping rule.
+## Calendar Mapping Status`n`nThe source profiles remain on the 2025 ElaadNL Europe/Amsterdam calendar with`n35,040 15-minute timesteps. The target planning layer is 2035 per G0-A4.`nEV-CAL-001 is now approved and implemented as ordinal timestep mapping from the`ncomplete 2025 source sequence to the 2035 planning sequence. This artifact`nrecords approved mapping metadata; actual candidate profile loading and mapped`ntrajectory construction still happen later in the consuming IC-1 worktree after`nlocal checksum verification.
 
 ## Explicit Non-Claims
 
@@ -89,4 +81,3 @@ deterministic 2025-source to 2035-planning calendar mapping rule.
 4. Only then load candidate NPZ arrays for RNG-001 component-stream sampling.
 5. Emit EV IC-1 component outputs with source-member IDs and stream identity in
    provenance.
-
