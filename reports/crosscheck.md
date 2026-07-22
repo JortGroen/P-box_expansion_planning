@@ -1,6 +1,6 @@
 # E5.S4 Independent Cross-Check Plan
 
-Status: scaffold-only plan and executable synthetic package for the p-box/math-core trust certificate. This report designs and records synthetic checks only. It does not run integrated net load, resolve Q-5, introduce signed A-013 values, produce paper results, or provide manuscript numbers.
+Status: scaffold-only plan and executable synthetic package for the p-box/math-core trust certificate. This report designs and records synthetic checks only. It does not run integrated net load, use the real G0-A3 overload threshold, introduce signed A-013 values, produce paper results, or provide manuscript numbers.
 
 ## Purpose
 
@@ -26,7 +26,7 @@ The event for this trust-certificate toy is the synthetic single-step event
 E_toy(rho): L(rho) > c_toy.
 ```
 
-This is not the project overload event and must not be mixed with Q-5 or the integrated four-step import event. The toy deliberately uses a closed-form single-step event so the expected probability is auditable by hand:
+This is not the project overload event and must not be mixed with the G0-A3 four-step import event or its `1.0`, `1.1`, and `1.2 p.u.` threshold protocol. The toy deliberately uses a closed-form single-step event so the expected probability is auditable by hand:
 
 ```text
 P(E_toy | rho) = 1 - Phi((c_toy - mu_0 + beta * rho) / sigma),
@@ -76,7 +76,7 @@ The E5.S4 package lives in `src/pbox_crosscheck.py` with tests in `tests/test_pb
 - `estimate_gaussian_toy_pbox` routes the Gaussian toy through the existing p-box endpoint pathway using canonical RNG sample identities and `PRE_G3_SYNTHETIC` mode.
 - `FiniteHybridState` and `finite_hybrid_bounds` provide a small qualitative hybrid/p-box fixture with exact hand-summed lower/upper event probabilities.
 
-This executable synthetic package does not use real net-load data, the project overload event, Q-5 threshold evidence, signed A-013 values, G3 vertex authorization for paper-facing results, or manuscript numbers.
+This executable synthetic package does not use real net-load data, the project overload event, G0-A3 threshold sensitivities, signed A-013 values, G3 vertex authorization for paper-facing results, or manuscript numbers.
 
 ## Planned Acceptance Matrix
 
@@ -92,6 +92,6 @@ This executable synthetic package does not use real net-load data, the project o
 ## Remaining Dependencies
 
 - G3 remains pending; vertex propagation is not authorized for paper-facing results until G3 records the applicable monotonicity verdict.
-- Q-5 remains open and blocks integrated event-based scientific analysis.
+- Q-5 is resolved by G0-A3, but this synthetic trust certificate does not use the real project threshold protocol.
 - G2 and A-013 remain unresolved for numerical Tier-1/grid-error values.
 - Capacity denominator and provenance remain unresolved for paper-facing model-error propagation.

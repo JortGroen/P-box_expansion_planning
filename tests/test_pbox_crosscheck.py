@@ -77,6 +77,30 @@ def test_gaussian_crosscheck_exercises_vertex_pbox_against_closed_form() -> None
         assert result.lower.probability <= result.upper.probability
 
 
+def test_gaussian_crosscheck_replays_same_root_seed_deterministically() -> None:
+    fuzzy, alpha_grid, params = _gaussian_fixture()
+
+    first = estimate_gaussian_toy_pbox(
+        fuzzy_number=fuzzy,
+        alpha_grid=alpha_grid,
+        params=params,
+        sample_count=512,
+        root_seed=20260722,
+    )
+    second = estimate_gaussian_toy_pbox(
+        fuzzy_number=fuzzy,
+        alpha_grid=alpha_grid,
+        params=params,
+        sample_count=512,
+        root_seed=20260722,
+    )
+
+    assert first.keys() == second.keys()
+    for alpha in alpha_grid:
+        assert first[alpha].lower == second[alpha].lower
+        assert first[alpha].upper == second[alpha].upper
+
+
 def test_finite_hybrid_crosscheck_matches_hand_computed_probability_bounds() -> None:
     fuzzy = TrapezoidalFuzzyNumber(0.0, 0.2, 0.4, 0.6)
     states = [
@@ -150,7 +174,7 @@ def test_crosscheck_report_records_scaffold_only_guardrails() -> None:
         "executable synthetic package",
         "no scalar defuzzified probability",
         "G3 remains pending",
-        "Q-5 remains open",
+        "Q-5 is resolved by G0-A3",
     ]
     for phrase in required_phrases:
         assert phrase in report

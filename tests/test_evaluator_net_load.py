@@ -30,6 +30,7 @@ from src.contracts.net_load import (
     validate_component_adapter_skeletons,
     validate_net_load_result,
     validate_real_component_adapter_readiness,
+    validate_registry_adapter_output_readiness,
 )
 from src.contracts.loading_trajectory import TimeDomain
 
@@ -1149,6 +1150,39 @@ def test_adapter_registry_builds_manifestable_ic1_assembly_plan_from_accepted_me
     assert manifest["readiness"]["shared_weather_driver_id"] == "weather-registry-1"
 
 
+
+def test_registry_output_readiness_records_manifestable_component_metadata() -> None:
+    registry = _accepted_adapter_registry()
+    context = _registry_context(registry)
+    readiness = validate_registry_adapter_output_readiness(
+        registry,
+        context,
+        _registry_adapter_outputs(context, registry),
+    )
+
+    assert readiness["registry_id"] == registry.registry_id
+    assert readiness["planning_year"] == 2035
+    assert readiness["time_domain"] == "full_year"
+    assert readiness["node_ids"] == ("node-a", "node-b")
+    assert readiness["shared_weather_driver_id"] == "weather-registry-1"
+    assert readiness["component_count"] == 4
+    assert readiness["context_aleatory_identity"] == context.aleatory_identity()
+    hp_record = next(item for item in readiness["component_outputs"] if item["kind"] == "hp")
+    assert hp_record == {
+        "component_id": "hp-b",
+        "kind": "hp",
+        "node_id": "node-b",
+        "source_id": "hp-readiness",
+        "member_id": "hp-member-placeholder",
+        "stream_id": _stream_id(context, "hp"),
+        "shared_weather_driver_id": "weather-registry-1",
+        "artifact_status": "accepted",
+        "calendar_id": "calendar-2035-15min",
+    }
+    assert "p_kw" not in hp_record
+    assert "q_kvar" not in hp_record
+    assert readiness["real_component_readiness"]["artifact_status_by_component_id"]["pv-b"] == "accepted"
+
 def test_adapter_registry_assembles_synthetic_outputs_without_event_analysis() -> None:
     registry = _accepted_adapter_registry()
     context = _registry_context(registry)
@@ -1244,6 +1278,22 @@ def test_adapter_registry_rejects_output_metadata_drift_before_assembly() -> Non
             _registry_adapter_outputs(context, registry),
         )
 
+    outputs = _registry_adapter_outputs(context, registry)
+    outputs[2] = ComponentAdapterOutput(
+        component_id=outputs[2].component_id,
+        kind=outputs[2].kind,
+        node_id=outputs[2].node_id,
+        p_kw=outputs[2].p_kw,
+        q_kvar=outputs[2].q_kvar,
+        timestamps=outputs[2].timestamps,
+        member_id=outputs[2].member_id,
+        source_id=outputs[2].source_id,
+        stream_id="stale-hp-stream",
+        shared_weather_driver_id=outputs[2].shared_weather_driver_id,
+        metadata=dict(outputs[2].metadata),
+    )
+    with pytest.raises(ValueError, match="stream_id must match"):
+        validate_registry_adapter_output_readiness(registry, context, outputs)
 
 def _accepted_adapter_artifacts(
     *,

@@ -1,0 +1,153 @@
+{
+  "data_id": "D-004",
+  "evidence_artifacts": {
+    "acceptance_memo": "reports/e2_s4_d004_acceptance_packet.md",
+    "member_readiness_diagnostics": "data/metadata/weather_pv/d004_alkmaar_berkhout_2014_2023_v1_member_readiness_diagnostics.json",
+    "retrieval_manifest": "data/metadata/weather_pv/d004_alkmaar_berkhout_2014_2023_v1_retrieval_manifest.json",
+    "source_acceptance_evidence": "data/metadata/weather_pv/d004_alkmaar_berkhout_2014_2023_v1_source_acceptance_evidence.json",
+    "weather_member_manifest": "data/metadata/weather_pv/d004_alkmaar_berkhout_2014_2023_v1_weather_members_manifest.json"
+  },
+  "member_readiness_summary": {
+    "calendar_cadence_ok": true,
+    "content_sha256_by_year": {
+      "2014": "105058c59f244a38ea1986c1d0f85225947cee4019de36aa6db5e42a56a15a4c",
+      "2015": "d27d4e3c47550f851ed3b1dedeb8f497c165e0678735758b070e0a39be44e258",
+      "2016": "e9558f44c4420df0f96ce5a92cae4116bd9a193bd6a0921417c7715604b1b2d8",
+      "2017": "ba773756f4f3472fbb88e9711040fdf00c2bb0657b98545cd70c164d4b08aed3",
+      "2018": "1d38ffc3c72324fb6e33b2a024811352ef35d5053f53581adb480fd5d0b847f8",
+      "2019": "43e2c64633ab0e0eecf3dd69f0553b27019ad32a1f69ee621a4bb9d39dd73e35",
+      "2020": "3e29273eec63502f2a67ba1f5a3032ae59df5b791447d1be396ffa791568e7d5",
+      "2021": "0eecf86b4667573f4d07bcc58e39ad85c8a4ed10e7a53f89b766f89efb434423",
+      "2022": "da3aa67bc161d1633740d6be6897dcde22a854a3a842e92fb03b01e3a7626997",
+      "2023": "afc27bb66be1e19f29df0f03eb915cc75c947fb66dec54491417ddf17922a304"
+    },
+    "energy_preserved": true,
+    "ghi_nonnegative": true,
+    "hp_pv_identity_roundtrip_ok": true,
+    "member_manifest_status": "constructed_from_approved_rule_pending_final_d004_source_acceptance",
+    "member_years": [
+      2014,
+      2015,
+      2016,
+      2017,
+      2018,
+      2019,
+      2020,
+      2021,
+      2022,
+      2023
+    ],
+    "members_present": 10,
+    "pvgis_realized_weather_path": false,
+    "temperature_finite": true
+  },
+  "packet_created_utc": "2026-07-22T11:59:03+00:00",
+  "pi_decision_questions": [
+    {
+      "agent_recommendation": "Accept, subject to PI license/source-use review; the local files match the committed retrieval manifest and remain ignored/uncommitted.",
+      "decision_needed_for": "D-004 source acceptance",
+      "id": "D004-ACCEPT-Q1",
+      "question": "Does the PI accept the four concrete D-004 source files, URLs, sizes, and SHA-256 checksums as the source bundle for 2014-2023 WEATHER-001 members?"
+    },
+    {
+      "agent_recommendation": "Accept member construction readiness; all members have expected 15-minute counts, UTC/local timestamp alignment, finite T/10 temperature, nonnegative Q-derived GHI, and shared weather-driver IDs.",
+      "decision_needed_for": "D-004 member acceptance",
+      "id": "D004-ACCEPT-Q2",
+      "question": "Does the PI accept the constructed 2014-2023 UTC-year WEATHER-001 member library as complete and calendar-consistent under D004-MC-001?"
+    },
+    {
+      "agent_recommendation": "A for source/member acceptance, with B or C reserved for later PV calibration acceptance; it avoids inventing a numeric tolerance between GHI and fixed-plane PVGIS reference fields.",
+      "decision_needed_for": "PVGIS seasonal/peak sanity acceptance",
+      "id": "D004-ACCEPT-Q3",
+      "options": [
+        "A) Qualitative first-pass: annual GHI-to-PVGIS fixed-plane G(i) ratio remains within the observed diagnostic range, seasonal maximum occurs in MAM/JJA, and peak GHI month is May-July; no numeric percent tolerance is claimed.",
+        "B) Numeric tolerance: PI supplies explicit annual/seasonal relative-error bounds and allowed peak-month set, acknowledging KNMI GHI and PVGIS fixed-plane G(i)/P are not the same irradiance quantity.",
+        "C) Request a different PVGIS comparison quantity or transform before signing seasonal/peak checks."
+      ],
+      "question": "What seasonal/peak sanity criterion should be signed before final D-004 acceptance?"
+    },
+    {
+      "agent_recommendation": "Sign source/member acceptance separately if Q1-Q3 pass; keep paired HP/PV and cold-spell acceptance as later gates with their own unsigned tolerances.",
+      "decision_needed_for": "sequencing of D-004 source/member acceptance versus paired HP/PV acceptance",
+      "id": "D004-ACCEPT-Q4",
+      "question": "Should final D-004 acceptance wait for the E2-S3-COLD-SPELL-ACCEPTANCE-DESIGN paired HP/PV run, or may source/member acceptance be signed separately first?"
+    }
+  ],
+  "recommended_action": "PI review: accept source/member readiness evidence or request amendments; do not treat this packet as final D-004 signoff by itself",
+  "scope_boundaries": [
+    "D-004 remains proposed until PI signs source/member acceptance",
+    "PVGIS-SARAH3 remains calibration/validation provenance only, not a realized weather path",
+    "seasonal/peak tolerances are proposed questions only and are not approved by this artifact",
+    "no HP/PV paired acceptance, cold-spell acceptance, net-load, event, P(E), capacity-screen, or manuscript-result analysis is run"
+  ],
+  "seasonal_peak_sanity_summary": {
+    "all_knmi_peak_months_may_to_july": true,
+    "annual_ghi_to_pvgis_gi_ratio_max": 0.848755,
+    "annual_ghi_to_pvgis_gi_ratio_min": 0.806128,
+    "comparison_boundary": "KNMI Q-derived GHI is the realized WeatherMember irradiance field; PVGIS G(i)/P are Alkmaar fixed-plane calibration or validation references only",
+    "diagnostic_only_not_final_acceptance": true,
+    "knmi_peak_ghi_months_utc": [
+      5,
+      6
+    ],
+    "n_years": 10,
+    "status": "diagnostic_only_not_final_acceptance",
+    "tolerance_status": "not_pi_signed_diagnostic_only"
+  },
+  "selection_id": "d004_alkmaar_berkhout_2014_2023_v1",
+  "source_completeness_summary": {
+    "download_performed": true,
+    "knmi_years_complete_2014_2023": true,
+    "pvgis_hourly_rows_by_year": {
+      "2014": 8760,
+      "2015": 8760,
+      "2016": 8784,
+      "2017": 8760,
+      "2018": 8760,
+      "2019": 8760,
+      "2020": 8784,
+      "2021": 8760,
+      "2022": 8760,
+      "2023": 8760
+    },
+    "raw_data_committed": false,
+    "retrieval_status": "proposed_pending_pi_review",
+    "source_checksums_match": true,
+    "source_sizes_match": true
+  },
+  "source_files_for_review": [
+    {
+      "file_role": "hourly_series_calibration_or_validation_reference",
+      "path": "data/raw/weather_pv/pvgis/d004_alkmaar_berkhout_2014_2023_v1/pvgis_seriescalc_d004_alkmaar_berkhout_2014_2023_v1.json",
+      "sha256_file": "dca94839809cefd165edd964ddd269fbf6cc9fde7c5875905a84eb0ae830e2dc",
+      "size_bytes": 8212761,
+      "source_kind": "pvgis",
+      "source_url": "https://re.jrc.ec.europa.eu/api/v5_3/seriescalc?lat=52.63167&lon=4.74861&startyear=2014&endyear=2023&pvcalculation=1&peakpower=1.0&loss=14.0&angle=35.0&aspect=0.0&fixed=1&outputformat=json&browser=0&raddatabase=PVGIS-SARAH3"
+    },
+    {
+      "file_role": "typical_year_calibration_or_validation_only",
+      "path": "data/raw/weather_pv/pvgis/d004_alkmaar_berkhout_2014_2023_v1/pvgis_tmy_d004_alkmaar_berkhout_2014_2023_v1.json",
+      "sha256_file": "54af286aad35a675c9993eafe122ad2d742dc28fac71608052b02c47387cdc34",
+      "size_bytes": 1269604,
+      "source_kind": "pvgis",
+      "source_url": "https://re.jrc.ec.europa.eu/api/v5_3/tmy?lat=52.63167&lon=4.74861&outputformat=json&browser=0&raddatabase=PVGIS-SARAH3"
+    },
+    {
+      "file_role": "validated_hourly_station_249_zip_2011_2020",
+      "path": "data/raw/weather_pv/knmi/d004_alkmaar_berkhout_2014_2023_v1/uurgeg_249_2011-2020.zip",
+      "sha256_file": "f83f255b4f1b7a1f48dba935f8396a99989fa600364425e3a45b6b5218dd4f0e",
+      "size_bytes": 1536802,
+      "source_kind": "knmi",
+      "source_url": "https://cdn.knmi.nl/knmi/map/page/klimatologie/gegevens/uurgegevens/uurgeg_249_2011-2020.zip"
+    },
+    {
+      "file_role": "validated_hourly_station_249_zip_2021_2030",
+      "path": "data/raw/weather_pv/knmi/d004_alkmaar_berkhout_2014_2023_v1/uurgeg_249_2021-2030.zip",
+      "sha256_file": "f68e3797217a91a4121d7aab7146da7f989f96d561c92cb613b70a77d8ed9ef2",
+      "size_bytes": 838086,
+      "source_kind": "knmi",
+      "source_url": "https://cdn.knmi.nl/knmi/map/page/klimatologie/gegevens/uurgegevens/uurgeg_249_2021-2030.zip"
+    }
+  ],
+  "status": "pi_acceptance_packet_proposed_not_signed"
+}

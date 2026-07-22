@@ -2,7 +2,7 @@
 
 This E5.S3 scaffold consumes the shared IC-2 ``LoadingTrajectoryResult`` and
 applies G1-A2 output-error endpoints to loading trajectories before event
-detection. It is synthetic/protocol code only until Q-5, G2, A-013, and the
+detection. It is synthetic/protocol code only until G2, A-013, and the
 capacity-denominator decisions allow paper-facing event analysis.
 """
 
@@ -276,6 +276,10 @@ def estimate_alpha_output_error_probability(
     for alpha in alpha_grid:
         if not math.isfinite(alpha) or not 0.0 <= alpha <= 1.0:
             raise ValueError("alpha values must be finite and in [0, 1]")
+
+    sample_counts = {len(results_by_alpha[alpha]) for alpha in alpha_grid}
+    if len(sample_counts) != 1:
+        raise ValueError("all alpha levels must use the same sample count")
 
     if isinstance(envelope, Mapping):
         if tuple(sorted(envelope)) != alpha_grid:
