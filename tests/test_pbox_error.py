@@ -4,6 +4,11 @@ import numpy as np
 import pytest
 
 from src.evaluator_sum import Tier1Evaluation, count_import_overload_episodes
+from src.evaluator_ac import (
+    ACEvaluatorProvenance,
+    TransformerCapacityMetadata,
+    build_ac_loading_trajectory,
+)
 from src.pbox_error import (
     OutputErrorEnvelope,
     apply_output_error_envelope,
@@ -79,6 +84,49 @@ def test_output_error_event_detector_runs_on_lower_and_upper_endpoints() -> None
     assert event.upper_event is True
     assert event.upper_episode_count == 1
     assert event.upper_longest_run_steps == 4
+
+
+def test_output_error_path_accepts_ac_loading_trajectory_contract() -> None:
+    result = build_ac_loading_trajectory(
+        [1_000.0, 1_000.0, -1_000.0, 0.0],
+        [0.0, 0.0, 0.0, 1_200.0],
+        timestamps=np.array(
+            [
+                "2035-01-01T00:00:00",
+                "2035-01-01T00:15:00",
+                "2035-01-01T00:30:00",
+                "2035-01-01T00:45:00",
+            ],
+            dtype="datetime64[s]",
+        ),
+        capacity=TransformerCapacityMetadata(
+            s_nom_agg_kva=1_000.0,
+            convention="custom",
+            transformer_indices=(0,),
+            unit_nameplate_kva=(1_000.0,),
+        ),
+        provenance=ACEvaluatorProvenance(
+            backend="synthetic",
+            network_id="synthetic-contract-fixture",
+            solver="no-ac-solve",
+            run_id="e5-s3-output-error-test",
+        ),
+    )
+    envelope = OutputErrorEnvelope(
+        epsilon_grid=0.1,
+        epsilon_tier1_minus=0.0,
+        epsilon_tier1_plus=0.2,
+    )
+
+    endpoints = apply_output_error_envelope(result, envelope)
+
+    np.testing.assert_allclose(endpoints.upper_loading_pu, [1.32, 1.32, 1.32, 1.54])
+    # The output-error envelope widens magnitudes only; direction remains the
+    # unwidened AC P-net sign from the shared IC-2 trajectory contract.
+    np.testing.assert_allclose(endpoints.upper_import_loading_pu, [1.32, 1.32, 0.0, 0.0])
+    event = evaluate_output_error_endpoint_event(result, envelope)
+    assert event.upper_event is False
+    assert event.upper_longest_run_steps == 2
 
 
 def test_output_error_probability_counts_endpoint_events_not_shifted_margins() -> None:
