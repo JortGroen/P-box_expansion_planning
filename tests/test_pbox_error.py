@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+
 import numpy as np
 import pytest
 
@@ -11,12 +13,48 @@ from src.evaluator_ac import (
 )
 from src.pbox_error import (
     OutputErrorEnvelope,
+    OutputErrorProtocolConfig,
     apply_output_error_envelope,
     estimate_alpha_output_error_probability,
     estimate_output_error_probability,
+    estimate_output_error_probability_from_config,
     evaluate_output_error_endpoint_event,
 )
 
+
+def test_output_error_protocol_config_records_manifest_ready_metadata() -> None:
+    config = OutputErrorProtocolConfig.from_mapping(
+        {
+            "epsilon_grid": [0.0, 0.1],
+            "epsilon_tier1_minus": [0.2, 0.1],
+            "epsilon_tier1_plus": 0.3,
+            "threshold_pu": 1.0,
+            "min_consecutive_steps": 4,
+            "timestep_seconds": 900,
+            "envelope_source": "synthetic-test-envelope",
+            "grid_error_source": "synthetic-grid-placeholder",
+            "tier1_error_source": "synthetic-tier1-placeholder",
+            "capacity_denominator_provenance": "synthetic-capacity-placeholder",
+        }
+    )
+
+    metadata = config.manifest_metadata()
+
+    assert json.loads(json.dumps(metadata, sort_keys=True)) == metadata
+    assert metadata["probability_widening"] == "forbidden"
+    assert metadata["use_status"] == "synthetic-only"
+    assert metadata["envelope"] == {
+        "epsilon_grid": [0.0, 0.1],
+        "epsilon_tier1_minus": [0.2, 0.1],
+        "epsilon_tier1_plus": 0.3,
+    }
+    assert metadata["event_semantics"] == {
+        "comparator": "strict_greater_than",
+        "direction_gate": "unwidened_p_net_import_mask",
+        "min_consecutive_steps": 4,
+        "threshold_pu": 1.0,
+        "timestep_seconds": 900,
+    }
 
 def test_output_error_endpoints_match_hand_computed_asymmetric_formula() -> None:
     result = _trajectory([1.0, 0.5], p_signs=[1, 1])
@@ -144,6 +182,31 @@ def test_output_error_path_accepts_ac_loading_trajectory_contract() -> None:
     assert event.upper_event is False
     assert event.upper_longest_run_steps == 2
 
+
+def test_output_error_probability_from_config_uses_validated_trajectory_semantics() -> None:
+    config = OutputErrorProtocolConfig.from_mapping(
+        {
+            "epsilon_grid": 0.0,
+            "epsilon_tier1_minus": 0.1,
+            "epsilon_tier1_plus": 0.1,
+            "threshold_pu": 1.0,
+            "min_consecutive_steps": 4,
+            "timestep_seconds": 900,
+        }
+    )
+
+    estimate = estimate_output_error_probability_from_config(
+        [
+            _trajectory([0.8, 0.8, 0.8, 0.8], p_signs=[1, 1, 1, 1]),
+            _trajectory([0.95, 0.95, 0.95, 0.95], p_signs=[1, 1, 1, 1]),
+            _trajectory([1.2, 1.2, 1.2, 1.2], p_signs=[1, 1, 1, 1]),
+        ],
+        config,
+    )
+
+    assert estimate.lower.successes == 1
+    assert estimate.upper.successes == 2
+    assert [event.sample_index for event in estimate.samples] == [0, 1, 2]
 
 def test_output_error_probability_counts_endpoint_events_not_shifted_margins() -> None:
     no_event = _trajectory([0.8, 0.8, 0.8, 0.8], p_signs=[1, 1, 1, 1])
@@ -296,6 +359,29 @@ def test_output_error_alpha_estimator_accepts_alpha_indexed_envelopes() -> None:
     assert estimates[0.0].probability.upper.successes == 0
     assert estimates[1.0].probability.upper.successes == 1
 
+
+def test_output_error_config_rejects_invalid_fields_and_trajectory_mismatch() -> None:
+    base_config = {
+        "epsilon_grid": 0.0,
+        "epsilon_tier1_minus": 0.0,
+        "epsilon_tier1_plus": 0.0,
+        "threshold_pu": 1.0,
+        "min_consecutive_steps": 4,
+        "timestep_seconds": 900,
+    }
+
+    with pytest.raises(ValueError, match="unknown output-error config fields"):
+        OutputErrorProtocolConfig.from_mapping({**base_config, "extra": "nope"})
+
+    with pytest.raises(ValueError, match="missing output-error config fields"):
+        OutputErrorProtocolConfig.from_mapping({"epsilon_grid": 0.0})
+
+    config = OutputErrorProtocolConfig.from_mapping(base_config)
+    with pytest.raises(ValueError, match="trajectory threshold_pu"):
+        estimate_output_error_probability_from_config(
+            [_trajectory([1.0], p_signs=[1], threshold_pu=1.1)],
+            config,
+        )
 
 def test_output_error_rejects_invalid_envelopes_and_shape_mismatches() -> None:
     result = _trajectory([1.0, 1.0], p_signs=[1, 1])
