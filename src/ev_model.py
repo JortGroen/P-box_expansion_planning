@@ -1719,6 +1719,119 @@ def ev005_within_realization_replacement_policy_packet() -> dict[str, object]:
             "manuscript_numbers_produced": False,
         },
     }
+
+def ev_member_selection_implementation_plan() -> dict[str, object]:
+    """Return the PI-facing plan for future EV member-selection implementation."""
+
+    return {
+        "schema_version": 1,
+        "artifact_type": "ev_member_selection_implementation_plan",
+        "task_id": "E2.S2",
+        "status": "planning_only_ev005b_not_approved",
+        "depends_on_unsigned_decision": "EV-005B",
+        "proposed_policy_assumption": "A_charge_point_level_with_replacement",
+        "implementation_authorization": {
+            "real_member_draws_allowed": False,
+            "reason": "EV-005B is proposed but not PI-approved",
+            "next_step_after_approval": (
+                "Implement candidate-only member-selection rows from committed manifests and "
+                "RNG-001 ComponentStream objects without changing source-library adequacy claims."
+            ),
+        },
+        "inputs_expected_after_approval": [
+            "data/metadata/ev_adoption/e2_s2_ev_ic1_candidate_adapter_artifact.json",
+            "data/metadata/ev_adoption/e2_s2_public_set_b_capacity_allocation_readiness.json",
+            "data/metadata/ev_adoption/e2_s2_ev005_replacement_policy_packet.json",
+            "RNG-001 SeedTree.component_stream(sample_index, component='ev_home')",
+            "RNG-001 SeedTree.component_stream(sample_index, component='ev_public')",
+        ],
+        "planned_algorithm_after_approval": [
+            "verify committed candidate manifest paths and processed SHA-256 expectations before any array load",
+            "derive scenario/node/component/capacity-class required counts from the candidate adapter artifacts",
+            "require EV home draws to use the ev_home ComponentStream and public draws to use ev_public",
+            "select source-member rows with explicit replacement only if EV-005B is approved as proposed",
+            "preserve duplicate source-member selections as repeated manifest rows with multiplicity counters",
+            "materialize selection metadata separately from mapped profile arrays so provenance can be reviewed first",
+        ],
+        "manifest_fields": [
+            "scenario",
+            "planning_year",
+            "sample_index",
+            "root_seed",
+            "component_id",
+            "component_stream_id",
+            "component_seed",
+            "node_id",
+            "capacity_class",
+            "cp_capacity_kw",
+            "selection_index",
+            "selection_count_at_node",
+            "replacement_policy_id",
+            "replacement_enabled",
+            "source_member_id",
+            "batch_seed",
+            "returned_profile_index",
+            "candidate_processed_path",
+            "candidate_processed_sha256_file",
+            "calendar_mapping_rule_id",
+            "source_timestamp_index_policy",
+            "duplicate_within_realization",
+            "duplicate_multiplicity",
+        ],
+        "duplicate_member_logging": {
+            "required": True,
+            "duplicate_key": [
+                "scenario",
+                "sample_index",
+                "component_id",
+                "capacity_class",
+                "source_member_id",
+            ],
+            "fields": [
+                "duplicate_within_realization",
+                "duplicate_multiplicity",
+                "duplicate_selection_indices",
+            ],
+            "interpretation": (
+                "Duplicate rows are bootstrap multiplicities for physical charge points, not new "
+                "unique source profiles and not evidence that M is sufficient."
+            ),
+        },
+        "rng001_stream_usage": {
+            "construct_streams_in_calling_context": True,
+            "do_not_accept_raw_integer_seed_in_sampler": True,
+            "home_component_stream": "ev_home",
+            "public_component_stream": "ev_public",
+            "stream_identity_must_be_recorded": True,
+            "alpha_endpoint_treatment_labels_do_not_change_aleatory_identity": True,
+        },
+        "preimplementation_checks": [
+            "EV-005B status is approved or amended in DECISIONS.md before real draws",
+            "candidate-only adapter artifact blocks held-out and quarantined partitions",
+            "candidate processed checksums verify in the consuming worktree before profile arrays load",
+            "scenario/node totals conserve EV-007A/A-014 counts after capacity-class allocation",
+            "member IDs, batch seeds, and returned profile indices are unique in source-member reference rows",
+            "duplicate-member report is produced for every realized sample when replacement is enabled",
+        ],
+        "blocked_actions_until_ev005b_approval": [
+            "real_member_draws",
+            "profile_array_loading",
+            "held_out_or_quarantined_partition_access",
+            "integrated_net_load_or_event_analysis",
+            "m_sufficiency_claim",
+            "manuscript_number_generation",
+        ],
+        "non_claims": {
+            "ev005b_approved": False,
+            "real_member_draws_performed": False,
+            "held_out_access": False,
+            "profile_arrays_loaded": False,
+            "integrated_analysis_performed": False,
+            "event_or_p_e_analysis_performed": False,
+            "m_sufficiency_claimed": False,
+            "manuscript_numbers_produced": False,
+        },
+    }
 def a014_node_weights_from_load_table(
     load_table: Any,
     *,

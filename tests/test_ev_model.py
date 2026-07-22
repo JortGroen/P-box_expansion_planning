@@ -36,6 +36,7 @@ from src.ev_model import (
     ev_ic1_candidate_adapter_artifact,
     ev_ic1_candidate_member_reference_artifact,
     ev_library_integration_artifact_from_manifest,
+    ev_member_selection_implementation_plan,
     ev_planning_calendar_mapping_expectation,
     load_adoption_scenarios_config,
     load_ev_integration_readiness_record,
@@ -809,6 +810,67 @@ def test_ev005_replacement_packet_options_keep_bootstrap_and_m_separate() -> Non
     source = inspect.getsource(ev005_within_realization_replacement_policy_packet)
     assert "load_processed_batch_npz" not in source
     assert "np.load" not in source
+
+def test_ev_member_selection_implementation_plan_is_blocked_until_ev005b() -> None:
+    plan = ev_member_selection_implementation_plan()
+    committed = json.loads(
+        Path("data/metadata/ev_adoption/e2_s2_ev_member_selection_implementation_plan.json").read_text(
+            encoding="utf-8"
+        )
+    )
+
+    assert committed == plan
+    assert plan["artifact_type"] == "ev_member_selection_implementation_plan"
+    assert plan["status"] == "planning_only_ev005b_not_approved"
+    assert plan["depends_on_unsigned_decision"] == "EV-005B"
+    assert plan["implementation_authorization"]["real_member_draws_allowed"] is False
+    assert "EV-005B status is approved or amended" in plan["preimplementation_checks"][0]
+    assert set(plan["blocked_actions_until_ev005b_approval"]) == {
+        "real_member_draws",
+        "profile_array_loading",
+        "held_out_or_quarantined_partition_access",
+        "integrated_net_load_or_event_analysis",
+        "m_sufficiency_claim",
+        "manuscript_number_generation",
+    }
+    assert plan["non_claims"] == {
+        "ev005b_approved": False,
+        "real_member_draws_performed": False,
+        "held_out_access": False,
+        "profile_arrays_loaded": False,
+        "integrated_analysis_performed": False,
+        "event_or_p_e_analysis_performed": False,
+        "m_sufficiency_claimed": False,
+        "manuscript_numbers_produced": False,
+    }
+
+
+def test_ev_member_selection_plan_records_rng_and_duplicate_manifest_fields() -> None:
+    plan = ev_member_selection_implementation_plan()
+
+    manifest_fields = set(plan["manifest_fields"])
+    assert {
+        "component_stream_id",
+        "component_seed",
+        "source_member_id",
+        "batch_seed",
+        "returned_profile_index",
+        "duplicate_within_realization",
+        "duplicate_multiplicity",
+        "replacement_policy_id",
+    } <= manifest_fields
+    assert plan["duplicate_member_logging"]["required"] is True
+    assert "bootstrap multiplicities" in plan["duplicate_member_logging"]["interpretation"]
+    assert plan["rng001_stream_usage"]["construct_streams_in_calling_context"] is True
+    assert plan["rng001_stream_usage"]["do_not_accept_raw_integer_seed_in_sampler"] is True
+    assert plan["rng001_stream_usage"]["home_component_stream"] == EV_HOME_COMPONENT
+    assert plan["rng001_stream_usage"]["public_component_stream"] == EV_PUBLIC_COMPONENT
+    source = inspect.getsource(ev_member_selection_implementation_plan)
+    assert "sample_member_indices" not in source
+    assert "select_members" not in source
+    assert "load_processed_batch_npz" not in source
+    assert "np.load" not in source
+
 def test_ev_ic1_candidate_adapter_artifact_materializes_allocations_and_members(
     tmp_path: Path,
 ) -> None:
