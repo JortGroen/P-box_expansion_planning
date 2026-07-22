@@ -1300,7 +1300,7 @@ as PI-review evidence only. A subsequent proposed acceptance packet
 packages the concrete source files and checksums, member completeness and
 calendar evidence, KNMI `T`/`Q` conversion checks, PVGIS provenance boundary,
 seasonal and peak diagnostics, and explicit PI questions about source/member
-acceptance and unsigned sanity criteria. D-004 itself remains proposed until the
+acceptance and unsigned sanity criteria. A paired-weather acceptance scaffold then records what source/member evidence could be accepted now if the PI agrees and what remains blocked by unsigned PVGIS seasonal/peak criteria, paired HP/PV validation, cold-spell tolerances, and later integrated analysis. D-004 itself remains proposed until the
 PI accepts the concrete files, versions, checksums, source-use evidence,
 completeness checks, PVGIS seasonal and peak-timing sanity checks, and final
 integrated HP/PV acceptance.
@@ -1506,5 +1506,3 @@ base policy as well. The sole code-level bootstrap exception is the initial
 `codex/ownership-enforcement` pull request when neither policy file exists on
 its base; after that first merge, the same branch is governed by the base
 policy like every other branch.
-
-

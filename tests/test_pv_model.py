@@ -11,6 +11,7 @@ import numpy as np
 import pytest
 
 import data.get_weather_pv as weather_pv
+from src.hp_model import HeatPumpProfile
 from src.pv_model import (
     PVGISReference,
     PVSystemConfig,
@@ -24,6 +25,7 @@ from src.pv_model import (
     summarize_pv_profile,
     validate_canonical_15min_calendar,
 )
+from src.weather_model import assert_same_weather_realization
 
 
 def _short_weather(
@@ -144,6 +146,9 @@ def test_generate_pv_profile_uses_explicit_weather_and_config() -> None:
     assert profile.weather_identity["member_id"] == weather.member_id
     assert profile.weather_identity["content_sha256"] == weather.content_sha256
     assert profile.weather_content_sha256 == weather.content_sha256
+    assert profile.identity_record()["member_id"] == weather.member_id
+    assert profile.identity_record()["source"] == weather.source
+    assert profile.identity_record()["content_sha256"] == weather.content_sha256
     assert profile.identity_record()["shared_weather_driver_id"] == weather.shared_weather_driver_id
     np.testing.assert_allclose(profile.generation_kw, [0.0, 8.64, 0.0, 10.0])
     assert profile.annual_energy_kwh() == pytest.approx((8.64 + 10.0) * 0.25)
@@ -188,9 +193,50 @@ def test_summarize_pv_profile_exposes_weather_content_identity() -> None:
     summary = summarize_pv_profile(generate_pv_profile(weather, config))
 
     assert summary["weather_content_sha256"] == weather.content_sha256
+    assert summary["weather_identity_record"]["member_id"] == weather.member_id
     assert summary["weather_identity_record"]["weather_member_id"] == weather.member_id
+    assert summary["weather_identity_record"]["content_sha256"] == weather.content_sha256
     assert summary["weather_identity_record"]["shared_weather_driver_id"] == weather.shared_weather_driver_id
     assert summary["weather_identity_record"]["cadence_seconds"] == 900
+
+
+def test_synthetic_hp_and_pv_profiles_share_weather_identity_without_final_acceptance() -> None:
+    weather = _short_weather(temperature_c=[5.0, 5.5, 6.0, 6.5], ghi_w_per_m2=[0.0, 50.0, 100.0, 150.0])
+    config = PVSystemConfig(
+        installed_capacity_kw=1.0,
+        performance_ratio=0.9,
+        reference_irradiance_w_per_m2=1000.0,
+        temperature_coefficient_per_c=0.0,
+        reference_temperature_c=25.0,
+        clip_to_capacity=True,
+    )
+    pv_profile = generate_pv_profile(weather, config)
+    hp_profile = HeatPumpProfile(
+        shared_weather_driver_id=weather.shared_weather_driver_id,
+        weather_member_id=weather.member_id,
+        weather_source=weather.source,
+        timestamps_utc=weather.timestamps_utc,
+        timestamps_local=weather.timestamps_local,
+        electric_kw=np.full(weather.n_timesteps, 0.4),
+        thermal_demand_kw=np.full(weather.n_timesteps, 1.2),
+        cop=np.full(weather.n_timesteps, 3.0),
+        temperature_c=weather.temperature_c,
+        source_columns=("synthetic_hp_kw",),
+        source_path=None,
+        downscaling_method="synthetic_scaffold_not_acceptance",
+        pv_weather_field_names=tuple(weather.pv_weather_fields),
+        weather_content_sha256=weather.content_sha256,
+        weather_provenance={"scope": "synthetic common-driver scaffold only"},
+    )
+
+    assert_same_weather_realization(weather, pv_profile.identity_record())
+    assert_same_weather_realization(pv_profile.identity_record(), hp_profile.weather_identity_record())
+
+    mismatched = dict(hp_profile.weather_identity_record())
+    mismatched["shared_weather_driver_id"] = "different-driver"
+    with pytest.raises(ValueError, match="shared_weather_driver_id"):
+        assert_same_weather_realization(pv_profile.identity_record(), mismatched)
+
 
 def test_pvgis_reference_check_covers_seasonal_totals_and_peak_timing() -> None:
     timestamps_utc = canonical_15min_utc_axis_for_local_year(2025)
@@ -645,6 +691,62 @@ def test_committed_d004_acceptance_packet_keeps_decisions_with_pi() -> None:
     }
     assert "P(E)" in " ".join(payload["scope_boundaries"])
 
+
+def test_d004_paired_weather_acceptance_scaffold_is_metadata_only(tmp_path: Path) -> None:
+    metadata_src = Path("data/metadata/weather_pv")
+    metadata_dst = tmp_path / "metadata" / "weather_pv"
+    metadata_dst.mkdir(parents=True)
+    for name in [
+        weather_pv.D004_ACCEPTANCE_PACKET_NAME,
+        weather_pv.D004_MEMBER_READINESS_DIAGNOSTICS_NAME,
+        weather_pv.D004_MEMBER_MANIFEST_NAME,
+    ]:
+        (metadata_dst / name).write_text((metadata_src / name).read_text(encoding="utf-8"), encoding="utf-8")
+
+    payload = weather_pv.build_d004_paired_weather_acceptance_scaffold(metadata_dir=tmp_path / "metadata")
+
+    assert payload["status"] == "paired_weather_acceptance_scaffold_not_final"
+    assert payload["d004_final_acceptance"] is False
+    assert payload["paired_hp_pv_acceptance_run"] is False
+    assert payload["source_member_acceptance_candidate"]["status"] == "candidate_for_pi_review_not_signed"
+    assert payload["source_member_acceptance_candidate"]["all_scaffold_checks_passed"] is True
+    assert len(payload["member_identity_records"]) == 10
+    assert payload["paired_weather_identity_contract"]["required_equal_fields"] == [
+        "member_id",
+        "shared_weather_driver_id",
+        "source",
+        "first_timestamp_utc",
+        "last_timestamp_utc",
+        "n_timesteps",
+        "cadence_seconds",
+        "content_sha256",
+    ]
+    assert payload["pvgis_boundary"]["realized_weather_path"] is False
+    assert any(item["gate"] == "cold-spell acceptance" for item in payload["blocked_acceptance_layers"])
+    assert any("P(E)" in item["gate"] for item in payload["blocked_acceptance_layers"])
+
+
+def test_committed_d004_paired_weather_acceptance_scaffold_keeps_final_gates_blocked() -> None:
+    path = Path(
+        "data/metadata/weather_pv/"
+        "d004_alkmaar_berkhout_2014_2023_v1_paired_weather_acceptance_scaffold.json"
+    )
+    payload = json.loads(path.read_text(encoding="utf-8"))
+
+    assert payload["data_id"] == "D-004"
+    assert payload["status"] == "paired_weather_acceptance_scaffold_not_final"
+    assert payload["d004_final_acceptance"] is False
+    assert payload["paired_hp_pv_acceptance_run"] is False
+    assert payload["cold_spell_acceptance_run"] is False
+    assert payload["source_member_acceptance_candidate"]["all_scaffold_checks_passed"] is True
+    assert len(payload["member_identity_records"]) == 10
+    assert all(len(item["content_sha256"]) == 64 for item in payload["member_identity_records"])
+    assert payload["pvgis_boundary"]["role"].endswith("provenance context only under D004-MC-001")
+    assert payload["paired_weather_identity_contract"]["pv_record"] == "src.pv_model.PVGenerationProfile.identity_record()"
+    assert "synthetic" in payload["paired_weather_identity_contract"]["synthetic_test_scope"]
+    assert any(item["gate"] == "paired HP/PV validation" for item in payload["blocked_acceptance_layers"])
+
+
 def test_d004_weather_member_builder_expands_knmi_hourly_fixture_to_utc_year(tmp_path: Path) -> None:
     metadata_dir = tmp_path / "metadata"
     _write_d004_fixture_manifest(tmp_path, metadata_dir, year=2014)
@@ -732,6 +834,3 @@ def test_committed_d004_weather_member_metadata_preserves_energy_and_identity() 
     assert payload["identity_record"]["shared_weather_driver_id"] == payload["shared_weather_driver_id"]
     assert payload["source_files"]["pvgis"][0]["file_role"].endswith("reference")
     assert any("No HP/PV paired acceptance" in item for item in payload["boundaries"])
-
-
-
