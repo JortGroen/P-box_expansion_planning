@@ -68,6 +68,15 @@ P_upper(alpha) = sum p_i for states where state_i.value - rho_lo(alpha) > c_fini
 
 The fixture uses three finite states whose probabilities sum to one. The tests hand-check the resulting alpha-indexed intervals, verify nestedness from support to core, and verify that no scalar defuzzified probability is exposed. Aleatory uncertainty stays in state probabilities; epistemic uncertainty stays in alpha-indexed lower/upper probability bounds.
 
+
+## Cross-Check 3: Output-Error Endpoint Ordering Toy
+
+This synthetic fixture exercises the E5.S3/G1-A2 output-error machinery inside the E5.S4 trust-certificate package. It uses short hand-computable loading trajectories that satisfy the shared `LoadingTrajectoryResult` contract, then builds manifest-ready endpoint-count records through the output-error path.
+
+The toy envelope keeps all values synthetic and explicitly unsigned. For each trajectory, the lower and upper loading endpoints are composed before event detection, the import mask is taken from the unwidened `P_net` sign, and lower/upper event probabilities are derived only from lower/upper endpoint event counts. One fixture has no raw four-step event but becomes an upper-endpoint event after widening; another has high loading but an unwidened direction flip, so it still fails the four-consecutive-import event. This verifies the ordering and direction-gate invariants without running real net-load data or selecting A-013/G2 values.
+
+Alpha support is checked by evaluating separate alpha-indexed toy sample sets while requiring the same ordered sample identifiers at every alpha level. The check is about CRN identity and reporting discipline only: it does not defuzzify, infer monotonicity, or authorize the G3 vertex shortcut for paper-facing results.
+
 ## Executable Synthetic Package
 
 The E5.S4 package lives in `src/pbox_crosscheck.py` with tests in `tests/test_pbox_crosscheck.py`.
@@ -75,6 +84,7 @@ The E5.S4 package lives in `src/pbox_crosscheck.py` with tests in `tests/test_pb
 - `GaussianToyParameters`, `gaussian_tail_probability`, and `gaussian_closed_form_bounds` provide the analytic oracle.
 - `estimate_gaussian_toy_pbox` routes the Gaussian toy through the existing p-box endpoint pathway using canonical RNG sample identities and `PRE_G3_SYNTHETIC` mode.
 - `FiniteHybridState` and `finite_hybrid_bounds` provide a small qualitative hybrid/p-box fixture with exact hand-summed lower/upper event probabilities.
+- `OutputErrorToyTrajectory` and `output_error_alpha_crosscheck_records` provide a synthetic output-error ordering check with manifest-ready endpoint counts and alpha-level CRN identity.
 
 This executable synthetic package does not use real net-load data, the project overload event, G0-A3 threshold sensitivities, signed A-013 values, G3 vertex authorization for paper-facing results, or manuscript numbers.
 
@@ -88,6 +98,7 @@ This executable synthetic package does not use real net-load data, the project o
 | CRN identity | Seeded executable Gaussian fixture | Same sample identities across alpha levels and endpoints | yes |
 | Baudrit-style reporting discipline | Finite hybrid toy | Alpha-indexed lower/upper bounds only; no defuzzified answer | yes |
 | Output-error ordering | Synthetic loading trajectories with endpoint envelopes | Error endpoints act before event detection; probabilities are not shifted | yes |
+| Output-error CRN identity | Alpha-indexed synthetic loading samples with explicit sample IDs | Same ordered sample identities are preserved across alpha levels | yes |
 
 ## Remaining Dependencies
 
