@@ -543,6 +543,18 @@ numbers. Its calendar note preserves the 2025 ElaadNL source calendar and
 requires deterministic mapping onto the common planning-year calendar before
 IC-1 aggregation.
 
+The follow-up IC-1 guardrail packet makes that handoff executable without
+producing trajectories. It derives candidate-only processed-file checksum
+expectations from the readiness artifact, blocks raw, held-out, and quarantined
+paths from the adapter preflight, and requires local SHA-256 verification
+before any profile arrays are loaded by a future IC-1 EV adapter. It also
+records the source-to-planning-year calendar obligation as a blocking
+precondition: the complete 2025 Europe/Amsterdam source members must be mapped
+onto the G0-A4 2035 common calendar by an approved deterministic procedure
+before Agent A can aggregate EV demand with baseline, HP, or PV components.
+This guardrail packet still does not choose the mapping algorithm, choose a
+replacement rule, certify `M`, inspect held-out data, or run event analysis.
+
 <!-- methods-id: EV-004 -->
 ### EV-004 - Fixed Residential Charge-Point Distribution
 

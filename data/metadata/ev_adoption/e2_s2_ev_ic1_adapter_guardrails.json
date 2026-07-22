@@ -1,0 +1,37 @@
+{
+  "artifact_type": "ev_to_ic1_adapter_guardrails",
+  "calendar_mapping_expectation": {
+    "guardrail": "Complete EV source members must be mapped to the common planning-year calendar before IC-1 aggregation; this packet does not choose the mapping algorithm or produce trajectories.",
+    "mapping_status": "deterministic_calendar_mapping_required_before_ic1_results",
+    "n_timesteps": 35040,
+    "profile_loading_allowed_before_mapping": false,
+    "source_calendar_local_year": 2025,
+    "step_seconds": 900,
+    "target_planning_year": 2035,
+    "timezone": "Europe/Amsterdam"
+  },
+  "candidate_checksum_expectation_count": 22,
+  "candidate_checksum_expectations_by_component": {
+    "ev_home": 10,
+    "ev_public": 12
+  },
+  "candidate_member_count_by_component": {
+    "ev_home": 1000,
+    "ev_public": 1200
+  },
+  "ic1_use_blockers": [
+    "deterministic planning-year calendar mapping must be approved/implemented",
+    "candidate processed-file checksums must verify in the consuming worktree",
+    "EV source-library adequacy must remain downstream of aggregated net-load analysis",
+    "Q-5 still blocks event-based scientific analysis"
+  ],
+  "policy": {
+    "candidate_libraries_only": true,
+    "held_out_access": false,
+    "integrated_analysis_performed": false,
+    "m_sufficiency_claimed": false,
+    "profile_arrays_opened": false
+  },
+  "schema_version": 1,
+  "source_readiness_artifact": "data/metadata/ev_adoption/e2_s2_ev_integration_readiness.json"
+}

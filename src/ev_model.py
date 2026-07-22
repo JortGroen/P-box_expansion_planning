@@ -6,7 +6,7 @@ import gzip
 import hashlib
 import json
 from pathlib import Path
-from typing import Any, Sequence
+from typing import Any, Mapping, Sequence
 
 import numpy as np
 
@@ -713,6 +713,278 @@ class EVIntegrationReadinessArtifact:
             "calendar_mapping": self.calendar_mapping,
             "policy": self.policy,
         }
+
+
+@dataclass(frozen=True)
+class EVCandidateChecksumExpectation:
+    """Candidate processed-file digest expected before EV profile loading."""
+
+    component_id: str
+    library_id: str
+    seed: int
+    processed_path: str
+    expected_sha256: str
+    n_profiles: int
+    n_timesteps: int
+    capacity_class: str | None
+    cp_capacity_kw: int | None
+
+    def __post_init__(self) -> None:
+        if self.component_id not in {EV_HOME_COMPONENT, EV_PUBLIC_COMPONENT}:
+            raise ValueError("EV checksum expectation has unsupported component_id")
+        _require_non_empty_string(self.library_id, "library_id")
+        _require_int(self.seed, "seed")
+        _require_non_empty_string(self.processed_path, "processed_path")
+        _require_sha256(self.expected_sha256, "expected_sha256")
+        _require_int(self.n_profiles, "n_profiles")
+        _require_int(self.n_timesteps, "n_timesteps")
+        if self.n_timesteps != EXPECTED_FULL_YEAR_STEPS:
+            raise ValueError("EV checksum expectation must reference complete annual profiles")
+
+    def manifest_record(self) -> dict[str, object]:
+        return {
+            "component_id": self.component_id,
+            "library_id": self.library_id,
+            "seed": self.seed,
+            "processed_path": self.processed_path,
+            "expected_sha256": self.expected_sha256,
+            "n_profiles": self.n_profiles,
+            "n_timesteps": self.n_timesteps,
+            "capacity_class": self.capacity_class,
+            "cp_capacity_kw": self.cp_capacity_kw,
+        }
+
+
+@dataclass(frozen=True)
+class EVCandidateChecksumVerification:
+    """Observed digest for one candidate processed file."""
+
+    expectation: EVCandidateChecksumExpectation
+    observed_sha256: str
+    byte_size: int
+
+    def __post_init__(self) -> None:
+        _require_sha256(self.observed_sha256, "observed_sha256")
+        _require_int(self.byte_size, "byte_size")
+        if self.byte_size <= 0:
+            raise ValueError("EV checksum verification requires a non-empty file")
+        if self.observed_sha256 != self.expectation.expected_sha256:
+            raise ValueError(
+                f"EV candidate checksum mismatch for {self.expectation.processed_path}"
+            )
+
+    def manifest_record(self) -> dict[str, object]:
+        record = self.expectation.manifest_record()
+        record.update(
+            {
+                "observed_sha256": self.observed_sha256,
+                "byte_size": self.byte_size,
+                "checksum_verified": True,
+            }
+        )
+        return record
+
+
+@dataclass(frozen=True)
+class EVPlanningCalendarMappingExpectation:
+    """Guardrail describing the source-to-planning-year calendar handoff."""
+
+    source_calendar_local_year: int
+    target_planning_year: int
+    n_timesteps: int
+    step_seconds: int
+    timezone: str
+    mapping_status: str
+    profile_loading_allowed_before_mapping: bool
+
+    def __post_init__(self) -> None:
+        if self.source_calendar_local_year != 2025:
+            raise ValueError("EV source profiles must remain on the 2025 generator calendar")
+        if self.target_planning_year != 2035:
+            raise ValueError("EV IC-1 readiness currently targets the G0-A4 2035 planning year")
+        if self.n_timesteps != EXPECTED_FULL_YEAR_STEPS:
+            raise ValueError("EV calendar mapping requires a complete 15-minute annual calendar")
+        if self.step_seconds != 900:
+            raise ValueError("EV calendar mapping requires 900-second cadence")
+        if self.timezone != LOCAL_TIMEZONE:
+            raise ValueError("EV calendar mapping must preserve the Europe/Amsterdam source zone")
+        if not self.mapping_status:
+            raise ValueError("EV calendar mapping status is required")
+        if self.profile_loading_allowed_before_mapping:
+            raise ValueError("EV profiles must not be loaded into IC-1 before calendar mapping")
+
+    def manifest_record(self) -> dict[str, object]:
+        return {
+            "source_calendar_local_year": self.source_calendar_local_year,
+            "target_planning_year": self.target_planning_year,
+            "n_timesteps": self.n_timesteps,
+            "step_seconds": self.step_seconds,
+            "timezone": self.timezone,
+            "mapping_status": self.mapping_status,
+            "profile_loading_allowed_before_mapping": self.profile_loading_allowed_before_mapping,
+            "guardrail": (
+                "Complete EV source members must be mapped to the common planning-year "
+                "calendar before IC-1 aggregation; this packet does not choose the "
+                "mapping algorithm or produce trajectories."
+            ),
+        }
+
+
+def load_ev_integration_readiness_record(path: Path) -> dict[str, Any]:
+    """Load the committed EV-to-IC-1 readiness artifact and enforce safe policy flags."""
+
+    record = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(record, dict):
+        raise ValueError("EV readiness artifact must be a mapping")
+    if record.get("schema_version") != EV_INTEGRATION_READINESS_SCHEMA_VERSION:
+        raise ValueError("Unsupported EV readiness artifact schema_version")
+    if record.get("artifact_type") != "ev_to_ic1_integration_readiness":
+        raise ValueError("Unexpected EV readiness artifact_type")
+    policy = record.get("policy")
+    if not isinstance(policy, dict):
+        raise ValueError("EV readiness artifact must include policy")
+    if policy.get("held_out_access") is not False:
+        raise ValueError("EV readiness artifact must block held-out access")
+    if policy.get("candidate_profiles_opened") is not False:
+        raise ValueError("EV readiness artifact must not mark candidate profiles opened")
+    if policy.get("integrated_analysis_performed") is not False:
+        raise ValueError("EV readiness artifact must not include integrated analysis")
+    if policy.get("m_sufficiency_claimed") is not False:
+        raise ValueError("EV readiness artifact must not claim M sufficiency")
+    return record
+
+
+def ev_candidate_checksum_expectations(
+    readiness_record: Mapping[str, Any],
+) -> tuple[EVCandidateChecksumExpectation, ...]:
+    """Derive candidate-only processed-file checksum expectations from readiness metadata."""
+
+    libraries = readiness_record.get("libraries")
+    if not isinstance(libraries, (list, tuple)):
+        raise ValueError("EV readiness artifact must include library records")
+    expectations: list[EVCandidateChecksumExpectation] = []
+    for library in libraries:
+        if not isinstance(library, dict):
+            raise ValueError("EV readiness library records must be mappings")
+        library_id = str(library.get("library_id", ""))
+        component_id = str(library.get("component_id", ""))
+        batches = library.get("candidate_batches", [])
+        if not isinstance(batches, (list, tuple)):
+            raise ValueError("EV readiness candidate_batches must be a sequence")
+        for batch in batches:
+            if not isinstance(batch, dict):
+                raise ValueError("EV readiness candidate batches must be mappings")
+            path = str(batch.get("processed_path", ""))
+            # Only processed candidate NPZ files are eligible for this preflight:
+            # raw API responses and held-out paths stay out of the IC-1 adapter lane.
+            if "held_out" in path or "quarantined" in path or "/raw/" in path.replace("\\", "/"):
+                raise ValueError("EV checksum expectations must reference candidate processed files only")
+            expectations.append(
+                EVCandidateChecksumExpectation(
+                    component_id=component_id,
+                    library_id=library_id,
+                    seed=_require_int(batch.get("seed"), "seed"),
+                    processed_path=path,
+                    expected_sha256=str(batch.get("processed_sha256_file", "")),
+                    n_profiles=_require_int(batch.get("n_profiles"), "n_profiles"),
+                    n_timesteps=_require_int(batch.get("n_timesteps"), "n_timesteps"),
+                    capacity_class=(
+                        None if batch.get("capacity_class") is None else str(batch["capacity_class"])
+                    ),
+                    cp_capacity_kw=(
+                        None
+                        if batch.get("cp_capacity_kw") is None
+                        else _require_int(batch.get("cp_capacity_kw"), "cp_capacity_kw")
+                    ),
+                )
+            )
+    if not expectations:
+        raise ValueError("EV readiness artifact must expose candidate checksum expectations")
+    return tuple(expectations)
+
+
+def verify_ev_candidate_checksums(
+    readiness_record: Mapping[str, Any],
+    *,
+    base_dir: Path,
+) -> tuple[EVCandidateChecksumVerification, ...]:
+    """Verify expected candidate file digests without loading EV profile arrays."""
+
+    verifications: list[EVCandidateChecksumVerification] = []
+    for expectation in ev_candidate_checksum_expectations(readiness_record):
+        path = base_dir / Path(expectation.processed_path)
+        if not path.is_file():
+            raise FileNotFoundError(path)
+        verifications.append(
+            EVCandidateChecksumVerification(
+                expectation=expectation,
+                observed_sha256=_sha256_file(path),
+                byte_size=path.stat().st_size,
+            )
+        )
+    return tuple(verifications)
+
+
+def ev_planning_calendar_mapping_expectation(
+    readiness_record: Mapping[str, Any],
+) -> EVPlanningCalendarMappingExpectation:
+    """Return the EV calendar guardrail required before IC-1 profile use."""
+
+    mapping = readiness_record.get("calendar_mapping")
+    if not isinstance(mapping, dict):
+        raise ValueError("EV readiness artifact must include calendar_mapping")
+    return EVPlanningCalendarMappingExpectation(
+        source_calendar_local_year=_require_int(
+            mapping.get("profile_generator_calendar_local_year"),
+            "profile_generator_calendar_local_year",
+        ),
+        target_planning_year=_require_int(mapping.get("planning_year"), "planning_year"),
+        n_timesteps=_require_int(mapping.get("n_timesteps"), "n_timesteps"),
+        step_seconds=_require_int(mapping.get("step_seconds"), "step_seconds"),
+        timezone=str(mapping.get("timezone", "")),
+        mapping_status=str(mapping.get("planning_year_mapping_status", "")),
+        profile_loading_allowed_before_mapping=False,
+    )
+
+
+def ev_ic1_adapter_guardrail_packet(readiness_record: Mapping[str, Any]) -> dict[str, object]:
+    """Build a manifestable EV adapter preflight packet for future IC-1 wiring."""
+
+    expectations = ev_candidate_checksum_expectations(readiness_record)
+    calendar = ev_planning_calendar_mapping_expectation(readiness_record)
+    by_component: dict[str, int] = {}
+    for item in expectations:
+        by_component[item.component_id] = by_component.get(item.component_id, 0) + 1
+    return {
+        "schema_version": 1,
+        "artifact_type": "ev_to_ic1_adapter_guardrails",
+        "source_readiness_artifact": "data/metadata/ev_adoption/e2_s2_ev_integration_readiness.json",
+        "candidate_checksum_expectation_count": len(expectations),
+        "candidate_checksum_expectations_by_component": dict(sorted(by_component.items())),
+        "candidate_member_count_by_component": dict(
+            sorted(
+                {
+                    str(library["component_id"]): int(library["candidate_member_count"])
+                    for library in readiness_record.get("libraries", [])
+                    if isinstance(library, dict)
+                }.items()
+            )
+        ),
+        "calendar_mapping_expectation": calendar.manifest_record(),
+        "ic1_use_blockers": [
+            "deterministic planning-year calendar mapping must be approved/implemented",
+            "candidate processed-file checksums must verify in the consuming worktree",
+            "EV source-library adequacy must remain downstream of aggregated net-load analysis",
+            "Q-5 still blocks event-based scientific analysis",
+        ],
+        "policy": {
+            "candidate_libraries_only": True,
+            "held_out_access": False,
+            "profile_arrays_opened": False,
+            "integrated_analysis_performed": False,
+            "m_sufficiency_claimed": False,
+        },
+    }
 
 
 def a014_node_weights_from_load_table(
