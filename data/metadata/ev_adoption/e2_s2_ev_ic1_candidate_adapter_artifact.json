@@ -4,7 +4,7 @@
   "calendar_mapping_decision": {
     "expectation": {
       "guardrail": "Complete EV source members must be mapped to the common planning-year calendar before IC-1 aggregation; this packet does not choose the mapping algorithm or produce trajectories.",
-      "mapping_status": "deterministic_calendar_mapping_required_before_ic1_results",
+      "mapping_status": "approved_ordinal_timestep_mapping_before_ic1_results",
       "n_timesteps": 35040,
       "profile_loading_allowed_before_mapping": false,
       "source_calendar_local_year": 2025,
@@ -13,7 +13,10 @@
       "timezone": "Europe/Amsterdam"
     },
     "packet_path": "reports/e2_s2_ev_calendar_mapping_decision_packet.md",
-    "status": "pi_decision_required_before_implementation"
+    "status": "approved",
+    "approved_rule_id": "EV-CAL-001",
+    "approved_rule_version": "ordinal-v1",
+    "approved_option": "A_ordinal_timestep_mapping"
   },
   "candidate_libraries": [
     {
