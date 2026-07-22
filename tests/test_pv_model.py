@@ -5,6 +5,7 @@ import hashlib
 import json
 from pathlib import Path
 from urllib import parse
+import zipfile
 
 import numpy as np
 import pytest
@@ -418,14 +419,14 @@ def test_committed_d004_source_acceptance_evidence_is_readiness_only() -> None:
     assert any("hourly-to-15-minute" in item for item in payload["remaining_before_final_d004_acceptance"])
 
 
-def test_committed_d004_member_construction_rule_packet_is_proposal_only() -> None:
+def test_committed_d004_member_construction_rule_packet_records_approval_without_d004_signoff() -> None:
     packet_path = Path("data/metadata/weather_pv/d004_member_construction_rule_packet.json")
     payload = json.loads(packet_path.read_text(encoding="utf-8"))
     rule = payload["proposed_rule"]
 
     assert payload["data_id"] == "D-004"
-    assert payload["decision_packet_status"] == "proposal_for_pi_review"
-    assert payload["member_construction_rule_status"] == "proposed_not_pi_signed"
+    assert payload["decision_packet_status"] == "approved_by_decisions_register"
+    assert payload["member_construction_rule_status"] == "approved"
     assert payload["d004_status_after_packet"] == "proposed_not_signed"
     assert payload["no_raw_download"] is True
     assert payload["no_integrated_analysis"] is True
@@ -441,20 +442,170 @@ def test_committed_d004_member_construction_rule_packet_is_proposal_only() -> No
     assert "pv_weather_fields.ghi_w_per_m2" in rule["weather_member_fields"]
     assert "content_sha256" in rule["weather_member_fields"]
     assert any("Q energy" in item for item in payload["acceptance_tests_after_pi_approval"])
-    assert any("PI approval" in item for item in payload["remaining_blockers"])
+    assert "D-004 source acceptance/sign-off remains pending" in payload["remaining_blockers"]
+    assert not any("PI approval of D004-MC-001" in item for item in payload["remaining_blockers"])
 
 
-def test_committed_d004_member_construction_clarification_blocks_implementation() -> None:
+def test_committed_d004_member_construction_clarification_records_resolution() -> None:
     path = Path("data/metadata/weather_pv/d004_member_construction_pi_clarification.json")
     payload = json.loads(path.read_text(encoding="utf-8"))
 
     assert payload["data_id"] == "D-004"
     assert payload["question_id"] == "Q-9"
     assert payload["member_construction_rule_id"] == "D004-MC-001"
-    assert payload["clarification_status"] == "proposal_only_waiting_for_pi"
-    assert payload["implementation_allowed_before_approval"] is False
+    assert payload["clarification_status"] == "resolved_by_decisions_register"
+    assert payload["implementation_allowed_before_approval"] is True
+    assert payload["resolved_by"] == "D004-MC-001 approved in registers/DECISIONS.md"
     assert payload["d004_status"] == "proposed_not_signed"
     assert payload["recommended_approval_summary"]["calendar_basis"] == "UTC calendar year"
     assert payload["recommended_approval_summary"]["pvgis_use"] == "calibration_or_validation_provenance_only"
     assert any("no D-004 signoff" in item for item in payload["scope_boundaries"])
     assert any("no net-load/event/P(E)" in item for item in payload["scope_boundaries"])
+
+
+
+def _write_knmi_fixture_zip(path: Path, *, year: int, q_j_per_cm2: int = 360, t_tenths_c: int = 125) -> None:
+    header = "# STN,YYYYMMDD,   HH,    T,    Q"
+    rows = [header]
+    current = datetime(year, 1, 1, tzinfo=UTC)
+    end = datetime(year + 1, 1, 1, tzinfo=UTC)
+    while current < end:
+        for hour in range(1, 25):
+            rows.append(f"  249,{current:%Y%m%d},{hour:5d},{t_tenths_c:5d},{q_j_per_cm2:5d}")
+        current += timedelta(days=1)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with zipfile.ZipFile(path, "w", compression=zipfile.ZIP_DEFLATED) as archive:
+        archive.writestr(path.with_suffix(".txt").name, "\n".join(rows) + "\n")
+
+
+def _write_empty_knmi_fixture_zip(path: Path) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with zipfile.ZipFile(path, "w", compression=zipfile.ZIP_DEFLATED) as archive:
+        archive.writestr(path.with_suffix(".txt").name, "# STN,YYYYMMDD,   HH,    T,    Q\n")
+
+
+def _write_d004_fixture_manifest(root: Path, metadata_dir: Path, *, year: int) -> None:
+    selection = weather_pv.D004_SELECTION_ID
+    knmi_one = root / "data" / "raw" / "weather_pv" / "knmi" / selection / "uurgeg_249_2011-2020.zip"
+    knmi_two = root / "data" / "raw" / "weather_pv" / "knmi" / selection / "uurgeg_249_2021-2030.zip"
+    pvgis_series = root / "data" / "raw" / "weather_pv" / "pvgis" / selection / "pvgis_seriescalc.json"
+    pvgis_tmy = root / "data" / "raw" / "weather_pv" / "pvgis" / selection / "pvgis_tmy.json"
+    _write_knmi_fixture_zip(knmi_one, year=year)
+    _write_empty_knmi_fixture_zip(knmi_two)
+    pvgis_series.parent.mkdir(parents=True, exist_ok=True)
+    pvgis_series.write_text('{"fixture":"series"}\n', encoding="utf-8")
+    pvgis_tmy.write_text('{"fixture":"tmy"}\n', encoding="utf-8")
+
+    def item(path: Path, source_kind: str, file_role: str) -> dict[str, object]:
+        return {
+            "path": path.relative_to(root).as_posix(),
+            "source_kind": source_kind,
+            "file_role": file_role,
+            "source_url": f"https://example.test/{path.name}",
+            "size_bytes": path.stat().st_size,
+            "sha256_file": weather_pv.sha256_file(path),
+        }
+
+    manifest = {
+        "data_id": "D-004",
+        "selection_id": selection,
+        "d004_status": "proposed_pending_pi_review",
+        "source_files": [
+            item(pvgis_series, "pvgis", "hourly_series_calibration_or_validation_reference"),
+            item(pvgis_tmy, "pvgis", "typical_year_calibration_or_validation_only"),
+            item(knmi_one, "knmi", "validated_hourly_station_249_zip_2011_2020"),
+            item(knmi_two, "knmi", "validated_hourly_station_249_zip_2021_2030"),
+        ],
+    }
+    out_dir = metadata_dir / "weather_pv"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    (out_dir / weather_pv.D004_RETRIEVAL_MANIFEST).write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+
+
+def test_d004_weather_member_builder_expands_knmi_hourly_fixture_to_utc_year(tmp_path: Path) -> None:
+    metadata_dir = tmp_path / "metadata"
+    _write_d004_fixture_manifest(tmp_path, metadata_dir, year=2014)
+
+    result = weather_pv.build_d004_weather_members(
+        root_dir=tmp_path,
+        metadata_dir=metadata_dir,
+        years=(2014,),
+        write_member_metadata=True,
+    )
+    member = result.members[0]
+
+    assert member.member_id == "d004_alkmaar_berkhout_2014_v1"
+    assert member.shared_weather_driver_id == "d004_alkmaar_berkhout_2014_2023_v1:2014"
+    assert member.timestamps_utc[0].isoformat() == "2014-01-01T00:00:00+00:00"
+    assert member.timestamps_utc[-1].isoformat() == "2014-12-31T23:45:00+00:00"
+    assert member.timestamps_local[0].isoformat() == "2014-01-01T01:00:00+01:00"
+    assert member.n_timesteps == 35_040
+    np.testing.assert_allclose(member.temperature_c[:4], [12.5, 12.5, 12.5, 12.5])
+    np.testing.assert_allclose(member.ghi_w_per_m2[:4], [1000.0, 1000.0, 1000.0, 1000.0])
+    assert member.provenance["pvgis"]["not_realized_weather_member_source"] is True
+
+    metadata = json.loads(result.metadata_paths[0].read_text(encoding="utf-8"))
+    assert metadata["content_sha256"] == member.content_sha256
+    assert metadata["calendar"]["calendar_year_basis"] == "UTC calendar year"
+    assert metadata["knmi_hourly_source"]["source_hourly_rows"] == 8760
+    assert metadata["knmi_hourly_source"]["energy_preservation_abs_error_j_per_cm2"] == pytest.approx(0.0)
+    assert metadata["source_files"]["pvgis"][0]["file_role"] == "hourly_series_calibration_or_validation_reference"
+    assert metadata["boundaries"][0].startswith("D-004 remains proposed")
+    assert result.manifest_path is not None
+
+
+def test_d004_builder_constructs_recorded_members_when_raw_files_available() -> None:
+    required = [Path(item["path"]) for item in json.loads(Path("data/metadata/weather_pv/d004_alkmaar_berkhout_2014_2023_v1_retrieval_manifest.json").read_text(encoding="utf-8"))["source_files"]]
+    if not all(path.is_file() for path in required):
+        pytest.skip("ignored D-004 raw files are not available in this checkout")
+
+    result = weather_pv.build_d004_weather_members(write_member_metadata=False)
+    by_year = {int(member.metadata["year"]): member for member in result.members}
+
+    assert set(by_year) == set(range(2014, 2024))
+    assert by_year[2014].n_timesteps == 35_040
+    assert by_year[2016].n_timesteps == 35_136
+    assert by_year[2020].n_timesteps == 35_136
+    assert by_year[2023].timestamps_utc[-1].isoformat() == "2023-12-31T23:45:00+00:00"
+    assert all(member.ghi_w_per_m2.min() >= 0.0 for member in result.members)
+    assert all(np.isfinite(member.temperature_c).all() for member in result.members)
+    assert all(member.shared_weather_driver_id == f"d004_alkmaar_berkhout_2014_2023_v1:{year}" for year, member in by_year.items())
+    assert all(member.provenance["pvgis"]["not_realized_weather_member_source"] is True for member in result.members)
+
+
+def test_committed_d004_weather_member_manifest_records_constructed_members() -> None:
+    manifest_path = Path("data/metadata/weather_pv/d004_alkmaar_berkhout_2014_2023_v1_weather_members_manifest.json")
+    if not manifest_path.is_file():
+        pytest.skip("D-004 weather-member manifest has not been generated in this checkout")
+    payload = json.loads(manifest_path.read_text(encoding="utf-8"))
+
+    assert payload["data_id"] == "D-004"
+    assert payload["member_construction_rule_id"] == "D004-MC-001"
+    assert payload["status"] == "constructed_from_approved_rule_pending_final_d004_source_acceptance"
+    assert payload["source_use_boundary"]["pvgis_realized_weather_path"] is False
+    assert payload["no_final_d004_acceptance"] is True
+    assert payload["no_integrated_analysis"] is True
+    assert [member["year"] for member in payload["members"]] == list(range(2014, 2024))
+    assert len({member["content_sha256"] for member in payload["members"]}) == 10
+    assert payload["members"][0]["first_timestamp_utc"] == "2014-01-01T00:00:00+00:00"
+    assert payload["members"][-1]["last_timestamp_utc"] == "2023-12-31T23:45:00+00:00"
+
+
+def test_committed_d004_weather_member_metadata_preserves_energy_and_identity() -> None:
+    metadata_path = Path("data/metadata/weather_pv/d004_alkmaar_berkhout_2014_2023_v1_member_2020_metadata.json")
+    if not metadata_path.is_file():
+        pytest.skip("D-004 2020 weather-member metadata has not been generated in this checkout")
+    payload = json.loads(metadata_path.read_text(encoding="utf-8"))
+
+    assert payload["member_id"] == "d004_alkmaar_berkhout_2020_v1"
+    assert payload["shared_weather_driver_id"] == "d004_alkmaar_berkhout_2014_2023_v1:2020"
+    assert payload["calendar"]["n_timesteps"] == 35_136
+    assert payload["calendar"]["first_timestamp_utc"] == "2020-01-01T00:00:00+00:00"
+    assert payload["calendar"]["last_timestamp_utc"] == "2020-12-31T23:45:00+00:00"
+    assert payload["knmi_hourly_source"]["source_hourly_rows"] == 8784
+    assert payload["knmi_hourly_source"]["energy_preservation_abs_error_j_per_cm2"] == pytest.approx(0.0)
+    assert payload["knmi_hourly_source"]["ghi_min_w_per_m2"] >= 0.0
+    assert len(payload["content_sha256"]) == 64
+    assert payload["identity_record"]["shared_weather_driver_id"] == payload["shared_weather_driver_id"]
+    assert payload["source_files"]["pvgis"][0]["file_role"].endswith("reference")
+    assert any("No HP/PV paired acceptance" in item for item in payload["boundaries"])

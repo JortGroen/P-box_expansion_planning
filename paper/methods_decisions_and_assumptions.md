@@ -1259,9 +1259,15 @@ integration. The PI-approved `D004-MC-001` member-construction rule uses UTC
 calendar-year members, Europe/Amsterdam local timestamps derived from the UTC
 axis, zero-order expansion of KNMI temperature, energy-preserving expansion of
 KNMI hourly `Q` into 15-minute GHI, and PVGIS as calibration/validation
-provenance only. D-004 itself remains proposed until the PI accepts the
+provenance only. Agent C has now implemented that approved builder and written
+metadata-only member records for 2014-2023, including member IDs,
+shared-weather-driver IDs, UTC/local calendar metadata, source-file checksums,
+and WEATHER-001 content hashes; raw source files remain ignored and no processed
+array store is committed. D-004 itself remains proposed until the PI accepts the
 concrete files, versions, checksums, source-use evidence, completeness checks,
-and final integrated HP/PV acceptance.
+PVGIS seasonal and peak-timing sanity checks, and final integrated HP/PV
+acceptance.
+
 <!-- methods-id: D004-MC-001 -->
 ### D004-MC-001 - D-004 Weather-Member Construction Rule
 
@@ -1286,7 +1292,11 @@ hourly KNMI `Q` repeated across four quarter-hours. This approval does not sign
 final D-004 source acceptance, set PVGIS seasonal or peak tolerances, run HP/PV
 paired acceptance, or authorize cold-spell acceptance, net-load integration,
 event analysis, `P(E)`, capacity screens, manuscript claims, or probability
-results.
+results. The builder implementation and metadata records do not expand the
+approved scientific rule: they only materialize the signed UTC-year,
+block-constant first-pass construction and record auditable member/content
+identity for later WEATHER-001 consumers.
+
 <!-- methods-id: D-005 -->
 ### D-005 - Flexibility Delivery Evidence
 

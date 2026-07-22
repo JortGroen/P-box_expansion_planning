@@ -1,10 +1,23 @@
 {
+  "acceptance_tests_after_pi_approval": [
+    "Every emitted object is a src.weather_model.WeatherMember.",
+    "Each primary year has 35040 quarter-hour rows, except leap years 2016 and 2020 with 35136 rows.",
+    "UTC timestamps are timezone-aware, strictly chronological, and spaced exactly 900 seconds.",
+    "Europe/Amsterdam local timestamps represent the same instants as the UTC axis.",
+    "temperature_c and pv_weather_fields.ghi_w_per_m2 have the same length as timestamps and contain only finite values.",
+    "ghi_w_per_m2 is nonnegative.",
+    "For every KNMI source hour, the sum of four 15-minute GHI energy slices equals the source Q energy after unit conversion within floating tolerance.",
+    "Each member identity_record includes member_id, shared_weather_driver_id, source, cadence, content_sha256, provenance, metadata, and pv_weather_field_names.",
+    "HP and PV profiles generated from the same member pass assert_same_weather_realization on member/content identity.",
+    "PV seasonal totals and peak timing are checked against PVGIS/reference expectations before any integration use.",
+    "PVGIS TMY is rejected as a realized sampled weather path."
+  ],
   "approval_questions": [
     {
       "id": "D004-MC-Q1",
       "question": "Approve UTC calendar-year weather members for the primary D-004 2014-2023 bundle, with Europe/Amsterdam local timestamps derived from each UTC instant?",
-      "recommendation": "approve",
-      "rationale": "The approved PVGIS request omits localtime and is therefore UTC-oriented; KNMI hourly slots are documented as UT; this avoids requiring extra boundary-year PVGIS retrieval before member construction."
+      "rationale": "The approved PVGIS request omits localtime and is therefore UTC-oriented; KNMI hourly slots are documented as UT; this avoids requiring extra boundary-year PVGIS retrieval before member construction.",
+      "recommendation": "approve"
     },
     {
       "id": "D004-MC-Q2",
@@ -12,10 +25,10 @@
       "recommendation": "approve as a transparent first member-construction rule, with interpolation retained only as a later sensitivity if PI requests it"
     },
     {
+      "formula": "ghi_w_per_m2 = Q_j_per_cm2 * 10000 / 3600",
       "id": "D004-MC-Q3",
       "question": "Approve energy-preserving conversion of KNMI hourly global radiation Q to realized GHI by converting J/cm2 per hour to hourly-average W/m2 and assigning that value to the four quarter-hour sub-intervals?",
-      "recommendation": "approve",
-      "formula": "ghi_w_per_m2 = Q_j_per_cm2 * 10000 / 3600"
+      "recommendation": "approve"
     },
     {
       "id": "D004-MC-Q4",
@@ -28,53 +41,67 @@
       "recommendation": "approve"
     }
   ],
-  "data_id": "D-004",
-  "decision_packet_status": "proposal_for_pi_review",
   "d004_status_after_packet": "proposed_not_signed",
+  "data_id": "D-004",
+  "decision_packet_status": "approved_by_decisions_register",
+  "deferred_improvements": [
+    {
+      "description": "A later sensitivity may split each hourly KNMI Q value over four quarter-hour steps using solar-position, clear-sky, or PVGIS-derived within-hour weights, then renormalize the four values so their hourly integral exactly matches the KNMI source energy.",
+      "id": "D004-MC-IMPROVEMENT-001",
+      "status": "deferred_not_part_of_primary_first_pass_rule",
+      "topic": "energy-preserving within-hour irradiance redistribution",
+      "trigger": "Revisit if PV timing, export peaks, or PV/HP simultaneity becomes decision-relevant."
+    }
+  ],
   "member_construction_rule_id": "D004-MC-001",
-  "member_construction_rule_status": "proposed_not_pi_signed",
-  "no_raw_download": true,
+  "member_construction_rule_status": "approved",
+  "metadata_outputs_after_pi_approval": {
+    "library_manifest_path": "data/metadata/weather_pv/d004_alkmaar_berkhout_2014_2023_v1_weather_members_manifest.json",
+    "per_member_metadata_path_template": "data/metadata/weather_pv/d004_alkmaar_berkhout_2014_2023_v1_member_<YEAR>_metadata.json",
+    "raw_or_processed_member_storage": "metadata-only unless PI approves ignored processed arrays under data/processed/weather_pv/",
+    "recorded_hashes": [
+      "source raw file sha256 values",
+      "WeatherMember content_sha256",
+      "optional processed array sha256 if materialized"
+    ]
+  },
   "no_integrated_analysis": true,
+  "no_raw_download": true,
   "primary_source_bundle": "d004_alkmaar_berkhout_2014_2023_v1",
   "proposed_rule": {
     "calendar": {
       "calendar_year_basis": "UTC calendar year",
       "first_timestamp_utc_template": "<YEAR>-01-01T00:00:00+00:00",
       "last_timestamp_utc_template": "<YEAR>-12-31T23:45:00+00:00 for non-leap years; <YEAR>-12-31T23:45:00+00:00 after 35136 rows for leap years",
-      "local_timezone": "Europe/Amsterdam",
       "local_timestamp_rule": "derive each local timestamp by astimezone(Europe/Amsterdam) from the UTC timestamp",
+      "local_timezone": "Europe/Amsterdam",
       "step_seconds": 900,
-      "timesteps_non_leap": 35040,
-      "timesteps_leap": 35136
+      "timesteps_leap": 35136,
+      "timesteps_non_leap": 35040
     },
     "knmi_hourly_source": {
-      "station_id": 249,
-      "station_name": "Berkhout",
-      "hour_semantics": "HH is UT; the source row with HH=h is treated as the hour-ending timestamp at h:00 UTC, with HH=24 mapping to 00:00 UTC on the following date",
-      "temperature_field": {
-        "source_column": "T",
-        "source_unit": "0.1 degrees Celsius",
-        "target_field": "temperature_c",
-        "target_unit": "degrees Celsius",
-        "conversion": "T / 10",
-        "hourly_to_15min": "repeat the hourly observation value over the four quarter-hour timestamps within the represented UTC hour"
-      },
       "ghi_field": {
+        "conversion": "Q * 10000 / 3600",
+        "hourly_to_15min": "repeat the hourly-average irradiance over the four quarter-hour sub-intervals so hourly radiation energy is preserved",
+        "negative_values_allowed": false,
         "source_column": "Q",
         "source_unit": "J/cm2 per hour",
         "target_field": "ghi_w_per_m2",
-        "target_unit": "W/m2",
-        "conversion": "Q * 10000 / 3600",
-        "hourly_to_15min": "repeat the hourly-average irradiance over the four quarter-hour sub-intervals so hourly radiation energy is preserved",
-        "negative_values_allowed": false
+        "target_unit": "W/m2"
+      },
+      "hour_semantics": "HH is UT; the source row with HH=h is treated as the hour-ending timestamp at h:00 UTC, with HH=24 mapping to 00:00 UTC on the following date",
+      "station_id": 249,
+      "station_name": "Berkhout",
+      "temperature_field": {
+        "conversion": "T / 10",
+        "hourly_to_15min": "repeat the hourly observation value over the four quarter-hour timestamps within the represented UTC hour",
+        "source_column": "T",
+        "source_unit": "0.1 degrees Celsius",
+        "target_field": "temperature_c",
+        "target_unit": "degrees Celsius"
       }
     },
     "pvgis_reference_source": {
-      "site_latitude": 52.63167,
-      "site_longitude": 4.74861,
-      "radiation_database": "PVGIS-SARAH3",
-      "seriescalc_use": "calibration_or_validation_reference_only",
-      "tmy_use": "calibration_or_validation_reference_only",
       "not_realized_weather_member_source": true,
       "provenance_fields_to_copy": [
         "pvgis_series_source_url",
@@ -83,8 +110,25 @@
         "pvgis_tmy_sha256",
         "pvgis_system_configuration",
         "pvgis_available_years"
-      ]
+      ],
+      "radiation_database": "PVGIS-SARAH3",
+      "seriescalc_use": "calibration_or_validation_reference_only",
+      "site_latitude": 52.63167,
+      "site_longitude": 4.74861,
+      "tmy_use": "calibration_or_validation_reference_only"
     },
+    "weather_member_fields": [
+      "member_id",
+      "shared_weather_driver_id",
+      "source",
+      "timestamps_utc",
+      "timestamps_local",
+      "temperature_c",
+      "pv_weather_fields.ghi_w_per_m2",
+      "provenance",
+      "metadata",
+      "content_sha256"
+    ],
     "weather_member_identity": {
       "member_id_template": "d004_alkmaar_berkhout_<YEAR>_v1",
       "shared_weather_driver_id_template": "d004_alkmaar_berkhout_2014_2023_v1:<YEAR>",
@@ -101,21 +145,18 @@
         2022,
         2023
       ]
-    },
-    "weather_member_fields": [
-      "member_id",
-      "shared_weather_driver_id",
-      "source",
-      "timestamps_utc",
-      "timestamps_local",
-      "temperature_c",
-      "pv_weather_fields.ghi_w_per_m2",
-      "provenance",
-      "metadata",
-      "content_sha256"
-    ]
+    }
   },
   "provenance_required": {
+    "construction": [
+      "member_construction_rule_id",
+      "builder_git_commit",
+      "builder_command",
+      "created_utc",
+      "calendar_year_basis",
+      "hourly_to_15min_rule",
+      "weather_model_contract_path"
+    ],
     "knmi": [
       "station_id",
       "station_name",
@@ -139,51 +180,9 @@
       "site_longitude",
       "system_configuration",
       "use_boundary"
-    ],
-    "construction": [
-      "member_construction_rule_id",
-      "builder_git_commit",
-      "builder_command",
-      "created_utc",
-      "calendar_year_basis",
-      "hourly_to_15min_rule",
-      "weather_model_contract_path"
     ]
   },
-  "metadata_outputs_after_pi_approval": {
-    "per_member_metadata_path_template": "data/metadata/weather_pv/d004_alkmaar_berkhout_2014_2023_v1_member_<YEAR>_metadata.json",
-    "library_manifest_path": "data/metadata/weather_pv/d004_alkmaar_berkhout_2014_2023_v1_weather_members_manifest.json",
-    "raw_or_processed_member_storage": "metadata-only unless PI approves ignored processed arrays under data/processed/weather_pv/",
-    "recorded_hashes": [
-      "source raw file sha256 values",
-      "WeatherMember content_sha256",
-      "optional processed array sha256 if materialized"
-    ]
-  },
-  "acceptance_tests_after_pi_approval": [
-    "Every emitted object is a src.weather_model.WeatherMember.",
-    "Each primary year has 35040 quarter-hour rows, except leap years 2016 and 2020 with 35136 rows.",
-    "UTC timestamps are timezone-aware, strictly chronological, and spaced exactly 900 seconds.",
-    "Europe/Amsterdam local timestamps represent the same instants as the UTC axis.",
-    "temperature_c and pv_weather_fields.ghi_w_per_m2 have the same length as timestamps and contain only finite values.",
-    "ghi_w_per_m2 is nonnegative.",
-    "For every KNMI source hour, the sum of four 15-minute GHI energy slices equals the source Q energy after unit conversion within floating tolerance.",
-    "Each member identity_record includes member_id, shared_weather_driver_id, source, cadence, content_sha256, provenance, metadata, and pv_weather_field_names.",
-    "HP and PV profiles generated from the same member pass assert_same_weather_realization on member/content identity.",
-    "PV seasonal totals and peak timing are checked against PVGIS/reference expectations before any integration use.",
-    "PVGIS TMY is rejected as a realized sampled weather path."
-  ],
-  "deferred_improvements": [
-    {
-      "id": "D004-MC-IMPROVEMENT-001",
-      "topic": "energy-preserving within-hour irradiance redistribution",
-      "description": "A later sensitivity may split each hourly KNMI Q value over four quarter-hour steps using solar-position, clear-sky, or PVGIS-derived within-hour weights, then renormalize the four values so their hourly integral exactly matches the KNMI source energy.",
-      "status": "deferred_not_part_of_primary_first_pass_rule",
-      "trigger": "Revisit if PV timing, export peaks, or PV/HP simultaneity becomes decision-relevant."
-    }
-  ],
   "remaining_blockers": [
-    "PI approval of D004-MC-001 or an amended construction rule",
     "D-004 source acceptance/sign-off remains pending",
     "member builder implementation and focused real-source member tests remain pending",
     "PVGIS seasonal/peak acceptance tolerances remain unsigned",
