@@ -278,6 +278,67 @@ class ComponentAdapterSkeleton:
 
 
 @dataclass(frozen=True)
+class ComponentAdapterRegistry:
+    """Accepted metadata registry for building an auditable IC-1 plan.
+
+    The registry is still scaffold/readiness-only: it contains no trajectories.
+    It turns already-accepted component metadata into a node-ordered
+    ``NetLoadAssemblyPlan`` and manifest record for later real adapter outputs.
+    """
+
+    registry_id: str
+    node_ids: tuple[str, ...]
+    skeletons: tuple[ComponentAdapterSkeleton, ...]
+    required_component_kinds: tuple[ComponentKind, ...] = REAL_COMPONENT_WIRING_KINDS
+    metadata: Mapping[str, object] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        registry_id = _require_nonempty(self.registry_id, name="registry_id")
+        if not self.node_ids:
+            raise ValueError("node_ids must not be empty")
+        node_ids = tuple(_require_nonempty(node_id, name="node_id") for node_id in self.node_ids)
+        if len(set(node_ids)) != len(node_ids):
+            raise ValueError("node_ids must not contain duplicates")
+        if not self.skeletons:
+            raise ValueError("skeletons must not be empty")
+        readiness = validate_component_adapter_skeletons(
+            self.skeletons,
+            required_component_kinds=self.required_component_kinds,
+        )
+        if not readiness["ready_for_real_arrays"]:
+            raise ValueError("adapter registry requires accepted component metadata")
+        skeleton_nodes = {
+            node_id
+            for skeleton in self.skeletons
+            for node_id in skeleton.node_ids
+        }
+        missing_nodes = sorted(skeleton_nodes.difference(node_ids))
+        if missing_nodes:
+            raise ValueError(f"skeleton node_id(s) missing from registry node_ids: {', '.join(missing_nodes)}")
+        _validate_nonempty_mapping_values(self.metadata, name="metadata")
+        object.__setattr__(self, "registry_id", registry_id)
+        object.__setattr__(self, "node_ids", node_ids)
+        object.__setattr__(self, "skeletons", tuple(self.skeletons))
+        object.__setattr__(self, "required_component_kinds", tuple(self.required_component_kinds))
+        object.__setattr__(self, "metadata", MappingProxyType(dict(self.metadata)))
+
+    def manifest_record(self) -> dict[str, object]:
+        """Return manifestable registry metadata for IC-1 assembly evidence."""
+
+        readiness = validate_component_adapter_skeletons(
+            self.skeletons,
+            required_component_kinds=self.required_component_kinds,
+        )
+        return {
+            "registry_id": self.registry_id,
+            "node_ids": self.node_ids,
+            "required_component_kinds": self.required_component_kinds,
+            "readiness": readiness,
+            "metadata": dict(self.metadata),
+        }
+
+
+@dataclass(frozen=True)
 class ComponentAdapterOutput:
     """Normalized output from a future E2 component adapter.
 
@@ -658,6 +719,48 @@ def assemble_net_load_from_real_component_outputs(
     )
 
 
+def build_ic1_assembly_plan_from_registry(registry: ComponentAdapterRegistry) -> NetLoadAssemblyPlan:
+    """Build a node-ordered IC-1 assembly plan from accepted metadata only."""
+
+    return NetLoadAssemblyPlan(
+        node_ids=registry.node_ids,
+        required_component_kinds=registry.required_component_kinds,
+        metadata={
+            "assembly": "ic1_adapter_registry_readiness",
+            "adapter_registry": registry.manifest_record(),
+        },
+    )
+
+
+def assemble_net_load_from_registry_outputs(
+    registry: ComponentAdapterRegistry,
+    context: NetLoadRealizationContext,
+    adapter_outputs: Sequence[ComponentAdapterOutput],
+    *,
+    metadata: Mapping[str, object] | None = None,
+) -> NetLoadResult:
+    """Assemble synthetic/accepted outputs after registry metadata checks.
+
+    The helper proves the accepted-metadata-to-IC-1 route without running IC-2
+    loading, event detection, held-out adequacy, or probability calculations.
+    """
+
+    _validate_registry_outputs(registry, context, adapter_outputs)
+    combined_metadata = {
+        "adapter_registry": registry.manifest_record(),
+        "scaffold_only": True,
+    }
+    if metadata is not None:
+        combined_metadata.update(metadata)
+    return assemble_net_load_from_real_component_outputs(
+        build_ic1_assembly_plan_from_registry(registry),
+        context,
+        adapter_outputs,
+        required_real_component_kinds=registry.required_component_kinds,
+        metadata=combined_metadata,
+    )
+
+
 def validate_real_component_adapter_readiness(
     adapter_outputs: Sequence[ComponentAdapterOutput],
     *,
@@ -892,6 +995,37 @@ def validate_net_load_result(result: NetLoadResult) -> None:
 
 
 _VALID_COMPONENT_KINDS = frozenset(ComponentKind.__args__)
+
+
+def _skeletons_by_kind(registry: ComponentAdapterRegistry) -> dict[ComponentKind, ComponentAdapterSkeleton]:
+    return {skeleton.kind: skeleton for skeleton in registry.skeletons}
+
+
+def _validate_registry_outputs(
+    registry: ComponentAdapterRegistry,
+    context: NetLoadRealizationContext,
+    adapter_outputs: Sequence[ComponentAdapterOutput],
+) -> None:
+    if not adapter_outputs:
+        raise ValueError("adapter_outputs must not be empty")
+    skeleton_by_kind = _skeletons_by_kind(registry)
+    registry_weather_id = registry.manifest_record()["readiness"]["shared_weather_driver_id"]
+    if registry_weather_id != context.shared_weather_driver_id:
+        raise ValueError("adapter registry weather identity must match the realization context")
+    for output in adapter_outputs:
+        if output.kind not in skeleton_by_kind:
+            raise ValueError("adapter output kind must appear in the adapter registry")
+        skeleton = skeleton_by_kind[output.kind]
+        if output.node_id not in skeleton.node_ids:
+            raise ValueError("adapter output node_id must appear in the matching skeleton")
+        if output.source_id != skeleton.source_id:
+            raise ValueError("adapter output source_id must match the matching skeleton")
+        if output.member_id != skeleton.member_id:
+            raise ValueError("adapter output member_id must match the matching skeleton")
+        if output.metadata.get("artifact_status") != skeleton.artifact_status:
+            raise ValueError("adapter output artifact_status must match the matching skeleton")
+        if output.metadata.get("calendar_id") != skeleton.calendar_id:
+            raise ValueError("adapter output calendar_id must match the matching skeleton")
 
 
 def _component_streams_by_name(context: NetLoadRealizationContext) -> dict[str, ComponentStream]:

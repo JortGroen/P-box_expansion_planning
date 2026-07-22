@@ -101,6 +101,31 @@ WEATHER-001 HP/PV pairing hook, and reports whether all required real-component
 families are accepted. It does not load trajectories, call adapters, assemble
 net load, call IC-2, or evaluate thresholds.
 
+## Adapter Registry And Assembly Plan
+
+Once the required baseline, EV, HP, and PV skeletons are all accepted,
+`ComponentAdapterRegistry` can turn that metadata into a node-ordered
+`NetLoadAssemblyPlan`. The registry is still metadata-only: it contains no
+arrays and does not certify adequacy. It records:
+
+- `registry_id` for the wiring/checklist artifact;
+- explicit IC-1 `node_ids` order;
+- the accepted component skeletons and their readiness manifest;
+- required component families;
+- mapping/version metadata.
+
+`build_ic1_assembly_plan_from_registry(...)` embeds the registry manifest in
+the assembly plan. `assemble_net_load_from_registry_outputs(...)` then checks
+future adapter outputs against the registry before delegating to the existing
+IC-1 aggregation path. The pre-assembly checks require matching component kind,
+node ID, source ID, member ID, artifact status, calendar ID, and shared HP/PV
+weather identity. This prevents accepted metadata and emitted trajectories from
+silently drifting apart in later integration work.
+
+The registry-backed helper remains a synthetic/readiness harness. It does not
+open real held-out data, call IC-2, detect events, run thresholds, or compute
+`P(E)`.
+
 ## Calendar Rules
 
 All component outputs in one `NetLoadResult` must share exactly one calendar.
