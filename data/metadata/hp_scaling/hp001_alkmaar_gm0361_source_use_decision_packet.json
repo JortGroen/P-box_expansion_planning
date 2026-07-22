@@ -1,0 +1,64 @@
+{
+  "component_guard": {
+    "required_component_keys": [
+      "SFH space",
+      "MFH space",
+      "SFH water",
+      "MFH water"
+    ],
+    "required_provenance_fields": [
+      "annual_scaling_status == signed",
+      "annual_scaling_approval_id"
+    ],
+    "requires_signed_annual_scaling": true
+  },
+  "created_at_utc": "2026-07-22T12:04:56Z",
+  "data_id": "D-013",
+  "decision_packet_id": "E2-S3-HP-SOURCE-USE-DECISION-PACKET",
+  "hp_boundary": "HP-001 residential SFH/MFH space plus domestic hot water",
+  "non_claims": [
+    "No annual HP TWh values are approved or executable.",
+    "No 2035 HP adoption is signed.",
+    "No D-004 acceptance, cold-spell acceptance, net-load/event/P(E), threshold, capacity-screen, manuscript, or probability analysis is run."
+  ],
+  "source_classification": {
+    "cbs_85035ned_dwelling_stock": {
+      "does_not_support": [
+        "heat demand",
+        "DHW demand",
+        "2035 HP adoption"
+      ],
+      "recommended_status": "signable denominator/crosswalk after PI proxy/year approval",
+      "supports": [
+        "Alkmaar GM0361 dwelling stock",
+        "SFH/MFH denominator",
+        "CBS dwelling-type crosswalk"
+      ]
+    },
+    "cbs_85523ned_heat_pump_context": {
+      "does_not_support": [
+        "local Alkmaar 2035 adoption",
+        "SFH/MFH split",
+        "space/DHW split"
+      ],
+      "recommended_status": "context only",
+      "supports": [
+        "national/current heat-pump context"
+      ]
+    },
+    "pbl_startanalyse_2025_alkmaar": {
+      "does_not_support": [
+        "automatic adoption",
+        "automatic space/DHW split",
+        "executable annual TWh values without signed columns/formulas"
+      ],
+      "recommended_status": "context now; scaling evidence only after PI signs exact source-use rule",
+      "supports": [
+        "pathway/suitability context",
+        "neighbourhood and building-stock context",
+        "candidate heat-demand evidence only after exact-column review"
+      ]
+    }
+  },
+  "status": "proposed PI source-use packet only; values unsigned"
+}
