@@ -22,16 +22,20 @@ from data.get_when2heat import (
 )
 from src.hp_model import (
     HeatPumpProfile,
+    HeatPumpComponentSeries,
     When2HeatComponent,
     When2HeatHourlyProfile,
     align_heat_pump_profile,
+    build_executable_hp001_profile_from_when2heat_csv,
     build_heat_pump_profile_from_when2heat_csv,
     cold_week_sanity_check,
     default_when2heat_components,
     downscale_hourly_to_15min,
     hp001_residential_when2heat_components,
     load_when2heat_hourly_csv,
+    require_signed_annual_scaling,
 )
+from src.weather_model import WeatherMember
 
 
 @dataclass(frozen=True)
@@ -416,6 +420,157 @@ def test_hp001_csv_load_keeps_space_and_dhw_components_traceable(tmp_path: Path)
         ("water", "SFH", "NL_COP_ASHP_water"),
         ("water", "MFH", "NL_COP_ASHP_water"),
     )
+
+
+def test_hp001_component_series_remain_traceable_through_downscale_and_alignment(tmp_path: Path) -> None:
+    path = tmp_path / "when2heat.csv"
+    pd.DataFrame(
+        {
+            "utc_timestamp": [item.isoformat().replace("+00:00", "Z") for item in _hourly_timestamps(1)],
+            "cet_cest_timestamp": ["2025-01-01T01:00:00+0100"],
+            "NL_heat_profile_space_SFH": [2.0],
+            "NL_heat_profile_space_MFH": [3.0],
+            "NL_heat_profile_water_SFH": [4.0],
+            "NL_heat_profile_water_MFH": [5.0],
+            "NL_COP_ASHP_radiator": [2.0],
+            "NL_COP_ASHP_water": [4.0],
+        }
+    ).to_csv(path, index=False, sep=";", decimal=",")
+    components = hp001_residential_when2heat_components(
+        space_heat_twh_by_class={"SFH": 0.5, "MFH": 1.0},
+        water_heat_twh_by_class={"SFH": 0.25, "MFH": 0.2},
+    )
+    hourly = load_when2heat_hourly_csv(path, components=components)
+    quarter = downscale_hourly_to_15min(hourly)
+    weather = _shared_weather(
+        member_id="d004-test-member",
+        timestamps_utc=quarter.timestamps_utc,
+        temperature_c=[1.0, 1.0, 1.0, 1.0],
+    )
+
+    profile = align_heat_pump_profile(quarter, weather)
+
+    assert len(profile.component_series) == 4
+    assert np.allclose(
+        sum(component.electric_kw for component in profile.component_series),
+        profile.electric_kw,
+    )
+    assert profile.component_traceability_record() == (
+        {
+            "component_id": "sfh_space",
+            "heat_column": "NL_heat_profile_space_SFH",
+            "cop_column": "NL_COP_ASHP_radiator",
+            "annual_heat_demand_twh": 0.5,
+            "end_use": "space",
+            "building_class": "SFH",
+            "n_timesteps": 4,
+            "interval_hours": 0.25,
+            "thermal_energy_kwh": 1000.0,
+            "electric_energy_kwh": 500.0,
+            "provenance": components[0].provenance,
+        },
+        {
+            "component_id": "mfh_space",
+            "heat_column": "NL_heat_profile_space_MFH",
+            "cop_column": "NL_COP_ASHP_radiator",
+            "annual_heat_demand_twh": 1.0,
+            "end_use": "space",
+            "building_class": "MFH",
+            "n_timesteps": 4,
+            "interval_hours": 0.25,
+            "thermal_energy_kwh": 3000.0,
+            "electric_energy_kwh": 1500.0,
+            "provenance": components[1].provenance,
+        },
+        {
+            "component_id": "sfh_water",
+            "heat_column": "NL_heat_profile_water_SFH",
+            "cop_column": "NL_COP_ASHP_water",
+            "annual_heat_demand_twh": 0.25,
+            "end_use": "water",
+            "building_class": "SFH",
+            "n_timesteps": 4,
+            "interval_hours": 0.25,
+            "thermal_energy_kwh": 1000.0,
+            "electric_energy_kwh": 250.0,
+            "provenance": components[2].provenance,
+        },
+        {
+            "component_id": "mfh_water",
+            "heat_column": "NL_heat_profile_water_MFH",
+            "cop_column": "NL_COP_ASHP_water",
+            "annual_heat_demand_twh": 0.2,
+            "end_use": "water",
+            "building_class": "MFH",
+            "n_timesteps": 4,
+            "interval_hours": 0.25,
+            "thermal_energy_kwh": 1000.0,
+            "electric_energy_kwh": 250.0,
+            "provenance": components[3].provenance,
+        },
+    )
+
+
+def test_alignment_preserves_weather_content_identity_from_shared_contract() -> None:
+    hourly = When2HeatHourlyProfile(
+        timestamps_utc=_hourly_timestamps(1),
+        thermal_demand_kw=np.array([3000.0]),
+        electric_kw=np.array([1000.0]),
+        cop=np.array([3.0]),
+        components=(When2HeatComponent("heat", "cop", 1.0),),
+    )
+    quarter = downscale_hourly_to_15min(hourly)
+    local_zone = ZoneInfo("Europe/Amsterdam")
+    weather = WeatherMember(
+        member_id="d004_alkmaar_berkhout_2025_v1",
+        shared_weather_driver_id="d004_alkmaar_berkhout_2014_2023_v1:2025",
+        source="D-004 WEATHER-001 fixture",
+        timestamps_utc=quarter.timestamps_utc,
+        timestamps_local=tuple(item.astimezone(local_zone) for item in quarter.timestamps_utc),
+        temperature_c=[2.0, 2.0, 2.0, 2.0],
+        pv_weather_fields={"ghi_w_per_m2": [0.0, 0.0, 0.0, 0.0]},
+        provenance={"retrieval_manifest": "data/metadata/weather_pv/test.json"},
+    )
+
+    profile = align_heat_pump_profile(quarter, weather)
+
+    assert profile.weather_content_sha256 == weather.content_sha256
+    assert profile.weather_identity_record()["content_sha256"] == weather.content_sha256
+
+
+def test_executable_hp001_profile_requires_signed_annual_scaling(tmp_path: Path) -> None:
+    path = tmp_path / "when2heat.csv"
+    pd.DataFrame(
+        {
+            "utc_timestamp": [datetime(2025, 1, 1, tzinfo=UTC).isoformat().replace("+00:00", "Z")],
+            "cet_cest_timestamp": ["2025-01-01T01:00:00+0100"],
+            "NL_heat_profile_space_SFH": [3.0],
+            "NL_COP_ASHP_radiator": [3.0],
+        }
+    ).to_csv(path, index=False, sep=";", decimal=",")
+    weather = _shared_weather(
+        member_id="weather-member-1",
+        timestamps_utc=_quarter_timestamps(4),
+        temperature_c=[0.0, 0.0, 0.0, 0.0],
+    )
+    unsigned = (When2HeatComponent("NL_heat_profile_space_SFH", "NL_COP_ASHP_radiator", 1.0),)
+
+    with pytest.raises(ValueError, match="signed annual scaling provenance"):
+        require_signed_annual_scaling(unsigned)
+    with pytest.raises(ValueError, match="signed annual scaling provenance"):
+        build_executable_hp001_profile_from_when2heat_csv(path, weather=weather, components=unsigned)
+
+    signed = (
+        When2HeatComponent(
+            "NL_heat_profile_space_SFH",
+            "NL_COP_ASHP_radiator",
+            1.0,
+            provenance={"annual_scaling_status": "signed", "annual_scaling_approval_id": "HP-SCALING-TEST"},
+        ),
+    )
+    profile = build_executable_hp001_profile_from_when2heat_csv(path, weather=weather, components=signed)
+
+    assert np.allclose(profile.electric_kw, [1000.0] * 4)
 
 
 def test_default_components_require_explicit_scales() -> None:

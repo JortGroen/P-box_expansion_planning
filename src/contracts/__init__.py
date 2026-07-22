@@ -32,6 +32,7 @@ from src.contracts.net_load import (
     prepare_loading_input_from_registry_outputs,
     validate_component_adapter_skeletons,
     validate_real_component_adapter_readiness,
+    validate_registry_adapter_output_readiness,
     validate_net_load_result,
 )
 
@@ -62,5 +63,5 @@ __all__ = [
     "validate_component_adapter_skeletons",
     "validate_net_load_result",
     "validate_real_component_adapter_readiness",
+    "validate_registry_adapter_output_readiness",
 ]
-

@@ -61,7 +61,15 @@ repeat checksum verification before loading ignored local processed-profile
 files. This matters because the generated profile files are intentionally not
 committed or redistributed.
 
-## Calendar Mapping Status`n`nThe source profiles remain on the 2025 ElaadNL Europe/Amsterdam calendar with`n35,040 15-minute timesteps. The target planning layer is 2035 per G0-A4.`nEV-CAL-001 is now approved and implemented as ordinal timestep mapping from the`ncomplete 2025 source sequence to the 2035 planning sequence. This artifact`nrecords approved mapping metadata; actual candidate profile loading and mapped`ntrajectory construction still happen later in the consuming IC-1 worktree after`nlocal checksum verification.
+## Calendar Mapping Status
+
+The source profiles remain on the 2025 ElaadNL Europe/Amsterdam calendar with
+35,040 15-minute timesteps. The target planning layer is 2035 per G0-A4.
+EV-CAL-001 is now approved and implemented as ordinal timestep mapping from the
+complete 2025 source sequence to the 2035 planning sequence. This artifact
+records approved mapping metadata; actual candidate profile loading and mapped
+trajectory construction still happen later in the consuming IC-1 worktree after
+local checksum verification.
 
 ## Explicit Non-Claims
 

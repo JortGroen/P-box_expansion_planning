@@ -21,6 +21,7 @@ from src.pv_model import (
     generate_pv_profile,
     parse_pvgis_monthly_reference,
     seasonal_energy_kwh,
+    summarize_pv_profile,
     validate_canonical_15min_calendar,
 )
 
@@ -140,9 +141,56 @@ def test_generate_pv_profile_uses_explicit_weather_and_config() -> None:
     assert profile.weather_member_id == weather.member_id
     assert profile.shared_weather_driver_id == weather.shared_weather_driver_id
     assert profile.config.config_id == "test_rooftop_config"
+    assert profile.weather_identity["member_id"] == weather.member_id
+    assert profile.weather_identity["content_sha256"] == weather.content_sha256
+    assert profile.weather_content_sha256 == weather.content_sha256
+    assert profile.identity_record()["shared_weather_driver_id"] == weather.shared_weather_driver_id
     np.testing.assert_allclose(profile.generation_kw, [0.0, 8.64, 0.0, 10.0])
     assert profile.annual_energy_kwh() == pytest.approx((8.64 + 10.0) * 0.25)
 
+def test_pv_profile_rejects_mismatched_weather_identity() -> None:
+    weather = _short_weather()
+    config = PVSystemConfig(
+        installed_capacity_kw=1.0,
+        performance_ratio=1.0,
+        reference_irradiance_w_per_m2=1000.0,
+        temperature_coefficient_per_c=0.0,
+        reference_temperature_c=25.0,
+        clip_to_capacity=True,
+    )
+    identity = weather.identity_record()
+    identity["shared_weather_driver_id"] = "different_driver"
+
+    with pytest.raises(ValueError, match="shared_weather_driver_id"):
+        weather_profile = generate_pv_profile(weather, config)
+        type(weather_profile)(
+            weather_member_id=weather.member_id,
+            weather_source=weather.source,
+            shared_weather_driver_id=weather.shared_weather_driver_id,
+            timestamps_utc=weather.timestamps_utc,
+            timestamps_local=weather.timestamps_local,
+            generation_kw=weather_profile.generation_kw,
+            config=config,
+            weather_identity=identity,
+        )
+
+
+def test_summarize_pv_profile_exposes_weather_content_identity() -> None:
+    weather = _short_weather()
+    config = PVSystemConfig(
+        installed_capacity_kw=1.0,
+        performance_ratio=1.0,
+        reference_irradiance_w_per_m2=1000.0,
+        temperature_coefficient_per_c=0.0,
+        reference_temperature_c=25.0,
+        clip_to_capacity=True,
+    )
+    summary = summarize_pv_profile(generate_pv_profile(weather, config))
+
+    assert summary["weather_content_sha256"] == weather.content_sha256
+    assert summary["weather_identity_record"]["weather_member_id"] == weather.member_id
+    assert summary["weather_identity_record"]["shared_weather_driver_id"] == weather.shared_weather_driver_id
+    assert summary["weather_identity_record"]["cadence_seconds"] == 900
 
 def test_pvgis_reference_check_covers_seasonal_totals_and_peak_timing() -> None:
     timestamps_utc = canonical_15min_utc_axis_for_local_year(2025)
@@ -573,6 +621,29 @@ def _write_d004_fixture_manifest(root: Path, metadata_dir: Path, *, year: int) -
     out_dir.mkdir(parents=True, exist_ok=True)
     (out_dir / weather_pv.D004_RETRIEVAL_MANIFEST).write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
 
+def test_committed_d004_acceptance_packet_keeps_decisions_with_pi() -> None:
+    path = Path("data/metadata/weather_pv/d004_alkmaar_berkhout_2014_2023_v1_acceptance_packet.json")
+    payload = json.loads(path.read_text(encoding="utf-8"))
+
+    assert payload["data_id"] == "D-004"
+    assert payload["status"] == "pi_acceptance_packet_proposed_not_signed"
+    assert any("D-004 remains proposed" in item for item in payload["scope_boundaries"])
+    assert any("not a realized weather path" in item for item in payload["scope_boundaries"])
+    assert payload["source_completeness_summary"]["source_checksums_match"] is True
+    assert payload["source_completeness_summary"]["knmi_years_complete_2014_2023"] is True
+    assert payload["member_readiness_summary"]["calendar_cadence_ok"] is True
+    assert payload["member_readiness_summary"]["energy_preserved"] is True
+    assert payload["member_readiness_summary"]["pvgis_realized_weather_path"] is False
+    assert payload["member_readiness_summary"]["hp_pv_identity_roundtrip_ok"] is True
+    assert payload["seasonal_peak_sanity_summary"]["tolerance_status"] == "not_pi_signed_diagnostic_only"
+    assert payload["seasonal_peak_sanity_summary"]["diagnostic_only_not_final_acceptance"] is True
+    assert {question["id"] for question in payload["pi_decision_questions"]} == {
+        "D004-ACCEPT-Q1",
+        "D004-ACCEPT-Q2",
+        "D004-ACCEPT-Q3",
+        "D004-ACCEPT-Q4",
+    }
+    assert "P(E)" in " ".join(payload["scope_boundaries"])
 
 def test_d004_weather_member_builder_expands_knmi_hourly_fixture_to_utc_year(tmp_path: Path) -> None:
     metadata_dir = tmp_path / "metadata"
@@ -661,4 +732,6 @@ def test_committed_d004_weather_member_metadata_preserves_energy_and_identity() 
     assert payload["identity_record"]["shared_weather_driver_id"] == payload["shared_weather_driver_id"]
     assert payload["source_files"]["pvgis"][0]["file_role"].endswith("reference")
     assert any("No HP/PV paired acceptance" in item for item in payload["boundaries"])
+
+
 

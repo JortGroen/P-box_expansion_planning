@@ -48,6 +48,22 @@ def test_output_error_lower_endpoint_clips_tier1_subtraction_at_zero() -> None:
     np.testing.assert_allclose(endpoints.upper_loading_pu, [0.06, 0.36])
 
 
+def test_output_error_accepts_time_varying_endpoint_arrays_for_unknown_dependence() -> None:
+    result = _trajectory([0.9, 0.9, 0.9, 0.9], p_signs=[1, 1, 1, 1])
+    envelope = OutputErrorEnvelope(
+        epsilon_grid=[0.0, 0.05, 0.10, 0.20],
+        epsilon_tier1_minus=[0.0, 0.10, 0.0, 0.10],
+        epsilon_tier1_plus=[0.0, 0.0, 0.05, 0.05],
+    )
+
+    endpoints = apply_output_error_envelope(result, envelope)
+
+    # Unknown dependence is represented by conservative endpoint arrays, not by
+    # independently drawing an error realization for each timestep or sample.
+    np.testing.assert_allclose(endpoints.lower_loading_pu, [0.9, 0.76, 0.81, 0.64])
+    np.testing.assert_allclose(endpoints.upper_loading_pu, [0.9, 0.945, 1.045, 1.14])
+
+
 def test_output_error_uses_unwidened_import_direction_gate() -> None:
     result = _trajectory([1.2, 1.4, 1.5, 1.3], p_signs=[1, -1, 0, 1])
     envelope = OutputErrorEnvelope(
@@ -130,9 +146,9 @@ def test_output_error_path_accepts_ac_loading_trajectory_contract() -> None:
 
 
 def test_output_error_probability_counts_endpoint_events_not_shifted_margins() -> None:
-    no_event = _trajectory([1.0, 1.0, 1.0, 1.0], p_signs=[1, 1, 1, 1])
-    upper_event = _trajectory([1.05, 1.05, 1.05, 1.05], p_signs=[1, 1, 1, 1])
-    both_event = _trajectory([1.3, 1.3, 1.3, 1.3], p_signs=[1, 1, 1, 1])
+    no_event = _trajectory([0.8, 0.8, 0.8, 0.8], p_signs=[1, 1, 1, 1])
+    upper_event = _trajectory([0.95, 0.95, 0.95, 0.95], p_signs=[1, 1, 1, 1])
+    both_event = _trajectory([1.2, 1.2, 1.2, 1.2], p_signs=[1, 1, 1, 1])
     envelope = OutputErrorEnvelope(
         epsilon_grid=0.0,
         epsilon_tier1_minus=0.1,
@@ -231,6 +247,7 @@ def test_output_error_endpoint_sample_identity_is_reused_without_resampling() ->
         for event in second_estimate.samples
     ]
 
+
 def test_output_error_alpha_estimator_keeps_separate_endpoint_counts() -> None:
     envelope = OutputErrorEnvelope(
         epsilon_grid=0.0,
@@ -244,7 +261,7 @@ def test_output_error_alpha_estimator_keeps_separate_endpoint_counts() -> None:
                 _trajectory([1.3, 1.3, 1.3, 1.3], p_signs=[1, 1, 1, 1]),
             ],
             0.0: [
-                _trajectory([1.0, 1.0, 1.0, 1.0], p_signs=[1, 1, 1, 1]),
+                _trajectory([0.85, 0.85, 0.85, 0.85], p_signs=[1, 1, 1, 1]),
                 _trajectory([1.3, 1.3, 1.3, 1.3], p_signs=[1, 1, 1, 1]),
             ],
         },
@@ -328,12 +345,24 @@ def test_output_error_alpha_estimator_rejects_invalid_alpha_inputs() -> None:
             {0.5: envelope},
         )
 
+    with pytest.raises(ValueError, match="same sample count"):
+        estimate_alpha_output_error_probability(
+            {
+                0.0: [_trajectory([1.0], p_signs=[1])],
+                0.5: [
+                    _trajectory([1.0], p_signs=[1]),
+                    _trajectory([1.0], p_signs=[1]),
+                ],
+            },
+            envelope,
+        )
+
 
 def _trajectory(
     loading_pu: list[float],
     *,
     p_signs: list[int],
-    threshold_pu: float = 1.1,
+    threshold_pu: float = 1.0,
     min_consecutive_steps: int = 4,
 ) -> Tier1Evaluation:
     if len(loading_pu) != len(p_signs):

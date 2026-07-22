@@ -266,18 +266,20 @@ dependencies remain unresolved.
 <!-- methods-id: FLEX-001 -->
 ### FLEX-001 - Flexibility Aggregation Scaffold
 
-**Status: Proposed.** The E3.S1 flexibility scaffold treats controllability
-`rho` as a deterministic multiplier in `[0, 1]` applied only to positive
-import-side demand components that are explicitly marked as controllable. It
-preserves complete aligned 15-minute trajectories and optional timestamp
-sequences, leaves PV/export and non-controllable components unchanged, and
-records per-component metadata describing eligibility, reduction, rebound, and
-the reason for any unchanged trajectory. The optional adjacent-step rebound
-mode conserves reduced component energy within the supplied trajectory and is
-included to test the interface required by the project plan; it is not a
-signed behavioral model of flexibility delivery. This scaffold does not run
-event detection, estimate `P(E)`, resolve Q-5, select a capacity convention, or
-replace the later E2/E3 integration and manifested experiment path.
+**Status: Approved scaffold protocol.** The E3.S1 flexibility scaffold treats
+controllability `rho` as a deterministic multiplier in `[0, 1]` applied only
+to positive import-side demand components that are explicitly marked as
+controllable. It preserves complete aligned 15-minute trajectories and optional
+timestamp sequences, leaves PV/export and non-controllable components
+unchanged, and records per-component metadata describing eligibility,
+reduction, rebound, and the reason for any unchanged trajectory. The optional
+adjacent-step rebound mode conserves reduced component energy within the
+supplied trajectory and is included to test the interface required by the
+project plan; it is not a signed behavioral model of flexibility delivery. This
+approval covers software plumbing only: it does not sign flexibility-factor
+values, fuzzy corners, smart-charging control parameters, final rebound
+behavior, event analysis, `P(E)`, capacity screens, manuscript numbers, or the
+later E2/E3 manifested experiment path.
 
 <!-- methods-id: ALEA-001 -->
 ### ALEA-001 - Joint Aleatory Dependency Protocol
@@ -1207,6 +1209,25 @@ any source, compute or sign annual TWh values, set D-004 acceptance,
 cold-spell tolerances, event analysis, `P(E)`, capacity-screen results,
 Q-5-dependent threshold work, or manuscript numbers.
 
+
+<!-- methods-id: E2-S3-HP-SOURCE-USE-DECISION-PACKET -->
+### E2-S3-HP-SOURCE-USE-DECISION-PACKET - HP-001 D-013 Source-Use Decision Packet
+
+**Status: Proposed source-use packet; annual values unsigned.** This packet
+classifies the retrieved D-013 CBS/PBL evidence before any HP-001 annual heat
+values are calculated. CBS StatLine 85035NED is proposed as the Alkmaar
+`GM0361` dwelling-stock and SFH/MFH crosswalk source, subject to PI approval of
+the proxy/year rule. PBL Startanalyse 2025 Alkmaar is treated as
+pathway/suitability and building-stock context unless the PI later signs exact
+heat-demand columns, units, and formulas; the current cheap schema evidence does
+not itself prove a useful-thermal space/DHW split or 2035 adoption. CBS StatLine
+85523NED remains national/current heat-pump context only. The associated HP
+readiness code may preserve component traces and build review-limited profiles,
+but executable integrated HP loads require signed annual-scaling provenance for
+every SFH/MFH and space/water component. This proposed packet does not sign
+D-004, annual TWh values, HP adoption, cold-spell tolerances, net-load/event
+analysis, `P(E)`, capacity screens, manuscript numbers, or probability results.
+
 <!-- methods-id: E2-S3-HP-SCALING-RETRIEVAL-ROUTE -->
 ### E2-S3-HP-SCALING-RETRIEVAL-ROUTE - HP-001 Alkmaar Public-Source Retrieval Route
 
@@ -1272,10 +1293,14 @@ the committed member manifest, raw-file checksum continuity where the ignored
 local files are present, UTC/local cadence consistency, KNMI-Q energy
 preservation, finite/nonnegative weather channels, PVGIS/KNMI seasonal and peak
 diagnostics without signed tolerances, and shared HP/PV weather-driver identity
-as PI-review evidence only. D-004 itself remains proposed until the PI accepts
-the concrete files, versions, checksums, source-use evidence, completeness
-checks, PVGIS seasonal and peak-timing sanity checks, and final integrated HP/PV
-acceptance.
+as PI-review evidence only. A subsequent proposed acceptance packet
+packages the concrete source files and checksums, member completeness and
+calendar evidence, KNMI `T`/`Q` conversion checks, PVGIS provenance boundary,
+seasonal and peak diagnostics, and explicit PI questions about source/member
+acceptance and unsigned sanity criteria. D-004 itself remains proposed until the
+PI accepts the concrete files, versions, checksums, source-use evidence,
+completeness checks, PVGIS seasonal and peak-timing sanity checks, and final
+integrated HP/PV acceptance.
 
 <!-- methods-id: D004-MC-001 -->
 ### D004-MC-001 - D-004 Weather-Member Construction Rule
