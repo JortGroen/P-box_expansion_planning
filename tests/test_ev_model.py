@@ -31,6 +31,7 @@ from src.ev_model import (
     distinct_member_count,
     ev_candidate_checksum_expectations,
     ev_ic1_adapter_guardrail_packet,
+    ev_downstream_adequacy_criterion_packet,
     ev_ic1_candidate_adapter_artifact,
     ev_library_integration_artifact_from_manifest,
     ev_planning_calendar_mapping_expectation,
@@ -722,6 +723,41 @@ def test_committed_ev_readiness_guardrail_packet_blocks_ic1_result_claims() -> N
     assert packet["policy"]["m_sufficiency_claimed"] is False
     assert any("Q-5" in blocker for blocker in packet["ic1_use_blockers"])
 
+
+
+def test_ev_downstream_adequacy_criterion_packet_is_unsigned_and_downstream() -> None:
+    packet = ev_downstream_adequacy_criterion_packet()
+    committed = json.loads(
+        Path("data/metadata/ev_adoption/e3_s2a_ev_adequacy_criterion_packet.json").read_text(
+            encoding="utf-8"
+        )
+    )
+
+    assert committed == packet
+    assert packet["artifact_type"] == "ev_downstream_adequacy_criterion_packet"
+    assert packet["status"] == "pi_decision_required_before_held_out_use"
+    assert packet["recommended_option_id"] == "A_decision_stability_plus_event_probability_band"
+    assert {option["id"] for option in packet["options"]} == {
+        "A_decision_stability_plus_event_probability_band",
+        "B_loading_quantile_diagnostic_plus_decision_check",
+        "C_component_profile_tail_only",
+    }
+    by_option = {option["id"]: option for option in packet["options"]}
+    assert by_option["A_decision_stability_plus_event_probability_band"]["status"] == "recommended_unsigned"
+    assert by_option["C_component_profile_tail_only"]["allowed_role"] == "source_quality_diagnostic_only"
+    assert "ALEA-002" in packet["governing_decisions"]
+    assert "EV-005 within-realization replacement policy or no-replacement rule is signed for the tested cohort sizes" in packet[
+        "preconditions_before_any_held_out_opening"
+    ]
+    assert packet["non_claims"] == {
+        "criterion_signed": False,
+        "held_out_access": False,
+        "profile_arrays_loaded": False,
+        "integrated_analysis_performed": False,
+        "event_or_p_e_analysis_performed": False,
+        "m_sufficiency_claimed": False,
+        "manuscript_numbers_produced": False,
+    }
 
 def test_ev_ic1_candidate_adapter_artifact_materializes_allocations_and_members(
     tmp_path: Path,

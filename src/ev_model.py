@@ -1269,6 +1269,110 @@ def ev_ic1_candidate_adapter_artifact(
     }
 
 
+
+def ev_downstream_adequacy_criterion_packet() -> dict[str, object]:
+    """Return the unsigned E3.S2a EV library-adequacy criterion packet."""
+
+    return {
+        "schema_version": 1,
+        "artifact_type": "ev_downstream_adequacy_criterion_packet",
+        "task_id": "E3.S2a",
+        "status": "pi_decision_required_before_held_out_use",
+        "governing_decisions": [
+            "EV-003",
+            "EV-005",
+            "EV-007A",
+            "EV-008A",
+            "EV-CAL-001",
+            "ALEA-002",
+            "G0-A3",
+            "G0-A4",
+        ],
+        "purpose": (
+            "Frame the downstream, integrated net-load criterion that must be signed "
+            "before EV held-out batches can certify finite-library adequacy."
+        ),
+        "recommended_option_id": "A_decision_stability_plus_event_probability_band",
+        "options": [
+            {
+                "id": "A_decision_stability_plus_event_probability_band",
+                "status": "recommended_unsigned",
+                "criterion_family": "integrated_event_probability_and_decision_stability",
+                "description": (
+                    "Compare candidate-library and held-out-library results after full IC-1 net-load "
+                    "aggregation and event detection. Require the reinforcement decision class and "
+                    "alpha-indexed probability bounds to remain stable within a PI-signed tolerance."
+                ),
+                "why_defensible": (
+                    "ALEA-002 says adequacy belongs downstream of aggregated net load, and the paper's "
+                    "decision depends on alpha-indexed event probability bounds rather than EV-only tails."
+                ),
+                "requires_pi_values": [
+                    "probability_bound_tolerance_by_alpha",
+                    "decision_stability_rule_near_pcrit",
+                    "minimum_replicate_or_crn_design",
+                ],
+            },
+            {
+                "id": "B_loading_quantile_diagnostic_plus_decision_check",
+                "status": "unsigned_alternative",
+                "criterion_family": "integrated_loading_distribution_diagnostic",
+                "description": (
+                    "Use full-year integrated transformer-loading quantile or episode-count diagnostics "
+                    "as a predeclared supplement, but keep final adequacy tied to event/decision stability."
+                ),
+                "why_defensible": (
+                    "It can reveal source-library tail mismatch before final event counts, but by itself "
+                    "would violate ALEA-002 if treated as the adequacy decision."
+                ),
+                "requires_pi_values": [
+                    "loading_quantile_levels",
+                    "diagnostic_tolerance",
+                    "whether_diagnostic_is_blocking_or_advisory",
+                ],
+            },
+            {
+                "id": "C_component_profile_tail_only",
+                "status": "not_recommended_unsigned",
+                "criterion_family": "component_only_diagnostic",
+                "description": (
+                    "Compare EV-only profile annual energy, peak, or sustained-load tails between "
+                    "candidate and held-out libraries."
+                ),
+                "why_not_primary": (
+                    "ALEA-002 explicitly rejects component-only adequacy certification because congestion "
+                    "is determined after baseline, EV, HP, PV, adoption, flexibility, and grid evaluation."
+                ),
+                "allowed_role": "source_quality_diagnostic_only",
+            },
+        ],
+        "preconditions_before_any_held_out_opening": [
+            "IC-1 can aggregate baseline, EV, HP, PV, adoption, and flexibility on one common calendar",
+            "EV-CAL-001 mapping is applied to loaded candidate and held-out trajectories",
+            "RNG-001 component streams and CRN design are fixed for the adequacy comparison",
+            "EV-005 within-realization replacement policy or no-replacement rule is signed for the tested cohort sizes",
+            "G0-A3 event threshold semantics are implemented by the downstream evaluator",
+            "PI signs numerical tolerances before held-out adequacy results are inspected",
+        ],
+        "suggested_test_checks_after_pi_approval": [
+            "candidate_and_held_out_partitions_remain_disjoint",
+            "criterion_tolerance_loaded_from_signed_config",
+            "component_profile_arrays_not_loaded_before_authorized_step",
+            "held_out_results_have_runner_manifest",
+            "alpha_indexed_bounds_not_defuzzified",
+            "criterion_failure_blocks_m_sufficiency_claim",
+        ],
+        "non_claims": {
+            "criterion_signed": False,
+            "held_out_access": False,
+            "profile_arrays_loaded": False,
+            "integrated_analysis_performed": False,
+            "event_or_p_e_analysis_performed": False,
+            "m_sufficiency_claimed": False,
+            "manuscript_numbers_produced": False,
+        },
+    }
+
 def a014_node_weights_from_load_table(
     load_table: Any,
     *,
