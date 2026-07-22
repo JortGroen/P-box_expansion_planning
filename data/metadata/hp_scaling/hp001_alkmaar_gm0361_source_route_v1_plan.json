@@ -1,0 +1,132 @@
+{
+  "blocked_or_out_of_scope": [
+    "No executable annual TWh values are created.",
+    "No D-004 acceptance or paired-weather cold-spell check is run.",
+    "No net-load, event, P(E), threshold, capacity-screen, or manuscript-result analysis is run.",
+    "No commercial heat is included in the primary route."
+  ],
+  "bundle_id": "hp001_alkmaar_gm0361_source_route_v1",
+  "checksum_workflow": {
+    "atomic_write_behavior": "Future downloads should write .tmp files under data/raw/hp_scaling, checksum them, then atomically replace the final raw path.",
+    "checkpoint_behavior": "After each source is retrieved, record URL, byte size, SHA-256, retrieval timestamp, and next pending source. Resume skips any source whose raw file still matches the checkpoint checksum.",
+    "checkpoint_path": "data/metadata/hp_scaling/hp001_alkmaar_gm0361_retrieval_checkpoint.json",
+    "future_command": ".\\.venv\\Scripts\\python.exe data\\get_hp_scaling.py --download --resume"
+  },
+  "created_utc": "2026-07-22T08:51:37Z",
+  "data_id": "D-013",
+  "download_performed": false,
+  "geography": {
+    "municipality_code": "GM0361",
+    "municipality_name": "Alkmaar",
+    "service_area_status": "proposed proxy for PI review"
+  },
+  "hp001_component_traceability": [
+    {
+      "annual_twh_source_status": "unsigned_local_value_pending",
+      "building_class": "SFH",
+      "component_id": "sfh_space",
+      "end_use": "space",
+      "when2heat_cop_column": "NL_COP_ASHP_radiator",
+      "when2heat_shape_column": "NL_heat_profile_space_SFH"
+    },
+    {
+      "annual_twh_source_status": "unsigned_local_value_pending",
+      "building_class": "MFH",
+      "component_id": "mfh_space",
+      "end_use": "space",
+      "when2heat_cop_column": "NL_COP_ASHP_radiator",
+      "when2heat_shape_column": "NL_heat_profile_space_MFH"
+    },
+    {
+      "annual_twh_source_status": "unsigned_local_value_pending",
+      "building_class": "SFH",
+      "component_id": "sfh_dhw",
+      "end_use": "water",
+      "when2heat_cop_column": "NL_COP_ASHP_water",
+      "when2heat_shape_column": "NL_heat_profile_water_SFH"
+    },
+    {
+      "annual_twh_source_status": "unsigned_local_value_pending",
+      "building_class": "MFH",
+      "component_id": "mfh_dhw",
+      "end_use": "water",
+      "when2heat_cop_column": "NL_COP_ASHP_water",
+      "when2heat_shape_column": "NL_heat_profile_water_MFH"
+    }
+  ],
+  "long_run_notice": {
+    "current_assessment": "Planned public-source retrievals are small filtered CBS OData requests and one 215.1 kB PBL ZIP, so the route does not currently require a long-run notice before retrieval.",
+    "required_before_launch_if_expected_runtime_exceeds_15_minutes": true
+  },
+  "public_source_policy": {
+    "private_thesis_policy": "The PI-supplied private student thesis may be used only as confidential source-discovery guidance; it is not cited, quoted, committed, or used as value provenance.",
+    "public_sources_only": true
+  },
+  "sources": [
+    {
+      "boundary": "Provides stock/type evidence only; it does not provide heat demand, DHW demand, or 2035 HP adoption.",
+      "expected_runtime_note": "expected seconds to a few minutes; no >15 minute run expected",
+      "expected_size_note": "small filtered OData request for Alkmaar municipality and selected periods",
+      "key": "cbs_85035ned_dwelling_stock",
+      "license_or_terms": "CBS open data terms; cite CBS table page and retrieval timestamp",
+      "planned_metadata_path": "data/metadata/hp_scaling/cbs_85035ned_alkmaar_dwelling_stock_metadata.json",
+      "planned_raw_path": "data/raw/hp_scaling/cbs_85035ned_alkmaar_dwelling_stock.json",
+      "proposed_fields_or_filters": [
+        "RegioS == GM0361 / Alkmaar",
+        "Woningtype includes Eengezinswoningen totaal for SFH",
+        "Woningtype includes Meergezinswoningen totaal for MFH",
+        "Onderwerp: Beginstand woningvoorraad",
+        "latest available period and any signed planning-year proxy period"
+      ],
+      "role": "SFH/MFH dwelling-stock denominator and crosswalk evidence for GM0361",
+      "source": "CBS StatLine",
+      "title": "CBS StatLine 85035NED dwelling stock by type and region",
+      "url": "https://opendata.cbs.nl/ODataApi/OData/85035NED"
+    },
+    {
+      "boundary": "Startanalyse pathway outputs are suitability/pathway evidence unless the PI separately signs a source-use rule for heat-demand scaling.",
+      "expected_runtime_note": "expected seconds; no >15 minute run expected",
+      "expected_size_note": "PBL municipality listing reports Alkmaar.zip as 215.1 kB",
+      "key": "pbl_startanalyse_2025_alkmaar",
+      "license_or_terms": "CC BY 4.0 NL according to the PBL data portal",
+      "planned_metadata_path": "data/metadata/hp_scaling/pbl_startanalyse_2025_alkmaar_metadata.json",
+      "planned_raw_path": "data/raw/hp_scaling/pbl_startanalyse_2025_alkmaar.zip",
+      "proposed_fields_or_filters": [
+        "download link with visible filename Alkmaar.zip from the 2025 Gemeentes page",
+        "buurt/wijk identifiers and municipality coverage",
+        "residential heat-demand fields if present and documented",
+        "space/DHW split only if explicit in the public file schema or documentation",
+        "Startanalyse strategy/pathway and national-cost indicators as suitability context"
+      ],
+      "role": "local heat-demand, neighbourhood, and pathway/suitability context for Alkmaar",
+      "source": "PBL Planbureau voor de Leefomgeving",
+      "title": "PBL Startanalyse aardgasvrije buurten 2025 Alkmaar municipality ZIP",
+      "url": "https://dataportaal.pbl.nl/Startanalyse_aardgasvrije_buurten/2025/Gemeentes"
+    },
+    {
+      "boundary": "Context only for this route; it is not a local Alkmaar 2035 adoption source and cannot make values executable.",
+      "expected_runtime_note": "expected seconds to a few minutes; no >15 minute run expected",
+      "expected_size_note": "small national/context table request after field filtering",
+      "key": "cbs_85523ned_heat_pump_context",
+      "license_or_terms": "CBS open data terms; cite CBS table page and retrieval timestamp",
+      "planned_metadata_path": "data/metadata/hp_scaling/cbs_85523ned_heat_pump_context_metadata.json",
+      "planned_raw_path": "data/raw/hp_scaling/cbs_85523ned_heat_pump_context.json",
+      "proposed_fields_or_filters": [
+        "sector == Woningen where available",
+        "air-source and ground/water-source categories",
+        "in-use counts, thermal capacity, heat production, and energy-flow fields",
+        "periods available through the latest public table version"
+      ],
+      "role": "national/current heat-pump context and uncertainty framing",
+      "source": "CBS StatLine",
+      "title": "CBS StatLine 85523NED heat pumps by sector, capacity, and energy flows",
+      "url": "https://opendata.cbs.nl/ODataApi/OData/85523NED"
+    }
+  ],
+  "status": "proposed retrieval/checksum/value-proposal route; no values executable",
+  "value_route": {
+    "local_heat_demand": "Future value proposal should extract or document public local heat-demand evidence first, then preserve space and DHW separately if the schema supports that interpretation.",
+    "suitability_pathway": "PBL Startanalyse pathway/cost outputs are kept separate from demand and adoption; they can justify scenario plausibility only after PI source-use approval.",
+    "unsigned_2035_adoption": "2035 HP adoption/electrification fractions or counts require a separate PI-signed scenario source before annual TWh values enter executable config."
+  }
+}

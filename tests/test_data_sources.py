@@ -12,6 +12,7 @@ import numpy as np
 import pytest
 
 import data.get_elaad_profiles as elaad
+import data.get_hp_scaling as hp_scaling
 import data.get_ndw_charging_inventory as ndw
 from data.get_elaad_profiles import (
     ProfileBatch,
@@ -37,7 +38,7 @@ def _case_dir(name: str) -> Path:
 
 
 def test_e2_s1_sources_have_existing_retrieval_scripts() -> None:
-    expected_ids = {"D-001", "D-002", "D-003", "D-004", "D-008", "D-012"}
+    expected_ids = {"D-001", "D-002", "D-003", "D-004", "D-008", "D-012", "D-013"}
     specs = source_specs()
 
     assert {spec.data_id for spec in specs} == expected_ids
@@ -167,6 +168,39 @@ def test_data_register_has_no_e2_s1_placeholders() -> None:
 
     for placeholder in ("TBD", "to check", "URL to verify", "DOI/URL to verify"):
         assert placeholder not in register
+
+
+def test_hp_scaling_route_is_public_source_only_and_value_unsigned() -> None:
+    plan = hp_scaling.build_hp_scaling_retrieval_plan()
+
+    assert plan["data_id"] == "D-013"
+    assert plan["geography"]["municipality_code"] == "GM0361"
+    assert plan["public_source_policy"]["public_sources_only"] is True
+    assert plan["download_performed"] is False
+    assert "thesis" in plan["public_source_policy"]["private_thesis_policy"]
+    assert all("thesis" not in source["source"].lower() for source in plan["sources"])
+    assert all(source["planned_raw_path"].startswith("data/raw/hp_scaling/") for source in plan["sources"])
+    assert "local_heat_demand" in plan["value_route"]
+    assert "suitability_pathway" in plan["value_route"]
+    assert "unsigned_2035_adoption" in plan["value_route"]
+    assert any("No executable annual TWh values" in item for item in plan["blocked_or_out_of_scope"])
+
+
+def test_hp_scaling_route_keeps_hp001_components_traceable() -> None:
+    components = hp_scaling.build_hp_scaling_retrieval_plan()["hp001_component_traceability"]
+    by_id = {component["component_id"]: component for component in components}
+
+    assert set(by_id) == {"sfh_space", "mfh_space", "sfh_dhw", "mfh_dhw"}
+    assert by_id["sfh_space"]["when2heat_cop_column"] == "NL_COP_ASHP_radiator"
+    assert by_id["mfh_space"]["when2heat_cop_column"] == "NL_COP_ASHP_radiator"
+    assert by_id["sfh_dhw"]["when2heat_cop_column"] == "NL_COP_ASHP_water"
+    assert by_id["mfh_dhw"]["when2heat_cop_column"] == "NL_COP_ASHP_water"
+    assert {component["end_use"] for component in components} == {"space", "water"}
+    assert {component["building_class"] for component in components} == {"SFH", "MFH"}
+    assert all(
+        component["annual_twh_source_status"] == "unsigned_local_value_pending"
+        for component in components
+    )
 
 
 def test_elaad_source_uses_profile_generator_route() -> None:
