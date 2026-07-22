@@ -1,0 +1,117 @@
+{
+  "data_id": "D-004",
+  "member_construction_rule_id": "D004-MC-001",
+  "members": [
+    {
+      "content_sha256": "105058c59f244a38ea1986c1d0f85225947cee4019de36aa6db5e42a56a15a4c",
+      "first_timestamp_utc": "2014-01-01T00:00:00+00:00",
+      "last_timestamp_utc": "2014-12-31T23:45:00+00:00",
+      "member_id": "d004_alkmaar_berkhout_2014_v1",
+      "metadata_path": "data/metadata/weather_pv/d004_alkmaar_berkhout_2014_2023_v1_member_2014_metadata.json",
+      "n_timesteps": 35040,
+      "shared_weather_driver_id": "d004_alkmaar_berkhout_2014_2023_v1:2014",
+      "year": 2014
+    },
+    {
+      "content_sha256": "d27d4e3c47550f851ed3b1dedeb8f497c165e0678735758b070e0a39be44e258",
+      "first_timestamp_utc": "2015-01-01T00:00:00+00:00",
+      "last_timestamp_utc": "2015-12-31T23:45:00+00:00",
+      "member_id": "d004_alkmaar_berkhout_2015_v1",
+      "metadata_path": "data/metadata/weather_pv/d004_alkmaar_berkhout_2014_2023_v1_member_2015_metadata.json",
+      "n_timesteps": 35040,
+      "shared_weather_driver_id": "d004_alkmaar_berkhout_2014_2023_v1:2015",
+      "year": 2015
+    },
+    {
+      "content_sha256": "e9558f44c4420df0f96ce5a92cae4116bd9a193bd6a0921417c7715604b1b2d8",
+      "first_timestamp_utc": "2016-01-01T00:00:00+00:00",
+      "last_timestamp_utc": "2016-12-31T23:45:00+00:00",
+      "member_id": "d004_alkmaar_berkhout_2016_v1",
+      "metadata_path": "data/metadata/weather_pv/d004_alkmaar_berkhout_2014_2023_v1_member_2016_metadata.json",
+      "n_timesteps": 35136,
+      "shared_weather_driver_id": "d004_alkmaar_berkhout_2014_2023_v1:2016",
+      "year": 2016
+    },
+    {
+      "content_sha256": "ba773756f4f3472fbb88e9711040fdf00c2bb0657b98545cd70c164d4b08aed3",
+      "first_timestamp_utc": "2017-01-01T00:00:00+00:00",
+      "last_timestamp_utc": "2017-12-31T23:45:00+00:00",
+      "member_id": "d004_alkmaar_berkhout_2017_v1",
+      "metadata_path": "data/metadata/weather_pv/d004_alkmaar_berkhout_2014_2023_v1_member_2017_metadata.json",
+      "n_timesteps": 35040,
+      "shared_weather_driver_id": "d004_alkmaar_berkhout_2014_2023_v1:2017",
+      "year": 2017
+    },
+    {
+      "content_sha256": "1d38ffc3c72324fb6e33b2a024811352ef35d5053f53581adb480fd5d0b847f8",
+      "first_timestamp_utc": "2018-01-01T00:00:00+00:00",
+      "last_timestamp_utc": "2018-12-31T23:45:00+00:00",
+      "member_id": "d004_alkmaar_berkhout_2018_v1",
+      "metadata_path": "data/metadata/weather_pv/d004_alkmaar_berkhout_2014_2023_v1_member_2018_metadata.json",
+      "n_timesteps": 35040,
+      "shared_weather_driver_id": "d004_alkmaar_berkhout_2014_2023_v1:2018",
+      "year": 2018
+    },
+    {
+      "content_sha256": "43e2c64633ab0e0eecf3dd69f0553b27019ad32a1f69ee621a4bb9d39dd73e35",
+      "first_timestamp_utc": "2019-01-01T00:00:00+00:00",
+      "last_timestamp_utc": "2019-12-31T23:45:00+00:00",
+      "member_id": "d004_alkmaar_berkhout_2019_v1",
+      "metadata_path": "data/metadata/weather_pv/d004_alkmaar_berkhout_2014_2023_v1_member_2019_metadata.json",
+      "n_timesteps": 35040,
+      "shared_weather_driver_id": "d004_alkmaar_berkhout_2014_2023_v1:2019",
+      "year": 2019
+    },
+    {
+      "content_sha256": "3e29273eec63502f2a67ba1f5a3032ae59df5b791447d1be396ffa791568e7d5",
+      "first_timestamp_utc": "2020-01-01T00:00:00+00:00",
+      "last_timestamp_utc": "2020-12-31T23:45:00+00:00",
+      "member_id": "d004_alkmaar_berkhout_2020_v1",
+      "metadata_path": "data/metadata/weather_pv/d004_alkmaar_berkhout_2014_2023_v1_member_2020_metadata.json",
+      "n_timesteps": 35136,
+      "shared_weather_driver_id": "d004_alkmaar_berkhout_2014_2023_v1:2020",
+      "year": 2020
+    },
+    {
+      "content_sha256": "0eecf86b4667573f4d07bcc58e39ad85c8a4ed10e7a53f89b766f89efb434423",
+      "first_timestamp_utc": "2021-01-01T00:00:00+00:00",
+      "last_timestamp_utc": "2021-12-31T23:45:00+00:00",
+      "member_id": "d004_alkmaar_berkhout_2021_v1",
+      "metadata_path": "data/metadata/weather_pv/d004_alkmaar_berkhout_2014_2023_v1_member_2021_metadata.json",
+      "n_timesteps": 35040,
+      "shared_weather_driver_id": "d004_alkmaar_berkhout_2014_2023_v1:2021",
+      "year": 2021
+    },
+    {
+      "content_sha256": "da3aa67bc161d1633740d6be6897dcde22a854a3a842e92fb03b01e3a7626997",
+      "first_timestamp_utc": "2022-01-01T00:00:00+00:00",
+      "last_timestamp_utc": "2022-12-31T23:45:00+00:00",
+      "member_id": "d004_alkmaar_berkhout_2022_v1",
+      "metadata_path": "data/metadata/weather_pv/d004_alkmaar_berkhout_2014_2023_v1_member_2022_metadata.json",
+      "n_timesteps": 35040,
+      "shared_weather_driver_id": "d004_alkmaar_berkhout_2014_2023_v1:2022",
+      "year": 2022
+    },
+    {
+      "content_sha256": "afc27bb66be1e19f29df0f03eb915cc75c947fb66dec54491417ddf17922a304",
+      "first_timestamp_utc": "2023-01-01T00:00:00+00:00",
+      "last_timestamp_utc": "2023-12-31T23:45:00+00:00",
+      "member_id": "d004_alkmaar_berkhout_2023_v1",
+      "metadata_path": "data/metadata/weather_pv/d004_alkmaar_berkhout_2014_2023_v1_member_2023_metadata.json",
+      "n_timesteps": 35040,
+      "shared_weather_driver_id": "d004_alkmaar_berkhout_2014_2023_v1:2023",
+      "year": 2023
+    }
+  ],
+  "no_final_d004_acceptance": true,
+  "no_integrated_analysis": true,
+  "retrieval_manifest_d004_status": "proposed_pending_pi_review",
+  "retrieval_manifest_selection_id": "d004_alkmaar_berkhout_2014_2023_v1",
+  "selection_id": "d004_alkmaar_berkhout_2014_2023_v1",
+  "source_use_boundary": {
+    "knmi": "realized temperature and GHI weather path",
+    "pvgis": "calibration_or_validation_provenance_only",
+    "pvgis_realized_weather_path": false
+  },
+  "status": "constructed_from_approved_rule_pending_final_d004_source_acceptance"
+}

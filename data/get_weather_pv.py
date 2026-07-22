@@ -1,19 +1,24 @@
 from __future__ import annotations
 
 import argparse
-from datetime import UTC, datetime
+import csv
+from dataclasses import dataclass
+from datetime import UTC, datetime, timedelta
 import hashlib
+import io
 import json
 import math
 from pathlib import Path
 import sys
 from typing import Any, Mapping, Sequence
 from urllib import parse, request
+import zipfile
 
 if __package__ in {None, ""}:
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from data.sources import write_metadata
+from src.weather_model import LOCAL_TIMEZONE, WeatherMember
 
 PVGIS_API_BASE = "https://re.jrc.ec.europa.eu/api/v5_3"
 KNMI_OPEN_DATA_BASE = "https://api.dataplatform.knmi.nl/open-data/v1"
@@ -31,6 +36,26 @@ PVGIS_USAGE_CONDITIONS_URL = (
 )
 KNMI_OPEN_DATA_API_DOCS_URL = "https://developer.dataplatform.knmi.nl/open-data-api"
 KNMI_IN_SITU_DOCS_URL = "https://dataplatform.knmi.nl/dataset/docs/10-minute-in-situ-meteorological-observations-1-0"
+D004_SELECTION_ID = "d004_alkmaar_berkhout_2014_2023_v1"
+D004_MEMBER_CONSTRUCTION_RULE_ID = "D004-MC-001"
+D004_SOURCE = "knmi_station_249_hourly_q_t_plus_pvgis_sarah3_reference"
+D004_YEARS = tuple(range(2014, 2024))
+D004_STATION_ID = 249
+D004_STATION_NAME = "Berkhout"
+D004_MEMBER_MANIFEST_NAME = f"{D004_SELECTION_ID}_weather_members_manifest.json"
+D004_MEMBER_METADATA_TEMPLATE = f"{D004_SELECTION_ID}_member_{{year}}_metadata.json"
+D004_RETRIEVAL_MANIFEST = f"{D004_SELECTION_ID}_retrieval_manifest.json"
+
+
+@dataclass(frozen=True)
+class D004WeatherMemberBuildResult:
+    """Constructed D-004 members plus their committed metadata paths."""
+
+    members: tuple[WeatherMember, ...]
+    metadata_paths: tuple[Path, ...]
+    manifest_path: Path | None
+
+
 
 
 def build_pvgis_seriescalc_url(
@@ -127,6 +152,87 @@ def sha256_file(path: Path) -> str:
         for chunk in iter(lambda: handle.read(1024 * 1024), b""):
             digest.update(chunk)
     return digest.hexdigest()
+
+
+def build_d004_weather_members(
+    *,
+    root_dir: str | Path = ".",
+    metadata_dir: str | Path = "data/metadata",
+    years: Sequence[int] = D004_YEARS,
+    write_member_metadata: bool = False,
+    builder_command: str = "data/get_weather_pv.py --build-d004-weather-members",
+) -> D004WeatherMemberBuildResult:
+    """Build approved D-004 WEATHER-001 members from local recorded raw files.
+
+    This implements D004-MC-001 only. PVGIS files are copied into provenance as
+    calibration/validation references and are not sampled as realized weather.
+    """
+    root = Path(root_dir)
+    metadata_root = Path(metadata_dir)
+    retrieval_manifest_path = metadata_root / "weather_pv" / D004_RETRIEVAL_MANIFEST
+    retrieval_manifest = _load_json(retrieval_manifest_path)
+    source_files = _verify_d004_source_files(root, retrieval_manifest)
+    records = _load_knmi_station_records(source_files["knmi"])
+    pvgis_provenance = _pvgis_reference_provenance(source_files["pvgis"])
+
+    members: list[WeatherMember] = []
+    metadata_payloads: list[dict[str, Any]] = []
+    for year in tuple(int(item) for item in years):
+        hourly = _select_complete_knmi_year(records, year)
+        timestamps_utc, timestamps_local, temperature_c, ghi_w_per_m2 = _expand_knmi_hourly_to_15min(hourly)
+        member = WeatherMember(
+            member_id=f"d004_alkmaar_berkhout_{year}_v1",
+            shared_weather_driver_id=f"{D004_SELECTION_ID}:{year}",
+            source=D004_SOURCE,
+            timestamps_utc=timestamps_utc,
+            timestamps_local=timestamps_local,
+            temperature_c=temperature_c,
+            pv_weather_fields={"ghi_w_per_m2": ghi_w_per_m2},
+            provenance={
+                "data_id": "D-004",
+                "selection_id": D004_SELECTION_ID,
+                "member_construction_rule_id": D004_MEMBER_CONSTRUCTION_RULE_ID,
+                "knmi": _knmi_provenance(source_files["knmi"], year),
+                "pvgis": pvgis_provenance,
+                "construction": {
+                    "builder_command": builder_command,
+                    "calendar_year_basis": "UTC calendar year",
+                    "hourly_to_15min_temperature_rule": "repeat KNMI hourly T/10 over four quarter-hour timestamps",
+                    "hourly_to_15min_ghi_rule": "repeat KNMI hourly-average Q-derived GHI over four quarter-hour sub-intervals",
+                    "local_timezone": LOCAL_TIMEZONE,
+                    "weather_model_contract_path": "src/weather_model.py",
+                },
+            },
+            metadata={
+                "year": year,
+                "station_id": D004_STATION_ID,
+                "station_name": D004_STATION_NAME,
+                "status": "constructed_from_approved_rule_pending_final_d004_source_acceptance",
+                "raw_data_committed": False,
+                "pvgis_realized_weather_path": False,
+            },
+        )
+        members.append(member)
+        metadata_payloads.append(_member_metadata_payload(member, hourly, source_files))
+
+    metadata_paths: tuple[Path, ...] = ()
+    manifest_path: Path | None = None
+    if write_member_metadata:
+        output_dir = metadata_root / "weather_pv"
+        output_dir.mkdir(parents=True, exist_ok=True)
+        metadata_paths = tuple(
+            _write_json(output_dir / D004_MEMBER_METADATA_TEMPLATE.format(year=payload["year"]), payload)
+            for payload in metadata_payloads
+        )
+        manifest_path = _write_json(
+            output_dir / D004_MEMBER_MANIFEST_NAME,
+            _member_library_manifest_payload(metadata_payloads, retrieval_manifest),
+        )
+    return D004WeatherMemberBuildResult(
+        members=tuple(members),
+        metadata_paths=metadata_paths,
+        manifest_path=manifest_path,
+    )
 
 
 def write_retrieval_plan(metadata_dir: str | Path = "data/metadata") -> Path:
@@ -417,6 +523,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--output-path")
     parser.add_argument("--timeout-s", type=float, default=120.0)
     parser.add_argument("--authorization-env")
+    parser.add_argument("--build-d004-weather-members", action="store_true")
+    parser.add_argument("--root-dir", default=".")
     args = parser.parse_args(argv)
 
     if args.write_retrieval_plan:
@@ -456,6 +564,18 @@ def main(argv: Sequence[str] | None = None) -> int:
             authorization_header=authorization,
         )
         print(path)
+        return 0
+
+    if args.build_d004_weather_members:
+        result = build_d004_weather_members(
+            root_dir=args.root_dir,
+            metadata_dir=args.metadata_dir,
+            write_member_metadata=True,
+        )
+        if result.manifest_path is not None:
+            print(result.manifest_path)
+        for path in result.metadata_paths:
+            print(path)
         return 0
 
     path = write_metadata(
@@ -511,6 +631,299 @@ def _safe_stem(value: str) -> str:
 
 def _now_utc_iso() -> str:
     return datetime.now(tz=UTC).replace(microsecond=0).isoformat()
+
+
+def _load_json(path: Path) -> dict[str, Any]:
+    if not path.is_file():
+        raise FileNotFoundError(path)
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(payload, dict):
+        raise ValueError(f"{path} must contain a JSON object")
+    return payload
+
+
+def _write_json(path: Path, payload: Mapping[str, Any]) -> Path:
+    path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    return path
+
+
+def _verify_d004_source_files(root: Path, retrieval_manifest: Mapping[str, Any]) -> dict[str, list[dict[str, Any]]]:
+    files = retrieval_manifest.get("source_files")
+    if not isinstance(files, list):
+        raise ValueError("D-004 retrieval manifest lacks source_files")
+    grouped: dict[str, list[dict[str, Any]]] = {"knmi": [], "pvgis": []}
+    for raw_item in files:
+        if not isinstance(raw_item, Mapping):
+            raise ValueError("D-004 source_files entries must be objects")
+        item = dict(raw_item)
+        kind = str(item.get("source_kind", "")).lower()
+        if kind not in grouped:
+            raise ValueError(f"unsupported D-004 source kind: {kind}")
+        path = root / str(item["path"])
+        if not path.is_file():
+            raise FileNotFoundError(path)
+        size = path.stat().st_size
+        digest = sha256_file(path)
+        if size != int(item["size_bytes"]):
+            raise ValueError(f"{path} size {size} does not match retrieval manifest")
+        if digest != item["sha256_file"]:
+            raise ValueError(f"{path} sha256 does not match retrieval manifest")
+        item["verified_path"] = path.as_posix()
+        item["verified_size_bytes"] = size
+        item["verified_sha256_file"] = digest
+        grouped[kind].append(item)
+    if len(grouped["knmi"]) != 2 or len(grouped["pvgis"]) != 2:
+        raise ValueError("D-004 builder expects exactly two KNMI and two PVGIS source files")
+    return grouped
+
+
+def _load_knmi_station_records(source_files: Sequence[Mapping[str, Any]]) -> dict[datetime, dict[str, Any]]:
+    records: dict[datetime, dict[str, Any]] = {}
+    for source_file in source_files:
+        path = Path(str(source_file["verified_path"]))
+        with zipfile.ZipFile(path) as archive:
+            text_names = [name for name in archive.namelist() if name.lower().endswith(".txt")]
+            if len(text_names) != 1:
+                raise ValueError(f"{path} must contain exactly one KNMI text file")
+            content = archive.read(text_names[0]).decode("latin-1")
+        header: list[str] | None = None
+        rows: list[str] = []
+        for line in content.splitlines():
+            if line.startswith("# STN,"):
+                header = [_clean_knmi_column_name(item) for item in line.lstrip("# ").split(",")]
+                continue
+            if header is not None and line.strip() and not line.startswith("#"):
+                rows.append(line)
+        if header is None:
+            raise ValueError(f"{path} lacks KNMI column header")
+        for row in csv.DictReader(io.StringIO("\n".join(rows)), fieldnames=header, skipinitialspace=True):
+            if int(_required_knmi_value(row, "STN")) != D004_STATION_ID:
+                continue
+            end_timestamp = _knmi_hour_ending_utc(
+                yyyymmdd=_required_knmi_value(row, "YYYYMMDD"),
+                hh=_required_knmi_value(row, "HH"),
+            )
+            if end_timestamp in records:
+                raise ValueError(f"duplicate KNMI hour-ending timestamp: {end_timestamp.isoformat()}")
+            records[end_timestamp] = {
+                "end_timestamp_utc": end_timestamp,
+                "temperature_c": int(_required_knmi_value(row, "T")) / 10.0,
+                "q_j_per_cm2": int(_required_knmi_value(row, "Q")),
+                "source_zip_path": path.as_posix(),
+            }
+    return records
+
+
+def _select_complete_knmi_year(records: Mapping[datetime, Mapping[str, Any]], year: int) -> tuple[Mapping[str, Any], ...]:
+    expected_end_times = tuple(_utc_hour_endings_for_year(year))
+    selected: list[Mapping[str, Any]] = []
+    missing: list[str] = []
+    for timestamp in expected_end_times:
+        record = records.get(timestamp)
+        if record is None:
+            missing.append(timestamp.isoformat())
+        else:
+            selected.append(record)
+    if missing:
+        raise ValueError(f"KNMI station {D004_STATION_ID} year {year} is incomplete; first missing {missing[0]}")
+    return tuple(selected)
+
+
+def _expand_knmi_hourly_to_15min(
+    hourly: Sequence[Mapping[str, Any]],
+) -> tuple[tuple[datetime, ...], tuple[datetime, ...], tuple[float, ...], tuple[float, ...]]:
+    from zoneinfo import ZoneInfo
+
+    local_zone = ZoneInfo(LOCAL_TIMEZONE)
+    timestamps_utc: list[datetime] = []
+    timestamps_local: list[datetime] = []
+    temperature_c: list[float] = []
+    ghi_w_per_m2: list[float] = []
+    for record in hourly:
+        end_timestamp = record["end_timestamp_utc"]
+        if not isinstance(end_timestamp, datetime):
+            raise ValueError("KNMI record timestamp is malformed")
+        start_timestamp = end_timestamp - timedelta(hours=1)
+        ghi = float(record["q_j_per_cm2"]) * 10000.0 / 3600.0
+        if ghi < 0 or not math.isfinite(ghi):
+            raise ValueError("KNMI Q-derived GHI must be finite and non-negative")
+        temperature = float(record["temperature_c"])
+        if not math.isfinite(temperature):
+            raise ValueError("KNMI T-derived temperature must be finite")
+        for offset_minutes in (0, 15, 30, 45):
+            timestamp = start_timestamp + timedelta(minutes=offset_minutes)
+            timestamps_utc.append(timestamp)
+            timestamps_local.append(timestamp.astimezone(local_zone))
+            temperature_c.append(temperature)
+            ghi_w_per_m2.append(ghi)
+    return tuple(timestamps_utc), tuple(timestamps_local), tuple(temperature_c), tuple(ghi_w_per_m2)
+
+
+def _member_metadata_payload(
+    member: WeatherMember,
+    hourly: Sequence[Mapping[str, Any]],
+    source_files: Mapping[str, Sequence[Mapping[str, Any]]],
+) -> dict[str, Any]:
+    year = int(member.metadata["year"])
+    q_total_j_per_cm2 = sum(int(record["q_j_per_cm2"]) for record in hourly)
+    ghi = member.ghi_w_per_m2
+    temperature = member.temperature_c
+    expanded_energy = float(ghi.sum() * 900.0 / 10000.0)
+    return {
+        "data_id": "D-004",
+        "selection_id": D004_SELECTION_ID,
+        "member_construction_rule_id": D004_MEMBER_CONSTRUCTION_RULE_ID,
+        "status": "constructed_from_approved_rule_pending_final_d004_source_acceptance",
+        "year": year,
+        "member_id": member.member_id,
+        "shared_weather_driver_id": member.shared_weather_driver_id,
+        "source": member.source,
+        "content_sha256": member.content_sha256,
+        "identity_record": member.identity_record(),
+        "calendar": {
+            "calendar_year_basis": "UTC calendar year",
+            "timezone": LOCAL_TIMEZONE,
+            "first_timestamp_utc": member.timestamps_utc[0].isoformat(),
+            "last_timestamp_utc": member.timestamps_utc[-1].isoformat(),
+            "first_timestamp_local": member.timestamps_local[0].isoformat(),
+            "last_timestamp_local": member.timestamps_local[-1].isoformat(),
+            "n_timesteps": member.n_timesteps,
+            "cadence_seconds": member.cadence_seconds,
+        },
+        "knmi_hourly_source": {
+            "station_id": D004_STATION_ID,
+            "station_name": D004_STATION_NAME,
+            "source_hourly_rows": len(hourly),
+            "hour_semantics": "HH is UT hour-ending; HH=24 maps to 00:00 UTC on the following date",
+            "temperature_conversion": "temperature_c = T / 10",
+            "ghi_conversion": "ghi_w_per_m2 = Q_j_per_cm2 * 10000 / 3600",
+            "hourly_to_15min_rule": "repeat T/10 and Q-derived hourly-average GHI over four quarter-hours",
+            "q_total_j_per_cm2": q_total_j_per_cm2,
+            "expanded_ghi_energy_j_per_cm2": expanded_energy,
+            "energy_preservation_abs_error_j_per_cm2": abs(expanded_energy - q_total_j_per_cm2),
+            "temperature_min_c": float(temperature.min()),
+            "temperature_max_c": float(temperature.max()),
+            "ghi_min_w_per_m2": float(ghi.min()),
+            "ghi_max_w_per_m2": float(ghi.max()),
+        },
+        "source_files": {
+            "knmi": [_source_file_record(item) for item in source_files["knmi"]],
+            "pvgis": [_source_file_record(item) for item in source_files["pvgis"]],
+        },
+        "boundaries": [
+            "D-004 remains proposed pending final PI source acceptance",
+            "PVGIS-SARAH3 is provenance/calibration reference only, not a realized sampled weather path",
+            "No HP/PV paired acceptance, cold-spell acceptance, net-load/event/P(E), capacity screen, or manuscript result is produced",
+        ],
+    }
+
+
+def _member_library_manifest_payload(
+    member_payloads: Sequence[Mapping[str, Any]],
+    retrieval_manifest: Mapping[str, Any],
+) -> dict[str, Any]:
+    return {
+        "data_id": "D-004",
+        "selection_id": D004_SELECTION_ID,
+        "member_construction_rule_id": D004_MEMBER_CONSTRUCTION_RULE_ID,
+        "status": "constructed_from_approved_rule_pending_final_d004_source_acceptance",
+        "retrieval_manifest_selection_id": retrieval_manifest.get("selection_id"),
+        "retrieval_manifest_d004_status": retrieval_manifest.get("d004_status"),
+        "members": [
+            {
+                "year": payload["year"],
+                "member_id": payload["member_id"],
+                "shared_weather_driver_id": payload["shared_weather_driver_id"],
+                "content_sha256": payload["content_sha256"],
+                "metadata_path": f"data/metadata/weather_pv/{D004_MEMBER_METADATA_TEMPLATE.format(year=payload['year'])}",
+                "n_timesteps": payload["calendar"]["n_timesteps"],
+                "first_timestamp_utc": payload["calendar"]["first_timestamp_utc"],
+                "last_timestamp_utc": payload["calendar"]["last_timestamp_utc"],
+            }
+            for payload in member_payloads
+        ],
+        "source_use_boundary": {
+            "knmi": "realized temperature and GHI weather path",
+            "pvgis": "calibration_or_validation_provenance_only",
+            "pvgis_realized_weather_path": False,
+        },
+        "no_final_d004_acceptance": True,
+        "no_integrated_analysis": True,
+    }
+
+
+def _knmi_provenance(source_files: Sequence[Mapping[str, Any]], year: int) -> dict[str, Any]:
+    return {
+        "station_id": D004_STATION_ID,
+        "station_name": D004_STATION_NAME,
+        "year": year,
+        "source_files": [_source_file_record(item) for item in source_files],
+        "source_columns": ["STN", "YYYYMMDD", "HH", "T", "Q"],
+        "hour_semantics": "HH is UT hour-ending; HH=24 maps to 00:00 UTC on the following date",
+        "unit_conversions": {
+            "temperature_c": "T / 10",
+            "ghi_w_per_m2": "Q_j_per_cm2 * 10000 / 3600",
+        },
+    }
+
+
+def _pvgis_reference_provenance(source_files: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
+    return {
+        "use_boundary": "calibration_or_validation_provenance_only",
+        "not_realized_weather_member_source": True,
+        "radiation_database": "PVGIS-SARAH3",
+        "site_latitude": 52.63167,
+        "site_longitude": 4.74861,
+        "system_configuration": {
+            "peakpower_kw": 1.0,
+            "loss_percent": 14.0,
+            "angle_degrees": 35.0,
+            "aspect_degrees": 0.0,
+            "fixed": True,
+        },
+        "source_files": [_source_file_record(item) for item in source_files],
+    }
+
+
+def _source_file_record(item: Mapping[str, Any]) -> dict[str, Any]:
+    return {
+        "file_role": item.get("file_role"),
+        "path": item.get("path"),
+        "source_kind": item.get("source_kind"),
+        "source_url": item.get("source_url"),
+        "size_bytes": item.get("size_bytes"),
+        "sha256_file": item.get("sha256_file"),
+    }
+
+
+def _clean_knmi_column_name(value: str) -> str:
+    return value.strip()
+
+
+def _required_knmi_value(row: Mapping[str, str | None], key: str) -> str:
+    value = row.get(key)
+    if value is None or not value.strip():
+        raise ValueError(f"KNMI row missing required {key}")
+    return value.strip()
+
+
+def _knmi_hour_ending_utc(*, yyyymmdd: str, hh: str) -> datetime:
+    date = datetime.strptime(yyyymmdd, "%Y%m%d").replace(tzinfo=UTC)
+    hour = int(hh)
+    if hour < 1 or hour > 24:
+        raise ValueError(f"KNMI HH must be in 1..24, got {hour}")
+    return date + timedelta(hours=hour)
+
+
+def _utc_hour_endings_for_year(year: int) -> tuple[datetime, ...]:
+    start = datetime(int(year), 1, 1, 1, tzinfo=UTC)
+    end = datetime(int(year) + 1, 1, 1, tzinfo=UTC)
+    values: list[datetime] = []
+    current = start
+    while current <= end:
+        values.append(current)
+        current += timedelta(hours=1)
+    return tuple(values)
 
 
 if __name__ == "__main__":

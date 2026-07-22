@@ -1,0 +1,184 @@
+{
+  "boundaries": [
+    "D-004 remains proposed pending final PI source acceptance",
+    "PVGIS-SARAH3 is provenance/calibration reference only, not a realized sampled weather path",
+    "No HP/PV paired acceptance, cold-spell acceptance, net-load/event/P(E), capacity screen, or manuscript result is produced"
+  ],
+  "calendar": {
+    "cadence_seconds": 900,
+    "calendar_year_basis": "UTC calendar year",
+    "first_timestamp_local": "2019-01-01T01:00:00+01:00",
+    "first_timestamp_utc": "2019-01-01T00:00:00+00:00",
+    "last_timestamp_local": "2020-01-01T00:45:00+01:00",
+    "last_timestamp_utc": "2019-12-31T23:45:00+00:00",
+    "n_timesteps": 35040,
+    "timezone": "Europe/Amsterdam"
+  },
+  "content_sha256": "43e2c64633ab0e0eecf3dd69f0553b27019ad32a1f69ee621a4bb9d39dd73e35",
+  "data_id": "D-004",
+  "identity_record": {
+    "cadence_seconds": 900,
+    "content_sha256": "43e2c64633ab0e0eecf3dd69f0553b27019ad32a1f69ee621a4bb9d39dd73e35",
+    "first_timestamp_local": "2019-01-01T01:00:00+01:00",
+    "first_timestamp_utc": "2019-01-01T00:00:00+00:00",
+    "last_timestamp_local": "2020-01-01T00:45:00+01:00",
+    "last_timestamp_utc": "2019-12-31T23:45:00+00:00",
+    "member_id": "d004_alkmaar_berkhout_2019_v1",
+    "metadata": {
+      "pvgis_realized_weather_path": false,
+      "raw_data_committed": false,
+      "station_id": 249,
+      "station_name": "Berkhout",
+      "status": "constructed_from_approved_rule_pending_final_d004_source_acceptance",
+      "year": 2019
+    },
+    "n_timesteps": 35040,
+    "provenance": {
+      "construction": {
+        "builder_command": "data/get_weather_pv.py --build-d004-weather-members",
+        "calendar_year_basis": "UTC calendar year",
+        "hourly_to_15min_ghi_rule": "repeat KNMI hourly-average Q-derived GHI over four quarter-hour sub-intervals",
+        "hourly_to_15min_temperature_rule": "repeat KNMI hourly T/10 over four quarter-hour timestamps",
+        "local_timezone": "Europe/Amsterdam",
+        "weather_model_contract_path": "src/weather_model.py"
+      },
+      "data_id": "D-004",
+      "knmi": {
+        "hour_semantics": "HH is UT hour-ending; HH=24 maps to 00:00 UTC on the following date",
+        "source_columns": [
+          "STN",
+          "YYYYMMDD",
+          "HH",
+          "T",
+          "Q"
+        ],
+        "source_files": [
+          {
+            "file_role": "validated_hourly_station_249_zip_2011_2020",
+            "path": "data/raw/weather_pv/knmi/d004_alkmaar_berkhout_2014_2023_v1/uurgeg_249_2011-2020.zip",
+            "sha256_file": "f83f255b4f1b7a1f48dba935f8396a99989fa600364425e3a45b6b5218dd4f0e",
+            "size_bytes": 1536802,
+            "source_kind": "knmi",
+            "source_url": "https://cdn.knmi.nl/knmi/map/page/klimatologie/gegevens/uurgegevens/uurgeg_249_2011-2020.zip"
+          },
+          {
+            "file_role": "validated_hourly_station_249_zip_2021_2030",
+            "path": "data/raw/weather_pv/knmi/d004_alkmaar_berkhout_2014_2023_v1/uurgeg_249_2021-2030.zip",
+            "sha256_file": "f68e3797217a91a4121d7aab7146da7f989f96d561c92cb613b70a77d8ed9ef2",
+            "size_bytes": 838086,
+            "source_kind": "knmi",
+            "source_url": "https://cdn.knmi.nl/knmi/map/page/klimatologie/gegevens/uurgegevens/uurgeg_249_2021-2030.zip"
+          }
+        ],
+        "station_id": 249,
+        "station_name": "Berkhout",
+        "unit_conversions": {
+          "ghi_w_per_m2": "Q_j_per_cm2 * 10000 / 3600",
+          "temperature_c": "T / 10"
+        },
+        "year": 2019
+      },
+      "member_construction_rule_id": "D004-MC-001",
+      "pvgis": {
+        "not_realized_weather_member_source": true,
+        "radiation_database": "PVGIS-SARAH3",
+        "site_latitude": 52.63167,
+        "site_longitude": 4.74861,
+        "source_files": [
+          {
+            "file_role": "hourly_series_calibration_or_validation_reference",
+            "path": "data/raw/weather_pv/pvgis/d004_alkmaar_berkhout_2014_2023_v1/pvgis_seriescalc_d004_alkmaar_berkhout_2014_2023_v1.json",
+            "sha256_file": "dca94839809cefd165edd964ddd269fbf6cc9fde7c5875905a84eb0ae830e2dc",
+            "size_bytes": 8212761,
+            "source_kind": "pvgis",
+            "source_url": "https://re.jrc.ec.europa.eu/api/v5_3/seriescalc?lat=52.63167&lon=4.74861&startyear=2014&endyear=2023&pvcalculation=1&peakpower=1.0&loss=14.0&angle=35.0&aspect=0.0&fixed=1&outputformat=json&browser=0&raddatabase=PVGIS-SARAH3"
+          },
+          {
+            "file_role": "typical_year_calibration_or_validation_only",
+            "path": "data/raw/weather_pv/pvgis/d004_alkmaar_berkhout_2014_2023_v1/pvgis_tmy_d004_alkmaar_berkhout_2014_2023_v1.json",
+            "sha256_file": "54af286aad35a675c9993eafe122ad2d742dc28fac71608052b02c47387cdc34",
+            "size_bytes": 1269604,
+            "source_kind": "pvgis",
+            "source_url": "https://re.jrc.ec.europa.eu/api/v5_3/tmy?lat=52.63167&lon=4.74861&outputformat=json&browser=0&raddatabase=PVGIS-SARAH3"
+          }
+        ],
+        "system_configuration": {
+          "angle_degrees": 35.0,
+          "aspect_degrees": 0.0,
+          "fixed": true,
+          "loss_percent": 14.0,
+          "peakpower_kw": 1.0
+        },
+        "use_boundary": "calibration_or_validation_provenance_only"
+      },
+      "selection_id": "d004_alkmaar_berkhout_2014_2023_v1"
+    },
+    "pv_weather_field_names": [
+      "ghi_w_per_m2"
+    ],
+    "shared_weather_driver_id": "d004_alkmaar_berkhout_2014_2023_v1:2019",
+    "source": "knmi_station_249_hourly_q_t_plus_pvgis_sarah3_reference",
+    "temperature_field": "temperature_c"
+  },
+  "knmi_hourly_source": {
+    "energy_preservation_abs_error_j_per_cm2": 5.820766091346741e-11,
+    "expanded_ghi_energy_j_per_cm2": 399929.00000000006,
+    "ghi_conversion": "ghi_w_per_m2 = Q_j_per_cm2 * 10000 / 3600",
+    "ghi_max_w_per_m2": 894.4444444444445,
+    "ghi_min_w_per_m2": 0.0,
+    "hour_semantics": "HH is UT hour-ending; HH=24 maps to 00:00 UTC on the following date",
+    "hourly_to_15min_rule": "repeat T/10 and Q-derived hourly-average GHI over four quarter-hours",
+    "q_total_j_per_cm2": 399929,
+    "source_hourly_rows": 8760,
+    "station_id": 249,
+    "station_name": "Berkhout",
+    "temperature_conversion": "temperature_c = T / 10",
+    "temperature_max_c": 35.6,
+    "temperature_min_c": -5.6
+  },
+  "member_construction_rule_id": "D004-MC-001",
+  "member_id": "d004_alkmaar_berkhout_2019_v1",
+  "selection_id": "d004_alkmaar_berkhout_2014_2023_v1",
+  "shared_weather_driver_id": "d004_alkmaar_berkhout_2014_2023_v1:2019",
+  "source": "knmi_station_249_hourly_q_t_plus_pvgis_sarah3_reference",
+  "source_files": {
+    "knmi": [
+      {
+        "file_role": "validated_hourly_station_249_zip_2011_2020",
+        "path": "data/raw/weather_pv/knmi/d004_alkmaar_berkhout_2014_2023_v1/uurgeg_249_2011-2020.zip",
+        "sha256_file": "f83f255b4f1b7a1f48dba935f8396a99989fa600364425e3a45b6b5218dd4f0e",
+        "size_bytes": 1536802,
+        "source_kind": "knmi",
+        "source_url": "https://cdn.knmi.nl/knmi/map/page/klimatologie/gegevens/uurgegevens/uurgeg_249_2011-2020.zip"
+      },
+      {
+        "file_role": "validated_hourly_station_249_zip_2021_2030",
+        "path": "data/raw/weather_pv/knmi/d004_alkmaar_berkhout_2014_2023_v1/uurgeg_249_2021-2030.zip",
+        "sha256_file": "f68e3797217a91a4121d7aab7146da7f989f96d561c92cb613b70a77d8ed9ef2",
+        "size_bytes": 838086,
+        "source_kind": "knmi",
+        "source_url": "https://cdn.knmi.nl/knmi/map/page/klimatologie/gegevens/uurgegevens/uurgeg_249_2021-2030.zip"
+      }
+    ],
+    "pvgis": [
+      {
+        "file_role": "hourly_series_calibration_or_validation_reference",
+        "path": "data/raw/weather_pv/pvgis/d004_alkmaar_berkhout_2014_2023_v1/pvgis_seriescalc_d004_alkmaar_berkhout_2014_2023_v1.json",
+        "sha256_file": "dca94839809cefd165edd964ddd269fbf6cc9fde7c5875905a84eb0ae830e2dc",
+        "size_bytes": 8212761,
+        "source_kind": "pvgis",
+        "source_url": "https://re.jrc.ec.europa.eu/api/v5_3/seriescalc?lat=52.63167&lon=4.74861&startyear=2014&endyear=2023&pvcalculation=1&peakpower=1.0&loss=14.0&angle=35.0&aspect=0.0&fixed=1&outputformat=json&browser=0&raddatabase=PVGIS-SARAH3"
+      },
+      {
+        "file_role": "typical_year_calibration_or_validation_only",
+        "path": "data/raw/weather_pv/pvgis/d004_alkmaar_berkhout_2014_2023_v1/pvgis_tmy_d004_alkmaar_berkhout_2014_2023_v1.json",
+        "sha256_file": "54af286aad35a675c9993eafe122ad2d742dc28fac71608052b02c47387cdc34",
+        "size_bytes": 1269604,
+        "source_kind": "pvgis",
+        "source_url": "https://re.jrc.ec.europa.eu/api/v5_3/tmy?lat=52.63167&lon=4.74861&outputformat=json&browser=0&raddatabase=PVGIS-SARAH3"
+      }
+    ]
+  },
+  "status": "constructed_from_approved_rule_pending_final_d004_source_acceptance",
+  "year": 2019
+}
