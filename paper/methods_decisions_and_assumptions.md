@@ -1131,6 +1131,24 @@ D-004 acceptance, cold-spell tolerance, net-load integration, event analysis,
 `P(E)`, capacity-screen result, Q-5-dependent threshold result, or manuscript
 number.
 
+<!-- methods-id: E2-S3-HP-SOURCE-PROXY-CLARIFICATION -->
+### E2-S3-HP-SOURCE-PROXY-CLARIFICATION - HP-001 Local Scaling Source And Proxy
+
+**Status: Proposed packet; route not yet approved.** The HP-001 local scaling
+source/proxy clarification packet narrows the unsigned annual-scaling route by
+asking the PI to choose a local service-area proxy, a first retrieval source
+bundle, and an adoption interpretation before any values are calculated. Agent
+C recommends Alkmaar municipality `GM0361` for geographic consistency with
+EV-007A and D-004, CBS StatLine dwelling-stock-by-type evidence for the
+`SFH/MFH` denominator, and PBL Startanalyse 2025 Alkmaar evidence for local
+heat-transition and heat-demand context. The packet explicitly treats national
+or current heat-pump statistics as context unless a separate 2035 adoption
+source is signed, and it treats Startanalyse pathway evidence as suitability
+unless the PI signs it as adoption. This packet does not retrieve data, approve
+any source, compute or sign annual TWh values, set D-004 acceptance,
+cold-spell tolerances, event analysis, `P(E)`, capacity-screen results,
+Q-5-dependent threshold work, or manuscript numbers.
+
 <!-- methods-id: D-004 -->
 ### D-004 - Weather and PV Inputs
 
