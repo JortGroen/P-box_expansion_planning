@@ -1161,6 +1161,30 @@ any source, compute or sign annual TWh values, set D-004 acceptance,
 cold-spell tolerances, event analysis, `P(E)`, capacity-screen results,
 Q-5-dependent threshold work, or manuscript numbers.
 
+<!-- methods-id: E2-S3-HP-SCALING-RETRIEVAL-ROUTE -->
+### E2-S3-HP-SCALING-RETRIEVAL-ROUTE - HP-001 Alkmaar Public-Source Retrieval Route
+
+**Status: Proposed route; values unsigned.** The HP-001 Alkmaar scaling
+retrieval route binds the earlier local-scaling source/proxy packet to an
+auditable public-source workflow without authorizing any annual heat-pump
+volume. It proposes CBS StatLine 85035NED as dwelling-stock/type evidence for
+SFH/MFH denominators, PBL Startanalyse aardgasvrije buurten 2025 Alkmaar as
+local heat-demand and heat-transition pathway evidence subject to schema
+inspection, and CBS StatLine 85523NED as national/current heat-pump context
+only. Future retrieval must store raw public files under ignored
+`data/raw/hp_scaling/`, write source-by-source byte size, SHA-256, URL,
+timestamp, and checkpoint metadata under `data/metadata/hp_scaling/`, and keep
+three evidentiary roles separate: local heat demand, suitability/pathway
+context, and unsigned 2035 heat-pump adoption. The four HP-001 residential
+components remain traceable as SFH space, MFH space, SFH domestic hot water,
+and MFH domestic hot water before aggregation. The PI-supplied private student
+thesis may guide discovery of public underlying sources only; it is not cited,
+quoted, committed, or used as value provenance. This proposed route does not
+retrieve files, select checksums, approve D-013, calculate or execute annual
+TWh values, sign 2035 adoption, approve D-004, run paired-weather acceptance,
+or authorize net-load, event, `P(E)`, threshold, capacity-screen, manuscript,
+or probability results.
+
 <!-- methods-id: D-004 -->
 ### D-004 - Weather and PV Inputs
 
@@ -1322,6 +1346,31 @@ representative current Alkmaar public capacity. It therefore supports the
 EV-008A choice to use an amended equal-mix capacity-stratified public profile
 design instead of treating 22 kW as the only current-fleet representative
 capacity.
+
+<!-- methods-id: D-013 -->
+### D-013 - HP-001 Alkmaar Local Scaling Source Bundle
+
+**Status: Proposed route; values unsigned.** D-013 records the proposed public
+source bundle for later deriving local annual heat-pump scaling inputs for
+HP-001 in Alkmaar municipality `GM0361`. CBS StatLine 85035NED is proposed for
+dwelling-stock/type evidence that can support the SFH/MFH denominator; PBL
+Startanalyse aardgasvrije buurten 2025 Alkmaar is proposed for local heat
+demand, neighbourhood, and heat-transition pathway evidence after the public
+file schema is inspected; and CBS StatLine 85523NED is proposed as
+national/current heat-pump context rather than as a local 2035 adoption source.
+The route requires retrieval metadata to record exact URLs, byte sizes,
+SHA-256 checksums, timestamps, and resume checkpoints before any value proposal
+is reviewed. It also requires local heat demand, suitability/pathway evidence,
+and unsigned 2035 heat-pump adoption to remain separate so pathway suitability
+cannot become adoption volume by implication. The four HP-001 components,
+SFH/MFH crossed with space/DHW, must retain their separate annual-scaling
+provenance before aggregation. The PI-supplied private student thesis is not a
+D-013 source and may be used only as confidential source-discovery guidance for
+public underlying sources. D-013 is not approved, no concrete files or
+checksums are selected by this packet, no annual TWh values are executable, and
+no D-004 acceptance, paired-weather cold-spell check, net-load integration,
+event analysis, `P(E)`, threshold run, capacity-screen result, manuscript
+number, or probability result is authorized.
 
 <!-- methods-id: OWN-001 -->
 ### OWN-001 - Machine-Enforced Agent Ownership

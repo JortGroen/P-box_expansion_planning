@@ -88,6 +88,16 @@ _SOURCE_SPECS: tuple[SourceSpec, ...] = (
         raw_subdir="ev_adoption",
         notes="Proposed evidence source for public charge-point/EVSE/connector unit interpretation and the EV-008 public-capacity decision; exact municipality counts require boundary joins because OCPI lacks CBS municipality codes.",
     ),
+    SourceSpec(
+        data_id="D-013",
+        item="HP-001 Alkmaar local scaling source bundle",
+        source="CBS StatLine dwelling stock and heat-pump context; PBL Startanalyse aardgasvrije buurten 2025 Alkmaar",
+        doi_url="CBS 85035NED https://www.cbs.nl/nl-nl/cijfers/detail/85035NED; CBS 85523NED https://www.cbs.nl/nl-nl/cijfers/detail/85523NED; PBL Startanalyse 2025 https://dataportaal.pbl.nl/Startanalyse_aardgasvrije_buurten/2025/Gemeentes",
+        license="CBS open data terms; PBL Startanalyse 2025 data portal states CC BY 4.0 NL",
+        retrieval_script="data/get_hp_scaling.py",
+        raw_subdir="hp_scaling",
+        notes="Proposed no-download route for Alkmaar GM0361 HP-001 local scaling evidence; no annual TWh values or 2035 adoption volumes are executable.",
+    ),
 )
 
 
