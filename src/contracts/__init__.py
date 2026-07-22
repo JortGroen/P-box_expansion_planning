@@ -10,19 +10,24 @@ from src.contracts.loading_trajectory import (
     validate_loading_trajectory_result,
 )
 from src.contracts.net_load import (
+    ALLOWED_COMPONENT_ARTIFACT_STATUSES,
     ComponentKind,
     ComponentProvenance,
+    REAL_COMPONENT_WIRING_KINDS,
     NetLoadAssemblyPlan,
     NetLoadComponent,
     NetLoadProvider,
     NetLoadResult,
     REQUIRED_INTEGRATION_COMPONENT_KINDS,
+    assemble_net_load_from_real_component_outputs,
     assemble_net_load_from_components,
     build_net_load_result,
+    validate_real_component_adapter_readiness,
     validate_net_load_result,
 )
 
 __all__ = [
+    "ALLOWED_COMPONENT_ARTIFACT_STATUSES",
     "ComponentKind",
     "ComponentProvenance",
     "LoadingTrajectoryResult",
@@ -30,11 +35,14 @@ __all__ = [
     "NetLoadComponent",
     "NetLoadProvider",
     "NetLoadResult",
+    "REAL_COMPONENT_WIRING_KINDS",
     "REQUIRED_INTEGRATION_COMPONENT_KINDS",
     "TimeDomain",
+    "assemble_net_load_from_real_component_outputs",
     "assemble_net_load_from_components",
     "build_net_load_result",
     "validate_loading_trajectory_result",
     "validate_net_load_result",
+    "validate_real_component_adapter_readiness",
 ]
 

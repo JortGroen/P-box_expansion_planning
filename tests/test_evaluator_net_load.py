@@ -12,12 +12,15 @@ from src.contracts.net_load import (
     NetLoadComponent,
     NetLoadProvider,
     NetLoadResult,
+    REAL_COMPONENT_WIRING_KINDS,
     assemble_net_load_from_adapter_outputs,
     assemble_net_load_from_components,
+    assemble_net_load_from_real_component_outputs,
     build_realization_context,
     build_net_load_result,
     net_load_component_from_adapter_output,
     validate_net_load_result,
+    validate_real_component_adapter_readiness,
 )
 from src.contracts.loading_trajectory import TimeDomain
 
@@ -101,6 +104,7 @@ def _adapter_output(
     shared_weather_driver_id: str | None = None,
     timestamps: np.ndarray | None = None,
     stream_id: str | None = None,
+    artifact_status: str = "synthetic_fixture",
 ) -> ComponentAdapterOutput:
     return ComponentAdapterOutput(
         component_id=component_id,
@@ -113,7 +117,7 @@ def _adapter_output(
         source_id=source_id or f"synthetic-{kind}-adapter",
         stream_id=stream_id or _stream_id(context, kind),
         shared_weather_driver_id=shared_weather_driver_id,
-        metadata={"adapter": "synthetic"},
+        metadata={"adapter": "synthetic", "artifact_status": artifact_status},
     )
 
 
@@ -792,3 +796,77 @@ def test_adapter_backed_provider_smoke_harness_enforces_context_weather_identity
 
     with pytest.raises(ValueError, match="context shared_weather_driver_id"):
         provider.get_net_load("smoke", 2035, "full_year", rho=0.25, seed=9001)
+
+
+def test_real_component_readiness_records_required_artifact_statuses() -> None:
+    context = _realization_context()
+    readiness = validate_real_component_adapter_readiness(_adapter_outputs(context))
+
+    assert readiness["required_real_component_kinds"] == REAL_COMPONENT_WIRING_KINDS
+    assert readiness["present_component_kinds"] == (
+        "adoption",
+        "baseline",
+        "ev",
+        "flexibility",
+        "hp",
+        "pv",
+    )
+    assert readiness["artifact_status_by_component_id"]["baseline-a"] == "synthetic_fixture"
+    assert readiness["artifact_status_by_component_id"]["hp-b"] == "synthetic_fixture"
+
+
+def test_real_component_readiness_assembles_into_ic1_without_event_analysis() -> None:
+    context = _realization_context()
+    plan = NetLoadAssemblyPlan(node_ids=("node-b", "node-a"), metadata={"mapping": "real-readiness-v1"})
+
+    result = assemble_net_load_from_real_component_outputs(
+        plan,
+        context,
+        _adapter_outputs(context),
+        metadata={"scaffold_only": True},
+    )
+
+    assert result.metadata["assembly"] == "component_adapter_boundary_scaffold"
+    assert result.metadata["scaffold_only"] is True
+    readiness = result.metadata["real_component_wiring"]
+    assert readiness["required_real_component_kinds"] == REAL_COMPONENT_WIRING_KINDS
+    assert readiness["artifact_status_by_component_id"]["pv-b"] == "synthetic_fixture"
+    assert "threshold_pu" not in result.metadata
+    assert "overload" not in result.metadata
+    assert result.shared_weather_driver_ids == (context.shared_weather_driver_id,)
+    np.testing.assert_array_equal(
+        result.p_net_kw,
+        np.array(
+            [
+                [4.0, 3.0, 3.0, 7.0],
+                [10.8, 12.8, 15.0, 17.0],
+            ]
+        ),
+    )
+
+
+def test_real_component_readiness_rejects_missing_required_real_kind() -> None:
+    context = _realization_context()
+    outputs = [
+        output
+        for output in _adapter_outputs(context)
+        if output.kind != "hp"
+    ]
+
+    with pytest.raises(ValueError, match="missing real-component adapter output kind\\(s\\): hp"):
+        validate_real_component_adapter_readiness(outputs)
+
+
+def test_real_component_readiness_rejects_missing_or_unknown_artifact_status() -> None:
+    context = _realization_context()
+    outputs = _adapter_outputs(context)
+    outputs[0] = _adapter_output(
+        context,
+        "baseline-a",
+        "baseline",
+        [10.0, 11.0, 12.0, 13.0],
+        artifact_status="candidate_only",
+    )
+
+    with pytest.raises(ValueError, match="valid artifact_status"):
+        validate_real_component_adapter_readiness(outputs)

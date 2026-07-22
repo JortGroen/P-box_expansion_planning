@@ -27,6 +27,7 @@ ComponentKind = Literal[
     "flexibility",
     "other",
 ]
+ComponentArtifactStatus = Literal["accepted", "scaffold", "synthetic_fixture"]
 
 
 REQUIRED_INTEGRATION_COMPONENT_KINDS: tuple[ComponentKind, ...] = (
@@ -36,6 +37,17 @@ REQUIRED_INTEGRATION_COMPONENT_KINDS: tuple[ComponentKind, ...] = (
     "pv",
     "adoption",
     "flexibility",
+)
+REAL_COMPONENT_WIRING_KINDS: tuple[ComponentKind, ...] = (
+    "baseline",
+    "ev",
+    "hp",
+    "pv",
+)
+ALLOWED_COMPONENT_ARTIFACT_STATUSES: tuple[ComponentArtifactStatus, ...] = (
+    "accepted",
+    "scaffold",
+    "synthetic_fixture",
 )
 
 DEFAULT_REALIZATION_COMPONENTS: tuple[str, ...] = REQUIRED_INTEGRATION_COMPONENT_KINDS
@@ -535,6 +547,79 @@ def assemble_net_load_from_adapter_outputs(
     if metadata is not None:
         combined_metadata.update(metadata)
     return assemble_net_load_from_components(plan, components, metadata=combined_metadata)
+
+
+def assemble_net_load_from_real_component_outputs(
+    plan: NetLoadAssemblyPlan,
+    context: NetLoadRealizationContext,
+    adapter_outputs: Sequence[ComponentAdapterOutput],
+    *,
+    required_real_component_kinds: Sequence[ComponentKind] = REAL_COMPONENT_WIRING_KINDS,
+    metadata: Mapping[str, object] | None = None,
+) -> NetLoadResult:
+    """Assemble IC-1 net load from real-component-ready adapter outputs.
+
+    This readiness wrapper is the narrow join point future C-owned baseline,
+    EV, HP, and PV adapters can target after their artifacts are accepted. It
+    still accepts synthetic fixture outputs for tests, records that status in
+    metadata, and performs no IC-2 loading, event, adequacy, or probability
+    analysis.
+    """
+
+    readiness = validate_real_component_adapter_readiness(
+        adapter_outputs,
+        required_real_component_kinds=required_real_component_kinds,
+    )
+    combined_metadata = {
+        "real_component_wiring": readiness,
+    }
+    if metadata is not None:
+        combined_metadata.update(metadata)
+    return assemble_net_load_from_adapter_outputs(
+        plan,
+        context,
+        adapter_outputs,
+        metadata=combined_metadata,
+    )
+
+
+def validate_real_component_adapter_readiness(
+    adapter_outputs: Sequence[ComponentAdapterOutput],
+    *,
+    required_real_component_kinds: Sequence[ComponentKind] = REAL_COMPONENT_WIRING_KINDS,
+) -> dict[str, object]:
+    """Return manifestable readiness metadata for future real-component wiring."""
+
+    if not adapter_outputs:
+        raise ValueError("adapter_outputs must not be empty")
+    required = tuple(required_real_component_kinds)
+    if not required:
+        raise ValueError("required_real_component_kinds must not be empty")
+    for kind in required:
+        if kind not in _VALID_COMPONENT_KINDS:
+            raise ValueError("required_real_component_kinds must contain valid component kinds")
+
+    by_kind: dict[ComponentKind, list[ComponentAdapterOutput]] = {}
+    status_by_component_id: dict[str, str] = {}
+    for output in adapter_outputs:
+        by_kind.setdefault(output.kind, []).append(output)
+        status = output.metadata.get("artifact_status")
+        if status not in ALLOWED_COMPONENT_ARTIFACT_STATUSES:
+            raise ValueError("adapter output metadata must include a valid artifact_status")
+        status_by_component_id[output.component_id] = str(status)
+
+    missing = [kind for kind in required if kind not in by_kind]
+    if missing:
+        raise ValueError(f"missing real-component adapter output kind(s): {', '.join(missing)}")
+
+    # Accepted/scaffold/synthetic status is kept with each component so future
+    # manifests cannot make real C-owned artifacts and synthetic placeholders
+    # look interchangeable after IC-1 aggregation.
+    return {
+        "required_real_component_kinds": tuple(required),
+        "present_component_kinds": tuple(sorted(by_kind)),
+        "artifact_status_by_component_id": dict(sorted(status_by_component_id.items())),
+    }
 
 
 def build_net_load_result(

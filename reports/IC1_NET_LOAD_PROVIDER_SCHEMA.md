@@ -63,6 +63,19 @@ Every adapter output must populate the following fields:
 Adapters may use richer internal objects, but the IC-1 boundary receives only
 the normalized `ComponentAdapterOutput` shape above.
 
+For real-component readiness checks, each adapter output should include
+`metadata["artifact_status"]` with one of:
+
+- `accepted`: the owning E2 artifact has been accepted for integration use;
+- `scaffold`: an approved scaffold or placeholder, not a scientific input;
+- `synthetic_fixture`: deterministic test data only.
+
+The helper `assemble_net_load_from_real_component_outputs(...)` requires
+baseline, EV, HP, and PV outputs to be present, records the supplied
+artifact-status values in `NetLoadResult.metadata["real_component_wiring"]`, and
+then delegates to the same IC-1 adapter assembler. It does not call IC-2,
+evaluate thresholds, inspect held-out data, or compute adequacy.
+
 ## Calendar Rules
 
 All component outputs in one `NetLoadResult` must share exactly one calendar.
@@ -236,7 +249,7 @@ class SyntheticAdapter:
                     if stream.component == self.kind
                 ),
                 shared_weather_driver_id=weather_id,
-                metadata={"example": "synthetic"},
+                metadata={"example": "synthetic", "artifact_status": "synthetic_fixture"},
             )
         ]
 
