@@ -42,3 +42,28 @@ def test_every_methods_block_declares_its_status() -> None:
         block = methods_text[match.end() : block_end]
         assert "**Status:" in block, f"methods block {match.group(1)} lacks a status label"
         assert len(block.split()) >= 20, f"methods block {match.group(1)} is only a placeholder stub"
+
+
+def _assumption_register_ids() -> set[str]:
+    text = (ROOT / "registers" / "ASSUMPTIONS.md").read_text(encoding="utf-8")
+    return {item for item in ROW_ID_RE.findall(text) if item.startswith("A-")}
+
+
+def test_formal_assumption_inventory_lists_every_assumption_row() -> None:
+    methods_text = METHODS_PATH.read_text(encoding="utf-8")
+    start = "<!-- assumption-inventory-start -->"
+    end = "<!-- assumption-inventory-end -->"
+    assert start in methods_text
+    assert end in methods_text
+    inventory = methods_text.split(start, 1)[1].split(end, 1)[0]
+
+    listed = set(re.findall(r"`(A-\d{3})`", inventory))
+    assert listed == _assumption_register_ids()
+
+
+def test_methods_inventory_flags_inferred_pbl_hp_indicator_mapping() -> None:
+    methods_text = METHODS_PATH.read_text(encoding="utf-8")
+    assert "H23_Vraag_RV_w" in methods_text
+    assert "H24_Vraag_TW_w" in methods_text
+    assert "currently inferred" in methods_text
+    assert "explicit PBL evidence" in methods_text
