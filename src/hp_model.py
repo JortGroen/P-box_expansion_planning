@@ -175,6 +175,63 @@ class When2HeatCsvMetadata:
 
 
 @dataclass(frozen=True)
+class HeatPumpComponentSeries:
+    """One traceable HP-001 component before aggregation."""
+
+    heat_column: str
+    cop_column: str
+    annual_heat_demand_twh: float
+    end_use: str | None
+    building_class: str | None
+    thermal_demand_kw: np.ndarray
+    electric_kw: np.ndarray
+    cop: np.ndarray
+    interval_hours: float = 1.0
+    provenance: Mapping[str, Any] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        thermal = np.asarray(self.thermal_demand_kw, dtype=np.float64)
+        electric = np.asarray(self.electric_kw, dtype=np.float64)
+        cop = np.asarray(self.cop, dtype=np.float64)
+        if thermal.ndim != 1 or electric.shape != thermal.shape or cop.shape != thermal.shape:
+            raise ValueError("component series arrays must be one-dimensional and aligned")
+        if not np.isfinite(thermal).all() or not np.isfinite(electric).all() or not np.isfinite(cop).all():
+            raise ValueError("component series arrays must contain only finite values")
+        if (thermal < 0).any() or (electric < 0).any():
+            raise ValueError("component demand arrays must be non-negative")
+        if (cop <= 0).any():
+            raise ValueError("component COP values must be positive")
+        if self.interval_hours <= 0:
+            raise ValueError("component interval_hours must be positive")
+        object.__setattr__(self, "thermal_demand_kw", thermal)
+        object.__setattr__(self, "electric_kw", electric)
+        object.__setattr__(self, "cop", cop)
+        object.__setattr__(self, "provenance", _as_provenance_mapping(self.provenance, "component provenance"))
+
+    @property
+    def component_id(self) -> str:
+        building = self.building_class or "unknown_class"
+        end_use = self.end_use or "unknown_end_use"
+        return f"{building.lower()}_{end_use}"
+
+    def metadata_record(self) -> dict[str, object]:
+        """Return component-level metadata without embedding full arrays."""
+        return {
+            "component_id": self.component_id,
+            "heat_column": self.heat_column,
+            "cop_column": self.cop_column,
+            "annual_heat_demand_twh": self.annual_heat_demand_twh,
+            "end_use": self.end_use,
+            "building_class": self.building_class,
+            "n_timesteps": int(self.electric_kw.size),
+            "interval_hours": self.interval_hours,
+            "thermal_energy_kwh": float(self.thermal_demand_kw.sum() * self.interval_hours),
+            "electric_energy_kwh": float(self.electric_kw.sum() * self.interval_hours),
+            "provenance": dict(self.provenance),
+        }
+
+
+@dataclass(frozen=True)
 class When2HeatHourlyProfile:
     """Hourly thermal and electric heat-pump demand from When2Heat.
 
@@ -186,6 +243,7 @@ class When2HeatHourlyProfile:
     electric_kw: np.ndarray
     cop: np.ndarray
     components: tuple[When2HeatComponent, ...]
+    component_series: tuple[HeatPumpComponentSeries, ...] = ()
     source_path: str | None = None
     source_metadata: When2HeatCsvMetadata | None = None
 
@@ -199,6 +257,7 @@ class When2HeatHourlyProfile:
         object.__setattr__(self, "thermal_demand_kw", thermal)
         object.__setattr__(self, "electric_kw", electric)
         object.__setattr__(self, "cop", cop)
+        _validate_component_series(self.component_series, expected_shape=electric.shape)
 
 
 @dataclass(frozen=True)
@@ -212,6 +271,7 @@ class When2HeatQuarterHourProfile:
     components: tuple[When2HeatComponent, ...]
     source_path: str | None
     downscaling_method: str
+    component_series: tuple[HeatPumpComponentSeries, ...] = ()
     source_metadata: When2HeatCsvMetadata | None = None
 
     def __post_init__(self) -> None:
@@ -230,6 +290,7 @@ class When2HeatQuarterHourProfile:
         object.__setattr__(self, "thermal_demand_kw", thermal)
         object.__setattr__(self, "electric_kw", electric)
         object.__setattr__(self, "cop", cop)
+        _validate_component_series(self.component_series, expected_shape=electric.shape)
 
 
 @dataclass(frozen=True)
@@ -249,6 +310,8 @@ class HeatPumpProfile:
     downscaling_method: str
     pv_weather_field_names: tuple[str, ...]
     timestamps_local: tuple[datetime, ...] | None = None
+    component_series: tuple[HeatPumpComponentSeries, ...] = ()
+    weather_content_sha256: str | None = None
     weather_provenance: Mapping[str, Any] = field(default_factory=dict)
     source_metadata: Mapping[str, Any] = field(default_factory=dict)
 
@@ -279,6 +342,8 @@ class HeatPumpProfile:
             raise ValueError("temperature_c must align with heat-pump demand")
         if not np.isfinite(temperature).all():
             raise ValueError("temperature_c must contain only finite values")
+        _validate_component_series(self.component_series, expected_shape=electric.shape)
+        content_hash = _optional_text(self.weather_content_sha256, "weather_content_sha256")
         object.__setattr__(self, "timestamps_utc", timestamps)
         object.__setattr__(self, "electric_kw", electric)
         object.__setattr__(self, "thermal_demand_kw", thermal)
@@ -286,6 +351,7 @@ class HeatPumpProfile:
         object.__setattr__(self, "temperature_c", temperature)
         object.__setattr__(self, "pv_weather_field_names", pv_weather_field_names)
         object.__setattr__(self, "timestamps_local", timestamps_local)
+        object.__setattr__(self, "weather_content_sha256", content_hash)
         object.__setattr__(self, "weather_provenance", provenance)
         object.__setattr__(self, "source_metadata", source_metadata)
 
@@ -312,6 +378,8 @@ class HeatPumpProfile:
             "pv_weather_field_names": self.pv_weather_field_names,
             "provenance": dict(self.weather_provenance),
         }
+        if self.weather_content_sha256 is not None:
+            record["content_sha256"] = self.weather_content_sha256
         if self.source_metadata:
             record["when2heat_source"] = dict(self.source_metadata)
         if self.timestamps_local is not None:
@@ -322,6 +390,10 @@ class HeatPumpProfile:
                 }
             )
         return record
+
+    def component_traceability_record(self) -> tuple[dict[str, object], ...]:
+        """Return HP component records that remain auditable before aggregation."""
+        return tuple(component.metadata_record() for component in self.component_series)
 
 
 @dataclass(frozen=True)
@@ -482,6 +554,7 @@ def load_when2heat_hourly_csv(
     total_thermal_kw = np.zeros(len(frame), dtype=np.float64)
     total_electric_kw = np.zeros(len(frame), dtype=np.float64)
     cop_stack: list[np.ndarray] = []
+    component_series: list[HeatPumpComponentSeries] = []
     missing_columns = [
         column
         for component in components
@@ -502,9 +575,24 @@ def load_when2heat_hourly_csv(
             raise ValueError(f"{component.heat_column} contains negative thermal demand")
         if not np.isfinite(cop).all() or (cop <= 0).any():
             raise ValueError(f"{component.cop_column} must contain positive finite COP values")
+        electric_kw = thermal_kw / cop
         total_thermal_kw += thermal_kw
-        total_electric_kw += thermal_kw / cop
+        total_electric_kw += electric_kw
         cop_stack.append(cop)
+        component_series.append(
+            HeatPumpComponentSeries(
+                heat_column=component.heat_column,
+                cop_column=component.cop_column,
+                annual_heat_demand_twh=component.annual_heat_demand_twh,
+                end_use=component.end_use,
+                building_class=component.building_class,
+                thermal_demand_kw=thermal_kw,
+                electric_kw=electric_kw,
+                cop=cop,
+                interval_hours=1.0,
+                provenance=component.provenance,
+            )
+        )
 
     local_values = (
         tuple(str(value) for value in frame[local_timestamp_column])
@@ -524,6 +612,7 @@ def load_when2heat_hourly_csv(
         electric_kw=total_electric_kw,
         cop=equivalent_cop,
         components=tuple(components),
+        component_series=tuple(component_series),
         source_path=source_path.as_posix(),
         source_metadata=When2HeatCsvMetadata(
             source_path=source_path.as_posix(),
@@ -567,6 +656,7 @@ def downscale_hourly_to_15min(hourly: When2HeatHourlyProfile) -> When2HeatQuarte
         components=hourly.components,
         source_path=hourly.source_path,
         downscaling_method="hourly_zero_order_hold_to_15min_energy_preserving",
+        component_series=tuple(_downscale_component_series(component) for component in hourly.component_series),
         source_metadata=hourly.source_metadata,
     )
 
@@ -616,6 +706,8 @@ def align_heat_pump_profile(
         downscaling_method=when2heat_15min.downscaling_method,
         pv_weather_field_names=pv_weather_field_names,
         timestamps_local=timestamps_local,
+        component_series=when2heat_15min.component_series,
+        weather_content_sha256=_weather_content_hash(weather),
         weather_provenance=_weather_provenance(weather),
         source_metadata=(
             when2heat_15min.source_metadata.as_record()
@@ -647,6 +739,52 @@ def build_heat_pump_profile_from_when2heat_csv(
         nrows=nrows,
     )
     return align_heat_pump_profile(downscale_hourly_to_15min(hourly), weather)
+
+
+def build_executable_hp001_profile_from_when2heat_csv(
+    path: str | Path,
+    *,
+    weather: SharedWeatherMember,
+    components: Sequence[When2HeatComponent],
+    timestamp_column: str = WHEN2HEAT_UTC_TIMESTAMP_COLUMN,
+    local_timestamp_column: str | None = WHEN2HEAT_LOCAL_TIMESTAMP_COLUMN,
+    csv_separator: str = WHEN2HEAT_CSV_SEPARATOR,
+    decimal: str = WHEN2HEAT_CSV_DECIMAL,
+    nrows: int | None = None,
+) -> HeatPumpProfile:
+    """Build an executable HP-001 profile only from signed annual scales.
+
+    This guard prevents reviewed shape/COP scaffolds from becoming integrated
+    HP load inputs before the local annual TWh/adoption values are signed.
+    """
+    require_signed_annual_scaling(components)
+    return build_heat_pump_profile_from_when2heat_csv(
+        path,
+        weather=weather,
+        components=components,
+        timestamp_column=timestamp_column,
+        local_timestamp_column=local_timestamp_column,
+        csv_separator=csv_separator,
+        decimal=decimal,
+        nrows=nrows,
+    )
+
+
+def require_signed_annual_scaling(components: Sequence[When2HeatComponent]) -> None:
+    """Raise unless all HP components carry signed annual-scaling provenance."""
+    if not components:
+        raise ValueError("At least one When2Heat component is required")
+    unsigned: list[str] = []
+    for component in components:
+        status = str(component.provenance.get("annual_scaling_status", "")).strip().lower()
+        approval_id = str(component.provenance.get("annual_scaling_approval_id", "")).strip()
+        if status != "signed" or not approval_id:
+            unsigned.append(component.heat_column)
+    if unsigned:
+        raise ValueError(
+            "Executable HP loads require signed annual scaling provenance for "
+            f"all components; unsigned={tuple(unsigned)}"
+        )
 
 
 def cold_week_sanity_check(profile: HeatPumpProfile, *, window_days: int = 7) -> ColdWeekSanity:
@@ -685,6 +823,51 @@ def cold_week_sanity_check(profile: HeatPumpProfile, *, window_days: int = 7) ->
         max_load_outside_cold_week_kw=outside_max,
         peak_inside_cold_week=bool(inside_peak_indices),
     )
+
+
+def _downscale_component_series(component: HeatPumpComponentSeries) -> HeatPumpComponentSeries:
+    return HeatPumpComponentSeries(
+        heat_column=component.heat_column,
+        cop_column=component.cop_column,
+        annual_heat_demand_twh=component.annual_heat_demand_twh,
+        end_use=component.end_use,
+        building_class=component.building_class,
+        thermal_demand_kw=np.repeat(component.thermal_demand_kw, QUARTER_HOURS_PER_HOUR),
+        electric_kw=np.repeat(component.electric_kw, QUARTER_HOURS_PER_HOUR),
+        cop=np.repeat(component.cop, QUARTER_HOURS_PER_HOUR),
+        interval_hours=QUARTER_HOUR_STEP_MINUTES / 60,
+        provenance=component.provenance,
+    )
+
+
+def _validate_component_series(
+    components: Sequence[HeatPumpComponentSeries],
+    *,
+    expected_shape: tuple[int, ...],
+) -> None:
+    for component in components:
+        if component.electric_kw.shape != expected_shape:
+            raise ValueError("component series must align with aggregate heat-pump demand")
+
+
+def _weather_content_hash(weather: object) -> str | None:
+    value = getattr(weather, "content_sha256", None)
+    if value is None:
+        identity_record = getattr(weather, "identity_record", None)
+        if callable(identity_record):
+            record = identity_record()
+            if isinstance(record, Mapping):
+                value = record.get("content_sha256")
+    return _optional_text(value, "weather_content_sha256")
+
+
+def _optional_text(value: object, label: str) -> str | None:
+    if value is None:
+        return None
+    text = str(value).strip()
+    if not text:
+        raise ValueError(f"{label} must be non-empty when provided")
+    return text
 
 
 def _required_text_attr(obj: object, name: str) -> str:

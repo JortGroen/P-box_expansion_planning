@@ -1212,6 +1212,25 @@ any source, compute or sign annual TWh values, set D-004 acceptance,
 cold-spell tolerances, event analysis, `P(E)`, capacity-screen results,
 Q-5-dependent threshold work, or manuscript numbers.
 
+
+<!-- methods-id: E2-S3-HP-SOURCE-USE-DECISION-PACKET -->
+### E2-S3-HP-SOURCE-USE-DECISION-PACKET - HP-001 D-013 Source-Use Decision Packet
+
+**Status: Proposed source-use packet; annual values unsigned.** This packet
+classifies the retrieved D-013 CBS/PBL evidence before any HP-001 annual heat
+values are calculated. CBS StatLine 85035NED is proposed as the Alkmaar
+`GM0361` dwelling-stock and SFH/MFH crosswalk source, subject to PI approval of
+the proxy/year rule. PBL Startanalyse 2025 Alkmaar is treated as
+pathway/suitability and building-stock context unless the PI later signs exact
+heat-demand columns, units, and formulas; the current cheap schema evidence does
+not itself prove a useful-thermal space/DHW split or 2035 adoption. CBS StatLine
+85523NED remains national/current heat-pump context only. The associated HP
+readiness code may preserve component traces and build review-limited profiles,
+but executable integrated HP loads require signed annual-scaling provenance for
+every SFH/MFH and space/water component. This proposed packet does not sign
+D-004, annual TWh values, HP adoption, cold-spell tolerances, net-load/event
+analysis, `P(E)`, capacity screens, manuscript numbers, or probability results.
+
 <!-- methods-id: E2-S3-HP-SCALING-RETRIEVAL-ROUTE -->
 ### E2-S3-HP-SCALING-RETRIEVAL-ROUTE - HP-001 Alkmaar Public-Source Retrieval Route
 
