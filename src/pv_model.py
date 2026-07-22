@@ -4,6 +4,7 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 import json
+from pathlib import Path
 from types import MappingProxyType
 from typing import Any
 
@@ -11,6 +12,7 @@ import numpy as np
 
 from src.weather_model import (
     LOCAL_TIMEZONE,
+    STEP_SECONDS_15MIN,
     WeatherMember,
     canonical_15min_local_axis_for_year,
     canonical_15min_utc_axis_for_local_year,
@@ -32,6 +34,7 @@ SEASON_BY_MONTH = {
     11: "SON",
 }
 SEASONS = ("DJF", "MAM", "JJA", "SON")
+
 
 @dataclass(frozen=True)
 class PVSystemConfig:
@@ -127,7 +130,7 @@ class PVGenerationProfile:
 
     def identity_record(self) -> dict[str, object]:
         """Return PV output identity fields for later HP/PV pairing checks."""
-        return {
+        record = {
             "member_id": self.weather_member_id,
             "weather_member_id": self.weather_member_id,
             "source": self.weather_source,
@@ -141,6 +144,16 @@ class PVGenerationProfile:
             "cadence_seconds": self.cadence_seconds,
             "config_id": self.config.config_id,
         }
+        for key in (
+            "source_member_acceptance_id",
+            "weather_input_artifact_status",
+            "calendar_id",
+            "pvgis_realized_weather_path",
+            "pvgis_role",
+        ):
+            if key in self.weather_identity:
+                record[key] = self.weather_identity[key]
+        return record
 
 
 @dataclass(frozen=True)
@@ -187,6 +200,165 @@ class PVGISSanityCheck:
     def raise_for_failure(self) -> None:
         if not self.passed:
             raise ValueError("; ".join(self.failed_reasons))
+
+
+@dataclass(frozen=True)
+class PVWeatherInputArtifact:
+    """Accepted WEATHER-001 member index for PV executable-input gating."""
+
+    data_id: str
+    selection_id: str
+    status: str
+    source_member_acceptance_id: str
+    weather_contract: str
+    accepted_for_source_member_use: bool
+    ready_for_executable_input_gate: bool
+    realized_weather_path: str
+    pvgis_role: str
+    pvgis_realized_weather_path: bool
+    required_identity_fields_for_hp_pv_pairing: Sequence[str]
+    calendar_contract: Mapping[str, object]
+    members: Sequence[Mapping[str, object]]
+    blocked_acceptance_gates: Mapping[str, object]
+
+    def __post_init__(self) -> None:
+        if self.data_id != "D-004":
+            raise ValueError("PV weather input artifact must identify D-004")
+        if not self.selection_id:
+            raise ValueError("selection_id must be non-empty")
+        if not self.source_member_acceptance_id:
+            raise ValueError("source_member_acceptance_id must be non-empty")
+        if self.weather_contract != "WEATHER-001":
+            raise ValueError("PV weather input artifact must use WEATHER-001")
+        if self.accepted_for_source_member_use is not True:
+            raise ValueError("PV weather input artifact must be accepted for source/member use")
+        if self.ready_for_executable_input_gate is not True:
+            raise ValueError("PV weather input artifact must be ready for executable-input gating")
+        if self.pvgis_realized_weather_path is not False:
+            raise ValueError("PVGIS must remain outside the realized weather path")
+        required_fields = tuple(str(item) for item in self.required_identity_fields_for_hp_pv_pairing)
+        required = {
+            "member_id",
+            "shared_weather_driver_id",
+            "source",
+            "first_timestamp_utc",
+            "last_timestamp_utc",
+            "n_timesteps",
+            "cadence_seconds",
+            "content_sha256",
+        }
+        if not required.issubset(required_fields):
+            raise ValueError("PV weather input artifact lacks required HP/PV identity fields")
+        members = tuple(_audit_json_mapping(item, "weather_input_artifact member") for item in self.members)
+        if not members:
+            raise ValueError("PV weather input artifact must include at least one member")
+        calendar_contract = _audit_json_mapping(self.calendar_contract, "calendar_contract")
+        blocked_gates = _audit_json_mapping(self.blocked_acceptance_gates, "blocked_acceptance_gates")
+        for gate in ("final_paired_hp_pv_acceptance", "cold_spell_acceptance", "integrated_analysis"):
+            gate_record = blocked_gates.get(gate)
+            if not isinstance(gate_record, Mapping) or gate_record.get("blocked") is not True:
+                raise ValueError(f"PV weather input artifact must keep {gate} blocked")
+        for member in members:
+            _validate_weather_input_member_record(member, acceptance_id=self.source_member_acceptance_id)
+            if int(member["cadence_seconds"]) != int(calendar_contract.get("cadence_seconds", 0)):
+                raise ValueError("member cadence_seconds must match the artifact calendar contract")
+
+        object.__setattr__(self, "required_identity_fields_for_hp_pv_pairing", required_fields)
+        object.__setattr__(self, "calendar_contract", calendar_contract)
+        object.__setattr__(self, "members", members)
+        object.__setattr__(self, "blocked_acceptance_gates", blocked_gates)
+
+    def member_for_year(self, year: int) -> Mapping[str, object]:
+        """Return the accepted member record for a UTC calendar year."""
+        for member in self.members:
+            if int(member["year"]) == int(year):
+                return member
+        raise KeyError(f"no D-004 weather input member for year {year}")
+
+    def member_for_id(self, member_id: str) -> Mapping[str, object]:
+        """Return the accepted member record for a WEATHER-001 member ID."""
+        for member in self.members:
+            if member["member_id"] == member_id:
+                return member
+        raise KeyError(f"no D-004 weather input member for member_id {member_id!r}")
+
+
+def load_pv_weather_input_artifact(path: str | Path) -> PVWeatherInputArtifact:
+    """Load an accepted WEATHER-001 member index for PV input readiness."""
+    payload = json.loads(Path(path).read_text(encoding="utf-8"))
+    return PVWeatherInputArtifact(
+        data_id=str(payload.get("data_id", "")),
+        selection_id=str(payload.get("selection_id", "")),
+        status=str(payload.get("status", "")),
+        source_member_acceptance_id=str(payload.get("source_member_acceptance_id", "")),
+        weather_contract=str(payload.get("weather_contract", "")),
+        accepted_for_source_member_use=payload.get("accepted_for_source_member_use"),
+        ready_for_executable_input_gate=payload.get("ready_for_executable_input_gate"),
+        realized_weather_path=str(payload.get("realized_weather_path", "")),
+        pvgis_role=str(payload.get("pvgis_role", "")),
+        pvgis_realized_weather_path=payload.get("pvgis_realized_weather_path"),
+        required_identity_fields_for_hp_pv_pairing=payload.get("required_identity_fields_for_hp_pv_pairing", ()),
+        calendar_contract=payload.get("calendar_contract", {}),
+        members=payload.get("members", ()),
+        blocked_acceptance_gates=payload.get("blocked_acceptance_gates", {}),
+    )
+
+
+def assert_weather_member_matches_input_artifact(
+    weather: WeatherMember | Mapping[str, object],
+    artifact: PVWeatherInputArtifact,
+    *,
+    year: int | None = None,
+    member_id: str | None = None,
+) -> Mapping[str, object]:
+    """Raise unless a WEATHER-001 record is one accepted D-004 input member."""
+    identity = weather.identity_record() if isinstance(weather, WeatherMember) else dict(weather)
+    if year is not None:
+        member = artifact.member_for_year(year)
+    else:
+        lookup_id = member_id or str(identity.get("member_id", ""))
+        member = artifact.member_for_id(lookup_id)
+    for key in artifact.required_identity_fields_for_hp_pv_pairing:
+        if identity.get(key) != member.get(key):
+            raise ValueError(f"weather input artifact mismatch on {key}")
+    for key in ("first_timestamp_local", "last_timestamp_local"):
+        if key in identity and identity.get(key) != member.get(key):
+            raise ValueError(f"weather input artifact mismatch on {key}")
+    return member
+
+
+def generate_pv_profile_from_input_artifact(
+    weather: WeatherMember,
+    config: PVSystemConfig,
+    artifact: PVWeatherInputArtifact,
+    *,
+    year: int | None = None,
+) -> PVGenerationProfile:
+    """Generate PV only after the weather member matches the accepted artifact."""
+    member = assert_weather_member_matches_input_artifact(weather, artifact, year=year)
+    profile = generate_pv_profile(weather, config)
+    identity = dict(profile.weather_identity)
+    identity.update(
+        {
+            "source_member_acceptance_id": artifact.source_member_acceptance_id,
+            "weather_input_artifact_status": artifact.status,
+            "calendar_id": member["calendar_id"],
+            "pvgis_realized_weather_path": artifact.pvgis_realized_weather_path,
+            "pvgis_role": artifact.pvgis_role,
+        }
+    )
+    return PVGenerationProfile(
+        weather_member_id=profile.weather_member_id,
+        weather_source=profile.weather_source,
+        shared_weather_driver_id=profile.shared_weather_driver_id,
+        timestamps_utc=profile.timestamps_utc,
+        timestamps_local=profile.timestamps_local,
+        generation_kw=profile.generation_kw,
+        config=config,
+        weather_identity=identity,
+    )
+
+
 def generate_pv_profile(weather: WeatherMember, config: PVSystemConfig) -> PVGenerationProfile:
     """Generate PV power in kW from paired irradiance and temperature channels."""
     temperature_factor = 1.0 + config.temperature_coefficient_per_c * (
@@ -345,6 +517,43 @@ def parse_pvgis_monthly_reference(
         peak_month=peak_month,
     )
 
+
+def _validate_weather_input_member_record(member: Mapping[str, object], *, acceptance_id: str) -> None:
+    required = (
+        "year",
+        "member_id",
+        "shared_weather_driver_id",
+        "source",
+        "content_sha256",
+        "calendar_id",
+        "cadence_seconds",
+        "n_timesteps",
+        "first_timestamp_utc",
+        "last_timestamp_utc",
+        "source_member_acceptance_id",
+        "accepted_for_source_member_use",
+        "final_paired_hp_pv_acceptance",
+        "cold_spell_acceptance",
+    )
+    missing = [key for key in required if key not in member]
+    if missing:
+        raise ValueError(f"weather input artifact member missing fields: {missing}")
+    if member["source_member_acceptance_id"] != acceptance_id:
+        raise ValueError("member source_member_acceptance_id must match the artifact")
+    if member["accepted_for_source_member_use"] is not True:
+        raise ValueError("member must be accepted for source/member use")
+    if member["final_paired_hp_pv_acceptance"] is not False:
+        raise ValueError("member must not imply final paired HP/PV acceptance")
+    if member["cold_spell_acceptance"] is not False:
+        raise ValueError("member must not imply cold-spell acceptance")
+    if len(str(member["content_sha256"])) != 64:
+        raise ValueError("member content_sha256 must be a SHA-256 hex digest")
+    if int(member["cadence_seconds"]) != STEP_SECONDS_15MIN:
+        raise ValueError("member cadence_seconds must be 900")
+    if int(member["n_timesteps"]) <= 0:
+        raise ValueError("member n_timesteps must be positive")
+
+
 def _audit_json_mapping(raw: Mapping[str, object], label: str) -> Mapping[str, object]:
     if not isinstance(raw, Mapping):
         raise ValueError(f"{label} must be a mapping")
@@ -354,6 +563,7 @@ def _audit_json_mapping(raw: Mapping[str, object], label: str) -> Mapping[str, o
     except TypeError as exc:
         raise ValueError(f"{label} must be JSON-serializable") from exc
     return MappingProxyType(copied)
+
 
 def _coerce_aware_datetime(value: datetime, name: str) -> datetime:
     if not isinstance(value, datetime):
