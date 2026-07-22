@@ -46,6 +46,7 @@ D004_MEMBER_MANIFEST_NAME = f"{D004_SELECTION_ID}_weather_members_manifest.json"
 D004_MEMBER_METADATA_TEMPLATE = f"{D004_SELECTION_ID}_member_{{year}}_metadata.json"
 D004_RETRIEVAL_MANIFEST = f"{D004_SELECTION_ID}_retrieval_manifest.json"
 D004_MEMBER_READINESS_DIAGNOSTICS_NAME = f"{D004_SELECTION_ID}_member_readiness_diagnostics.json"
+D004_ACCEPTANCE_PACKET_NAME = f"{D004_SELECTION_ID}_acceptance_packet.json"
 
 
 @dataclass(frozen=True)
@@ -354,6 +355,117 @@ def write_d004_member_readiness_diagnostics(
     )
     return _write_json(directory / D004_MEMBER_READINESS_DIAGNOSTICS_NAME, payload)
 
+def build_d004_acceptance_packet(*, metadata_dir: str | Path = "data/metadata") -> dict[str, Any]:
+    """Prepare the PI-facing D-004 acceptance packet without signing D-004."""
+    metadata_root = Path(metadata_dir)
+    weather_dir = metadata_root / "weather_pv"
+    retrieval_manifest = _load_json(weather_dir / D004_RETRIEVAL_MANIFEST)
+    source_evidence = _load_json(weather_dir / f"{D004_SELECTION_ID}_source_acceptance_evidence.json")
+    member_manifest = _load_json(weather_dir / D004_MEMBER_MANIFEST_NAME)
+    readiness = _load_json(weather_dir / D004_MEMBER_READINESS_DIAGNOSTICS_NAME)
+    source_files = retrieval_manifest.get("source_files", [])
+    member_checks = readiness.get("member_checks", [])
+    seasonal = readiness.get("pvgis_knmi_seasonal_peak_diagnostics", {})
+    return {
+        "data_id": "D-004",
+        "selection_id": D004_SELECTION_ID,
+        "packet_created_utc": _now_utc_iso(),
+        "status": "pi_acceptance_packet_proposed_not_signed",
+        "recommended_action": "PI review: accept source/member readiness evidence or request amendments; do not treat this packet as final D-004 signoff by itself",
+        "scope_boundaries": [
+            "D-004 remains proposed until PI signs source/member acceptance",
+            "PVGIS-SARAH3 remains calibration/validation provenance only, not a realized weather path",
+            "seasonal/peak tolerances are proposed questions only and are not approved by this artifact",
+            "no HP/PV paired acceptance, cold-spell acceptance, net-load, event, P(E), capacity-screen, or manuscript-result analysis is run",
+        ],
+        "evidence_artifacts": {
+            "retrieval_manifest": f"data/metadata/weather_pv/{D004_RETRIEVAL_MANIFEST}",
+            "source_acceptance_evidence": f"data/metadata/weather_pv/{D004_SELECTION_ID}_source_acceptance_evidence.json",
+            "weather_member_manifest": f"data/metadata/weather_pv/{D004_MEMBER_MANIFEST_NAME}",
+            "member_readiness_diagnostics": f"data/metadata/weather_pv/{D004_MEMBER_READINESS_DIAGNOSTICS_NAME}",
+            "acceptance_memo": "reports/e2_s4_d004_acceptance_packet.md",
+        },
+        "source_files_for_review": [
+            {
+                "source_kind": item.get("source_kind"),
+                "file_role": item.get("file_role"),
+                "path": item.get("path"),
+                "source_url": item.get("source_url"),
+                "size_bytes": item.get("size_bytes"),
+                "sha256_file": item.get("sha256_file"),
+            }
+            for item in source_files
+            if isinstance(item, Mapping)
+        ],
+        "source_completeness_summary": {
+            "retrieval_status": retrieval_manifest.get("d004_status"),
+            "download_performed": retrieval_manifest.get("download_performed"),
+            "raw_data_committed": retrieval_manifest.get("raw_data_committed"),
+            "source_checksums_match": all(item.get("sha256_matches_manifest") for item in readiness.get("raw_source_checks", [])),
+            "source_sizes_match": all(item.get("size_matches_manifest") for item in readiness.get("raw_source_checks", [])),
+            "knmi_years_complete_2014_2023": all(
+                source_evidence.get("knmi_station_249_hourly_coverage", {}).get("years", {}).get(str(year), {}).get("complete")
+                for year in D004_YEARS
+            ),
+            "pvgis_hourly_rows_by_year": source_evidence.get("pvgis_sarah3_hourly_series_coverage", {}).get("rows_by_year"),
+        },
+        "member_readiness_summary": {
+            "member_manifest_status": member_manifest.get("status"),
+            "member_years": readiness.get("manifest_checks", {}).get("years"),
+            "members_present": readiness.get("manifest_checks", {}).get("members_present"),
+            "calendar_cadence_ok": readiness.get("manifest_checks", {}).get("all_calendar_cadence_ok"),
+            "energy_preserved": readiness.get("manifest_checks", {}).get("all_energy_preserved"),
+            "temperature_finite": readiness.get("manifest_checks", {}).get("all_temperature_finite"),
+            "ghi_nonnegative": readiness.get("manifest_checks", {}).get("all_ghi_nonnegative"),
+            "pvgis_realized_weather_path": readiness.get("manifest_checks", {}).get("pvgis_realized_weather_path"),
+            "hp_pv_identity_roundtrip_ok": readiness.get("hp_pv_paired_weather_readiness", {}).get("identity_roundtrip_ok"),
+            "content_sha256_by_year": {
+                str(item.get("year")): item.get("content_sha256")
+                for item in member_checks
+                if isinstance(item, Mapping)
+            },
+        },
+        "seasonal_peak_sanity_summary": _acceptance_packet_seasonal_peak_summary(seasonal),
+        "pi_decision_questions": [
+            {
+                "id": "D004-ACCEPT-Q1",
+                "question": "Does the PI accept the four concrete D-004 source files, URLs, sizes, and SHA-256 checksums as the source bundle for 2014-2023 WEATHER-001 members?",
+                "agent_recommendation": "Accept, subject to PI license/source-use review; the local files match the committed retrieval manifest and remain ignored/uncommitted.",
+                "decision_needed_for": "D-004 source acceptance",
+            },
+            {
+                "id": "D004-ACCEPT-Q2",
+                "question": "Does the PI accept the constructed 2014-2023 UTC-year WEATHER-001 member library as complete and calendar-consistent under D004-MC-001?",
+                "agent_recommendation": "Accept member construction readiness; all members have expected 15-minute counts, UTC/local timestamp alignment, finite T/10 temperature, nonnegative Q-derived GHI, and shared weather-driver IDs.",
+                "decision_needed_for": "D-004 member acceptance",
+            },
+            {
+                "id": "D004-ACCEPT-Q3",
+                "question": "What seasonal/peak sanity criterion should be signed before final D-004 acceptance?",
+                "options": [
+                    "A) Qualitative first-pass: annual GHI-to-PVGIS fixed-plane G(i) ratio remains within the observed diagnostic range, seasonal maximum occurs in MAM/JJA, and peak GHI month is May-July; no numeric percent tolerance is claimed.",
+                    "B) Numeric tolerance: PI supplies explicit annual/seasonal relative-error bounds and allowed peak-month set, acknowledging KNMI GHI and PVGIS fixed-plane G(i)/P are not the same irradiance quantity.",
+                    "C) Request a different PVGIS comparison quantity or transform before signing seasonal/peak checks.",
+                ],
+                "agent_recommendation": "A for source/member acceptance, with B or C reserved for later PV calibration acceptance; it avoids inventing a numeric tolerance between GHI and fixed-plane PVGIS reference fields.",
+                "decision_needed_for": "PVGIS seasonal/peak sanity acceptance",
+            },
+            {
+                "id": "D004-ACCEPT-Q4",
+                "question": "Should final D-004 acceptance wait for the E2-S3-COLD-SPELL-ACCEPTANCE-DESIGN paired HP/PV run, or may source/member acceptance be signed separately first?",
+                "agent_recommendation": "Sign source/member acceptance separately if Q1-Q3 pass; keep paired HP/PV and cold-spell acceptance as later gates with their own unsigned tolerances.",
+                "decision_needed_for": "sequencing of D-004 source/member acceptance versus paired HP/PV acceptance",
+            },
+        ],
+    }
+
+
+def write_d004_acceptance_packet(*, metadata_dir: str | Path = "data/metadata") -> Path:
+    """Write the proposed D-004 PI acceptance packet metadata."""
+    directory = Path(metadata_dir) / "weather_pv"
+    directory.mkdir(parents=True, exist_ok=True)
+    return _write_json(directory / D004_ACCEPTANCE_PACKET_NAME, build_d004_acceptance_packet(metadata_dir=metadata_dir))
+
 def write_retrieval_plan(metadata_dir: str | Path = "data/metadata") -> Path:
     """Write the D-004 weather/PV retrieval protocol without downloading data."""
     directory = Path(metadata_dir) / "weather_pv"
@@ -644,6 +756,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--authorization-env")
     parser.add_argument("--build-d004-weather-members", action="store_true")
     parser.add_argument("--write-d004-member-readiness-diagnostics", action="store_true")
+    parser.add_argument("--write-d004-acceptance-packet", action="store_true")
     parser.add_argument("--root-dir", default=".")
     args = parser.parse_args(argv)
 
@@ -683,6 +796,11 @@ def main(argv: Sequence[str] | None = None) -> int:
             timeout_s=args.timeout_s,
             authorization_header=authorization,
         )
+        print(path)
+        return 0
+
+    if args.write_d004_acceptance_packet:
+        path = write_d004_acceptance_packet(metadata_dir=args.metadata_dir)
         print(path)
         return 0
 
@@ -886,6 +1004,30 @@ def _expand_knmi_hourly_to_15min(
             ghi_w_per_m2.append(ghi)
     return tuple(timestamps_utc), tuple(timestamps_local), tuple(temperature_c), tuple(ghi_w_per_m2)
 
+
+def _acceptance_packet_seasonal_peak_summary(seasonal: Mapping[str, Any]) -> dict[str, Any]:
+    years = seasonal.get("years", {}) if isinstance(seasonal, Mapping) else {}
+    ratios = [
+        float(item["annual_ghi_to_pvgis_gi_ratio"])
+        for item in years.values()
+        if isinstance(item, Mapping) and item.get("annual_ghi_to_pvgis_gi_ratio") is not None
+    ]
+    peak_months = [
+        int(item["knmi_peak_ghi_month_utc"])
+        for item in years.values()
+        if isinstance(item, Mapping) and item.get("knmi_peak_ghi_month_utc") is not None
+    ]
+    return {
+        "status": seasonal.get("status") if isinstance(seasonal, Mapping) else None,
+        "tolerance_status": seasonal.get("tolerance_status") if isinstance(seasonal, Mapping) else None,
+        "comparison_boundary": seasonal.get("comparison_boundary") if isinstance(seasonal, Mapping) else None,
+        "n_years": len(years) if isinstance(years, Mapping) else 0,
+        "annual_ghi_to_pvgis_gi_ratio_min": _round_float(min(ratios)) if ratios else None,
+        "annual_ghi_to_pvgis_gi_ratio_max": _round_float(max(ratios)) if ratios else None,
+        "knmi_peak_ghi_months_utc": sorted(set(peak_months)),
+        "all_knmi_peak_months_may_to_july": bool(peak_months) and all(month in {5, 6, 7} for month in peak_months),
+        "diagnostic_only_not_final_acceptance": True,
+    }
 
 def _diagnose_committed_member_metadata(
     root: Path,
@@ -1299,6 +1441,7 @@ def _utc_hour_endings_for_year(year: int) -> tuple[datetime, ...]:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
 
 
 
