@@ -1199,6 +1199,32 @@ paragraph. D-004 remains proposed until the PI accepts the concrete files,
 versions, checksums, source-use evidence, completeness checks, and the
 hourly-to-15-minute member-construction rule.
 
+<!-- methods-id: D004-MC-001 -->
+### D004-MC-001 - D-004 Weather-Member Construction Rule
+
+**Status: Proposed; blocks builder until PI sign-off.** The proposed
+D004-MC-001 construction rule converts the approved D-004 Alkmaar/Berkhout raw
+bundle into one WEATHER-001 member per UTC calendar year for 2014-2023. Each
+member would use a timezone-aware 15-minute UTC axis, derive Europe/Amsterdam
+local timestamps from those same instants, interpret KNMI `HH` as UT
+hour-ending slots with `HH=24` mapped to 00:00 UTC on the following date, and
+carry member IDs `d004_alkmaar_berkhout_<YEAR>_v1` plus shared weather-driver
+IDs `d004_alkmaar_berkhout_2014_2023_v1:<YEAR>`. Station 249 KNMI `T` would be
+converted from tenths of a degree Celsius to `temperature_c = T / 10` and
+repeated over the four represented quarter-hour timestamps. Station 249 KNMI
+`Q` would be converted from hourly `J/cm2` to hourly-average
+`ghi_w_per_m2 = Q * 10000 / 3600` and repeated across the four quarter-hour
+sub-intervals, preserving the source hourly radiation energy without inventing
+an unobserved within-hour solar shape. PVGIS-SARAH3 seriescalc and TMY files
+would be copied into provenance only as calibration or validation references,
+not as realized sampled weather paths. A later sensitivity may use
+energy-preserving within-hour irradiance interpolation, but the primary
+first-pass rule remains hourly KNMI `Q` repeated across four quarter-hours.
+This proposal does not sign D-004 source acceptance, create accepted members,
+set PVGIS seasonal or peak tolerances, run HP/PV paired acceptance, or
+authorize cold-spell acceptance, net-load integration, event analysis, `P(E)`,
+capacity screens, manuscript claims, or probability results.
+
 <!-- methods-id: D-005 -->
 ### D-005 - Flexibility Delivery Evidence
 
