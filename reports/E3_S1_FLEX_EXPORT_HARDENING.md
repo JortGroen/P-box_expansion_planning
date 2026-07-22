@@ -8,7 +8,7 @@ future adapter accidentally marks them as import-controllable.
 
 ## Purpose
 
-FLEX-001 is still proposed, but the scaffold must already protect the core
+FLEX-001 is approved as a scaffold protocol, and this hardening protects the core
 boundary: demand-side controllability applies only to import-side demand loads.
 The previous implementation reduced only positive kW values, which protected
 negative export trajectories, but a positive-valued component labeled `pv` or
@@ -19,8 +19,9 @@ closes that adapter-integration failure mode.
 
 The aggregator remains deterministic and trajectory-preserving. Optional
 `shift_to_adjacent` rebound remains a scaffold mechanism only. This report does
-not approve FLEX-001, choose a flexibility model, run IC-1/IC-2, evaluate
-thresholds/events, compute `P(E)`, or produce manuscript numbers.
+not approve real flexibility values or response behavior, choose a final
+flexibility model, run IC-1/IC-2, evaluate thresholds/events, compute `P(E)`,
+or produce manuscript numbers.
 
 ## Verification
 
