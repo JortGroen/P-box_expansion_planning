@@ -10,12 +10,12 @@ placeholder until the PI records a decision.
 | G0 | 2026-07-09 | Scope freeze | Approved: see detailed G0 entry below. | Required before gated scope-specific work; freezes overload event, P_crit handling, grid/fallback choice, weather scope, and primary alpha grid. | E0 registers; E1.S1 grid inventory PR #2; G0 scope-freeze text approved by PI. | approved | PI approved in chat, 2026-07-09 |
 | G0-A1 | 2026-07-10 | Event direction and fixed-window rejection amendment | Primary overload event is consumption-driven import congestion: apparent-power magnitude conditioned on net import direction. Direction-agnostic `abs(S)` remains the screening metric, and export-direction exceedance is reported beside primary results. Fixed winter windows are rejected; G0-A2 later assigns primary Tier-1 `P(E)` to the full planning year and retains WindowSets only for AC validation and diagnostics. | E1.S3 showed direction-agnostic annual maxima in SimBench scenarios 1/2 are summer midday export/PV peaks, while scenario 0 winter windows miss much of the annual near-peak shoulder. The study's flexibility construct is demand-reduction, so feed-in congestion needs a distinct absorption/curtailment instrument and remains out of scope. | E1.S3 PR #10; `reports/critical_weeks_validation.md`; PI amendment text in chat, 2026-07-10. | approved | PI approved in chat, 2026-07-10 |
 | G0-A2 | 2026-07-10 | Full-year primary event scope | Primary Tier-1 `P(E)` is annual: the probability that the full planning year contains at least one qualifying import-direction overload episode. WindowSet is retained only for IC-1/IC-2 AC-validation subset selection and diagnostics. | E1.S3b adaptive import windows span 19-25 weeks, or 36-48% of the year, defeating their compute purpose for the negligible-cost Tier-1 summation evaluator. Full-year Tier-1 removes window-transfer risk. | E1.S3b import-window diagnostic PR #15; `reports/import_window_diagnostic.md`; `reports/G1_DECISION_BRIEF.md`; PI approved in chat, 2026-07-10. | approved | PI approved in chat, 2026-07-10 |
-| G0-A3 | 2026-07-16 | Provisional overload threshold | Use the strict working event `L_import > 1.1 p.u.` for at least four consecutive 15-minute steps. The same 1.1 threshold applies to the single-step sensitivity and export-side exceedance diagnostic. This numerical threshold is provisional: Q-5 must be reviewed and explicitly resolved by the PI before the first integrated event-based scientific analysis or any manuscript result. | Allows the implementation to proceed with the PI-selected 110% one-hour rule while preventing an unverified source or ambiguous hourly interpretation from becoming a settled Dutch DSO claim. Historical evidence generated at 1.0 p.u. remains labeled with its executed threshold and is not relabeled. | PI direction in chat, 2026-07-16; source and exact interpretation pending Q-5. | approved working rule; mandatory pre-analysis review | PI directed in chat, 2026-07-16 |
+| G0-A3 | 2026-07-22 | Primary overload threshold | Resolve Q-5: the primary event is strict `L_import > 1.0 p.u.` for at least four consecutive 15-minute import steps over the full planning year. The same persistent event at `1.1 p.u.` and `1.2 p.u.` is retained as predeclared sensitivity analysis. No separate cumulative-exposure rule is added for the 1.0-1.1 p.u. band in the primary analysis; values above 1.0 are already counted by the primary event. The single-step E9 sensitivity remains separate and uses the declared threshold of its run. Export-side exceedance diagnostics report the matching threshold beside primary results. | Treats nameplate exceedance as the clearest planning-congestion definition without claiming transformer failure or relying on an insufficiently verified 110% Dutch DSO rule. IEC 60076-7 remains background for time-dependent thermal loading, not a source for selecting 1.1 as primary. | `reports/Q5_OVERLOAD_CRITERION_EVIDENCE_TABLE.md`; `reports/METHODOLOGY_OVERLOAD_CRITERION_REVIEW.md`; PI approval in chat, 2026-07-22. | approved | PI approved in chat, 2026-07-22 |
 | G0-A4 | 2026-07-17 | Primary planning year | Freeze 2035 as the primary planning year for the complete probabilistic analysis and decision-reversal benchmark. E3.S2b still screens 2030, 2033, and 2035 deterministically; 2030 and 2033 remain supporting horizon/context and later sensitivity layers. G5 may select the adoption/scenario branch and grid within 2035, but may not select the year after inspecting results. If the predeclared 2035 screen is congestion-free or not flexibility-resolvable, stop and escalate for a signed amendment rather than silently switching years or tuning inputs. EV-004 remains unchanged: the fixed ElaadNL residential behavior library uses generator year 2030 and is reused in the 2035 planning layer. | Selects a forward case-study horizon prospectively, before integrated probabilistic results, while preserving earlier years for trajectory checks and the eventual deferral horizon. Separating planning year from profile-generator year prevents double counting ElaadNL internal forecast growth and the project's external adoption layer. | PI direction in chat, 2026-07-17; EV-004; E3.S2b/G1-A2 capacity-screen protocol. | approved | PI approved in chat, 2026-07-17 |
 | G1 | 2026-07-10 | Foundation validated | Approved two-tier architecture: Tier-1 radial summation with G0-A1/G0-A2 semantics is the Monte Carlo inner-loop evaluator; AC power flow serves deterministic checks and validation subsets. Fixed winter windows are rejected, and primary Tier-1 runs the full planning year. No manuscript claim may say "AC infeasible". E1.S2 established that repeated high-level `runpp` is too slow for the MC loop; E1.S2b subsequently established a fast lower-level TimeSeriesCPP path for deterministic AC batches while deferring complete adapter numerical validation to G2. C1 TimeSeriesCPP benchmarking and C2 transformer-headroom diagnostics are complete; Agent A may proceed to E1.S4. | Tier-1 is computationally negligible for the decision-transformer criterion, but its accuracy remains a G2 hypothesis. E1.S3 rejected fixed winter windows; E1.S3b showed adaptive windows are too large to justify a primary windowed probability. E1.S2b makes substantial AC validation practical without supporting an "AC infeasible" or "full AC MC" claim. | E1.S2 benchmark; E1.S2b PR #23 and `reports/BENCHMARK_TIMESERIESCPP.md`; E1.S1b PR #19; E1.S3b import-window diagnostic PR #15; `reports/G1_DECISION_BRIEF.md`; PI amended G1 text in chat, 2026-07-10. | approved | PI approved in chat, 2026-07-10 |
 | G1-A1 | 2026-07-13 | Black-box model error and Tier-1 approximation | Grid-model error is an unprobabilized interval on black-box model output, propagated before event detection under arbitrary unknown dependence. Tier-1 approximation error is estimated empirically at G2. Post-hoc probability-margin widening is rejected. G1-A2 supersedes the provisional error-composition and domain wording. | Preserves the intended imprecise-probability story, separates physical-system/model discrepancy from Tier-1-to-pandapower approximation, and retains the compute benefit of Tier-1 without hiding surrogate error. | `reports/G1_A1_MODEL_ERROR_AMENDMENT_PROPOSAL.md`; PI approval in chat, 2026-07-13. | approved | PI approved in chat, 2026-07-13 |
 | G1-A2 | 2026-07-14 | Grid-error and capacity-screen protocol | Use a symmetric relative `epsilon_grid` envelope with arbitrary unknown dependence and compose it exactly with the additive G2 Tier-1 envelope before event detection. Reject the fixed 16-104 MVA applicability claim. Derive and freeze the asserted future operating domain from one predeclared manifested E3.S2b screen before probabilistic-result inspection. Keep total 80 MVA and firm 40 MVA capacity conventions open until that screen reports raw MVA and both ratios; selecting firm capacity requires actual one-transformer-out AC validation. | The 104 MVA value was only 1.3 times the current 80 MVA denominator, not a validated boundary. Relative grid error survives a later capacity-convention choice. A single governed future-layer screen can expose whether the total or firm convention yields no congestion, decision-sensitive congestion, or irrecoverable congestion without silently tuning the network after seeing p-box results. | `reports/G1_A2_GRID_ERROR_AND_CAPACITY_PROTOCOL.md`; E1.S1b headroom evidence; PI approval in chat, 2026-07-14. | approved | PI approved in chat, 2026-07-14 |
-| E5-S3-T1 | 2026-07-20 | IC-2/IC-3 output-error schema | Approved with conditions: IC-2 must pass validated loading trajectories to IC-3 rather than only a boolean congestion result. Agent A must provide the shared `LoadingTrajectoryResult` contract and validator before Agent B implements IC-3 propagation. The validator must cover array shapes, finite values, direction masks, time-domain consistency, threshold, persistence length, and any supplied import/export diagnostics. IC-3 adds an `OutputErrorEnvelope` with `epsilon_grid`, `epsilon_tier1_minus`, and `epsilon_tier1_plus`; composes Tier-1 and grid-model output-error endpoints conservatively by G1-A2 before event detection; gates import/export using unwidened `P_net`; and computes probabilities/CIs from lower/upper event counts. Timestep cadence and transformer capacity/denominator provenance must be recorded in runner configuration and manifests. This approval does not resolve Q-5, total-versus-firm capacity, G2 error values, or numerical A-013 grid-error values. | This is the smallest approved schema route that avoids boolean-only sample evaluation, keeps Tier-1 diagnostics backward compatible, supports symmetric/asymmetric/one-sided Tier-1 envelopes, preserves CRN identity, and prevents post-hoc probability widening. Tier-1 error and grid-model error are both parts of total model-output error; their dependence on inputs, time, and each other is unknown, so they must not be sampled independently or assumed to cancel. | `reports/E5_S3_OUTPUT_ERROR_SCHEMA_PROPOSAL.md`; Q-6 PI decision in chat, 2026-07-20. | approved with conditions | PI approved with conditions in chat, 2026-07-20 |
+| E5-S3-T1 | 2026-07-20 | IC-2/IC-3 output-error schema | Approved with conditions: IC-2 must pass validated loading trajectories to IC-3 rather than only a boolean congestion result. Agent A must provide the shared `LoadingTrajectoryResult` contract and validator before Agent B implements IC-3 propagation. The validator must cover array shapes, finite values, direction masks, time-domain consistency, threshold, persistence length, and any supplied import/export diagnostics. IC-3 adds an `OutputErrorEnvelope` with `epsilon_grid`, `epsilon_tier1_minus`, and `epsilon_tier1_plus`; composes Tier-1 and grid-model output-error endpoints conservatively by G1-A2 before event detection; gates import/export using unwidened `P_net`; and computes probabilities/CIs from lower/upper event counts. Timestep cadence and transformer capacity/denominator provenance must be recorded in runner configuration and manifests. Q-5 is resolved separately by G0-A3. This approval does not resolve total-versus-firm capacity, G2 error values, or numerical A-013 grid-error values. | This is the smallest approved schema route that avoids boolean-only sample evaluation, keeps Tier-1 diagnostics backward compatible, supports symmetric/asymmetric/one-sided Tier-1 envelopes, preserves CRN identity, and prevents post-hoc probability widening. Tier-1 error and grid-model error are both parts of total model-output error; their dependence on inputs, time, and each other is unknown, so they must not be sampled independently or assumed to cancel. | `reports/E5_S3_OUTPUT_ERROR_SCHEMA_PROPOSAL.md`; Q-6 PI decision in chat, 2026-07-20. | approved with conditions | PI approved with conditions in chat, 2026-07-20 |
 | RNG-001 | 2026-07-20 | Seed-tree and CRN identity protocol | Approved: derive each whole-system sample seed from `(root_seed, sample_index)`, derive each component-stream seed from the sample seed and component name, and identify component streams by root-derived stream identity including the component seed. Alpha, endpoint, and treatment labels do not alter aleatory identity; branch manifests record root/sample seeds, component streams, source-member selections, and shared physical driver IDs. | This prevents stream-ID collisions across roots, makes source selections non-transferable between seed trees, preserves common random numbers across epistemic/treatment branches, and keeps CRN reuse separate from physical shared-driver assumptions such as paired weather. | PR #34; `src/rng.py`; `tests/test_rng.py`; PI approval in chat, 2026-07-20. | approved | PI approved in chat, 2026-07-20 |
 | FLEX-001 | 2026-07-20 | Flexibility aggregation scaffold protocol | Proposed: the E3.S1 scaffold applies controllability `rho` only to positive import-side demand components explicitly marked as controllable, preserves complete aligned 15-minute trajectories, leaves PV/export and non-controllable components unchanged, and records per-component reduction/rebound metadata. Optional adjacent-step rebound is an implementation scaffold for later signed flexibility behavior, not a scientific claim about delivered response. | Provides a deterministic Agent A-owned layer that E2 component models and later IC-1/IC-2 integration can call without allowing demand-response logic to modify PV/export or threshold/event semantics. | Draft PR #45 on `agent-a/E3.S1-flex-aggregator-scaffold`; `src/flex_aggregator.py`; `tests/test_flex_aggregator.py`. | proposed | -- |
 | ALEA-001 | 2026-07-15 | Joint aleatory dependency protocol | Preserve known dependence through one canonical calendar, complete source trajectories, and one paired multivariate weather member per Monte Carlo realization. HP and PV consume the same aligned weather member; EV and baseline retain complete temporal paths and common weekday/season alignment. Copulas, latent factors, or multivariate block bootstrap are escalation paths only if validation shows the primary conditional construction is inadequate. | Keeps physically understood temperature/irradiance, calendar, serial, and common-driver dependence without inventing an unsupported full joint distribution. It also separates physical dependence from CRN reuse and from the arbitrary-unknown-dependence treatment of model error. | `reports/JOINT_ALEATORY_SAMPLING_PROTOCOL.md`; PI approval in chat, 2026-07-15. | approved | PI approved in chat, 2026-07-15 |
@@ -56,9 +56,9 @@ Authority: this entry supersedes all illustrative examples of the overload
 event, P_crit handling, and grid choice in the project plan and the actionable
 plan. G0-A1 amends the event direction rules below. G0-A2 amends the primary
 event time domain to the full planning year and demotes WindowSet to AC
-validation and diagnostics. G0-A3 supersedes the numerical `1.0 p.u.` event
-threshold below with a provisional `1.1 p.u.` working threshold and imposes a
-mandatory PI review before integrated event analysis. G0-A4 freezes 2035 as
+validation and diagnostics. G0-A3 resolves Q-5 by retaining the numerical `1.0 p.u.` event
+threshold below as the primary threshold, demoting `1.1` and `1.2 p.u.`
+to predeclared sensitivities, and removing the mandatory Q-5 blocker. G0-A4 freezes 2035 as
 the primary planning year while retaining 2030 and 2033 as supporting layers.
 Changes to any item below require a new signed entry.
 
@@ -95,9 +95,9 @@ asset becomes a single section's transformer and aggregate loading is not used.
 
 ### 2. Overload Event E
 
-Historical G0 wording is retained below for traceability. G0-A3 supersedes its
-numerical `1.0 p.u.` threshold for future work; historical runs keep the
-threshold recorded in their manifests.
+Historical G0 wording is retained below for traceability. G0-A3 resolves Q-5
+by confirming `1.0 p.u.` as the primary numerical threshold; historical
+runs keep the threshold recorded in their manifests.
 
 As amended by G0-A1, let `S_net(t) = P_net(t) + jQ_net(t)` be the aggregate
 complex power through the decision transformer, with `P_net(t) > 0` denoting
@@ -228,7 +228,7 @@ plans. G0-A2 supersedes the adaptive critical-window language for the primary
 Tier-1 probability metric. Where this entry conflicts with earlier text, and
 G0-A2 does not further amend it, this entry wins.
 
-G0-A3 later supersedes only the numerical overload threshold in this entry.
+G0-A3 later resolves the numerical overload threshold by retaining `1.0 p.u.` as primary; this entry's direction and persistence semantics remain unchanged.
 
 ### 2a. Event Direction And Loading Quantity
 
@@ -290,7 +290,7 @@ Authority: this entry amends G0 item 2 and supersedes the G0-A1 adaptive
 critical-window language for the primary probability metric. Where it conflicts
 with earlier project-plan or actionable-plan text, this entry wins.
 
-G0-A3 later supersedes only the numerical overload threshold in this entry.
+G0-A3 later resolves the numerical overload threshold by retaining `1.0 p.u.` as primary; this entry's direction and persistence semantics remain unchanged.
 
 Primary `P(E)` is annual: the probability that the full planning year contains
 at least one qualifying import-direction overload episode, defined as at least
@@ -306,46 +306,54 @@ year. At that size, they defeat their compute purpose for the vectorized
 Tier-1 summation evaluator and introduce avoidable window-transfer risk.
 Full-year Tier-1 removes that approximation layer.
 
-## G0-A3 - Provisional 1.1 P.U. Overload Threshold - 2026-07-16 - signed: PI directed in chat
+## G0-A3 - Primary 1.0 P.U. Overload Threshold - 2026-07-22 - signed: PI approved in chat
 
-### Authority And Working Event
+### Authority And Primary Event
 
-This entry supersedes the numerical `1.0 p.u.` threshold in G0, G0-A1, and
-G0-A2 for future implementation and analysis. It does not alter the import
-direction gate, apparent-power loading quantity, direction-flip reset,
-four-step persistence rule, full-year probability domain, or `P_crit`.
+This entry resolves Q-5 and supersedes the provisional 2026-07-16 working
+threshold. It does not alter the import direction gate, apparent-power loading
+quantity, direction-flip reset, four-step persistence rule, full-year
+probability domain, or `P_crit`.
 
-The working event is:
+The primary event is:
 
 ```text
 E = the planning year contains at least 4 consecutive 15-minute steps
-    with L_import(t) > 1.1 p.u.
+    with L_import(t) > 1.0 p.u.
 ```
 
-The inequality is strict: a value exactly equal to `1.1 p.u.` does not qualify.
-The single-step E9 sensitivity and export-side exceedance diagnostic use the
-same working `1.1 p.u.` threshold unless a later signed decision states
-otherwise.
+The inequality is strict: a value exactly equal to `1.0 p.u.` does not qualify.
+The rule is evaluated on `L_import`, so direction flips reset the consecutive
+step counter per G0-A1.
 
-### Mandatory Pre-Analysis Review
+### Sensitivities And Diagnostics
 
-The value is PI-selected but provisional because its supporting source and
-precise time-aggregation semantics have not yet been verified. Q-5 must be
-explicitly resolved before E3.S2a opens held-out event results, E3.S2b or E3.S3
-runs a threshold-based integrated screen, E4 estimates `P(E)`, or any manuscript
-result uses this event. The review must establish:
+Predeclared threshold sensitivities use the same persistent-event definition at
+`L_import > 1.1 p.u.` and `L_import > 1.2 p.u.`. The single-step E9 sensitivity
+remains separate and uses the declared threshold of its run. Export-side
+exceedance diagnostics report the matching threshold beside the primary result
+for transparency.
 
-- the exact source and its asset, jurisdiction, and capacity convention;
-- whether "one hour" means four consecutive 15-minute exceedances or an hourly
-  average;
-- whether loading from `1.0` through `1.1 p.u.` needs a separate cumulative-
-  exposure criterion; and
-- whether `1.1 p.u.` is retained as primary, demoted to sensitivity, or replaced.
+No separate cumulative-exposure rule is added for the `1.0` through `1.1 p.u.`
+band in the primary analysis. Because the primary event already counts sustained
+loading above `1.0 p.u.`, a companion cumulative rule for that band would change
+the estimand rather than clarify it. Such a cumulative-exposure metric may be
+added later only as a separately approved diagnostic or sensitivity.
 
-Historical evidence generated with a manifested `1.0 p.u.` threshold remains
-valid for its stated diagnostic purpose and must not be relabeled as a 1.1-p.u.
-run.
+### Rationale
 
+The project defines a planning-congestion event, not transformer failure.
+Nameplate exceedance is the clearest defensible primary threshold for that
+purpose: it avoids presenting an insufficiently verified 110% value as a Dutch
+DSO planning standard, while the one-hour persistence rule still distinguishes a
+sustained overload from a single 15-minute excursion. IEC 60076-7 remains useful
+background evidence that transformer loading is time-dependent and thermally
+contextual, but it is not used here to claim that 1.1 p.u. is the primary
+planning criterion.
+
+The Q-5 blocker is resolved. Integrated event-based analysis may proceed once
+all other required gates, data acceptances, output-error values, capacity
+conventions, manifests, and ownership conditions are satisfied.
 ## G0-A4 - Primary 2035 Planning Year - 2026-07-17 - signed: PI approved in chat
 
 ### Primary And Supporting Years
@@ -492,7 +500,8 @@ endpoint.
 
 G2 shall use a manifested, domain-covering AC validation design spanning
 ordinary, extreme, near-capacity, and overloaded import states; the current
-G0-A3 `1.1 p.u.` threshold neighborhood; relevant years, `rho` values, power
+G0-A3 primary `1.0 p.u.` threshold neighborhood plus the predeclared
+`1.1` and `1.2 p.u.` sensitivity neighborhoods; relevant years, `rho` values, power
 factors, and consecutive-step episodes. A held-out near/above-threshold stratum must not be
 used to tune an envelope or correction.
 
