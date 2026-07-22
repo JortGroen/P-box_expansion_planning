@@ -6,7 +6,7 @@ Status: scaffold/documentation only. This packet documents the merged
 `src/contracts/net_load.py` boundary for future real component adapters. It
 does not wire real E2 components, open EV held-out data, run E3.S2a/E3.S2b/E3.S3,
 evaluate thresholds or events, compute `P(E)`, or produce manuscript results.
-Q-5 remains blocking before event-based work.
+Q-5 is resolved by G0-A3; this packet still does not authorize event-based work because other gates and accepted inputs remain pending.
 
 ## Governing Boundary
 
@@ -38,8 +38,8 @@ Relevant governing decisions and questions:
   matched control-mode seeds remain traceable and constrained.
 - `FLEX-001`: flexibility scaffold stays demand-side and proposed until PI
   approval.
-- `Q-5`: unresolved; no integrated event-based analysis before PI resolution.
-- `Q-8`: shared weather-member path remains open; this packet documents the IC-1
+- `G0-A3` / `Q-5`: resolved; primary threshold is strict `L_import > 1.0 p.u.` for four consecutive 15-minute import steps, with `1.1` and `1.2 p.u.` sensitivities. This packet does not run that criterion.
+- `Q-8` / `WEATHER-001`: shared weather-member path is approved separately; this packet documents the IC-1
   hook without choosing that implementation path.
 
 ## ComponentAdapterOutput Fields

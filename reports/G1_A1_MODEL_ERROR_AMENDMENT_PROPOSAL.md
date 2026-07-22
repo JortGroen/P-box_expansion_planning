@@ -1,8 +1,6 @@
 # G1-A1 - Amendment: Black-Box Model Error and Tier-1 Approximation
 
-> **Threshold note (2026-07-16):** numerical references to the 1.0-p.u. event
-> threshold are historical. G0-A3 provisionally sets future analyses to strict
-> `L_import > 1.1 p.u.` and requires PI review through Q-5 before scientific use.
+> **Threshold note (superseded 2026-07-22):** this report predates Q-5 resolution. G0-A3 now sets the primary event to strict `L_import > 1.0 p.u.` for four consecutive 15-minute import steps, with `1.1` and `1.2 p.u.` retained as sensitivities.
 
 > **Superseded in part (2026-07-14):** G1-A2 replaces the earlier expert-
 > provenance wording, fixed applicability-domain examples, and simple additive

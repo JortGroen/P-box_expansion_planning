@@ -7,7 +7,7 @@ accepted component adapter artifacts into the IC-1 assembly registry. It uses
 synthetic metadata and synthetic adapter outputs only. It does not load real E2
 arrays, open EV held-out data, run E3.S2a held-out adequacy, run E3.S2b/E3.S3
 threshold screens, evaluate events, compute `P(E)`, or produce manuscript
-numbers. Q-5 remains a hard stop before event-based scientific analysis.
+numbers. Q-5 is resolved by G0-A3, but this scaffold still does not authorize event-based scientific analysis.
 
 ## Purpose
 
@@ -48,7 +48,7 @@ produced.
 Stop before real integration if any real component artifact is not accepted,
 if source/member/calendar/node/weather metadata are missing or inconsistent, or
 if the next step would open EV held-out data or produce event, threshold,
-probability, capacity-screen, or manuscript results while Q-5 is unresolved.
+probability, capacity-screen, or manuscript results without satisfying the remaining integrated-analysis gates.
 
 ## No-Result Boundary
 

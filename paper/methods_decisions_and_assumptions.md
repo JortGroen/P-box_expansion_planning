@@ -35,16 +35,14 @@ otherwise the asset must be redefined per section. The inventory identified two
 in-service 40 MVA units with closed ties and equal taps, while G2 retains a
 per-unit AC check for circulating-current or unequal-sharing effects.
 
-**Status: Approved historical basis; numerical threshold superseded by
-G0-A3.** G0 originally defined an overload event as at least four consecutive
-15-minute intervals in which import-direction apparent-power loading exceeds
-1.0 p.u. The one-hour persistence requirement suppresses isolated sampling
-spikes and reflects that transformer loading capability is time dependent
-rather than determined by a single 15-minute excursion. G0-A3 retains this
-structure but provisionally changes the numerical threshold to 1.1 p.u. The
-primary metric remains the annual probability of at least one qualifying
-episode, with a single-step event retained as a sensitivity.
-
+**Status: Approved; primary threshold confirmed by G0-A3.** G0 defines an
+overload event as at least four consecutive 15-minute intervals in which
+import-direction apparent-power loading exceeds 1.0 p.u. The one-hour
+persistence requirement suppresses isolated sampling spikes and reflects that
+transformer loading capability is time dependent rather than determined by a
+single 15-minute excursion. The primary metric remains the annual probability
+of at least one qualifying episode, with a single-step event retained as a
+sensitivity.
 **Status: Approved. Risk threshold and sampling protocol.** The primary
 decision threshold is `P_crit = 10^-2`, evaluated with `N = 10^4` common-random-
 number samples over the full alpha grid. A `10^-3` sensitivity uses `N = 10^5`
@@ -111,23 +109,27 @@ full-year evaluation removes this avoidable approximation. Window sets remain
 useful only for selecting AC-validation states and for diagnostic plots.
 
 <!-- methods-id: G0-A3 -->
-### G0-A3 - Provisional 1.1 P.U. Overload Threshold
+### G0-A3 - Primary 1.0 P.U. Overload Threshold
 
-**Status: Approved working rule; mandatory PI review before scientific
-analysis.** The executable event threshold is provisionally set to a strict
-`L_import > 1.1 p.u.` for four consecutive 15-minute intervals. This retains
-the approved import-direction, apparent-power, one-hour-persistence, and
-full-year semantics while allowing temporary loading between nameplate and
-110% not to trigger the binary event. The same threshold is used for the
-single-step sensitivity and export-side exceedance diagnostic. The project
-does not yet present 110% as a Dutch DSO standard or as a value derived from
-IEC 60076-7. Before integrated event analysis, the PI must verify the source,
-asset and capacity convention, determine whether one hour means four
-consecutive quarter-hour exceedances or an hourly average, and decide whether
-the 100-110% band requires a separate cumulative-exposure rule. Historical
-diagnostics retain their manifested 1.0-p.u. threshold and are not
-reinterpreted as evidence under this working rule.
+**Status: Approved.** The primary congestion event is defined as strict
+`L_import > 1.0 p.u.` for four consecutive 15-minute import intervals over the
+full planning year. This treats sustained loading above nameplate as the
+planning-congestion condition while preserving the already approved
+import-direction gate, apparent-power loading quantity, direction-flip reset,
+one-hour persistence, and annual-event probability domain. A value exactly equal
+to 1.0 p.u. is not counted because the inequality is strict.
 
+The threshold choice is intentionally a planning definition rather than a claim
+of transformer failure. IEC 60076-7 and transformer thermal-loading practice
+support the broader point that consequences of loading above nameplate are
+conditional on duration, ambient conditions, design, and ageing, but the project
+does not use IEC or an unverified Dutch DSO passage to justify 1.1 p.u. as the
+primary criterion. Instead, `1.1 p.u.` and `1.2 p.u.` are retained as
+predeclared sensitivities using the same four-step persistent-event definition.
+No separate cumulative-exposure rule is applied to the 1.0-1.1 p.u. band in the
+primary analysis, because sustained loading in that band already belongs to the
+primary event; adding a cumulative rule would create a different estimand and
+would require a separate signed sensitivity design.
 <!-- methods-id: G0-A4 -->
 ### G0-A4 - Primary 2035 Planning Year
 
