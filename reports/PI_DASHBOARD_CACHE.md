@@ -1,7 +1,7 @@
 # PI Dashboard Cache
 
 Status: maintainer convenience cache; explicitly non-authoritative.
-Last protocol update: 2026-07-21.
+Last protocol update: 2026-07-22.
 
 Use this file to reduce repeated Codex context and tool-output costs during PI
 coordination. If this cache conflicts with live GitHub state, `registers/*`, or
@@ -17,6 +17,10 @@ manifests before advising the PI.
 For routine questions such as "what next?", "what gates are open?", PR triage,
 or agent coordination, use PI Lite unless the PI explicitly asks for a full
 audit.
+
+Standing PI preference: the dashboard assistant reviews open PRs for the PI and
+presents only merge recommendations, blockers, and items that genuinely need PI
+scientific or governance judgment.
 
 1. Check the local branch and dirty state with compact output.
 2. Fetch GitHub state and list open PRs with only number, title, branch,
@@ -76,6 +80,11 @@ Leave PI Lite and inspect broader context when:
 
 ## Current Decision Notes
 
+- `G0-A3` resolves Q-5. The primary event threshold is strict `L_import > 1.0
+  p.u.` for four consecutive 15-minute import steps over the full planning
+  year. Persistent-event sensitivities at `1.1` and `1.2 p.u.` are predeclared;
+  no separate 1.0-1.1 cumulative-exposure rule is primary. Event analysis still
+  needs all other gates, signed values, manifests, and capacity conventions.
 - `EV-008` is superseded. `EV-008A` approves equal-mix capacity-stratified
   public Set B source generation only: uncontrolled ElaadNL public `cp`, fixed
   generator year 2030, native public car/van mix, 25% each for AC capacity

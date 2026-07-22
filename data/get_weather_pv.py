@@ -18,7 +18,7 @@ if __package__ in {None, ""}:
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from data.sources import write_metadata
-from src.weather_model import LOCAL_TIMEZONE, WeatherMember
+from src.weather_model import LOCAL_TIMEZONE, WeatherMember, assert_same_weather_realization
 
 PVGIS_API_BASE = "https://re.jrc.ec.europa.eu/api/v5_3"
 KNMI_OPEN_DATA_BASE = "https://api.dataplatform.knmi.nl/open-data/v1"
@@ -45,6 +45,7 @@ D004_STATION_NAME = "Berkhout"
 D004_MEMBER_MANIFEST_NAME = f"{D004_SELECTION_ID}_weather_members_manifest.json"
 D004_MEMBER_METADATA_TEMPLATE = f"{D004_SELECTION_ID}_member_{{year}}_metadata.json"
 D004_RETRIEVAL_MANIFEST = f"{D004_SELECTION_ID}_retrieval_manifest.json"
+D004_MEMBER_READINESS_DIAGNOSTICS_NAME = f"{D004_SELECTION_ID}_member_readiness_diagnostics.json"
 
 
 @dataclass(frozen=True)
@@ -234,6 +235,124 @@ def build_d004_weather_members(
         manifest_path=manifest_path,
     )
 
+
+def build_d004_member_readiness_diagnostics(
+    *,
+    root_dir: str | Path = ".",
+    metadata_dir: str | Path = "data/metadata",
+    include_raw_diagnostics: bool = True,
+) -> dict[str, Any]:
+    """Build D-004 member-readiness diagnostics without signing acceptance."""
+    root = Path(root_dir)
+    metadata_root = Path(metadata_dir)
+    manifest_path = metadata_root / "weather_pv" / D004_MEMBER_MANIFEST_NAME
+    retrieval_manifest_path = metadata_root / "weather_pv" / D004_RETRIEVAL_MANIFEST
+    manifest = _load_json(manifest_path)
+    retrieval_manifest = _load_json(retrieval_manifest_path)
+    members = manifest.get("members")
+    if not isinstance(members, list):
+        raise ValueError("D-004 member manifest lacks members")
+
+    member_checks = [_diagnose_committed_member_metadata(root, metadata_root, item) for item in members]
+    expected_years = list(D004_YEARS)
+    manifest_checks = {
+        "status": manifest.get("status"),
+        "members_present": len(members),
+        "expected_members": len(expected_years),
+        "years": [item["year"] for item in member_checks],
+        "years_match_2014_2023": [item["year"] for item in member_checks] == expected_years,
+        "unique_member_ids": len({item["member_id"] for item in member_checks}) == len(member_checks),
+        "unique_shared_weather_driver_ids": len({item["shared_weather_driver_id"] for item in member_checks})
+        == len(member_checks),
+        "unique_content_sha256": len({item["content_sha256"] for item in member_checks}) == len(member_checks),
+        "all_metadata_files_present": all(item["metadata_file_present"] for item in member_checks),
+        "all_calendar_cadence_ok": all(item["calendar_cadence_ok"] for item in member_checks),
+        "all_energy_preserved": all(item["energy_preservation_ok"] for item in member_checks),
+        "all_temperature_finite": all(item["temperature_finite"] for item in member_checks),
+        "all_ghi_nonnegative": all(item["ghi_nonnegative"] for item in member_checks),
+        "pvgis_realized_weather_path": manifest.get("source_use_boundary", {}).get("pvgis_realized_weather_path"),
+        "no_final_d004_acceptance": manifest.get("no_final_d004_acceptance"),
+        "no_integrated_analysis": manifest.get("no_integrated_analysis"),
+    }
+    raw_source_checks = _diagnose_retrieval_manifest_sources(root, retrieval_manifest)
+    raw_available = all(item["local_file_present"] for item in raw_source_checks)
+    payload: dict[str, Any] = {
+        "data_id": "D-004",
+        "selection_id": D004_SELECTION_ID,
+        "diagnostics_created_utc": _now_utc_iso(),
+        "status": "readiness_diagnostics_pending_pi_review",
+        "d004_final_acceptance": False,
+        "no_integrated_analysis": True,
+        "no_manuscript_results": True,
+        "diagnostic_scope": [
+            "committed WEATHER-001 member manifest and per-member metadata validation",
+            "raw source checksum/provenance verification when ignored local raw files are present",
+            "UTC/local calendar and 15-minute cadence consistency checks",
+            "KNMI-Q energy-preservation and finite/nonnegative weather-channel checks",
+            "PVGIS/KNMI seasonal and peak diagnostics without signed tolerances",
+            "HP/PV paired-weather readiness based on shared_weather_driver_id and content identity",
+        ],
+        "manifest_checks": manifest_checks,
+        "member_checks": member_checks,
+        "raw_source_checks": raw_source_checks,
+        "pvgis_knmi_seasonal_peak_diagnostics": {
+            "status": "not_run_raw_files_unavailable" if not raw_available else "pending",
+            "tolerance_status": "not_pi_signed_diagnostic_only",
+        },
+        "hp_pv_paired_weather_readiness": {
+            "status": "metadata_ready_pending_integrated_acceptance",
+            "weather_contract": "src/weather_model.py::WeatherMember",
+            "common_identity_fields": [
+                "member_id",
+                "shared_weather_driver_id",
+                "source",
+                "first_timestamp_utc",
+                "last_timestamp_utc",
+                "n_timesteps",
+                "cadence_seconds",
+                "content_sha256",
+            ],
+            "all_members_have_temperature": all(item["temperature_finite"] for item in member_checks),
+            "all_members_have_pv_ghi": all(item["ghi_nonnegative"] for item in member_checks),
+            "all_members_have_shared_driver": all(item["shared_weather_driver_id_ok"] for item in member_checks),
+            "paired_acceptance_not_run": True,
+        },
+        "remaining_before_final_d004_acceptance": [
+            "PI review/sign-off of concrete D-004 source files, checksums, and source-use evidence",
+            "PI review/sign-off of seasonal/peak sanity tolerances or acceptance criteria",
+            "HP/PV paired-weather acceptance using the same WEATHER-001 member identity",
+            "cold-spell acceptance remains separate",
+            "net-load, congestion, event, P(E), capacity-screen, and manuscript analyses remain out of scope",
+        ],
+    }
+    if include_raw_diagnostics and raw_available:
+        constructed = build_d004_weather_members(root_dir=root, metadata_dir=metadata_root, write_member_metadata=False)
+        payload["pvgis_knmi_seasonal_peak_diagnostics"] = _seasonal_peak_diagnostics(
+            root,
+            retrieval_manifest,
+            constructed.members,
+        )
+        payload["hp_pv_paired_weather_readiness"]["identity_roundtrip_ok"] = all(
+            _same_weather_roundtrip_ok(member) for member in constructed.members
+        )
+        payload["hp_pv_paired_weather_readiness"]["status"] = "ready_for_later_paired_acceptance_design"
+    return payload
+
+
+def write_d004_member_readiness_diagnostics(
+    *,
+    root_dir: str | Path = ".",
+    metadata_dir: str | Path = "data/metadata",
+) -> Path:
+    """Write D-004 member-readiness diagnostics metadata."""
+    directory = Path(metadata_dir) / "weather_pv"
+    directory.mkdir(parents=True, exist_ok=True)
+    payload = build_d004_member_readiness_diagnostics(
+        root_dir=root_dir,
+        metadata_dir=metadata_dir,
+        include_raw_diagnostics=True,
+    )
+    return _write_json(directory / D004_MEMBER_READINESS_DIAGNOSTICS_NAME, payload)
 
 def write_retrieval_plan(metadata_dir: str | Path = "data/metadata") -> Path:
     """Write the D-004 weather/PV retrieval protocol without downloading data."""
@@ -524,6 +643,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--timeout-s", type=float, default=120.0)
     parser.add_argument("--authorization-env")
     parser.add_argument("--build-d004-weather-members", action="store_true")
+    parser.add_argument("--write-d004-member-readiness-diagnostics", action="store_true")
     parser.add_argument("--root-dir", default=".")
     args = parser.parse_args(argv)
 
@@ -562,6 +682,14 @@ def main(argv: Sequence[str] | None = None) -> int:
             output_path=args.output_path,
             timeout_s=args.timeout_s,
             authorization_header=authorization,
+        )
+        print(path)
+        return 0
+
+    if args.write_d004_member_readiness_diagnostics:
+        path = write_d004_member_readiness_diagnostics(
+            root_dir=args.root_dir,
+            metadata_dir=args.metadata_dir,
         )
         print(path)
         return 0
@@ -759,6 +887,249 @@ def _expand_knmi_hourly_to_15min(
     return tuple(timestamps_utc), tuple(timestamps_local), tuple(temperature_c), tuple(ghi_w_per_m2)
 
 
+def _diagnose_committed_member_metadata(
+    root: Path,
+    metadata_root: Path,
+    manifest_member: Mapping[str, Any],
+) -> dict[str, Any]:
+    year = int(manifest_member["year"])
+    manifest_metadata_path = str(manifest_member["metadata_path"])
+    metadata_path = root / manifest_metadata_path
+    if not metadata_path.is_file():
+        metadata_path = metadata_root / "weather_pv" / Path(manifest_metadata_path).name
+    expected_steps = 35_136 if _is_leap_year(year) else 35_040
+    expected_first_utc = datetime(year, 1, 1, tzinfo=UTC).isoformat()
+    expected_last_utc = datetime(year, 12, 31, 23, 45, tzinfo=UTC).isoformat()
+    if not metadata_path.is_file():
+        return {
+            "year": year,
+            "member_id": manifest_member.get("member_id"),
+            "shared_weather_driver_id": manifest_member.get("shared_weather_driver_id"),
+            "content_sha256": manifest_member.get("content_sha256"),
+            "metadata_path": manifest_member.get("metadata_path"),
+            "metadata_file_present": False,
+            "calendar_cadence_ok": False,
+            "energy_preservation_ok": False,
+            "temperature_finite": False,
+            "ghi_nonnegative": False,
+            "shared_weather_driver_id_ok": False,
+        }
+    metadata = _load_json(metadata_path)
+    calendar = metadata.get("calendar", {})
+    knmi = metadata.get("knmi_hourly_source", {})
+    identity = metadata.get("identity_record", {})
+    source_files = metadata.get("source_files", {})
+    return {
+        "year": year,
+        "member_id": str(manifest_member.get("member_id")),
+        "shared_weather_driver_id": str(manifest_member.get("shared_weather_driver_id")),
+        "content_sha256": str(manifest_member.get("content_sha256")),
+        "metadata_path": str(manifest_member.get("metadata_path")),
+        "metadata_file_present": True,
+        "metadata_content_sha256_matches_manifest": metadata.get("content_sha256") == manifest_member.get("content_sha256"),
+        "metadata_member_id_matches_manifest": metadata.get("member_id") == manifest_member.get("member_id"),
+        "metadata_shared_driver_matches_manifest": metadata.get("shared_weather_driver_id")
+        == manifest_member.get("shared_weather_driver_id"),
+        "shared_weather_driver_id_ok": metadata.get("shared_weather_driver_id") == f"{D004_SELECTION_ID}:{year}",
+        "calendar_year_basis": calendar.get("calendar_year_basis"),
+        "n_timesteps": calendar.get("n_timesteps"),
+        "expected_n_timesteps": expected_steps,
+        "cadence_seconds": calendar.get("cadence_seconds"),
+        "first_timestamp_utc": calendar.get("first_timestamp_utc"),
+        "last_timestamp_utc": calendar.get("last_timestamp_utc"),
+        "first_timestamp_local": calendar.get("first_timestamp_local"),
+        "last_timestamp_local": calendar.get("last_timestamp_local"),
+        "calendar_cadence_ok": calendar.get("calendar_year_basis") == "UTC calendar year"
+        and calendar.get("n_timesteps") == expected_steps
+        and calendar.get("cadence_seconds") == 900
+        and calendar.get("first_timestamp_utc") == expected_first_utc
+        and calendar.get("last_timestamp_utc") == expected_last_utc,
+        "source_hourly_rows": knmi.get("source_hourly_rows"),
+        "expected_source_hourly_rows": 8784 if _is_leap_year(year) else 8760,
+        "energy_preservation_abs_error_j_per_cm2": knmi.get("energy_preservation_abs_error_j_per_cm2"),
+        "energy_preservation_ok": float(knmi.get("energy_preservation_abs_error_j_per_cm2", float("inf"))) <= 1e-9,
+        "temperature_min_c": knmi.get("temperature_min_c"),
+        "temperature_max_c": knmi.get("temperature_max_c"),
+        "temperature_finite": math.isfinite(float(knmi.get("temperature_min_c", float("nan"))))
+        and math.isfinite(float(knmi.get("temperature_max_c", float("nan")))),
+        "ghi_min_w_per_m2": knmi.get("ghi_min_w_per_m2"),
+        "ghi_max_w_per_m2": knmi.get("ghi_max_w_per_m2"),
+        "ghi_nonnegative": float(knmi.get("ghi_min_w_per_m2", -1.0)) >= 0.0
+        and math.isfinite(float(knmi.get("ghi_max_w_per_m2", float("nan")))),
+        "identity_record_content_matches_metadata": identity.get("content_sha256") == metadata.get("content_sha256"),
+        "identity_record_shared_driver_matches_metadata": identity.get("shared_weather_driver_id")
+        == metadata.get("shared_weather_driver_id"),
+        "pvgis_provenance_only": any(
+            str(item.get("file_role", "")).endswith("reference")
+            or str(item.get("file_role", "")).endswith("only")
+            for item in source_files.get("pvgis", [])
+            if isinstance(item, Mapping)
+        ),
+    }
+
+
+def _diagnose_retrieval_manifest_sources(root: Path, retrieval_manifest: Mapping[str, Any]) -> list[dict[str, Any]]:
+    files = retrieval_manifest.get("source_files")
+    if not isinstance(files, list):
+        raise ValueError("D-004 retrieval manifest lacks source_files")
+    checks: list[dict[str, Any]] = []
+    for item in files:
+        if not isinstance(item, Mapping):
+            raise ValueError("D-004 source_files entries must be objects")
+        path = root / str(item["path"])
+        local_file_present = path.is_file()
+        size_bytes = path.stat().st_size if local_file_present else None
+        sha256 = sha256_file(path) if local_file_present else None
+        checks.append(
+            {
+                "source_kind": item.get("source_kind"),
+                "file_role": item.get("file_role"),
+                "path": item.get("path"),
+                "source_url": item.get("source_url"),
+                "local_file_present": local_file_present,
+                "size_bytes": size_bytes,
+                "expected_size_bytes": item.get("size_bytes"),
+                "size_matches_manifest": local_file_present and size_bytes == int(item["size_bytes"]),
+                "sha256_file": sha256,
+                "expected_sha256_file": item.get("sha256_file"),
+                "sha256_matches_manifest": local_file_present and sha256 == item.get("sha256_file"),
+            }
+        )
+    return checks
+
+
+def _seasonal_peak_diagnostics(
+    root: Path,
+    retrieval_manifest: Mapping[str, Any],
+    members: Sequence[WeatherMember],
+) -> dict[str, Any]:
+    pvgis_path = _pvgis_seriescalc_path(root, retrieval_manifest)
+    pvgis_by_year = _pvgis_hourly_year_diagnostics(pvgis_path)
+    knmi_by_year = {str(int(member.metadata["year"])): _member_ghi_year_diagnostics(member) for member in members}
+    comparisons: dict[str, Any] = {}
+    for year, knmi in sorted(knmi_by_year.items()):
+        pvgis = pvgis_by_year.get(year, {})
+        comparisons[year] = {
+            "knmi_ghi_annual_kwh_per_m2": knmi["annual_ghi_kwh_per_m2"],
+            "pvgis_gi_annual_kwh_per_m2": pvgis.get("annual_gi_kwh_per_m2"),
+            "annual_ghi_to_pvgis_gi_ratio": _safe_ratio(
+                knmi["annual_ghi_kwh_per_m2"],
+                pvgis.get("annual_gi_kwh_per_m2"),
+            ),
+            "knmi_peak_ghi_month_utc": knmi["peak_ghi_month_utc"],
+            "pvgis_peak_gi_month": pvgis.get("peak_gi_month"),
+            "pvgis_peak_p_month": pvgis.get("peak_p_month"),
+            "knmi_seasonal_ghi_kwh_per_m2": knmi["seasonal_ghi_kwh_per_m2"],
+            "pvgis_seasonal_gi_kwh_per_m2": pvgis.get("seasonal_gi_kwh_per_m2"),
+        }
+    return {
+        "status": "diagnostic_only_not_final_acceptance",
+        "tolerance_status": "not_pi_signed_diagnostic_only",
+        "season_basis": "UTC month grouping; DJF is Jan/Feb/Dec within each UTC year",
+        "comparison_boundary": "KNMI Q-derived GHI is the realized WeatherMember irradiance field; PVGIS G(i)/P are Alkmaar fixed-plane calibration or validation references only",
+        "pvgis_series_file": pvgis_path.relative_to(root).as_posix(),
+        "years": comparisons,
+    }
+
+
+def _pvgis_seriescalc_path(root: Path, retrieval_manifest: Mapping[str, Any]) -> Path:
+    for item in retrieval_manifest.get("source_files", []):
+        if isinstance(item, Mapping) and item.get("source_kind") == "pvgis" and "hourly_series" in str(item.get("file_role")):
+            path = root / str(item["path"])
+            if not path.is_file():
+                raise FileNotFoundError(path)
+            return path
+    raise ValueError("D-004 retrieval manifest lacks a PVGIS hourly-series source file")
+
+
+def _pvgis_hourly_year_diagnostics(path: Path) -> dict[str, dict[str, Any]]:
+    payload = _load_json(path)
+    hourly = payload.get("outputs", {}).get("hourly")
+    if not isinstance(hourly, list):
+        raise ValueError("PVGIS seriescalc payload lacks outputs.hourly")
+    by_year: dict[str, dict[str, Any]] = {}
+    monthly_gi: dict[tuple[int, int], float] = {}
+    monthly_p: dict[tuple[int, int], float] = {}
+    peak_gi: dict[int, tuple[float, int]] = {}
+    peak_p: dict[int, tuple[float, int]] = {}
+    for row in hourly:
+        if not isinstance(row, Mapping):
+            raise ValueError("PVGIS hourly entries must be objects")
+        timestamp = datetime.strptime(str(row["time"]), "%Y%m%d:%H%M")
+        year = timestamp.year
+        month = timestamp.month
+        gi = float(row.get("G(i)", 0.0))
+        pv_power = float(row.get("P", 0.0))
+        monthly_gi[(year, month)] = monthly_gi.get((year, month), 0.0) + gi / 1000.0
+        monthly_p[(year, month)] = monthly_p.get((year, month), 0.0) + pv_power / 1000.0
+        if year not in peak_gi or gi > peak_gi[year][0]:
+            peak_gi[year] = (gi, month)
+        if year not in peak_p or pv_power > peak_p[year][0]:
+            peak_p[year] = (pv_power, month)
+    for year in D004_YEARS:
+        gi_by_month = {month: monthly_gi.get((year, month), 0.0) for month in range(1, 13)}
+        p_by_month = {month: monthly_p.get((year, month), 0.0) for month in range(1, 13)}
+        by_year[str(year)] = {
+            "annual_gi_kwh_per_m2": _round_float(sum(gi_by_month.values())),
+            "annual_pvgis_p_kwh_per_kwp": _round_float(sum(p_by_month.values())),
+            "seasonal_gi_kwh_per_m2": _seasonal_from_months(gi_by_month),
+            "seasonal_pvgis_p_kwh_per_kwp": _seasonal_from_months(p_by_month),
+            "peak_gi_month": peak_gi.get(year, (None, None))[1],
+            "peak_p_month": peak_p.get(year, (None, None))[1],
+        }
+    return by_year
+
+
+def _member_ghi_year_diagnostics(member: WeatherMember) -> dict[str, Any]:
+    monthly: dict[int, float] = {month: 0.0 for month in range(1, 13)}
+    peak_value = -1.0
+    peak_month = 0
+    for timestamp, ghi in zip(member.timestamps_utc, member.ghi_w_per_m2, strict=True):
+        value = float(ghi)
+        monthly[timestamp.month] += value * 0.25 / 1000.0
+        if value > peak_value:
+            peak_value = value
+            peak_month = timestamp.month
+    return {
+        "annual_ghi_kwh_per_m2": _round_float(sum(monthly.values())),
+        "seasonal_ghi_kwh_per_m2": _seasonal_from_months(monthly),
+        "peak_ghi_month_utc": peak_month,
+    }
+
+
+def _seasonal_from_months(monthly: Mapping[int, float]) -> dict[str, float]:
+    return {
+        "DJF": _round_float(monthly[12] + monthly[1] + monthly[2]),
+        "MAM": _round_float(monthly[3] + monthly[4] + monthly[5]),
+        "JJA": _round_float(monthly[6] + monthly[7] + monthly[8]),
+        "SON": _round_float(monthly[9] + monthly[10] + monthly[11]),
+    }
+
+
+def _same_weather_roundtrip_ok(member: WeatherMember) -> bool:
+    try:
+        assert_same_weather_realization(member, member.identity_record())
+    except ValueError:
+        return False
+    return True
+
+
+def _safe_ratio(numerator: float, denominator: object) -> float | None:
+    if denominator is None:
+        return None
+    value = float(denominator)
+    if value == 0.0:
+        return None
+    return _round_float(float(numerator) / value)
+
+
+def _round_float(value: float) -> float:
+    return round(float(value), 6)
+
+
+def _is_leap_year(year: int) -> bool:
+    return year % 4 == 0 and (year % 100 != 0 or year % 400 == 0)
+
 def _member_metadata_payload(
     member: WeatherMember,
     hourly: Sequence[Mapping[str, Any]],
@@ -928,3 +1299,6 @@ def _utc_hour_endings_for_year(year: int) -> tuple[datetime, ...]:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
+
+

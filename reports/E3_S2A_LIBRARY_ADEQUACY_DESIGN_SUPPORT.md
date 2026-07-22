@@ -5,8 +5,8 @@ Task: E3.S2a support packet for Agent C-owned integrated library adequacy.
 Status: scaffold/design support only. This packet defines the information and
 preconditions A/C need before opening EV-005 held-out data. It does not open
 held-out batches, wire real E2 components, run IC-2 event detection, evaluate
-thresholds, compute `P(E)`, or produce manuscript results. Q-5 remains blocking
-before any integrated event-based adequacy result.
+thresholds, compute `P(E)`, or produce manuscript results. Q-5 is resolved
+by G0-A3, but integrated event-based adequacy still requires the remaining gates, accepted inputs, and frozen adequacy criterion.
 
 ## Purpose
 
@@ -187,4 +187,4 @@ event-based propagation are resolved.
 
 Suggested STATUS update for the eventual PR body:
 
-`E3.S2a Integrated library adequacy | C | todo | design-support packet added by Agent A | E2.S2-E2.S6, E3.S2, ALEA-002, EV-005; resolve Q-5 before opening event-based held-out results | PR: <this PR>`
+`E3.S2a Integrated library adequacy | C | todo | design-support packet added by Agent A | E2.S2-E2.S6, E3.S2, ALEA-002, EV-005; use signed G0-A3 threshold plus remaining gates before opening event-based held-out results | PR: <this PR>`
