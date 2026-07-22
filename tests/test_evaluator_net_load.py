@@ -5,6 +5,7 @@ import pytest
 
 from src.contracts.net_load import (
     AdapterBackedNetLoadProvider,
+    AcceptedComponentAdapterArtifact,
     ComponentAdapterRegistry,
     ComponentAdapterOutput,
     ComponentAdapterSkeleton,
@@ -20,6 +21,7 @@ from src.contracts.net_load import (
     assemble_net_load_from_real_component_outputs,
     assemble_net_load_from_registry_outputs,
     build_ic1_assembly_plan_from_registry,
+    build_component_adapter_registry_from_artifacts,
     build_realization_context,
     build_net_load_result,
     net_load_component_from_adapter_output,
@@ -1238,4 +1240,157 @@ def test_adapter_registry_rejects_output_metadata_drift_before_assembly() -> Non
             registry,
             wrong_weather_context,
             _registry_adapter_outputs(context, registry),
+        )
+
+
+def _accepted_adapter_artifacts(
+    *,
+    shared_weather_driver_id: str = "weather-artifact-1",
+) -> list[AcceptedComponentAdapterArtifact]:
+    return [
+        AcceptedComponentAdapterArtifact(
+            artifact_id="baseline-artifact",
+            kind="baseline",
+            source_id="baseline-readiness",
+            member_id="baseline-member-placeholder",
+            node_ids=("node-a", "node-b"),
+            calendar_id="calendar-2035-15min",
+            provenance={"readiness_artifact": "E2.S5"},
+        ),
+        AcceptedComponentAdapterArtifact(
+            artifact_id="ev-artifact",
+            kind="ev",
+            source_id="ev-readiness",
+            member_id="ev-member-placeholder",
+            node_ids=("node-a",),
+            calendar_id="calendar-2035-15min",
+            provenance={"readiness_artifact": "E2.S2"},
+        ),
+        AcceptedComponentAdapterArtifact(
+            artifact_id="hp-artifact",
+            kind="hp",
+            source_id="hp-readiness",
+            member_id="hp-member-placeholder",
+            node_ids=("node-b",),
+            calendar_id="calendar-2035-15min",
+            shared_weather_driver_id=shared_weather_driver_id,
+            provenance={"readiness_artifact": "E2.S3"},
+        ),
+        AcceptedComponentAdapterArtifact(
+            artifact_id="pv-artifact",
+            kind="pv",
+            source_id="weather-pv-readiness",
+            member_id="pv-member-placeholder",
+            node_ids=("node-b",),
+            calendar_id="calendar-2035-15min",
+            shared_weather_driver_id=shared_weather_driver_id,
+            provenance={"readiness_artifact": "E2.S4"},
+        ),
+    ]
+
+
+def test_artifact_bridge_builds_registry_and_manifest_ready_plan() -> None:
+    registry = build_component_adapter_registry_from_artifacts(
+        registry_id="artifact-bridge-registry",
+        node_ids=("node-a", "node-b"),
+        artifacts=_accepted_adapter_artifacts(),
+        metadata={"node_mapping_version": "synthetic-v1"},
+    )
+    plan = build_ic1_assembly_plan_from_registry(registry)
+
+    assert registry.registry_id == "artifact-bridge-registry"
+    assert registry.node_ids == ("node-a", "node-b")
+    assert plan.node_ids == ("node-a", "node-b")
+    bridge = registry.manifest_record()["metadata"]["artifact_bridge"]
+    assert [artifact["kind"] for artifact in bridge["accepted_artifacts"]] == list(REAL_COMPONENT_WIRING_KINDS)
+    assert bridge["accepted_artifacts"][0]["provenance"]["readiness_artifact"] == "E2.S5"
+    assert registry.manifest_record()["readiness"]["shared_weather_driver_id"] == "weather-artifact-1"
+
+
+def test_artifact_bridge_feeds_synthetic_outputs_through_registry_harness() -> None:
+    registry = build_component_adapter_registry_from_artifacts(
+        registry_id="artifact-bridge-registry",
+        node_ids=("node-a", "node-b"),
+        artifacts=_accepted_adapter_artifacts(),
+    )
+    context = _registry_context(registry)
+    result = assemble_net_load_from_registry_outputs(
+        registry,
+        context,
+        _registry_adapter_outputs(context, registry),
+        metadata={"artifact_bridge_dry_run": True},
+    )
+
+    assert result.metadata["artifact_bridge_dry_run"] is True
+    assert result.metadata["adapter_registry"]["metadata"]["artifact_bridge"]["accepted_artifacts"][1]["kind"] == "ev"
+    assert result.shared_weather_driver_ids == ("weather-artifact-1",)
+    assert "threshold_pu" not in result.metadata
+    assert "overload" not in result.metadata
+    np.testing.assert_array_equal(
+        result.p_net_kw,
+        np.array(
+            [
+                [11.0, 13.0, 15.0, 17.0],
+                [4.0, 3.0, 3.0, 7.0],
+            ]
+        ),
+    )
+
+
+def test_artifact_bridge_rejects_missing_kind_node_gap_and_weather_mismatch() -> None:
+    with pytest.raises(ValueError, match=r"missing accepted component adapter artifact kind\(s\): ev"):
+        build_component_adapter_registry_from_artifacts(
+            registry_id="missing-ev",
+            node_ids=("node-a", "node-b"),
+            artifacts=[artifact for artifact in _accepted_adapter_artifacts() if artifact.kind != "ev"],
+        )
+
+    with pytest.raises(ValueError, match="lack adapter artifact coverage"):
+        build_component_adapter_registry_from_artifacts(
+            registry_id="missing-node-coverage",
+            node_ids=("node-a", "node-b", "node-c"),
+            artifacts=_accepted_adapter_artifacts(),
+        )
+
+    artifacts = _accepted_adapter_artifacts()
+    artifacts[3] = AcceptedComponentAdapterArtifact(
+        artifact_id="pv-artifact",
+        kind="pv",
+        source_id="weather-pv-readiness",
+        member_id="pv-member-placeholder",
+        node_ids=("node-b",),
+        calendar_id="calendar-2035-15min",
+        shared_weather_driver_id="different-weather",
+        provenance={"readiness_artifact": "E2.S4"},
+    )
+    with pytest.raises(ValueError, match="accepted adapter artifacts must share"):
+        build_component_adapter_registry_from_artifacts(
+            registry_id="weather-mismatch",
+            node_ids=("node-a", "node-b"),
+            artifacts=artifacts,
+        )
+
+
+def test_artifact_bridge_rejects_unmanifestable_provenance_and_cadence() -> None:
+    with pytest.raises(ValueError, match="provenance values must not be None"):
+        AcceptedComponentAdapterArtifact(
+            artifact_id="bad-provenance",
+            kind="baseline",
+            source_id="baseline-readiness",
+            member_id="baseline-member-placeholder",
+            node_ids=("node-a",),
+            calendar_id="calendar-2035-15min",
+            provenance={"readiness_artifact": None},
+        )
+
+    with pytest.raises(ValueError, match="900-second"):
+        AcceptedComponentAdapterArtifact(
+            artifact_id="bad-cadence",
+            kind="ev",
+            source_id="ev-readiness",
+            member_id="ev-member-placeholder",
+            node_ids=("node-a",),
+            calendar_id="calendar-2035-15min",
+            timestep_seconds=1800,
+            provenance={"readiness_artifact": "E2.S2"},
         )
