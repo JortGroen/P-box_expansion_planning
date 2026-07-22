@@ -1,0 +1,133 @@
+{
+  "carried_forward_questions": [
+    {
+      "agent_recommendation": "Accept, subject to PI license/source-use review; the local files match the committed retrieval manifest and remain ignored/uncommitted.",
+      "decision_needed_for": "D-004 source acceptance",
+      "id": "D004-ACCEPT-Q1",
+      "question": "Does the PI accept the four concrete D-004 source files, URLs, sizes, and SHA-256 checksums as the source bundle for 2014-2023 WEATHER-001 members?"
+    },
+    {
+      "agent_recommendation": "Accept member construction readiness; all members have expected 15-minute counts, UTC/local timestamp alignment, finite T/10 temperature, nonnegative Q-derived GHI, and shared weather-driver IDs.",
+      "decision_needed_for": "D-004 member acceptance",
+      "id": "D004-ACCEPT-Q2",
+      "question": "Does the PI accept the constructed 2014-2023 UTC-year WEATHER-001 member library as complete and calendar-consistent under D004-MC-001?"
+    },
+    {
+      "agent_recommendation": "A for source/member acceptance, with B or C reserved for later PV calibration acceptance; it avoids inventing a numeric tolerance between GHI and fixed-plane PVGIS reference fields.",
+      "decision_needed_for": "PVGIS seasonal/peak sanity acceptance",
+      "id": "D004-ACCEPT-Q3",
+      "options": [
+        "A) Qualitative first-pass: annual GHI-to-PVGIS fixed-plane G(i) ratio remains within the observed diagnostic range, seasonal maximum occurs in MAM/JJA, and peak GHI month is May-July; no numeric percent tolerance is claimed.",
+        "B) Numeric tolerance: PI supplies explicit annual/seasonal relative-error bounds and allowed peak-month set, acknowledging KNMI GHI and PVGIS fixed-plane G(i)/P are not the same irradiance quantity.",
+        "C) Request a different PVGIS comparison quantity or transform before signing seasonal/peak checks."
+      ],
+      "question": "What seasonal/peak sanity criterion should be signed before final D-004 acceptance?"
+    },
+    {
+      "agent_recommendation": "Sign source/member acceptance separately if Q1-Q3 pass; keep paired HP/PV and cold-spell acceptance as later gates with their own unsigned tolerances.",
+      "decision_needed_for": "sequencing of D-004 source/member acceptance versus paired HP/PV acceptance",
+      "id": "D004-ACCEPT-Q4",
+      "question": "Should final D-004 acceptance wait for the E2-S3-COLD-SPELL-ACCEPTANCE-DESIGN paired HP/PV run, or may source/member acceptance be signed separately first?"
+    }
+  ],
+  "cold_spell_acceptance_run": false,
+  "created_utc": "2026-07-22T13:40:46+00:00",
+  "d004_final_acceptance": false,
+  "data_id": "D-004",
+  "decision_sequence_recommendation": [
+    "PI signs or amends D-004 source/member acceptance criteria.",
+    "If signed, D-004 source/member layer may become accepted while D-004 final paired acceptance remains blocked.",
+    "PI signs paired HP/PV identity/calendar prerequisite and HP cold-spell numerical tolerances before real paired validation.",
+    "Only after accepted HP scaling and signed tolerances should a manifested paired HP/PV acceptance run be prepared."
+  ],
+  "evidence_artifacts": {
+    "acceptance_tolerance_packet": "data/metadata/weather_pv/d004_alkmaar_berkhout_2014_2023_v1_acceptance_tolerance_packet.json",
+    "memo": "reports/e2_s4_d004_pi_recommendation_packet.md",
+    "recommendation_packet": "data/metadata/weather_pv/d004_alkmaar_berkhout_2014_2023_v1_pi_recommendation_packet.json",
+    "source_member_acceptance_packet": "data/metadata/weather_pv/d004_alkmaar_berkhout_2014_2023_v1_acceptance_packet.json"
+  },
+  "no_integrated_analysis": true,
+  "no_manuscript_results": true,
+  "out_of_scope_guards": [
+    "no final D-004 signoff by Agent C",
+    "no net-load aggregation",
+    "no event detection or P(E)",
+    "no capacity screen",
+    "no manuscript result"
+  ],
+  "paired_hp_pv_acceptance_run": false,
+  "recommended_pi_decisions": [
+    {
+      "acceptance_criteria": "Should source/member acceptance use exact checksum, size, row-count, cadence, timestamp, finite-value, nonnegative-GHI, and Q-energy-preservation checks as the acceptance criteria?",
+      "basis": [
+        "D004-EVIDENCE-SOURCE-FILES",
+        "D004-EVIDENCE-KNMI-COMPLETENESS",
+        "D004-EVIDENCE-WEATHER-MEMBERS",
+        "D004-EVIDENCE-PVGIS-BOUNDARY",
+        "D004-EVIDENCE-WEATHER-IDENTITY"
+      ],
+      "decision": "Accept the D-004 source/member layer separately from later paired HP/PV and cold-spell gates.",
+      "id": "D004-REC-1-SOURCE-MEMBER",
+      "limits": "Does not approve PVGIS numerical tolerances, paired HP/PV acceptance, cold-spell acceptance, or integrated analysis.",
+      "recommended_outcome": "approve_source_member_acceptance_only"
+    },
+    {
+      "basis": {
+        "all_knmi_peak_months_may_to_july": true,
+        "annual_ghi_to_pvgis_gi_ratio_max": 0.848755,
+        "annual_ghi_to_pvgis_gi_ratio_min": 0.806128,
+        "knmi_peak_ghi_months_utc": [
+          5,
+          6
+        ]
+      },
+      "decision": "Use qualitative PVGIS seasonal/peak sanity for D-004 source/member acceptance; defer numeric tolerances to later PV calibration if needed.",
+      "id": "D004-REC-2-PVGIS-SANITY",
+      "numeric_tolerance_status": "unsigned_not_recommended_for_source_member_gate",
+      "reason": "KNMI Q-derived GHI is the realized weather field; PVGIS fixed-plane G(i)/P is calibration/validation context, not an identical quantity.",
+      "recommended_outcome": "qualitative_now_numeric_deferred"
+    },
+    {
+      "decision": "Require exact WEATHER-001 identity and calendar equality before any HP/PV paired acceptance diagnostics are judged.",
+      "id": "D004-REC-3-WEATHER-IDENTITY",
+      "limits": "This is a prerequisite only; it does not run or pass real paired HP/PV validation.",
+      "recommended_outcome": "approve_exact_identity_calendar_prerequisite",
+      "strict_identity_fields": [
+        "member_id",
+        "shared_weather_driver_id",
+        "source",
+        "first_timestamp_utc",
+        "last_timestamp_utc",
+        "n_timesteps",
+        "cadence_seconds",
+        "content_sha256"
+      ],
+      "weather_fields": [
+        "temperature_c",
+        "pv_weather_fields.ghi_w_per_m2",
+        "timestamps_utc",
+        "timestamps_local"
+      ]
+    },
+    {
+      "basis": "Set numerical coldest-window, near-freezing/defrost-risk, and temperature-response pass/fail tolerances, including the near-freezing band around 0 degrees C.",
+      "decision": "Leave HP cold-spell numerical tolerances unsigned for the HP lineage.",
+      "id": "D004-REC-4-COLD-SPELL",
+      "recommended_outcome": "defer_to_hp_cold_spell_tolerance_decision",
+      "remaining_decisions": [
+        "coldest-window pass/fail tolerance",
+        "near-freezing/defrost-risk temperature band around 0 degrees C",
+        "temperature-response diagnostic tolerance",
+        "whether cold-spell acceptance must be bundled with final D-004 or final D-003/D-004 acceptance"
+      ]
+    }
+  ],
+  "selection_id": "d004_alkmaar_berkhout_2014_2023_v1",
+  "status": "pi_recommendation_packet_proposed_not_signed",
+  "still_blocked": [
+    "accepted D-004 source/member layer or explicit PI instruction to run as provisional evidence",
+    "accepted HP annual local scaling and executable HP profiles; current HP source/technology boundary does not sign annual values",
+    "pre-signed paired-weather and cold-spell tolerance criteria before inspecting real paired HP/PV acceptance diagnostics",
+    "runner/manifested acceptance execution if the validation produces experimental evidence rather than metadata-only governance evidence"
+  ]
+}

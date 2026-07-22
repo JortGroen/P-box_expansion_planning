@@ -49,6 +49,7 @@ D004_MEMBER_READINESS_DIAGNOSTICS_NAME = f"{D004_SELECTION_ID}_member_readiness_
 D004_ACCEPTANCE_PACKET_NAME = f"{D004_SELECTION_ID}_acceptance_packet.json"
 D004_PAIRED_WEATHER_ACCEPTANCE_SCAFFOLD_NAME = f"{D004_SELECTION_ID}_paired_weather_acceptance_scaffold.json"
 D004_ACCEPTANCE_TOLERANCE_PACKET_NAME = f"{D004_SELECTION_ID}_acceptance_tolerance_packet.json"
+D004_PI_RECOMMENDATION_PACKET_NAME = f"{D004_SELECTION_ID}_pi_recommendation_packet.json"
 
 
 @dataclass(frozen=True)
@@ -734,6 +735,93 @@ def write_d004_acceptance_tolerance_packet(*, metadata_dir: str | Path = "data/m
     )
 
 
+def build_d004_pi_recommendation_packet(*, metadata_dir: str | Path = "data/metadata") -> dict[str, Any]:
+    """Summarize Agent C recommendations for PI D-004 decisions without signing them."""
+    metadata_root = Path(metadata_dir)
+    weather_dir = metadata_root / "weather_pv"
+    tolerance = _load_json(weather_dir / D004_ACCEPTANCE_TOLERANCE_PACKET_NAME)
+    acceptance = _load_json(weather_dir / D004_ACCEPTANCE_PACKET_NAME)
+    seasonal = _find_by_id(tolerance.get("unsigned_tolerance_decisions", []), "D004-TOL-PVGIS-SEASONAL-PEAK")
+    paired = _find_by_id(tolerance.get("unsigned_tolerance_decisions", []), "D004-TOL-PAIRED-HP-PV")
+    cold = _find_by_id(tolerance.get("unsigned_tolerance_decisions", []), "D004-TOL-COLD-SPELL")
+    source_member = _find_by_id(tolerance.get("unsigned_tolerance_decisions", []), "D004-TOL-SOURCE-MEMBER")
+    satisfied = tolerance.get("satisfied_evidence_for_pi_review", [])
+    return {
+        "data_id": "D-004",
+        "selection_id": D004_SELECTION_ID,
+        "created_utc": _now_utc_iso(),
+        "status": "pi_recommendation_packet_proposed_not_signed",
+        "d004_final_acceptance": False,
+        "paired_hp_pv_acceptance_run": False,
+        "cold_spell_acceptance_run": False,
+        "no_integrated_analysis": True,
+        "no_manuscript_results": True,
+        "recommended_pi_decisions": [
+            {
+                "id": "D004-REC-1-SOURCE-MEMBER",
+                "decision": "Accept the D-004 source/member layer separately from later paired HP/PV and cold-spell gates.",
+                "recommended_outcome": "approve_source_member_acceptance_only",
+                "basis": [item.get("id") for item in satisfied if isinstance(item, Mapping)],
+                "acceptance_criteria": source_member.get("decision_needed"),
+                "limits": "Does not approve PVGIS numerical tolerances, paired HP/PV acceptance, cold-spell acceptance, or integrated analysis.",
+            },
+            {
+                "id": "D004-REC-2-PVGIS-SANITY",
+                "decision": "Use qualitative PVGIS seasonal/peak sanity for D-004 source/member acceptance; defer numeric tolerances to later PV calibration if needed.",
+                "recommended_outcome": "qualitative_now_numeric_deferred",
+                "basis": seasonal.get("current_diagnostic_range"),
+                "reason": "KNMI Q-derived GHI is the realized weather field; PVGIS fixed-plane G(i)/P is calibration/validation context, not an identical quantity.",
+                "numeric_tolerance_status": "unsigned_not_recommended_for_source_member_gate",
+            },
+            {
+                "id": "D004-REC-3-WEATHER-IDENTITY",
+                "decision": "Require exact WEATHER-001 identity and calendar equality before any HP/PV paired acceptance diagnostics are judged.",
+                "recommended_outcome": "approve_exact_identity_calendar_prerequisite",
+                "strict_identity_fields": paired.get("strict_identity_fields"),
+                "weather_fields": paired.get("weather_fields"),
+                "limits": "This is a prerequisite only; it does not run or pass real paired HP/PV validation.",
+            },
+            {
+                "id": "D004-REC-4-COLD-SPELL",
+                "decision": "Leave HP cold-spell numerical tolerances unsigned for the HP lineage.",
+                "recommended_outcome": "defer_to_hp_cold_spell_tolerance_decision",
+                "remaining_decisions": [
+                    "coldest-window pass/fail tolerance",
+                    "near-freezing/defrost-risk temperature band around 0 degrees C",
+                    "temperature-response diagnostic tolerance",
+                    "whether cold-spell acceptance must be bundled with final D-004 or final D-003/D-004 acceptance",
+                ],
+                "basis": cold.get("decision_needed"),
+            },
+        ],
+        "decision_sequence_recommendation": [
+            "PI signs or amends D-004 source/member acceptance criteria.",
+            "If signed, D-004 source/member layer may become accepted while D-004 final paired acceptance remains blocked.",
+            "PI signs paired HP/PV identity/calendar prerequisite and HP cold-spell numerical tolerances before real paired validation.",
+            "Only after accepted HP scaling and signed tolerances should a manifested paired HP/PV acceptance run be prepared.",
+        ],
+        "still_blocked": tolerance.get("must_wait_for_hp_pv_validation", []),
+        "out_of_scope_guards": tolerance.get("out_of_scope_guards", []),
+        "carried_forward_questions": acceptance.get("pi_decision_questions", []),
+        "evidence_artifacts": {
+            "recommendation_packet": f"data/metadata/weather_pv/{D004_PI_RECOMMENDATION_PACKET_NAME}",
+            "acceptance_tolerance_packet": f"data/metadata/weather_pv/{D004_ACCEPTANCE_TOLERANCE_PACKET_NAME}",
+            "source_member_acceptance_packet": f"data/metadata/weather_pv/{D004_ACCEPTANCE_PACKET_NAME}",
+            "memo": "reports/e2_s4_d004_pi_recommendation_packet.md",
+        },
+    }
+
+
+def write_d004_pi_recommendation_packet(*, metadata_dir: str | Path = "data/metadata") -> Path:
+    """Write the concise D-004 PI recommendation packet without signing D-004."""
+    directory = Path(metadata_dir) / "weather_pv"
+    directory.mkdir(parents=True, exist_ok=True)
+    return _write_json(
+        directory / D004_PI_RECOMMENDATION_PACKET_NAME,
+        build_d004_pi_recommendation_packet(metadata_dir=metadata_dir),
+    )
+
+
 def write_retrieval_plan(metadata_dir: str | Path = "data/metadata") -> Path:
     """Write the D-004 weather/PV retrieval protocol without downloading data."""
     directory = Path(metadata_dir) / "weather_pv"
@@ -1027,6 +1115,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--write-d004-acceptance-packet", action="store_true")
     parser.add_argument("--write-d004-paired-weather-acceptance-scaffold", action="store_true")
     parser.add_argument("--write-d004-acceptance-tolerance-packet", action="store_true")
+    parser.add_argument("--write-d004-pi-recommendation-packet", action="store_true")
     parser.add_argument("--root-dir", default=".")
     args = parser.parse_args(argv)
 
@@ -1081,6 +1170,11 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     if args.write_d004_acceptance_tolerance_packet:
         path = write_d004_acceptance_tolerance_packet(metadata_dir=args.metadata_dir)
+        print(path)
+        return 0
+
+    if args.write_d004_pi_recommendation_packet:
+        path = write_d004_pi_recommendation_packet(metadata_dir=args.metadata_dir)
         print(path)
         return 0
 
@@ -1538,6 +1632,15 @@ def _same_weather_roundtrip_ok(member: WeatherMember) -> bool:
 
 def _all_named_true(values: Mapping[str, Any], names: Sequence[str]) -> bool:
     return all(bool(values.get(name)) for name in names)
+
+
+def _find_by_id(items: object, item_id: str) -> dict[str, Any]:
+    if isinstance(items, Sequence) and not isinstance(items, (str, bytes)):
+        for item in items:
+            if isinstance(item, Mapping) and item.get("id") == item_id:
+                return dict(item)
+    return {}
+
 
 def _safe_ratio(numerator: float, denominator: object) -> float | None:
     if denominator is None:
