@@ -1,0 +1,121 @@
+{
+  "artifact_type": "ev_calendar_mapping_decision_route",
+  "candidate_artifact": "data/metadata/ev_adoption/e2_s2_ev_ic1_candidate_adapter_artifact.json",
+  "decision_id": "EV-CAL-001",
+  "implementation_authorized": false,
+  "non_claims": {
+    "event_or_p_e_analysis_performed": false,
+    "held_out_access": false,
+    "m_sufficiency_claimed": false,
+    "manuscript_numbers_produced": false,
+    "profile_arrays_loaded": false
+  },
+  "options": [
+    {
+      "id": "A",
+      "name": "ordinal_timestep_mapping",
+      "pi_signed": false,
+      "preserves": [
+        "complete_source_order",
+        "serial_dependence",
+        "season_sequence",
+        "time_of_day_sequence",
+        "one_to_one_source_timestep_usage"
+      ],
+      "risks": [
+        "weekday_weekend_labels_not_preserved",
+        "public_holidays_not_preserved",
+        "weaker_alignment_with_2035_calendar_keyed_components"
+      ]
+    },
+    {
+      "id": "B",
+      "name": "weekday_class_calendar_mapping",
+      "pi_signed": false,
+      "preserves": [
+        "target_2035_weekday_weekend_class",
+        "target_2035_timestamp_identity",
+        "local_time_of_day_alignment"
+      ],
+      "risks": [
+        "source_days_may_repeat_or_skip",
+        "source_order_may_break_at_day_boundaries",
+        "dst_holiday_and_energy_policy_required"
+      ]
+    },
+    {
+      "id": "C",
+      "name": "source_year_computational_calendar",
+      "pi_signed": false,
+      "preserves": [
+        "source_ev_temporal_dependence_exactly",
+        "no_ev_remapping",
+        "no_repeated_or_skipped_ev_source_timesteps"
+      ],
+      "risks": [
+        "can_blur_planning_year_vs_computational_calendar",
+        "requires_all_components_to_use_2025_calendar",
+        "may_conflict_with_canonical_2035_ic1_calendar"
+      ]
+    },
+    {
+      "id": "D",
+      "name": "weather_year_matched_calendar",
+      "pi_signed": false,
+      "preserves": [
+        "common_calendar_with_weather_components",
+        "weather_member_calendar_identity"
+      ],
+      "risks": [
+        "may_create_unintended_ev_weather_year_dependence",
+        "same_ev_member_maps_differently_across_weather_years",
+        "requires_weather_member_id_in_mapping_provenance"
+      ]
+    }
+  ],
+  "provenance_fields_required": [
+    "component_id",
+    "library_id",
+    "source_member_id",
+    "batch_seed",
+    "returned_profile_index",
+    "candidate_processed_path",
+    "candidate_processed_sha256_file",
+    "component_stream_id",
+    "calendar_mapping_rule_id",
+    "calendar_mapping_rule_version",
+    "source_calendar_id",
+    "target_calendar_id",
+    "source_timestamp_index_policy",
+    "unmapped_or_repeated_source_timestep_count",
+    "dst_policy",
+    "holiday_policy",
+    "mapping_created_by_code_sha"
+  ],
+  "recommended_next_step": "PI chooses Option A or Option B with exact parameters before Agent C implements mapping code.",
+  "schema_version": 1,
+  "source_calendar": {
+    "calendar_id": "elaad-2025-europe-amsterdam-15min",
+    "n_timesteps": 35040,
+    "timezone": "Europe/Amsterdam",
+    "year": 2025
+  },
+  "target_calendar": {
+    "calendar_id": "planning-2035-europe-amsterdam-15min",
+    "n_timesteps": 35040,
+    "timezone": "Europe/Amsterdam",
+    "year": 2035
+  },
+  "tests_required_before_implementation": [
+    "source_calendar_validation",
+    "target_calendar_validation",
+    "deterministic_mapping_table_generation",
+    "source_index_bounds_and_integer_dtype",
+    "no_demand_value_sorting_or_event_aware_selection",
+    "member_provenance_fields",
+    "annual_energy_preservation_or_signed_correction",
+    "weekday_weekend_season_time_dst_holiday_diagnostics",
+    "unsigned_mapping_rule_rejection",
+    "held_out_or_quarantined_partition_rejection"
+  ]
+}

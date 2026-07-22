@@ -568,6 +568,19 @@ points reviewers to a PI decision packet for the unresolved 2025 ElaadNL
 source-calendar to 2035 planning-calendar mapping, and blocks implementation
 until that deterministic mapping rule is signed.
 
+The EV calendar-mapping decision route keeps `EV-CAL-001` unsigned while making
+the choice auditable before implementation. It compares ordinal timestep,
+weekday-class, source-year computational-calendar, and weather-year matched
+routes for moving complete 2025 ElaadNL candidate members onto the common 2035
+IC-1 calendar. The route specifies required provenance fields for source member,
+batch seed, returned profile index, processed checksum, RNG component stream,
+calendar IDs, mapping-rule ID/version, DST/holiday policy, and repeated or
+omitted source timesteps. It also predeclares implementation tests for complete
+calendar shape, deterministic source-index generation, weekday/season/time
+semantics, energy preservation or signed correction, rejection of unsigned rules,
+and exclusion of held-out/quarantined partitions. No mapping algorithm is
+implemented until the PI signs the rule.
+
 <!-- methods-id: EV-004 -->
 ### EV-004 - Fixed Residential Charge-Point Distribution
 
@@ -1382,5 +1395,3 @@ base policy as well. The sole code-level bootstrap exception is the initial
 `codex/ownership-enforcement` pull request when neither policy file exists on
 its base; after that first merge, the same branch is governed by the base
 policy like every other branch.
-
-

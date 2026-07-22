@@ -814,6 +814,75 @@ def test_committed_ev_ic1_candidate_adapter_artifact_is_candidate_only() -> None
         for batch in library["candidate_batches"]
     )
 
+def test_committed_ev_calendar_mapping_decision_route_requires_pi_signoff() -> None:
+    route = json.loads(
+        Path("data/metadata/ev_adoption/e2_s2_ev_calendar_mapping_decision_route.json").read_text(
+            encoding="utf-8"
+        )
+    )
+
+    assert route["artifact_type"] == "ev_calendar_mapping_decision_route"
+    assert route["decision_id"] == "EV-CAL-001"
+    assert route["implementation_authorized"] is False
+    assert route["source_calendar"] == {
+        "calendar_id": "elaad-2025-europe-amsterdam-15min",
+        "n_timesteps": EXPECTED_FULL_YEAR_STEPS,
+        "timezone": "Europe/Amsterdam",
+        "year": 2025,
+    }
+    assert route["target_calendar"] == {
+        "calendar_id": "planning-2035-europe-amsterdam-15min",
+        "n_timesteps": EXPECTED_FULL_YEAR_STEPS,
+        "timezone": "Europe/Amsterdam",
+        "year": 2035,
+    }
+    assert {option["id"] for option in route["options"]} == {"A", "B", "C", "D"}
+    assert all(option["pi_signed"] is False for option in route["options"])
+    assert route["non_claims"] == {
+        "event_or_p_e_analysis_performed": False,
+        "held_out_access": False,
+        "m_sufficiency_claimed": False,
+        "manuscript_numbers_produced": False,
+        "profile_arrays_loaded": False,
+    }
+    required_provenance = set(route["provenance_fields_required"])
+    assert {
+        "component_id",
+        "library_id",
+        "source_member_id",
+        "batch_seed",
+        "returned_profile_index",
+        "candidate_processed_sha256_file",
+        "component_stream_id",
+        "calendar_mapping_rule_id",
+        "source_calendar_id",
+        "target_calendar_id",
+        "dst_policy",
+        "holiday_policy",
+    } <= required_provenance
+    assert {
+        "source_calendar_validation",
+        "target_calendar_validation",
+        "deterministic_mapping_table_generation",
+        "unsigned_mapping_rule_rejection",
+        "held_out_or_quarantined_partition_rejection",
+    } <= set(route["tests_required_before_implementation"])
+
+
+def test_ev_calendar_mapping_decision_packet_stops_before_implementation() -> None:
+    packet = Path("reports/e2_s2_ev_calendar_mapping_decision_packet.md").read_text(
+        encoding="utf-8"
+    )
+
+    assert "Status: PI decision required before implementation" in packet
+    assert "Option A: Ordinal Timestep Mapping" in packet
+    assert "Option B: Weekday-Class Calendar Mapping" in packet
+    assert "Option C: Source-Year Computational Calendar" in packet
+    assert "Option D: Weather-Year Matched Calendar" in packet
+    assert "Implementation of any calendar mapping rule should stop" in packet
+    assert "does not implement a mapping" in packet
+    assert "estimate `P(E)`" in packet
+
 
 def _adoption_config() -> dict:
     return {
