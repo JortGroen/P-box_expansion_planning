@@ -1,0 +1,34 @@
+{
+  "data_id": "D-004",
+  "selection_id": "d004_alkmaar_berkhout_2014_2023_v1",
+  "decision_id": "D004-SOURCE-MEMBER-ACCEPTANCE",
+  "decided_utc": "2026-07-22T00:00:00Z",
+  "status": "approved_for_internal_first_screen_source_member_use_final_paired_acceptance_pending",
+  "approved_scope": {
+    "source_member_bundle": "accepted for internal first-screen use",
+    "realized_weather_path": "KNMI station 249 Berkhout hourly T and Q for 2014-2023 WEATHER-001 members",
+    "pvgis_role": "qualitative seasonal/peak sanity and provenance/calibration context only",
+    "paired_hp_pv_prerequisite": "exact WEATHER-001 identity and calendar equality"
+  },
+  "exact_weather_identity_fields": [
+    "member_id",
+    "shared_weather_driver_id",
+    "source",
+    "first_timestamp_utc",
+    "last_timestamp_utc",
+    "n_timesteps",
+    "cadence_seconds",
+    "content_sha256"
+  ],
+  "deferred_decisions": [
+    "numerical HP cold-spell tolerances",
+    "final paired HP/PV validation",
+    "net-load/event/P(E)/capacity-screen/manuscript analysis"
+  ],
+  "governing_artifacts": [
+    "reports/e2_s4_d004_pi_recommendation_packet.md",
+    "data/metadata/weather_pv/d004_alkmaar_berkhout_2014_2023_v1_pi_recommendation_packet.json",
+    "data/metadata/weather_pv/d004_alkmaar_berkhout_2014_2023_v1_acceptance_tolerance_packet.json"
+  ],
+  "pi_approval": "PI approved in chat on 2026-07-22"
+}
