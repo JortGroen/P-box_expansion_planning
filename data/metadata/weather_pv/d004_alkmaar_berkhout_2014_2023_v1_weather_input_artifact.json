@@ -1,0 +1,396 @@
+{
+  "accepted_for_source_member_use": true,
+  "artifact_type": "accepted_weather_001_member_index_for_executable_input_gate",
+  "blocked_acceptance_gates": {
+    "cold_spell_acceptance": {
+      "blocked": true,
+      "reason": "numerical HP cold-spell tolerances remain deferred to HP/cold-spell acceptance decision"
+    },
+    "final_paired_hp_pv_acceptance": {
+      "blocked": true,
+      "reason": "requires exact WEATHER-001 identity/calendar equality plus later real paired HP/PV validation"
+    },
+    "integrated_analysis": {
+      "blocked": true,
+      "reason": "no net-load, event detection, P(E), capacity screen, threshold analysis, or manuscript result is authorized"
+    }
+  },
+  "calendar_contract": {
+    "cadence_seconds": 900,
+    "calendar_id_pattern": "d004_alkmaar_berkhout_2014_2023_v1:utc_year_15min_europe_amsterdam:<YEAR>",
+    "calendar_year_basis": "UTC calendar year",
+    "timezone": "Europe/Amsterdam",
+    "years": [
+      2014,
+      2015,
+      2016,
+      2017,
+      2018,
+      2019,
+      2020,
+      2021,
+      2022,
+      2023
+    ]
+  },
+  "created_utc": "2026-07-22T14:19:30+00:00",
+  "data_id": "D-004",
+  "evidence_artifacts": {
+    "member_readiness_diagnostics": "data/metadata/weather_pv/d004_alkmaar_berkhout_2014_2023_v1_member_readiness_diagnostics.json",
+    "source_member_acceptance_decision": "data/metadata/weather_pv/d004_alkmaar_berkhout_2014_2023_v1_source_member_acceptance_decision.json",
+    "weather_input_artifact": "data/metadata/weather_pv/d004_alkmaar_berkhout_2014_2023_v1_weather_input_artifact.json",
+    "weather_member_manifest": "data/metadata/weather_pv/d004_alkmaar_berkhout_2014_2023_v1_weather_members_manifest.json"
+  },
+  "member_construction_rule_id": "D004-MC-001",
+  "members": [
+    {
+      "accepted_for_source_member_use": true,
+      "cadence_seconds": 900,
+      "calendar_id": "d004_alkmaar_berkhout_2014_2023_v1:utc_year_15min_europe_amsterdam:2014",
+      "calendar_year_basis": "UTC calendar year",
+      "cold_spell_acceptance": false,
+      "content_sha256": "105058c59f244a38ea1986c1d0f85225947cee4019de36aa6db5e42a56a15a4c",
+      "final_paired_hp_pv_acceptance": false,
+      "first_timestamp_local": "2014-01-01T01:00:00+01:00",
+      "first_timestamp_utc": "2014-01-01T00:00:00+00:00",
+      "last_timestamp_local": "2015-01-01T00:45:00+01:00",
+      "last_timestamp_utc": "2014-12-31T23:45:00+00:00",
+      "member_id": "d004_alkmaar_berkhout_2014_v1",
+      "metadata_path": "data/metadata/weather_pv/d004_alkmaar_berkhout_2014_2023_v1_member_2014_metadata.json",
+      "n_timesteps": 35040,
+      "shared_weather_driver_id": "d004_alkmaar_berkhout_2014_2023_v1:2014",
+      "source": "knmi_station_249_hourly_q_t_plus_pvgis_sarah3_reference",
+      "source_member_acceptance_id": "D004-SOURCE-MEMBER-ACCEPTANCE",
+      "weather_fields": {
+        "pv_weather_fields.ghi_w_per_m2": {
+          "conversion": "Q * 10000 / 3600 repeated across four quarter-hours",
+          "hourly_energy_preserved": true,
+          "nonnegative": true,
+          "source_column": "KNMI Q"
+        },
+        "temperature_c": {
+          "conversion": "T / 10",
+          "finite": true,
+          "source_column": "KNMI T"
+        }
+      },
+      "year": 2014
+    },
+    {
+      "accepted_for_source_member_use": true,
+      "cadence_seconds": 900,
+      "calendar_id": "d004_alkmaar_berkhout_2014_2023_v1:utc_year_15min_europe_amsterdam:2015",
+      "calendar_year_basis": "UTC calendar year",
+      "cold_spell_acceptance": false,
+      "content_sha256": "d27d4e3c47550f851ed3b1dedeb8f497c165e0678735758b070e0a39be44e258",
+      "final_paired_hp_pv_acceptance": false,
+      "first_timestamp_local": "2015-01-01T01:00:00+01:00",
+      "first_timestamp_utc": "2015-01-01T00:00:00+00:00",
+      "last_timestamp_local": "2016-01-01T00:45:00+01:00",
+      "last_timestamp_utc": "2015-12-31T23:45:00+00:00",
+      "member_id": "d004_alkmaar_berkhout_2015_v1",
+      "metadata_path": "data/metadata/weather_pv/d004_alkmaar_berkhout_2014_2023_v1_member_2015_metadata.json",
+      "n_timesteps": 35040,
+      "shared_weather_driver_id": "d004_alkmaar_berkhout_2014_2023_v1:2015",
+      "source": "knmi_station_249_hourly_q_t_plus_pvgis_sarah3_reference",
+      "source_member_acceptance_id": "D004-SOURCE-MEMBER-ACCEPTANCE",
+      "weather_fields": {
+        "pv_weather_fields.ghi_w_per_m2": {
+          "conversion": "Q * 10000 / 3600 repeated across four quarter-hours",
+          "hourly_energy_preserved": true,
+          "nonnegative": true,
+          "source_column": "KNMI Q"
+        },
+        "temperature_c": {
+          "conversion": "T / 10",
+          "finite": true,
+          "source_column": "KNMI T"
+        }
+      },
+      "year": 2015
+    },
+    {
+      "accepted_for_source_member_use": true,
+      "cadence_seconds": 900,
+      "calendar_id": "d004_alkmaar_berkhout_2014_2023_v1:utc_year_15min_europe_amsterdam:2016",
+      "calendar_year_basis": "UTC calendar year",
+      "cold_spell_acceptance": false,
+      "content_sha256": "e9558f44c4420df0f96ce5a92cae4116bd9a193bd6a0921417c7715604b1b2d8",
+      "final_paired_hp_pv_acceptance": false,
+      "first_timestamp_local": "2016-01-01T01:00:00+01:00",
+      "first_timestamp_utc": "2016-01-01T00:00:00+00:00",
+      "last_timestamp_local": "2017-01-01T00:45:00+01:00",
+      "last_timestamp_utc": "2016-12-31T23:45:00+00:00",
+      "member_id": "d004_alkmaar_berkhout_2016_v1",
+      "metadata_path": "data/metadata/weather_pv/d004_alkmaar_berkhout_2014_2023_v1_member_2016_metadata.json",
+      "n_timesteps": 35136,
+      "shared_weather_driver_id": "d004_alkmaar_berkhout_2014_2023_v1:2016",
+      "source": "knmi_station_249_hourly_q_t_plus_pvgis_sarah3_reference",
+      "source_member_acceptance_id": "D004-SOURCE-MEMBER-ACCEPTANCE",
+      "weather_fields": {
+        "pv_weather_fields.ghi_w_per_m2": {
+          "conversion": "Q * 10000 / 3600 repeated across four quarter-hours",
+          "hourly_energy_preserved": true,
+          "nonnegative": true,
+          "source_column": "KNMI Q"
+        },
+        "temperature_c": {
+          "conversion": "T / 10",
+          "finite": true,
+          "source_column": "KNMI T"
+        }
+      },
+      "year": 2016
+    },
+    {
+      "accepted_for_source_member_use": true,
+      "cadence_seconds": 900,
+      "calendar_id": "d004_alkmaar_berkhout_2014_2023_v1:utc_year_15min_europe_amsterdam:2017",
+      "calendar_year_basis": "UTC calendar year",
+      "cold_spell_acceptance": false,
+      "content_sha256": "ba773756f4f3472fbb88e9711040fdf00c2bb0657b98545cd70c164d4b08aed3",
+      "final_paired_hp_pv_acceptance": false,
+      "first_timestamp_local": "2017-01-01T01:00:00+01:00",
+      "first_timestamp_utc": "2017-01-01T00:00:00+00:00",
+      "last_timestamp_local": "2018-01-01T00:45:00+01:00",
+      "last_timestamp_utc": "2017-12-31T23:45:00+00:00",
+      "member_id": "d004_alkmaar_berkhout_2017_v1",
+      "metadata_path": "data/metadata/weather_pv/d004_alkmaar_berkhout_2014_2023_v1_member_2017_metadata.json",
+      "n_timesteps": 35040,
+      "shared_weather_driver_id": "d004_alkmaar_berkhout_2014_2023_v1:2017",
+      "source": "knmi_station_249_hourly_q_t_plus_pvgis_sarah3_reference",
+      "source_member_acceptance_id": "D004-SOURCE-MEMBER-ACCEPTANCE",
+      "weather_fields": {
+        "pv_weather_fields.ghi_w_per_m2": {
+          "conversion": "Q * 10000 / 3600 repeated across four quarter-hours",
+          "hourly_energy_preserved": true,
+          "nonnegative": true,
+          "source_column": "KNMI Q"
+        },
+        "temperature_c": {
+          "conversion": "T / 10",
+          "finite": true,
+          "source_column": "KNMI T"
+        }
+      },
+      "year": 2017
+    },
+    {
+      "accepted_for_source_member_use": true,
+      "cadence_seconds": 900,
+      "calendar_id": "d004_alkmaar_berkhout_2014_2023_v1:utc_year_15min_europe_amsterdam:2018",
+      "calendar_year_basis": "UTC calendar year",
+      "cold_spell_acceptance": false,
+      "content_sha256": "1d38ffc3c72324fb6e33b2a024811352ef35d5053f53581adb480fd5d0b847f8",
+      "final_paired_hp_pv_acceptance": false,
+      "first_timestamp_local": "2018-01-01T01:00:00+01:00",
+      "first_timestamp_utc": "2018-01-01T00:00:00+00:00",
+      "last_timestamp_local": "2019-01-01T00:45:00+01:00",
+      "last_timestamp_utc": "2018-12-31T23:45:00+00:00",
+      "member_id": "d004_alkmaar_berkhout_2018_v1",
+      "metadata_path": "data/metadata/weather_pv/d004_alkmaar_berkhout_2014_2023_v1_member_2018_metadata.json",
+      "n_timesteps": 35040,
+      "shared_weather_driver_id": "d004_alkmaar_berkhout_2014_2023_v1:2018",
+      "source": "knmi_station_249_hourly_q_t_plus_pvgis_sarah3_reference",
+      "source_member_acceptance_id": "D004-SOURCE-MEMBER-ACCEPTANCE",
+      "weather_fields": {
+        "pv_weather_fields.ghi_w_per_m2": {
+          "conversion": "Q * 10000 / 3600 repeated across four quarter-hours",
+          "hourly_energy_preserved": true,
+          "nonnegative": true,
+          "source_column": "KNMI Q"
+        },
+        "temperature_c": {
+          "conversion": "T / 10",
+          "finite": true,
+          "source_column": "KNMI T"
+        }
+      },
+      "year": 2018
+    },
+    {
+      "accepted_for_source_member_use": true,
+      "cadence_seconds": 900,
+      "calendar_id": "d004_alkmaar_berkhout_2014_2023_v1:utc_year_15min_europe_amsterdam:2019",
+      "calendar_year_basis": "UTC calendar year",
+      "cold_spell_acceptance": false,
+      "content_sha256": "43e2c64633ab0e0eecf3dd69f0553b27019ad32a1f69ee621a4bb9d39dd73e35",
+      "final_paired_hp_pv_acceptance": false,
+      "first_timestamp_local": "2019-01-01T01:00:00+01:00",
+      "first_timestamp_utc": "2019-01-01T00:00:00+00:00",
+      "last_timestamp_local": "2020-01-01T00:45:00+01:00",
+      "last_timestamp_utc": "2019-12-31T23:45:00+00:00",
+      "member_id": "d004_alkmaar_berkhout_2019_v1",
+      "metadata_path": "data/metadata/weather_pv/d004_alkmaar_berkhout_2014_2023_v1_member_2019_metadata.json",
+      "n_timesteps": 35040,
+      "shared_weather_driver_id": "d004_alkmaar_berkhout_2014_2023_v1:2019",
+      "source": "knmi_station_249_hourly_q_t_plus_pvgis_sarah3_reference",
+      "source_member_acceptance_id": "D004-SOURCE-MEMBER-ACCEPTANCE",
+      "weather_fields": {
+        "pv_weather_fields.ghi_w_per_m2": {
+          "conversion": "Q * 10000 / 3600 repeated across four quarter-hours",
+          "hourly_energy_preserved": true,
+          "nonnegative": true,
+          "source_column": "KNMI Q"
+        },
+        "temperature_c": {
+          "conversion": "T / 10",
+          "finite": true,
+          "source_column": "KNMI T"
+        }
+      },
+      "year": 2019
+    },
+    {
+      "accepted_for_source_member_use": true,
+      "cadence_seconds": 900,
+      "calendar_id": "d004_alkmaar_berkhout_2014_2023_v1:utc_year_15min_europe_amsterdam:2020",
+      "calendar_year_basis": "UTC calendar year",
+      "cold_spell_acceptance": false,
+      "content_sha256": "3e29273eec63502f2a67ba1f5a3032ae59df5b791447d1be396ffa791568e7d5",
+      "final_paired_hp_pv_acceptance": false,
+      "first_timestamp_local": "2020-01-01T01:00:00+01:00",
+      "first_timestamp_utc": "2020-01-01T00:00:00+00:00",
+      "last_timestamp_local": "2021-01-01T00:45:00+01:00",
+      "last_timestamp_utc": "2020-12-31T23:45:00+00:00",
+      "member_id": "d004_alkmaar_berkhout_2020_v1",
+      "metadata_path": "data/metadata/weather_pv/d004_alkmaar_berkhout_2014_2023_v1_member_2020_metadata.json",
+      "n_timesteps": 35136,
+      "shared_weather_driver_id": "d004_alkmaar_berkhout_2014_2023_v1:2020",
+      "source": "knmi_station_249_hourly_q_t_plus_pvgis_sarah3_reference",
+      "source_member_acceptance_id": "D004-SOURCE-MEMBER-ACCEPTANCE",
+      "weather_fields": {
+        "pv_weather_fields.ghi_w_per_m2": {
+          "conversion": "Q * 10000 / 3600 repeated across four quarter-hours",
+          "hourly_energy_preserved": true,
+          "nonnegative": true,
+          "source_column": "KNMI Q"
+        },
+        "temperature_c": {
+          "conversion": "T / 10",
+          "finite": true,
+          "source_column": "KNMI T"
+        }
+      },
+      "year": 2020
+    },
+    {
+      "accepted_for_source_member_use": true,
+      "cadence_seconds": 900,
+      "calendar_id": "d004_alkmaar_berkhout_2014_2023_v1:utc_year_15min_europe_amsterdam:2021",
+      "calendar_year_basis": "UTC calendar year",
+      "cold_spell_acceptance": false,
+      "content_sha256": "0eecf86b4667573f4d07bcc58e39ad85c8a4ed10e7a53f89b766f89efb434423",
+      "final_paired_hp_pv_acceptance": false,
+      "first_timestamp_local": "2021-01-01T01:00:00+01:00",
+      "first_timestamp_utc": "2021-01-01T00:00:00+00:00",
+      "last_timestamp_local": "2022-01-01T00:45:00+01:00",
+      "last_timestamp_utc": "2021-12-31T23:45:00+00:00",
+      "member_id": "d004_alkmaar_berkhout_2021_v1",
+      "metadata_path": "data/metadata/weather_pv/d004_alkmaar_berkhout_2014_2023_v1_member_2021_metadata.json",
+      "n_timesteps": 35040,
+      "shared_weather_driver_id": "d004_alkmaar_berkhout_2014_2023_v1:2021",
+      "source": "knmi_station_249_hourly_q_t_plus_pvgis_sarah3_reference",
+      "source_member_acceptance_id": "D004-SOURCE-MEMBER-ACCEPTANCE",
+      "weather_fields": {
+        "pv_weather_fields.ghi_w_per_m2": {
+          "conversion": "Q * 10000 / 3600 repeated across four quarter-hours",
+          "hourly_energy_preserved": true,
+          "nonnegative": true,
+          "source_column": "KNMI Q"
+        },
+        "temperature_c": {
+          "conversion": "T / 10",
+          "finite": true,
+          "source_column": "KNMI T"
+        }
+      },
+      "year": 2021
+    },
+    {
+      "accepted_for_source_member_use": true,
+      "cadence_seconds": 900,
+      "calendar_id": "d004_alkmaar_berkhout_2014_2023_v1:utc_year_15min_europe_amsterdam:2022",
+      "calendar_year_basis": "UTC calendar year",
+      "cold_spell_acceptance": false,
+      "content_sha256": "da3aa67bc161d1633740d6be6897dcde22a854a3a842e92fb03b01e3a7626997",
+      "final_paired_hp_pv_acceptance": false,
+      "first_timestamp_local": "2022-01-01T01:00:00+01:00",
+      "first_timestamp_utc": "2022-01-01T00:00:00+00:00",
+      "last_timestamp_local": "2023-01-01T00:45:00+01:00",
+      "last_timestamp_utc": "2022-12-31T23:45:00+00:00",
+      "member_id": "d004_alkmaar_berkhout_2022_v1",
+      "metadata_path": "data/metadata/weather_pv/d004_alkmaar_berkhout_2014_2023_v1_member_2022_metadata.json",
+      "n_timesteps": 35040,
+      "shared_weather_driver_id": "d004_alkmaar_berkhout_2014_2023_v1:2022",
+      "source": "knmi_station_249_hourly_q_t_plus_pvgis_sarah3_reference",
+      "source_member_acceptance_id": "D004-SOURCE-MEMBER-ACCEPTANCE",
+      "weather_fields": {
+        "pv_weather_fields.ghi_w_per_m2": {
+          "conversion": "Q * 10000 / 3600 repeated across four quarter-hours",
+          "hourly_energy_preserved": true,
+          "nonnegative": true,
+          "source_column": "KNMI Q"
+        },
+        "temperature_c": {
+          "conversion": "T / 10",
+          "finite": true,
+          "source_column": "KNMI T"
+        }
+      },
+      "year": 2022
+    },
+    {
+      "accepted_for_source_member_use": true,
+      "cadence_seconds": 900,
+      "calendar_id": "d004_alkmaar_berkhout_2014_2023_v1:utc_year_15min_europe_amsterdam:2023",
+      "calendar_year_basis": "UTC calendar year",
+      "cold_spell_acceptance": false,
+      "content_sha256": "afc27bb66be1e19f29df0f03eb915cc75c947fb66dec54491417ddf17922a304",
+      "final_paired_hp_pv_acceptance": false,
+      "first_timestamp_local": "2023-01-01T01:00:00+01:00",
+      "first_timestamp_utc": "2023-01-01T00:00:00+00:00",
+      "last_timestamp_local": "2024-01-01T00:45:00+01:00",
+      "last_timestamp_utc": "2023-12-31T23:45:00+00:00",
+      "member_id": "d004_alkmaar_berkhout_2023_v1",
+      "metadata_path": "data/metadata/weather_pv/d004_alkmaar_berkhout_2014_2023_v1_member_2023_metadata.json",
+      "n_timesteps": 35040,
+      "shared_weather_driver_id": "d004_alkmaar_berkhout_2014_2023_v1:2023",
+      "source": "knmi_station_249_hourly_q_t_plus_pvgis_sarah3_reference",
+      "source_member_acceptance_id": "D004-SOURCE-MEMBER-ACCEPTANCE",
+      "weather_fields": {
+        "pv_weather_fields.ghi_w_per_m2": {
+          "conversion": "Q * 10000 / 3600 repeated across four quarter-hours",
+          "hourly_energy_preserved": true,
+          "nonnegative": true,
+          "source_column": "KNMI Q"
+        },
+        "temperature_c": {
+          "conversion": "T / 10",
+          "finite": true,
+          "source_column": "KNMI T"
+        }
+      },
+      "year": 2023
+    }
+  ],
+  "pvgis_realized_weather_path": false,
+  "pvgis_role": "qualitative seasonal/peak sanity and provenance/calibration context only",
+  "ready_for_executable_input_gate": true,
+  "realized_weather_path": "KNMI station 249 Berkhout hourly T and Q expanded under D004-MC-001",
+  "required_identity_fields_for_hp_pv_pairing": [
+    "member_id",
+    "shared_weather_driver_id",
+    "source",
+    "first_timestamp_utc",
+    "last_timestamp_utc",
+    "n_timesteps",
+    "cadence_seconds",
+    "content_sha256"
+  ],
+  "selection_id": "d004_alkmaar_berkhout_2014_2023_v1",
+  "source_member_acceptance_id": "D004-SOURCE-MEMBER-ACCEPTANCE",
+  "source_member_acceptance_status": "approved_for_internal_first_screen_source_member_use_final_paired_acceptance_pending",
+  "status": "accepted_for_source_member_use_final_paired_cold_spell_pending",
+  "weather_contract": "WEATHER-001"
+}

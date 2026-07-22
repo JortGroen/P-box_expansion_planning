@@ -50,6 +50,9 @@ D004_ACCEPTANCE_PACKET_NAME = f"{D004_SELECTION_ID}_acceptance_packet.json"
 D004_PAIRED_WEATHER_ACCEPTANCE_SCAFFOLD_NAME = f"{D004_SELECTION_ID}_paired_weather_acceptance_scaffold.json"
 D004_ACCEPTANCE_TOLERANCE_PACKET_NAME = f"{D004_SELECTION_ID}_acceptance_tolerance_packet.json"
 D004_PI_RECOMMENDATION_PACKET_NAME = f"{D004_SELECTION_ID}_pi_recommendation_packet.json"
+D004_SOURCE_MEMBER_ACCEPTANCE_DECISION_NAME = f"{D004_SELECTION_ID}_source_member_acceptance_decision.json"
+D004_WEATHER_INPUT_ARTIFACT_NAME = f"{D004_SELECTION_ID}_weather_input_artifact.json"
+D004_SOURCE_MEMBER_ACCEPTANCE_ID = "D004-SOURCE-MEMBER-ACCEPTANCE"
 
 
 @dataclass(frozen=True)
@@ -822,6 +825,132 @@ def write_d004_pi_recommendation_packet(*, metadata_dir: str | Path = "data/meta
     )
 
 
+def build_d004_weather_input_artifact(*, metadata_dir: str | Path = "data/metadata") -> dict[str, Any]:
+    """Expose accepted D-004 WEATHER-001 member identities for executable-input gates."""
+    metadata_root = Path(metadata_dir)
+    weather_dir = metadata_root / "weather_pv"
+    decision = _load_json(weather_dir / D004_SOURCE_MEMBER_ACCEPTANCE_DECISION_NAME)
+    manifest = _load_json(weather_dir / D004_MEMBER_MANIFEST_NAME)
+    readiness = _load_json(weather_dir / D004_MEMBER_READINESS_DIAGNOSTICS_NAME)
+    members = manifest.get("members", [])
+    if not isinstance(members, list):
+        raise ValueError("D-004 member manifest lacks members")
+    checks_by_year = {
+        int(item["year"]): item
+        for item in readiness.get("member_checks", [])
+        if isinstance(item, Mapping) and "year" in item
+    }
+    accepted_members = []
+    for item in members:
+        if not isinstance(item, Mapping):
+            raise ValueError("D-004 member manifest entries must be mappings")
+        year = int(item["year"])
+        check = checks_by_year.get(year, {})
+        accepted_members.append(
+            {
+                "year": year,
+                "member_id": item.get("member_id"),
+                "shared_weather_driver_id": item.get("shared_weather_driver_id"),
+                "source": D004_SOURCE,
+                "content_sha256": item.get("content_sha256"),
+                "calendar_id": f"{D004_SELECTION_ID}:utc_year_15min_europe_amsterdam:{year}",
+                "calendar_year_basis": "UTC calendar year",
+                "cadence_seconds": item.get("cadence_seconds", check.get("cadence_seconds")),
+                "n_timesteps": item.get("n_timesteps"),
+                "first_timestamp_utc": item.get("first_timestamp_utc"),
+                "last_timestamp_utc": item.get("last_timestamp_utc"),
+                "first_timestamp_local": check.get("first_timestamp_local"),
+                "last_timestamp_local": check.get("last_timestamp_local"),
+                "metadata_path": item.get("metadata_path"),
+                "weather_fields": {
+                    "temperature_c": {
+                        "source_column": "KNMI T",
+                        "conversion": "T / 10",
+                        "finite": check.get("temperature_finite"),
+                    },
+                    "pv_weather_fields.ghi_w_per_m2": {
+                        "source_column": "KNMI Q",
+                        "conversion": "Q * 10000 / 3600 repeated across four quarter-hours",
+                        "nonnegative": check.get("ghi_nonnegative"),
+                        "hourly_energy_preserved": check.get("energy_preservation_ok"),
+                    },
+                },
+                "source_member_acceptance_id": decision.get("decision_id"),
+                "accepted_for_source_member_use": decision.get("decision_id") == D004_SOURCE_MEMBER_ACCEPTANCE_ID,
+                "final_paired_hp_pv_acceptance": False,
+                "cold_spell_acceptance": False,
+            }
+        )
+    exact_identity_fields = decision.get("exact_weather_identity_fields", [])
+    return {
+        "data_id": "D-004",
+        "selection_id": D004_SELECTION_ID,
+        "artifact_type": "accepted_weather_001_member_index_for_executable_input_gate",
+        "created_utc": _now_utc_iso(),
+        "status": "accepted_for_source_member_use_final_paired_cold_spell_pending",
+        "source_member_acceptance_id": decision.get("decision_id"),
+        "source_member_acceptance_status": decision.get("status"),
+        "weather_contract": "WEATHER-001",
+        "member_construction_rule_id": D004_MEMBER_CONSTRUCTION_RULE_ID,
+        "realized_weather_path": "KNMI station 249 Berkhout hourly T and Q expanded under D004-MC-001",
+        "pvgis_role": "qualitative seasonal/peak sanity and provenance/calibration context only",
+        "pvgis_realized_weather_path": False,
+        "accepted_for_source_member_use": decision.get("decision_id") == D004_SOURCE_MEMBER_ACCEPTANCE_ID,
+        "ready_for_executable_input_gate": True,
+        "required_identity_fields_for_hp_pv_pairing": exact_identity_fields,
+        "calendar_contract": {
+            "calendar_id_pattern": f"{D004_SELECTION_ID}:utc_year_15min_europe_amsterdam:<YEAR>",
+            "calendar_year_basis": "UTC calendar year",
+            "timezone": LOCAL_TIMEZONE,
+            "cadence_seconds": 900,
+            "years": list(D004_YEARS),
+        },
+        "members": accepted_members,
+        "blocked_acceptance_gates": {
+            "final_paired_hp_pv_acceptance": {
+                "blocked": True,
+                "reason": "requires exact WEATHER-001 identity/calendar equality plus later real paired HP/PV validation",
+            },
+            "cold_spell_acceptance": {
+                "blocked": True,
+                "reason": "numerical HP cold-spell tolerances remain deferred to HP/cold-spell acceptance decision",
+            },
+            "integrated_analysis": {
+                "blocked": True,
+                "reason": "no net-load, event detection, P(E), capacity screen, threshold analysis, or manuscript result is authorized",
+            },
+        },
+        "evidence_artifacts": {
+            "source_member_acceptance_decision": f"data/metadata/weather_pv/{D004_SOURCE_MEMBER_ACCEPTANCE_DECISION_NAME}",
+            "weather_member_manifest": f"data/metadata/weather_pv/{D004_MEMBER_MANIFEST_NAME}",
+            "member_readiness_diagnostics": f"data/metadata/weather_pv/{D004_MEMBER_READINESS_DIAGNOSTICS_NAME}",
+            "weather_input_artifact": f"data/metadata/weather_pv/{D004_WEATHER_INPUT_ARTIFACT_NAME}",
+        },
+    }
+
+
+def write_d004_weather_input_artifact(*, metadata_dir: str | Path = "data/metadata") -> Path:
+    """Write the accepted D-004 WEATHER-001 member index for executable-input gates."""
+    directory = Path(metadata_dir) / "weather_pv"
+    directory.mkdir(parents=True, exist_ok=True)
+    return _write_json(
+        directory / D004_WEATHER_INPUT_ARTIFACT_NAME,
+        build_d004_weather_input_artifact(metadata_dir=metadata_dir),
+    )
+
+
+def load_d004_weather_input_artifact(*, metadata_dir: str | Path = "data/metadata") -> dict[str, Any]:
+    """Load and validate the accepted D-004 WEATHER-001 member index."""
+    payload = _load_json(Path(metadata_dir) / "weather_pv" / D004_WEATHER_INPUT_ARTIFACT_NAME)
+    if payload.get("source_member_acceptance_id") != D004_SOURCE_MEMBER_ACCEPTANCE_ID:
+        raise ValueError("D-004 weather input artifact lacks the approved source/member decision ID")
+    if payload.get("pvgis_realized_weather_path") is not False:
+        raise ValueError("D-004 weather input artifact must keep PVGIS out of the realized weather path")
+    if payload.get("blocked_acceptance_gates", {}).get("final_paired_hp_pv_acceptance", {}).get("blocked") is not True:
+        raise ValueError("D-004 weather input artifact must not imply final paired HP/PV acceptance")
+    return payload
+
+
 def write_retrieval_plan(metadata_dir: str | Path = "data/metadata") -> Path:
     """Write the D-004 weather/PV retrieval protocol without downloading data."""
     directory = Path(metadata_dir) / "weather_pv"
@@ -1116,6 +1245,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--write-d004-paired-weather-acceptance-scaffold", action="store_true")
     parser.add_argument("--write-d004-acceptance-tolerance-packet", action="store_true")
     parser.add_argument("--write-d004-pi-recommendation-packet", action="store_true")
+    parser.add_argument("--write-d004-weather-input-artifact", action="store_true")
     parser.add_argument("--root-dir", default=".")
     args = parser.parse_args(argv)
 
@@ -1175,6 +1305,11 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     if args.write_d004_pi_recommendation_packet:
         path = write_d004_pi_recommendation_packet(metadata_dir=args.metadata_dir)
+        print(path)
+        return 0
+
+    if args.write_d004_weather_input_artifact:
+        path = write_d004_weather_input_artifact(metadata_dir=args.metadata_dir)
         print(path)
         return 0
 
