@@ -28,6 +28,7 @@ ComponentKind = Literal[
     "other",
 ]
 ComponentArtifactStatus = Literal["accepted", "scaffold", "synthetic_fixture"]
+ExecutableInputArtifactStatus = Literal["accepted", "unsigned", "scaffold", "synthetic_fixture"]
 
 
 REQUIRED_INTEGRATION_COMPONENT_KINDS: tuple[ComponentKind, ...] = (
@@ -276,6 +277,107 @@ class ComponentAdapterSkeleton:
             "metadata": dict(self.metadata),
         }
 
+
+@dataclass(frozen=True)
+class ExecutableInputArtifact:
+    """Metadata-only gate record for a future real IC-1 executable input.
+
+    The record intentionally carries no trajectory arrays. It answers whether a
+    component family is signed/versioned enough for an intended integration use
+    before IC-1 is allowed to load real component outputs.
+    """
+
+    artifact_id: str
+    kind: ComponentKind
+    artifact_status: ExecutableInputArtifactStatus
+    version_id: str
+    source_id: str
+    member_id: str
+    calendar_id: str
+    node_ids: tuple[str, ...]
+    signed_register_ids: tuple[str, ...] = ()
+    blocking_register_ids: tuple[str, ...] = ()
+    timestep_seconds: int = 900
+    shared_weather_driver_id: str | None = None
+    manifest_path: str | None = None
+    provenance: Mapping[str, object] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        artifact_id = _require_nonempty(self.artifact_id, name="artifact_id")
+        if self.kind not in _VALID_COMPONENT_KINDS:
+            raise ValueError("kind must be a valid net-load component kind")
+        if self.artifact_status not in _VALID_EXECUTABLE_INPUT_STATUSES:
+            raise ValueError("artifact_status must be accepted, unsigned, scaffold, or synthetic_fixture")
+        version_id = _require_nonempty(self.version_id, name="version_id")
+        source_id = _require_nonempty(self.source_id, name="source_id")
+        member_id = _require_nonempty(self.member_id, name="member_id")
+        calendar_id = _require_nonempty(self.calendar_id, name="calendar_id")
+        if not self.node_ids:
+            raise ValueError("node_ids must not be empty")
+        node_ids = tuple(_require_nonempty(node_id, name="node_id") for node_id in self.node_ids)
+        if len(set(node_ids)) != len(node_ids):
+            raise ValueError("node_ids must not contain duplicates")
+        if (
+            isinstance(self.timestep_seconds, bool)
+            or not isinstance(self.timestep_seconds, int)
+            or self.timestep_seconds != 900
+        ):
+            raise ValueError("timestep_seconds must be the 900-second IC-1 cadence")
+        if self.shared_weather_driver_id is not None:
+            _require_nonempty(self.shared_weather_driver_id, name="shared_weather_driver_id")
+        if self.kind in {"hp", "pv"} and self.shared_weather_driver_id is None:
+            raise ValueError("weather-dependent executable inputs require shared_weather_driver_id")
+        signed_register_ids = tuple(
+            _require_nonempty(item, name="signed_register_id")
+            for item in self.signed_register_ids
+        )
+        blocking_register_ids = tuple(
+            _require_nonempty(item, name="blocking_register_id")
+            for item in self.blocking_register_ids
+        )
+        if self.artifact_status == "accepted":
+            if not signed_register_ids:
+                raise ValueError("accepted executable inputs must cite signed_register_ids")
+            if blocking_register_ids:
+                raise ValueError("accepted executable inputs must not list blocking_register_ids")
+        elif not blocking_register_ids:
+            raise ValueError("non-accepted executable inputs must list blocking_register_ids")
+        if self.manifest_path is None:
+            if self.artifact_status == "accepted":
+                raise ValueError("accepted executable inputs must cite manifest_path")
+        else:
+            _require_nonempty(self.manifest_path, name="manifest_path")
+        _validate_nonempty_mapping_values(self.provenance, name="provenance")
+        object.__setattr__(self, "artifact_id", artifact_id)
+        object.__setattr__(self, "version_id", version_id)
+        object.__setattr__(self, "source_id", source_id)
+        object.__setattr__(self, "member_id", member_id)
+        object.__setattr__(self, "calendar_id", calendar_id)
+        object.__setattr__(self, "node_ids", node_ids)
+        object.__setattr__(self, "signed_register_ids", signed_register_ids)
+        object.__setattr__(self, "blocking_register_ids", blocking_register_ids)
+        object.__setattr__(self, "timestep_seconds", int(self.timestep_seconds))
+        object.__setattr__(self, "provenance", MappingProxyType(dict(self.provenance)))
+
+    def manifest_record(self) -> dict[str, object]:
+        """Return a JSON-manifestable executable-input gate record."""
+
+        return {
+            "artifact_id": self.artifact_id,
+            "kind": self.kind,
+            "artifact_status": self.artifact_status,
+            "version_id": self.version_id,
+            "source_id": self.source_id,
+            "member_id": self.member_id,
+            "calendar_id": self.calendar_id,
+            "node_ids": self.node_ids,
+            "signed_register_ids": self.signed_register_ids,
+            "blocking_register_ids": self.blocking_register_ids,
+            "timestep_seconds": self.timestep_seconds,
+            "shared_weather_driver_id": self.shared_weather_driver_id,
+            "manifest_path": self.manifest_path,
+            "provenance": dict(self.provenance),
+        }
 
 @dataclass(frozen=True)
 class AcceptedComponentAdapterArtifact:
@@ -1083,6 +1185,91 @@ def prepare_loading_input_from_registry_outputs(
         metadata=readiness_metadata,
     )
 
+def validate_executable_input_gate(
+    artifacts: Sequence[ExecutableInputArtifact],
+    *,
+    required_component_kinds: Sequence[ComponentKind] = REQUIRED_INTEGRATION_COMPONENT_KINDS,
+    intended_use: str = "ic1_real_component_integration",
+) -> dict[str, object]:
+    """Validate that real-component inputs are signed enough before execution.
+
+    This gate is metadata-only. It does not load arrays, assemble net load, run
+    IC-2, or classify events; it prevents those later steps from starting when
+    a required component family is still unsigned or only scaffolded.
+    """
+
+    if not artifacts:
+        raise ValueError("executable input artifacts must not be empty")
+    intended_use = _require_nonempty(intended_use, name="intended_use")
+    required = tuple(required_component_kinds)
+    if not required:
+        raise ValueError("required_component_kinds must not be empty")
+    for kind in required:
+        if kind not in _VALID_COMPONENT_KINDS:
+            raise ValueError("required_component_kinds must contain valid component kinds")
+
+    by_kind: dict[ComponentKind, ExecutableInputArtifact] = {}
+    for artifact in artifacts:
+        if artifact.kind in by_kind:
+            raise ValueError("executable input artifact kinds must be unique")
+        by_kind[artifact.kind] = artifact
+
+    missing = [kind for kind in required if kind not in by_kind]
+    if missing:
+        raise ValueError(f"missing executable input artifact kind(s): {', '.join(missing)}")
+
+    required_artifacts = tuple(by_kind[kind] for kind in required)
+    calendar_ids = {artifact.calendar_id for artifact in required_artifacts}
+    if len(calendar_ids) != 1:
+        raise ValueError("executable input artifacts must share one calendar_id")
+    cadence_values = {artifact.timestep_seconds for artifact in required_artifacts}
+    if cadence_values != {900}:
+        raise ValueError("executable input artifacts must use the 900-second IC-1 cadence")
+
+    weather_ids = {
+        by_kind[kind].shared_weather_driver_id
+        for kind in ("hp", "pv")
+        if kind in by_kind
+    }
+    # WEATHER-001/ALEA-001 pairing must be proven at the executable-input gate;
+    # otherwise later manifests could combine HP and PV from different weather.
+    if weather_ids and (None in weather_ids or len(weather_ids) != 1):
+        raise ValueError("HP and PV executable input artifacts must share one weather driver")
+
+    blockers: dict[str, tuple[str, ...]] = {}
+    for artifact in required_artifacts:
+        if artifact.artifact_status != "accepted":
+            blockers[artifact.kind] = artifact.blocking_register_ids
+    if blockers:
+        details = "; ".join(
+            f"{kind}: {', '.join(ids)}"
+            for kind, ids in sorted(blockers.items())
+        )
+        raise ValueError(
+            f"executable inputs are not signed enough for {intended_use}; "
+            f"blocking register/decision ID(s): {details}"
+        )
+
+    return {
+        "intended_use": intended_use,
+        "ready_for_execution": True,
+        "required_component_kinds": tuple(required),
+        "present_component_kinds": tuple(sorted(by_kind)),
+        "calendar_id": next(iter(calendar_ids)),
+        "timestep_seconds": 900,
+        "shared_weather_driver_id": next(iter(weather_ids)) if weather_ids else None,
+        "signed_register_ids_by_kind": {
+            artifact.kind: artifact.signed_register_ids
+            for artifact in required_artifacts
+        },
+        "manifest_paths_by_kind": {
+            artifact.kind: artifact.manifest_path
+            for artifact in required_artifacts
+            if artifact.manifest_path is not None
+        },
+        "artifacts": [artifact.manifest_record() for artifact in required_artifacts],
+    }
+
 def validate_real_component_adapter_readiness(
     adapter_outputs: Sequence[ComponentAdapterOutput],
     *,
@@ -1317,6 +1504,7 @@ def validate_net_load_result(result: NetLoadResult) -> None:
 
 
 _VALID_COMPONENT_KINDS = frozenset(ComponentKind.__args__)
+_VALID_EXECUTABLE_INPUT_STATUSES = frozenset(ExecutableInputArtifactStatus.__args__)
 
 
 def _skeletons_by_kind(registry: ComponentAdapterRegistry) -> dict[ComponentKind, ComponentAdapterSkeleton]:
