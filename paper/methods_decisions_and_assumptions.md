@@ -1477,6 +1477,11 @@ design instead of treating 22 kW as the only current-fleet representative
 capacity.
 
 
+
+<!-- methods-id: E2-S3-HP-LOCAL-SCALING-SOURCE-USE-PROPOSAL -->
+### E2-S3-HP-LOCAL-SCALING-SOURCE-USE-PROPOSAL - HP-001 D-013 Local Scaling Source-Use Proposal
+
+**Status: Proposed packet; values unsigned.** The D-013 local scaling source-use proposal uses the retrieved CBS/PBL schema evidence to define a candidate route for later HP-001 annual thermal scaling, without making any value executable. The proposed PBL fields are `H23_Vraag_RV_w` for residential space heat and `H24_Vraag_TW_w` for residential domestic hot water in `Alkmaar_strategie.csv`, both with unit `[GJ/weq/jaar]`; `H22_Vraag_totaal_w` is retained only as a residential-total diagnostic. The candidate conversion multiplies those intensities by PBL `I11_woningequivalenten [Woning]` and converts GJ to TWh, then allocates space and water separately to SFH/MFH using a PI-signed CBS 85035NED class split for Alkmaar `GM0361`. The packet records CBS `2026JJ00` `Eengezinswoningen totaal` and `Meergezinswoningen totaal` as denominator/crosswalk evidence and gives unsigned illustrative count-share and area-weighted allocations only to make the PI decision concrete. A separate signed 2035 HP adoption/electrification multiplier remains required before HP component values can be used. This proposal does not approve PBL columns, value columns, unit conversions, split rules, annual TWh values, adoption fractions, D-004 acceptance, cold-spell tolerances, net-load/event analysis, `P(E)`, threshold or capacity-screen analysis, manuscript numbers, or probability results.
 <!-- methods-id: E2-S3-HP-SCALING-SCHEMA-INSPECTION -->
 ### E2-S3-HP-SCALING-SCHEMA-INSPECTION - D-013 HP Scaling Schema Inspection
 

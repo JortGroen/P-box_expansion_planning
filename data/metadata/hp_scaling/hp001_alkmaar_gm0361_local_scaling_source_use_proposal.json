@@ -1,0 +1,51 @@
+{
+  "bundle_id": "hp001_alkmaar_gm0361_source_route_v1",
+  "created_at_utc": "2026-07-22T13:48:00Z",
+  "data_id": "D-013",
+  "decision_packet_id": "E2-S3-HP-LOCAL-SCALING-SOURCE-USE-PROPOSAL",
+  "status": "proposed source-use and unsigned value examples; not executable",
+  "network_performed": false,
+  "candidate_pbl_source": {
+    "raw_path": "data/raw/hp_scaling/pbl_startanalyse_2025_alkmaar.zip",
+    "csv": "Alkmaar_strategie.csv",
+    "denominator_column": "I11_woningequivalenten [Woning]",
+    "candidate_value_column": "Referentie_2030",
+    "space_indicator": {"code_indicator": "H23_Vraag_RV_w", "unit": "[GJ/weq/jaar]"},
+    "water_indicator": {"code_indicator": "H24_Vraag_TW_w", "unit": "[GJ/weq/jaar]"},
+    "residential_total_diagnostic_indicator": {"code_indicator": "H22_Vraag_totaal_w", "unit": "[GJ/weq/jaar]"}
+  },
+  "candidate_cbs_denominator": {
+    "raw_path": "data/raw/hp_scaling/cbs_85035ned_alkmaar_dwelling_stock.json",
+    "table": "85035NED",
+    "region": "GM0361 Alkmaar",
+    "period": "2026JJ00",
+    "topic": "BeginstandWoningvoorraad_1",
+    "unit": "aantal",
+    "sfh": {"woningtype_key": "ZW10290", "title": "Eengezinswoningen totaal", "count": 33684, "mean_area_m2": 124},
+    "mfh": {"woningtype_key": "ZW10340", "title": "Meergezinswoningen totaal", "count": 21461, "mean_area_m2": 74},
+    "total": {"woningtype_key": "T001100", "title": "Totaal woningen", "count": 55145, "mean_area_m2": 104}
+  },
+  "unsigned_candidate_values": {
+    "pbl_reference_2030_total_before_hp_adoption_twh_per_year": {
+      "space": 0.362059444,
+      "water": 0.097897778,
+      "residential_total_diagnostic": 0.634250556
+    },
+    "count_share_split_before_hp_adoption_twh_per_year": {
+      "SFH": {"space": 0.221155323, "water": 0.059798509},
+      "MFH": {"space": 0.140904121, "water": 0.038099269}
+    },
+    "area_weighted_split_before_hp_adoption_twh_per_year": {
+      "SFH": {"space": 0.262319868, "water": 0.07092905},
+      "MFH": {"space": 0.099739576, "water": 0.026968728}
+    }
+  },
+  "formula_boundary": "H_HP_TWh[class,end_use,scenario] = H_local_TWh[class,end_use] * f_HP_service[class,end_use,scenario]; f_HP_service remains unsigned and must come from a signed 2035 adoption/electrification source or scenario.",
+  "non_claims": [
+    "No annual HP TWh values are executable.",
+    "No 2035 HP adoption value is signed.",
+    "No PBL indicator, value column, denominator, unit conversion, or SFH/MFH split rule is approved by this packet.",
+    "No D-004 acceptance, paired-weather acceptance, cold-spell tolerance, net-load, event, P(E), threshold, capacity-screen, or manuscript analysis is run."
+  ],
+  "report_path": "reports/e2_s3_hp_local_scaling_source_use_proposal.md"
+}
