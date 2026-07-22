@@ -30,6 +30,7 @@ from src.ev_model import (
     charge_point_range_by_year,
     distinct_member_count,
     ev_candidate_checksum_expectations,
+    ev_candidate_member_selection_manifest,
     ev_ic1_adapter_guardrail_packet,
     ev_downstream_adequacy_criterion_packet,
     ev005_within_realization_replacement_policy_packet,
@@ -810,6 +811,121 @@ def test_ev005_replacement_packet_options_keep_bootstrap_and_m_separate() -> Non
     source = inspect.getsource(ev005_within_realization_replacement_policy_packet)
     assert "load_processed_batch_npz" not in source
     assert "np.load" not in source
+
+
+def _synthetic_candidate_member_reference(n_home_members: int = 3) -> dict[str, object]:
+    return {
+        "artifact_type": "ev_ic1_candidate_member_reference",
+        "policy": {
+            "candidate_libraries_only": True,
+            "held_out_access": False,
+            "profile_arrays_loaded": False,
+            "integrated_analysis_performed": False,
+            "event_or_p_e_analysis_performed": False,
+            "m_sufficiency_claimed": False,
+        },
+        "candidate_members": [
+            {
+                "partition": "candidate",
+                "component_id": EV_HOME_COMPONENT,
+                "library_id": "A_home_vancar_cp_y2030",
+                "source_member_id": f"profile_140001_{index:03d}",
+                "batch_seed": 140001,
+                "returned_profile_index": index,
+                "capacity_class": None,
+                "cp_capacity_kw": 11,
+                "processed_path": "data/processed/elaad_profiles/A_home_140001.npz",
+                "candidate_processed_sha256_file": "a" * 64,
+                "calendar_mapping_rule_id": EV_CALENDAR_MAPPING_RULE_ID,
+                "source_timestamp_index_policy": "target_index_i_uses_source_index_i",
+            }
+            for index in range(n_home_members)
+        ],
+    }
+
+
+def _approved_ev005b_decisions_text() -> str:
+    return (
+        "| ID | Date | Gate/topic | Decision | Rationale | Evidence | Status | PI sign-off |\n"
+        "| EV-005B | 2026-07-22 | Within-realization EV replacement policy | "
+        "Approved: test fixture only. | synthetic | synthetic | approved | PI approved in test fixture |\n"
+    )
+
+
+def test_ev_candidate_member_selection_refuses_current_proposed_ev005b() -> None:
+    stream = SeedTree(root_seed=20260722).component_stream(0, EV_HOME_COMPONENT)
+    decisions = Path("registers/DECISIONS.md").read_text(encoding="utf-8")
+
+    with pytest.raises(PermissionError, match="EV-005B remains unapproved"):
+        ev_candidate_member_selection_manifest(
+            _synthetic_candidate_member_reference(),
+            decisions_text=decisions,
+            scenario="middle",
+            node_id="load_001",
+            component_id=EV_HOME_COMPONENT,
+            required_members=2,
+            component_stream=stream,
+        )
+
+
+def test_ev_candidate_member_selection_rejects_unsafe_metadata_before_approval() -> None:
+    stream = SeedTree(root_seed=20260722).component_stream(0, EV_HOME_COMPONENT)
+    artifact = _synthetic_candidate_member_reference()
+    artifact["candidate_members"][0]["partition"] = "held_out"
+
+    with pytest.raises(ValueError, match="non-candidate partitions"):
+        ev_candidate_member_selection_manifest(
+            artifact,
+            decisions_text=Path("registers/DECISIONS.md").read_text(encoding="utf-8"),
+            scenario="middle",
+            node_id="load_001",
+            component_id=EV_HOME_COMPONENT,
+            required_members=2,
+            component_stream=stream,
+        )
+
+
+def test_ev_candidate_member_selection_records_synthetic_duplicate_manifest_fields() -> None:
+    stream = SeedTree(root_seed=20260722).component_stream(3, EV_HOME_COMPONENT)
+
+    manifest = ev_candidate_member_selection_manifest(
+        _synthetic_candidate_member_reference(n_home_members=1),
+        decisions_text=_approved_ev005b_decisions_text(),
+        scenario="middle",
+        node_id="load_001",
+        component_id=EV_HOME_COMPONENT,
+        required_members=3,
+        component_stream=stream,
+    )
+
+    assert manifest["artifact_type"] == "ev_candidate_member_selection_manifest"
+    assert manifest["replacement_enabled"] is True
+    assert manifest["policy"] == {
+        "candidate_only": True,
+        "held_out_access": False,
+        "profile_arrays_loaded": False,
+        "integrated_analysis_performed": False,
+        "event_or_p_e_analysis_performed": False,
+        "m_sufficiency_claimed": False,
+    }
+    assert manifest["component_stream"]["stream_id"] == stream.stream_id
+    assert len(manifest["selections"]) == 3
+    assert manifest["duplicate_member_groups"] == [
+        {
+            "source_member_id": "profile_140001_000",
+            "duplicate_multiplicity": 3,
+            "duplicate_selection_indices": [0, 1, 2],
+        }
+    ]
+    for selection in manifest["selections"]:
+        assert selection["duplicate_within_realization"] is True
+        assert selection["duplicate_multiplicity"] == 3
+        assert selection["component_stream_id"] == stream.stream_id
+        assert selection["candidate_processed_sha256_file"] == "a" * 64
+    source = inspect.getsource(ev_candidate_member_selection_manifest)
+    assert "load_processed_batch_npz" not in source
+    assert "np.load" not in source
+
 
 def test_ev_member_selection_implementation_plan_is_blocked_until_ev005b() -> None:
     plan = ev_member_selection_implementation_plan()
