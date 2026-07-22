@@ -16,9 +16,9 @@ import numpy as np
 from src.contracts.loading_trajectory import TimeDomain, validate_loading_trajectory_result
 from src.contracts.net_load import NetLoadResult, validate_net_load_result
 
-# G0-A3 makes 1.1 the executable default but gates scientific use on Q-5;
-# keeping it centralized prevents callers from silently retaining 1.0.
-DEFAULT_THRESHOLD_PU = 1.1
+# G0-A3 makes 1.0 the primary executable default; 1.1/1.2 are
+# predeclared sensitivities that callers must request explicitly.
+DEFAULT_THRESHOLD_PU = 1.0
 DEFAULT_MIN_CONSECUTIVE_STEPS = 4
 
 
@@ -111,7 +111,7 @@ def evaluate_tier1(
         Optional timestep positions to evaluate. Required when
         ``time_domain="window_set"`` and forbidden for ``"full_year"``.
     threshold_pu:
-        Strict overload threshold in p.u.; G0-A3 provisionally uses ``> 1.1``.
+        Strict overload threshold in p.u.; G0-A3 primary uses ``> 1.0``.
     min_consecutive_steps:
         Minimum consecutive 15-minute import exceedance steps; G0 uses four.
     """
