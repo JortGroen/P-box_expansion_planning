@@ -764,7 +764,7 @@ def test_ev_downstream_adequacy_criterion_packet_is_unsigned_and_downstream() ->
     }
 
 
-def test_ev005_replacement_policy_packet_is_unsigned_and_profile_free() -> None:
+def test_ev005_replacement_policy_packet_records_approval_and_profile_free_boundary() -> None:
     packet = ev005_within_realization_replacement_policy_packet()
     committed = json.loads(
         Path("data/metadata/ev_adoption/e2_s2_ev005_replacement_policy_packet.json").read_text(
@@ -775,13 +775,13 @@ def test_ev005_replacement_policy_packet_is_unsigned_and_profile_free() -> None:
     assert committed == packet
     assert packet["artifact_type"] == "ev005_within_realization_replacement_policy_packet"
     assert packet["decision_id"] == "EV-005B"
-    assert packet["status"] == "pi_decision_required_before_sampling_policy_use"
+    assert packet["status"] == "approved_for_candidate_member_selection_only"
     assert packet["recommended_option_id"] == "A_charge_point_level_with_replacement"
     assert packet["feasibility_findings"]["whole_grid_no_replacement_feasible_for_home"] is False
     assert packet["feasibility_findings"]["whole_grid_no_replacement_feasible_for_public_capacity_classes"] is False
     assert packet["candidate_library_context"]["candidate_library_sufficiency_claimed"] is False
     assert packet["non_claims"] == {
-        "policy_signed": False,
+        "policy_signed": True,
         "held_out_access": False,
         "profile_arrays_loaded": False,
         "integrated_analysis_performed": False,
@@ -796,9 +796,10 @@ def test_ev005_replacement_packet_options_keep_bootstrap_and_m_separate() -> Non
     by_option = {option["id"]: option for option in packet["options"]}
 
     recommended = by_option["A_charge_point_level_with_replacement"]
-    assert recommended["status"] == "recommended_unsigned"
+    assert recommended["status"] == "approved_ev005b_policy"
     assert recommended["replacement"] is True
     assert "finite-library adequacy separate" in recommended["why_defensible"]
+    assert "candidate member-selection implementation only" in recommended["pi_approval"]
     assert by_option["B_whole_grid_without_replacement"]["status"] == (
         "not_executable_for_approved_2035_counts"
     )
@@ -837,7 +838,13 @@ def _synthetic_candidate_member_reference(n_home_members: int = 3) -> dict[str, 
                 "processed_path": "data/processed/elaad_profiles/A_home_140001.npz",
                 "candidate_processed_sha256_file": "a" * 64,
                 "calendar_mapping_rule_id": EV_CALENDAR_MAPPING_RULE_ID,
+                "calendar_mapping_rule_version": "ordinal-v1",
+                "source_calendar_id": "elaad-2025-europe-amsterdam-15min",
+                "target_calendar_id": "planning-2035-europe-amsterdam-15min",
                 "source_timestamp_index_policy": "target_index_i_uses_source_index_i",
+                "n_timesteps": EXPECTED_FULL_YEAR_STEPS,
+                "weekday_weekend_preserved": False,
+                "control_mode": "uncontrolled",
             }
             for index in range(n_home_members)
         ],
@@ -852,20 +859,28 @@ def _approved_ev005b_decisions_text() -> str:
     )
 
 
-def test_ev_candidate_member_selection_refuses_current_proposed_ev005b() -> None:
+def test_ev_candidate_member_selection_uses_signed_ev005b_decision() -> None:
     stream = SeedTree(root_seed=20260722).component_stream(0, EV_HOME_COMPONENT)
     decisions = Path("registers/DECISIONS.md").read_text(encoding="utf-8")
 
-    with pytest.raises(PermissionError, match="EV-005B remains unapproved"):
-        ev_candidate_member_selection_manifest(
-            _synthetic_candidate_member_reference(),
-            decisions_text=decisions,
-            scenario="middle",
-            node_id="load_001",
-            component_id=EV_HOME_COMPONENT,
-            required_members=2,
-            component_stream=stream,
-        )
+    manifest = ev_candidate_member_selection_manifest(
+        _synthetic_candidate_member_reference(),
+        decisions_text=decisions,
+        scenario="middle",
+        node_id="load_001",
+        component_id=EV_HOME_COMPONENT,
+        required_members=2,
+        component_stream=stream,
+    )
+
+    assert manifest["decision_id"] == "EV-005B"
+    assert manifest["replacement_enabled"] is True
+    assert len(manifest["selections"]) == 2
+    assert all(row["component_stream_id"] == stream.stream_id for row in manifest["selections"])
+    assert all(row["candidate_processed_sha256_file"] == "a" * 64 for row in manifest["selections"])
+    assert manifest["policy"]["held_out_access"] is False
+    assert manifest["policy"]["profile_arrays_loaded"] is False
+    assert manifest["policy"]["m_sufficiency_claimed"] is False
 
 
 def test_ev_candidate_member_selection_rejects_unsafe_metadata_before_approval() -> None:
@@ -884,6 +899,87 @@ def test_ev_candidate_member_selection_rejects_unsafe_metadata_before_approval()
             component_stream=stream,
         )
 
+
+def test_ev_candidate_member_selection_supports_public_capacity_class_metadata() -> None:
+    artifact = _synthetic_candidate_member_reference(n_home_members=1)
+    public_row = dict(artifact["candidate_members"][0])
+    public_row.update(
+        {
+            "component_id": EV_PUBLIC_COMPONENT,
+            "library_id": "B_public_vancar_cp_y2030_equal_mix",
+            "source_member_id": "profile_152001_000",
+            "batch_seed": 152001,
+            "capacity_class": "public_11kw",
+            "cp_capacity_kw": 11,
+            "processed_path": "data/processed/elaad_profiles/B_public_11kw_152001.npz",
+            "candidate_processed_sha256_file": "b" * 64,
+        }
+    )
+    artifact["candidate_members"] = [public_row]
+    stream = SeedTree(root_seed=20260722).component_stream(7, EV_PUBLIC_COMPONENT)
+
+    manifest = ev_candidate_member_selection_manifest(
+        artifact,
+        decisions_text=Path("registers/DECISIONS.md").read_text(encoding="utf-8"),
+        scenario="high",
+        node_id="load_014",
+        component_id=EV_PUBLIC_COMPONENT,
+        capacity_class="public_11kw",
+        cp_capacity_kw=11,
+        required_members=2,
+        component_stream=stream,
+    )
+
+    assert manifest["component_id"] == EV_PUBLIC_COMPONENT
+    assert manifest["capacity_class"] == "public_11kw"
+    assert manifest["candidate_pool_member_count"] == 1
+    assert len(manifest["selections"]) == 2
+    assert {row["source_member_id"] for row in manifest["selections"]} == {"profile_152001_000"}
+    assert all(row["component_stream_id"] == stream.stream_id for row in manifest["selections"])
+    assert all(row["candidate_processed_sha256_file"] == "b" * 64 for row in manifest["selections"])
+
+
+def test_ev_candidate_member_selection_rejects_bad_stream_and_provenance() -> None:
+    artifact = _synthetic_candidate_member_reference()
+    wrong_stream = SeedTree(root_seed=20260722).component_stream(0, EV_PUBLIC_COMPONENT)
+
+    with pytest.raises(ValueError, match="matching RNG-001 component stream"):
+        ev_candidate_member_selection_manifest(
+            artifact,
+            decisions_text=Path("registers/DECISIONS.md").read_text(encoding="utf-8"),
+            scenario="middle",
+            node_id="load_001",
+            component_id=EV_HOME_COMPONENT,
+            required_members=1,
+            component_stream=wrong_stream,
+        )
+
+    bad = _synthetic_candidate_member_reference()
+    bad["candidate_members"][0]["candidate_processed_sha256_file"] = "not-a-sha"
+    stream = SeedTree(root_seed=20260722).component_stream(0, EV_HOME_COMPONENT)
+    with pytest.raises(ValueError, match="candidate_processed_sha256_file"):
+        ev_candidate_member_selection_manifest(
+            bad,
+            decisions_text=Path("registers/DECISIONS.md").read_text(encoding="utf-8"),
+            scenario="middle",
+            node_id="load_001",
+            component_id=EV_HOME_COMPONENT,
+            required_members=1,
+            component_stream=stream,
+        )
+
+    bad = _synthetic_candidate_member_reference()
+    bad["candidate_members"][0]["calendar_mapping_rule_version"] = "old"
+    with pytest.raises(ValueError, match="rule-version provenance"):
+        ev_candidate_member_selection_manifest(
+            bad,
+            decisions_text=Path("registers/DECISIONS.md").read_text(encoding="utf-8"),
+            scenario="middle",
+            node_id="load_001",
+            component_id=EV_HOME_COMPONENT,
+            required_members=1,
+            component_stream=stream,
+        )
 
 def test_ev_candidate_member_selection_records_synthetic_duplicate_manifest_fields() -> None:
     stream = SeedTree(root_seed=20260722).component_stream(3, EV_HOME_COMPONENT)
@@ -921,13 +1017,22 @@ def test_ev_candidate_member_selection_records_synthetic_duplicate_manifest_fiel
         assert selection["duplicate_within_realization"] is True
         assert selection["duplicate_multiplicity"] == 3
         assert selection["component_stream_id"] == stream.stream_id
+        assert selection["selection_pool_index"] == 0
+        assert selection["library_id"] == "A_home_vancar_cp_y2030"
+        assert selection["partition"] == "candidate"
+        assert selection["control_mode"] == "uncontrolled"
         assert selection["candidate_processed_sha256_file"] == "a" * 64
+        assert selection["calendar_mapping_rule_version"] == "ordinal-v1"
+        assert selection["source_calendar_id"] == "elaad-2025-europe-amsterdam-15min"
+        assert selection["target_calendar_id"] == "planning-2035-europe-amsterdam-15min"
+        assert selection["n_timesteps"] == EXPECTED_FULL_YEAR_STEPS
+        assert selection["weekday_weekend_preserved"] is False
     source = inspect.getsource(ev_candidate_member_selection_manifest)
     assert "load_processed_batch_npz" not in source
     assert "np.load" not in source
 
 
-def test_ev_member_selection_implementation_plan_is_blocked_until_ev005b() -> None:
+def test_ev_member_selection_implementation_plan_records_ev005b_approval_boundary() -> None:
     plan = ev_member_selection_implementation_plan()
     committed = json.loads(
         Path("data/metadata/ev_adoption/e2_s2_ev_member_selection_implementation_plan.json").read_text(
@@ -937,12 +1042,12 @@ def test_ev_member_selection_implementation_plan_is_blocked_until_ev005b() -> No
 
     assert committed == plan
     assert plan["artifact_type"] == "ev_member_selection_implementation_plan"
-    assert plan["status"] == "planning_only_ev005b_not_approved"
-    assert plan["depends_on_unsigned_decision"] == "EV-005B"
-    assert plan["implementation_authorization"]["real_member_draws_allowed"] is False
-    assert "EV-005B status is approved or amended" in plan["preimplementation_checks"][0]
-    assert set(plan["blocked_actions_until_ev005b_approval"]) == {
-        "real_member_draws",
+    assert plan["status"] == "ev005b_approved_candidate_member_selection_ready"
+    assert plan["approved_decision"] == "EV-005B"
+    assert plan["implementation_authorization"]["candidate_member_selection_allowed"] is True
+    assert plan["implementation_authorization"]["profile_array_loading_allowed"] is False
+    assert "EV-005B status is approved" in plan["preimplementation_checks"][0]
+    assert set(plan["blocked_actions_after_ev005b_approval"]) == {
         "profile_array_loading",
         "held_out_or_quarantined_partition_access",
         "integrated_net_load_or_event_analysis",
@@ -950,8 +1055,8 @@ def test_ev_member_selection_implementation_plan_is_blocked_until_ev005b() -> No
         "manuscript_number_generation",
     }
     assert plan["non_claims"] == {
-        "ev005b_approved": False,
-        "real_member_draws_performed": False,
+        "ev005b_approved": True,
+        "production_member_draws_performed_in_this_plan": False,
         "held_out_access": False,
         "profile_arrays_loaded": False,
         "integrated_analysis_performed": False,

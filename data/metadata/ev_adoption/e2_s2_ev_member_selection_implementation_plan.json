@@ -1,14 +1,13 @@
 {
+  "approved_decision": "EV-005B",
   "artifact_type": "ev_member_selection_implementation_plan",
-  "blocked_actions_until_ev005b_approval": [
-    "real_member_draws",
+  "blocked_actions_after_ev005b_approval": [
     "profile_array_loading",
     "held_out_or_quarantined_partition_access",
     "integrated_net_load_or_event_analysis",
     "m_sufficiency_claim",
     "manuscript_number_generation"
   ],
-  "depends_on_unsigned_decision": "EV-005B",
   "duplicate_member_logging": {
     "duplicate_key": [
       "scenario",
@@ -26,9 +25,10 @@
     "required": true
   },
   "implementation_authorization": {
-    "next_step_after_approval": "Implement candidate-only member-selection rows from committed manifests and RNG-001 ComponentStream objects without changing source-library adequacy claims.",
-    "real_member_draws_allowed": false,
-    "reason": "EV-005B is proposed but not PI-approved"
+    "candidate_member_selection_allowed": true,
+    "current_authorized_step": "Produce candidate-only member-selection metadata rows from committed manifests and RNG-001 ComponentStream objects without changing source-library adequacy claims.",
+    "profile_array_loading_allowed": false,
+    "reason": "EV-005B is PI-approved for candidate member-selection implementation only"
   },
   "inputs_expected_after_approval": [
     "data/metadata/ev_adoption/e2_s2_ev_ic1_candidate_adapter_artifact.json",
@@ -57,31 +57,38 @@
     "returned_profile_index",
     "candidate_processed_path",
     "candidate_processed_sha256_file",
+    "selection_pool_index",
+    "library_id",
+    "partition",
+    "control_mode",
     "calendar_mapping_rule_id",
+    "calendar_mapping_rule_version",
+    "source_calendar_id",
+    "target_calendar_id",
     "source_timestamp_index_policy",
     "duplicate_within_realization",
     "duplicate_multiplicity"
   ],
   "non_claims": {
-    "ev005b_approved": false,
+    "ev005b_approved": true,
     "event_or_p_e_analysis_performed": false,
     "held_out_access": false,
     "integrated_analysis_performed": false,
     "m_sufficiency_claimed": false,
     "manuscript_numbers_produced": false,
-    "profile_arrays_loaded": false,
-    "real_member_draws_performed": false
+    "production_member_draws_performed_in_this_plan": false,
+    "profile_arrays_loaded": false
   },
   "planned_algorithm_after_approval": [
     "verify committed candidate manifest paths and processed SHA-256 expectations before any array load",
     "derive scenario/node/component/capacity-class required counts from the candidate adapter artifacts",
     "require EV home draws to use the ev_home ComponentStream and public draws to use ev_public",
-    "select source-member rows with explicit replacement only if EV-005B is approved as proposed",
+    "select source-member rows with explicit charge-point-level replacement under approved EV-005B",
     "preserve duplicate source-member selections as repeated manifest rows with multiplicity counters",
     "materialize selection metadata separately from mapped profile arrays so provenance can be reviewed first"
   ],
   "preimplementation_checks": [
-    "EV-005B status is approved or amended in DECISIONS.md before real draws",
+    "EV-005B status is approved in DECISIONS.md before candidate member-selection manifests are produced",
     "candidate-only adapter artifact blocks held-out and quarantined partitions",
     "candidate processed checksums verify in the consuming worktree before profile arrays load",
     "scenario/node totals conserve EV-007A/A-014 counts after capacity-class allocation",
@@ -98,6 +105,6 @@
     "stream_identity_must_be_recorded": true
   },
   "schema_version": 1,
-  "status": "planning_only_ev005b_not_approved",
+  "status": "ev005b_approved_candidate_member_selection_ready",
   "task_id": "E2.S2"
 }

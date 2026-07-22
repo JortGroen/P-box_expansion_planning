@@ -70,7 +70,7 @@
     "EV home sampling requires the ev_home component stream and public sampling requires ev_public",
     "candidate processed checksums are verified in the consuming worktree before profile arrays load",
     "held-out and quarantined partitions remain inaccessible until traceable E3.S2a authorization exists",
-    "selection manifests record scenario, node_id, component_id, capacity_class, selection_index, source_member_id, batch_seed, returned_profile_index, stream_id, and replacement flag"
+    "selection manifests record scenario, node_id, component_id, capacity_class, selection_index, source_member_id, library_id, batch_seed, returned_profile_index, processed checksum, stream_id, replacement flag, and multiplicity"
   ],
   "non_claims": {
     "event_or_p_e_analysis_performed": false,
@@ -78,22 +78,18 @@
     "integrated_analysis_performed": false,
     "m_sufficiency_claimed": false,
     "manuscript_numbers_produced": false,
-    "policy_signed": false,
+    "policy_signed": true,
     "profile_arrays_loaded": false
   },
   "options": [
     {
       "id": "A_charge_point_level_with_replacement",
+      "pi_approval": "Approved in chat on 2026-07-22 for candidate member-selection implementation only",
       "replacement": true,
-      "requires_pi_signoff": [
-        "accept duplicate source members within one realization as bootstrap multiplicities",
-        "confirm public capacity-class sampling uses each class-specific candidate library",
-        "confirm manifests must record per-selection multiplicity and component-stream identity"
-      ],
       "rule": "For each realization, draw each physical charge point independently with replacement from the verified candidate library for its component and, for public charging, its EV-008A capacity class. Preserve selection order, multiplicity, source_member_id, batch_seed, returned_profile_index, processed checksum, and RNG-001 component-stream identity.",
       "selection_scope": "scenario_node_component_capacity_class",
       "selection_unit": "physical_charge_point",
-      "status": "recommended_unsigned",
+      "status": "approved_ev005b_policy",
       "why_defensible": "It is executable for K greater than M, matches the usual empirical-bootstrap interpretation, and keeps finite-library adequacy separate through EV-005 downstream candidate/held-out checks."
     },
     {
@@ -116,6 +112,6 @@
   "purpose": "Frame the within-realization EV source-member replacement rule that must be signed before IC-1 materializes EV charge-point selections from candidate libraries.",
   "recommended_option_id": "A_charge_point_level_with_replacement",
   "schema_version": 1,
-  "status": "pi_decision_required_before_sampling_policy_use",
+  "status": "approved_for_candidate_member_selection_only",
   "task_id": "E2.S2"
 }

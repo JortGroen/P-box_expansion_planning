@@ -1,31 +1,22 @@
 # E2.S2 EV Member-Selection Implementation Plan
 
 Task: E2.S2 EV model
-Status: planning only; EV-005B not approved
+Status: EV-005B approved for candidate member-selection implementation only
 Artifact: `data/metadata/ev_adoption/e2_s2_ev_member_selection_implementation_plan.json`
 
 ## Why This Plan Exists
 
-PR #147 proposed EV-005B but did not approve it. The next safe EV step is to
-make the future implementation auditable before any real member draws happen.
-This packet specifies what IC-1-facing EV member selection should record if the
-PI later approves the proposed with-replacement policy.
+PR #147 proposed EV-005B and the PI later approved it in chat on 2026-07-22. This packet now records the active candidate-only implementation boundary for IC-1-facing EV member selection under the approved with-replacement policy.
 
-No member selection, profile-array loading, held-out access, net-load/event
-analysis, `P(E)`, manuscript number, or `M` sufficiency claim is produced here.
+No profile-array loading, held-out access, net-load/event analysis, `P(E)`, manuscript number, or `M` sufficiency claim is produced here.
 
 ## Authorization Boundary
 
-The plan is blocked until `EV-005B` is approved or amended in
-`registers/DECISIONS.md`. Until then, implementation must not materialize real
-per-realization EV source-member draws.
-
-After approval, the intended route is candidate-only member selection from the
-committed EV readiness artifacts. The future code should verify candidate
+`EV-005B` is approved in `registers/DECISIONS.md` for candidate member-selection implementation only. The authorized route is candidate-only member selection from the committed EV readiness artifacts. The future code should verify candidate
 processed-file checksums before profile arrays are loaded in the consuming
 worktree, but this planning PR itself does not open those files.
 
-## Planned Inputs After Approval
+## Authorized Inputs
 
 - `data/metadata/ev_adoption/e2_s2_ev_ic1_candidate_adapter_artifact.json`
 - `data/metadata/ev_adoption/e2_s2_public_set_b_capacity_allocation_readiness.json`
@@ -53,8 +44,7 @@ Future selection manifests should record at least:
 
 ## Duplicate-Member Logging
 
-If EV-005B is approved as proposed, duplicate source members are expected
-bootstrap multiplicities. They must be logged explicitly, not hidden by
+Under approved EV-005B, duplicate source members are expected bootstrap multiplicities. They must be logged explicitly, not hidden by
 aggregation. The duplicate key should include scenario, sample index, component,
 capacity class, and source member ID. The duplicate report should include the
 selection indices that reused the same source member.
@@ -63,9 +53,9 @@ Duplicate rows do not create new unique source profiles and do not imply that
 `M = 1000` home or `M = 1200` public is sufficient. EV-005 finite-library
 adequacy remains downstream of IC-1 aggregation and E3.S2a authorization.
 
-## Required Checks Before Future Implementation
+## Required Checks Before Candidate Selection
 
-- `EV-005B` is approved or amended before real draws.
+- `EV-005B` is approved before candidate member-selection manifests are produced.
 - Candidate-only artifacts reject held-out and quarantined partitions.
 - Candidate processed checksums verify before array loading.
 - Scenario/node totals conserve EV-007A/A-014 counts after capacity-class
@@ -76,8 +66,8 @@ adequacy remains downstream of IC-1 aggregation and E3.S2a authorization.
 
 ## Explicit Non-Claims
 
-- EV-005B is not approved by this plan.
-- No real member draws were performed.
+- EV-005B is approved for candidate member-selection implementation only.
+- No production integrated member-draw run was performed by this plan.
 - No held-out or quarantined EV data were accessed.
 - No profile arrays were loaded.
 - No integrated net-load, event, `P(E)`, capacity-screen, or manuscript result
