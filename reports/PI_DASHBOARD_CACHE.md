@@ -87,6 +87,12 @@ Leave PI Lite and inspect broader context when:
   Commercial heat, local annual HP scaling, WEATHER-001 implementation over
   accepted D-004 members, paired-weather acceptance, cold-spell tolerances,
   event analysis, and manuscript results remain separate blockers.
+- A confidential student thesis supplied privately by the PI is available only
+  as a source-discovery aid for HP/local residential-demand work. Do not
+  commit, quote, cite, or use thesis-specific values as provenance. C.HP may
+  use `reports/e2_s3_hp_private_thesis_source_discovery_note.md` to guide
+  checks of underlying public sources such as local gas demand, dwelling stock,
+  BAG/CBS/DEGO-like evidence, and standard load-profile references.
 - `WEATHER-001` resolves Q-8. HP and PV must use one neutral shared weather
   contract in `src/weather_model.py` / `tests/test_weather_model.py`, now owned
   by Agent C. This approves the interface route only; D-004 source acceptance,
