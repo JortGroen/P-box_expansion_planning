@@ -463,6 +463,58 @@ def test_committed_d004_member_construction_clarification_records_resolution() -
     assert any("no net-load/event/P(E)" in item for item in payload["scope_boundaries"])
 
 
+def test_d004_member_readiness_diagnostics_can_validate_metadata_without_raw_files(tmp_path: Path) -> None:
+    metadata_src = Path("data/metadata/weather_pv")
+    metadata_dst = tmp_path / "metadata" / "weather_pv"
+    metadata_dst.mkdir(parents=True)
+    for name in [
+        weather_pv.D004_RETRIEVAL_MANIFEST,
+        weather_pv.D004_MEMBER_MANIFEST_NAME,
+        *[weather_pv.D004_MEMBER_METADATA_TEMPLATE.format(year=year) for year in range(2014, 2024)],
+    ]:
+        (metadata_dst / name).write_text((metadata_src / name).read_text(encoding="utf-8"), encoding="utf-8")
+
+    diagnostics = weather_pv.build_d004_member_readiness_diagnostics(
+        root_dir=tmp_path,
+        metadata_dir=tmp_path / "metadata",
+        include_raw_diagnostics=False,
+    )
+
+    assert diagnostics["d004_final_acceptance"] is False
+    assert diagnostics["no_integrated_analysis"] is True
+    assert diagnostics["manifest_checks"]["years_match_2014_2023"] is True
+    assert diagnostics["manifest_checks"]["all_calendar_cadence_ok"] is True
+    assert diagnostics["manifest_checks"]["all_energy_preserved"] is True
+    assert diagnostics["manifest_checks"]["pvgis_realized_weather_path"] is False
+    assert diagnostics["hp_pv_paired_weather_readiness"]["status"] == "metadata_ready_pending_integrated_acceptance"
+    assert all(not item["local_file_present"] for item in diagnostics["raw_source_checks"])
+    assert diagnostics["pvgis_knmi_seasonal_peak_diagnostics"]["status"] == "not_run_raw_files_unavailable"
+
+
+def test_committed_d004_member_readiness_diagnostics_records_unsigned_readiness() -> None:
+    path = Path("data/metadata/weather_pv/d004_alkmaar_berkhout_2014_2023_v1_member_readiness_diagnostics.json")
+    payload = json.loads(path.read_text(encoding="utf-8"))
+
+    assert payload["data_id"] == "D-004"
+    assert payload["selection_id"] == "d004_alkmaar_berkhout_2014_2023_v1"
+    assert payload["status"] == "readiness_diagnostics_pending_pi_review"
+    assert payload["d004_final_acceptance"] is False
+    assert payload["no_integrated_analysis"] is True
+    assert payload["no_manuscript_results"] is True
+    assert payload["manifest_checks"]["members_present"] == 10
+    assert payload["manifest_checks"]["years"] == list(range(2014, 2024))
+    assert payload["manifest_checks"]["all_calendar_cadence_ok"] is True
+    assert payload["manifest_checks"]["all_energy_preserved"] is True
+    assert payload["manifest_checks"]["all_temperature_finite"] is True
+    assert payload["manifest_checks"]["all_ghi_nonnegative"] is True
+    assert payload["manifest_checks"]["pvgis_realized_weather_path"] is False
+    assert all(item["sha256_matches_manifest"] for item in payload["raw_source_checks"])
+    assert all(item["size_matches_manifest"] for item in payload["raw_source_checks"])
+    assert payload["hp_pv_paired_weather_readiness"]["identity_roundtrip_ok"] is True
+    assert payload["hp_pv_paired_weather_readiness"]["paired_acceptance_not_run"] is True
+    assert payload["pvgis_knmi_seasonal_peak_diagnostics"]["tolerance_status"] == "not_pi_signed_diagnostic_only"
+    assert payload["pvgis_knmi_seasonal_peak_diagnostics"]["years"]["2020"]["knmi_peak_ghi_month_utc"] in {5, 6, 7}
+    assert "net-load" in " ".join(payload["remaining_before_final_d004_acceptance"])
 
 def _write_knmi_fixture_zip(path: Path, *, year: int, q_j_per_cm2: int = 360, t_tenths_c: int = 125) -> None:
     header = "# STN,YYYYMMDD,   HH,    T,    Q"
@@ -609,3 +661,4 @@ def test_committed_d004_weather_member_metadata_preserves_energy_and_identity() 
     assert payload["identity_record"]["shared_weather_driver_id"] == payload["shared_weather_driver_id"]
     assert payload["source_files"]["pvgis"][0]["file_role"].endswith("reference")
     assert any("No HP/PV paired acceptance" in item for item in payload["boundaries"])
+
