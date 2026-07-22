@@ -10,6 +10,7 @@ from src.contracts.net_load import (
     ComponentAdapterOutput,
     ComponentAdapterSkeleton,
     ExecutableInputArtifact,
+    FutureLayerScreenPreflightConfig,
     GatedAdapterBackedNetLoadProvider,
     ComponentProvenance,
     DEFAULT_REALIZATION_COMPONENTS,
@@ -34,6 +35,7 @@ from src.contracts.net_load import (
     validate_real_component_adapter_readiness,
     validate_registry_adapter_output_readiness,
     validate_executable_input_gate,
+    validate_future_layer_screen_preflight,
 )
 from src.contracts.loading_trajectory import TimeDomain
 
@@ -1789,3 +1791,78 @@ def test_gated_provider_allows_accepted_synthetic_fixture_without_events() -> No
             ]
         ),
     )
+
+def _screen_preflight_config() -> FutureLayerScreenPreflightConfig:
+    return FutureLayerScreenPreflightConfig(
+        config_id="synthetic-e3-s2b-preflight",
+        scenario_ids=("low", "middle", "high"),
+        planning_years=(2030, 2033, 2035),
+        rho_values=(0.0, 1.0),
+        node_ids=("node-a", "node-b"),
+        metadata={"calendar_id": "calendar-2035-15min", "scaffold_only": True},
+    )
+
+
+def test_future_layer_screen_preflight_records_manifest_fields_without_results() -> None:
+    preflight = validate_future_layer_screen_preflight(
+        _screen_preflight_config(),
+        _executable_input_artifacts(),
+    )
+
+    assert preflight["ready_for_input_assembly"] is True
+    assert preflight["screen_prerequisite_only"] is True
+    assert preflight["no_event_detection"] is True
+    assert preflight["no_capacity_screen_result"] is True
+    assert preflight["config_manifest"]["planned_case_count"] == 18
+    assert preflight["manifest_fields"]["shared_weather_driver_id"] == "weather-executable-1"
+    assert preflight["manifest_fields"]["manifest_paths_by_kind"]["pv"].endswith("pv.json")
+    assert "threshold_pu" not in preflight
+    assert "overload" not in preflight
+    assert "capacity_screen" not in preflight
+
+
+def test_future_layer_screen_preflight_reports_missing_artifact_blocker_ids() -> None:
+    artifacts = [artifact for artifact in _executable_input_artifacts() if artifact.kind != "pv"]
+
+    with pytest.raises(
+        ValueError,
+        match="pv: D004-SOURCE-MEMBER-ACCEPTANCE, WEATHER-001",
+    ):
+        validate_future_layer_screen_preflight(
+            _screen_preflight_config(),
+            artifacts,
+            missing_artifact_blockers={
+                "pv": ("D004-SOURCE-MEMBER-ACCEPTANCE", "WEATHER-001"),
+            },
+        )
+
+
+def test_future_layer_screen_preflight_reports_unsigned_artifact_blockers() -> None:
+    artifacts = _executable_input_artifacts()
+    artifacts[2] = _executable_input_artifact(
+        "hp",
+        artifact_status="unsigned",
+        signed_register_ids=(),
+        blocking_register_ids=("D-013", "HP-LOCAL-SCALING"),
+    )
+
+    with pytest.raises(ValueError, match="hp: D-013, HP-LOCAL-SCALING"):
+        validate_future_layer_screen_preflight(_screen_preflight_config(), artifacts)
+
+
+def test_future_layer_screen_preflight_rejects_invalid_config_and_blocker_metadata() -> None:
+    with pytest.raises(ValueError, match="rho_values"):
+        FutureLayerScreenPreflightConfig(
+            config_id="bad-rho",
+            scenario_ids=("middle",),
+            planning_years=(2035,),
+            rho_values=(0.0, 1.2),
+            node_ids=("node-a",),
+        )
+
+    with pytest.raises(ValueError, match="missing_artifact_blockers values"):
+        validate_future_layer_screen_preflight(
+            _screen_preflight_config(),
+            [artifact for artifact in _executable_input_artifacts() if artifact.kind != "ev"],
+            missing_artifact_blockers={"ev": ()},
+        )

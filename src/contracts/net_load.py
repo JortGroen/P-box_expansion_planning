@@ -379,6 +379,83 @@ class ExecutableInputArtifact:
             "provenance": dict(self.provenance),
         }
 
+
+@dataclass(frozen=True)
+class FutureLayerScreenPreflightConfig:
+    """Metadata-only E3.S2b prerequisite screen configuration."""
+
+    config_id: str
+    scenario_ids: tuple[str, ...]
+    planning_years: tuple[int, ...]
+    rho_values: tuple[float, ...]
+    node_ids: tuple[str, ...]
+    time_domain: TimeDomain = "full_year"
+    timestep_seconds: int = 900
+    metadata: Mapping[str, object] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        config_id = _require_nonempty(self.config_id, name="config_id")
+        if self.time_domain not in {"full_year", "window_set"}:
+            raise ValueError("time_domain must be 'full_year' or 'window_set'")
+        if (
+            isinstance(self.timestep_seconds, bool)
+            or not isinstance(self.timestep_seconds, int)
+            or self.timestep_seconds != 900
+        ):
+            raise ValueError("timestep_seconds must be the 900-second IC-1 cadence")
+        if not self.scenario_ids:
+            raise ValueError("scenario_ids must not be empty")
+        scenario_ids = tuple(_require_nonempty(item, name="scenario_id") for item in self.scenario_ids)
+        if len(set(scenario_ids)) != len(scenario_ids):
+            raise ValueError("scenario_ids must not contain duplicates")
+        if not self.planning_years:
+            raise ValueError("planning_years must not be empty")
+        planning_years: list[int] = []
+        for year in self.planning_years:
+            if isinstance(year, bool) or not isinstance(year, int) or year <= 0:
+                raise ValueError("planning_years must contain positive integers")
+            planning_years.append(year)
+        if len(set(planning_years)) != len(planning_years):
+            raise ValueError("planning_years must not contain duplicates")
+        if not self.rho_values:
+            raise ValueError("rho_values must not be empty")
+        rho_values: list[float] = []
+        for rho in self.rho_values:
+            value = float(rho)
+            if not np.isfinite(value) or not 0.0 <= value <= 1.0:
+                raise ValueError("rho_values must be finite and in [0, 1]")
+            rho_values.append(value)
+        if len(set(rho_values)) != len(rho_values):
+            raise ValueError("rho_values must not contain duplicates")
+        if not self.node_ids:
+            raise ValueError("node_ids must not be empty")
+        node_ids = tuple(_require_nonempty(node_id, name="node_id") for node_id in self.node_ids)
+        if len(set(node_ids)) != len(node_ids):
+            raise ValueError("node_ids must not contain duplicates")
+        _validate_nonempty_mapping_values(self.metadata, name="metadata")
+        object.__setattr__(self, "config_id", config_id)
+        object.__setattr__(self, "scenario_ids", scenario_ids)
+        object.__setattr__(self, "planning_years", tuple(planning_years))
+        object.__setattr__(self, "rho_values", tuple(rho_values))
+        object.__setattr__(self, "node_ids", node_ids)
+        object.__setattr__(self, "timestep_seconds", int(self.timestep_seconds))
+        object.__setattr__(self, "metadata", MappingProxyType(dict(self.metadata)))
+
+    def manifest_record(self) -> dict[str, object]:
+        """Return the planned screen metadata without executing the screen."""
+
+        return {
+            "config_id": self.config_id,
+            "scenario_ids": self.scenario_ids,
+            "planning_years": self.planning_years,
+            "rho_values": self.rho_values,
+            "node_ids": self.node_ids,
+            "time_domain": self.time_domain,
+            "timestep_seconds": self.timestep_seconds,
+            "planned_case_count": len(self.scenario_ids) * len(self.planning_years) * len(self.rho_values),
+            "metadata": dict(self.metadata),
+        }
+
 @dataclass(frozen=True)
 class AcceptedComponentAdapterArtifact:
     """Metadata-only handle for an accepted future component adapter artifact.
@@ -1345,6 +1422,68 @@ def validate_executable_input_gate(
         "artifacts": [artifact.manifest_record() for artifact in required_artifacts],
     }
 
+def validate_future_layer_screen_preflight(
+    config: FutureLayerScreenPreflightConfig,
+    artifacts: Sequence[ExecutableInputArtifact],
+    *,
+    required_component_kinds: Sequence[ComponentKind] = REQUIRED_INTEGRATION_COMPONENT_KINDS,
+    missing_artifact_blockers: Mapping[str, Sequence[str]] | None = None,
+    intended_use: str = "e3_s2b_future_layer_screen_prerequisite",
+) -> dict[str, object]:
+    """Validate E3.S2b input readiness before any screen can execute.
+
+    The helper intentionally produces only prerequisite metadata. It does not
+    assemble real net load, call IC-2, evaluate thresholds, or calculate any
+    capacity-screen quantity.
+    """
+
+    required = tuple(required_component_kinds)
+    if not required:
+        raise ValueError("required_component_kinds must not be empty")
+    for kind in required:
+        if kind not in _VALID_COMPONENT_KINDS:
+            raise ValueError("required_component_kinds must contain valid component kinds")
+    blockers_by_kind = _normalized_blockers_by_kind(missing_artifact_blockers)
+    by_kind: dict[ComponentKind, ExecutableInputArtifact] = {}
+    for artifact in artifacts:
+        if artifact.kind in by_kind:
+            raise ValueError("executable input artifact kinds must be unique")
+        by_kind[artifact.kind] = artifact
+
+    missing = [kind for kind in required if kind not in by_kind]
+    if missing:
+        details = "; ".join(
+            f"{kind}: {', '.join(blockers_by_kind.get(kind, ('missing artifact metadata',)))}"
+            for kind in missing
+        )
+        raise ValueError(f"missing executable input artifact(s) for {intended_use}: {details}")
+
+    gate_manifest = validate_executable_input_gate(
+        tuple(by_kind[kind] for kind in required),
+        required_component_kinds=required,
+        intended_use=intended_use,
+    )
+    if gate_manifest["calendar_id"] != config.metadata.get("calendar_id", gate_manifest["calendar_id"]):
+        raise ValueError("screen preflight config calendar_id must match executable input artifacts")
+    # E3.S2b must be able to freeze a future-layer domain later, but this
+    # preflight record deliberately contains no threshold or capacity result.
+    return {
+        "intended_use": intended_use,
+        "ready_for_input_assembly": True,
+        "screen_prerequisite_only": True,
+        "no_event_detection": True,
+        "no_capacity_screen_result": True,
+        "config_manifest": config.manifest_record(),
+        "executable_input_gate": gate_manifest,
+        "manifest_fields": {
+            "component_artifacts": gate_manifest["artifacts"],
+            "planned_screen_cases": config.manifest_record(),
+            "signed_register_ids_by_kind": gate_manifest["signed_register_ids_by_kind"],
+            "manifest_paths_by_kind": gate_manifest["manifest_paths_by_kind"],
+            "shared_weather_driver_id": gate_manifest["shared_weather_driver_id"],
+        },
+    }
+
 def validate_real_component_adapter_readiness(
     adapter_outputs: Sequence[ComponentAdapterOutput],
     *,
@@ -1581,6 +1720,21 @@ def validate_net_load_result(result: NetLoadResult) -> None:
 _VALID_COMPONENT_KINDS = frozenset(ComponentKind.__args__)
 _VALID_EXECUTABLE_INPUT_STATUSES = frozenset(ExecutableInputArtifactStatus.__args__)
 
+
+def _normalized_blockers_by_kind(
+    values: Mapping[str, Sequence[str]] | None,
+) -> dict[str, tuple[str, ...]]:
+    if values is None:
+        return {}
+    normalized: dict[str, tuple[str, ...]] = {}
+    for kind, blockers in values.items():
+        if kind not in _VALID_COMPONENT_KINDS:
+            raise ValueError("missing_artifact_blockers keys must be valid component kinds")
+        blocker_tuple = tuple(_require_nonempty(item, name="missing_artifact_blocker") for item in blockers)
+        if not blocker_tuple:
+            raise ValueError("missing_artifact_blockers values must not be empty")
+        normalized[kind] = blocker_tuple
+    return normalized
 
 def _skeletons_by_kind(registry: ComponentAdapterRegistry) -> dict[ComponentKind, ComponentAdapterSkeleton]:
     return {skeleton.kind: skeleton for skeleton in registry.skeletons}
