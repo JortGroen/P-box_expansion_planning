@@ -58,6 +58,18 @@ The later builder should write one metadata JSON per member plus a library manif
 - PV seasonal totals and peak timing are checked against PVGIS/reference expectations before integration.
 - PVGIS TMY cannot be used as a realized sampled weather member.
 
+## Deferred Improvement
+
+The primary `D004-MC-001` rule deliberately keeps KNMI hourly `Q` as a
+block-constant, energy-preserving 15-minute GHI value. A later improvement or
+sensitivity may replace this with an energy-preserving solar-shape
+redistribution: use solar-position, clear-sky, or PVGIS-derived within-hour
+weights to split each hourly KNMI `Q` value over four quarter-hour steps, then
+renormalize the four values so their hourly integral exactly matches the KNMI
+source energy. This is not part of the first-pass rule because it adds
+assumptions about unobserved within-hour irradiance shape. Revisit it if PV
+timing, export peaks, or PV/HP simultaneity becomes decision-relevant.
+
 ## Approval Questions
 
 1. Approve UTC calendar-year members for D-004, with Europe/Amsterdam local timestamps derived from UTC?

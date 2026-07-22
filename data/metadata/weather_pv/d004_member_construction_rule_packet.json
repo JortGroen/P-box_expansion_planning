@@ -173,6 +173,15 @@
     "PV seasonal totals and peak timing are checked against PVGIS/reference expectations before any integration use.",
     "PVGIS TMY is rejected as a realized sampled weather path."
   ],
+  "deferred_improvements": [
+    {
+      "id": "D004-MC-IMPROVEMENT-001",
+      "topic": "energy-preserving within-hour irradiance redistribution",
+      "description": "A later sensitivity may split each hourly KNMI Q value over four quarter-hour steps using solar-position, clear-sky, or PVGIS-derived within-hour weights, then renormalize the four values so their hourly integral exactly matches the KNMI source energy.",
+      "status": "deferred_not_part_of_primary_first_pass_rule",
+      "trigger": "Revisit if PV timing, export peaks, or PV/HP simultaneity becomes decision-relevant."
+    }
+  ],
   "remaining_blockers": [
     "PI approval of D004-MC-001 or an amended construction rule",
     "D-004 source acceptance/sign-off remains pending",
