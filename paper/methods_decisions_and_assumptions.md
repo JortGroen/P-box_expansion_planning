@@ -67,6 +67,7 @@ the corresponding register row.
 | D-013/CBS split | HP local heat is split over SFH/MFH using CBS Alkmaar dwelling counts, not measured class-specific heat demand. | Proposed route; count-share versus area-weighted split requires PI sign-off before executable values. |
 | D004-MC-001/D004-SOURCE-MEMBER-ACCEPTANCE | KNMI Berkhout is the realized weather path for Alkmaar; hourly `T` and `Q` are expanded to 15-minute members, and PVGIS remains sanity/provenance only. | Approved for internal source/member use; final paired HP/PV validation and cold-spell tolerances remain pending. |
 | PV-PARAM-001 | PV conversion parameters remain unsigned: installed capacity, tilt/aspect, losses/PR, temperature coefficient, clipping, and GHI-vs-plane treatment require PI signoff. | Proposed; fail-closed scaffold only. |
+| PV-CAP-001/D-014 | PV installed capacity is anchored to local Alkmaar CBS photovoltaic capacity and scaled to 2035 through a signed II3050/scenario growth factor; optional DEGO/Zonnedakje/building sources support allocation only if registered. | Approved route; concrete retrieval, values, capacity convention, and per-node allocation remain pending. |
 | EV-007A/A-014/D-010 | Alkmaar municipality is the local proxy for the synthetic SimBench case, and local counts are allocated across grid loads by static `p_mw`. | EV local totals and A-014 allocation are approved; this remains an illustrative-case transfer assumption. |
 | A-013 | The candidate `epsilon_grid = 5%` with `2%`/`10%` sensitivities is not empirical or expert-signed. | Proposed only; E9.S5a evidence review is required before numerical use as a scientific claim. |
 ## Decisions
@@ -1412,6 +1413,10 @@ integrated HP/PV acceptance.
 
 **Status: Proposed; unsigned fail-closed scaffold only.** The PV/weather readiness layer now records a proposed `PV-PARAM-001` decision packet for the PV conversion parameters that remain scientifically unsigned after D-004 source/member acceptance. The packet asks the PI to decide installed-capacity handling, whether PVGIS 35-degree south-facing geometry remains provenance only or becomes an approved plane-of-array treatment, how losses or performance ratio are represented, whether and how temperature coefficients apply, clipping semantics, and whether KNMI `Q`-derived GHI may be used directly or must be transformed to plane-of-array irradiance. Until the PI signs this parameter decision, `PVSystemConfig` can support scaffold and unit-test calculations but its guard method raises before signed executable PV input use. This proposed packet does not approve numerical PV parameters, final paired HP/PV acceptance, cold-spell tolerances, net-load/event analysis, `P(E)`, capacity screens, or manuscript results.
 
+<!-- methods-id: PV-CAP-001 -->
+### PV-CAP-001 - PV Installed-Capacity Source Route
+
+**Status: Approved route; executable values pending.** PV installed capacity is treated as a separate modelling input from the irradiance-to-power conversion. The approved route anchors present-day capacity to a concrete Alkmaar CBS photovoltaic-capacity source, then scales that local anchor to the frozen 2035 planning layer using a signed Netbeheer Nederland II3050/scenario growth factor. This matches the project story that a DSO would start from local asset/adoption information rather than infer installed capacity from the weather model. DEGO, CBS building/geography data, Zonnedakje, and the PI-supplied Kostas thesis may support source discovery or spatial allocation only if the exact data, license, retrieval path, and provenance are registered first. The decision does not by itself approve a numeric capacity, CBS row/year/field, II3050 growth value, DC/AC convention, per-node allocation, PV-PARAM-001 conversion parameters, net-load/event analysis, `P(E)`, capacity screens, or manuscript results.
 <!-- methods-id: D004-MC-001 -->
 ### D004-MC-001 - D-004 Weather-Member Construction Rule
 
@@ -1620,6 +1625,10 @@ columns, convert units, approve a space/DHW split, sign 2035 adoption, produce
 annual TWh values, sign D-004, run cold-spell or paired-weather acceptance, run
 net-load/event analysis, estimate `P(E)`, or produce manuscript numbers.
 
+<!-- methods-id: D-014 -->
+### D-014 - PV Installed-Capacity Source Bundle
+
+**Status: Proposed source bundle; retrieval/checksum and numeric values pending.** D-014 records the public-source bundle needed to implement PV-CAP-001. The primary candidate local anchor is the CBS StatLine photovoltaic-capacity table for Alkmaar, because it is public, regionally disaggregated, and reports installed PV capacity and installation counts by sector and size class. Netbeheer Nederland II3050 supplies the scenario framing and candidate growth factor for scaling the local anchor to 2035. DEGO, CBS building/geography tables, and Zonnedakje may help allocate capacity spatially only after their concrete Alkmaar data, license, and downloadability are verified; otherwise they remain contextual/source-discovery evidence. Before executable PV input uses this bundle, the project must record the exact retrieved files or API queries, checksums, selected geography, selected source year, selected capacity field and DC/AC convention, II3050 growth factor, and per-node allocation rule. D-014 does not approve any installed-capacity number, allocation, net-load/event analysis, `P(E)`, capacity-screen result, or manuscript number.
 <!-- methods-id: D-013 -->
 ### D-013 - HP-001 Alkmaar Local Scaling Source Bundle
 
@@ -1668,4 +1677,3 @@ base policy as well. The sole code-level bootstrap exception is the initial
 `codex/ownership-enforcement` pull request when neither policy file exists on
 its base; after that first merge, the same branch is governed by the base
 policy like every other branch.
-
