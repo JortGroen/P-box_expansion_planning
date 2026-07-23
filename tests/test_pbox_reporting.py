@@ -1,0 +1,177 @@
+from __future__ import annotations
+
+import pytest
+
+from src.pbox import PBoxAlphaResult, ProbabilityEstimate, VertexUseMode
+from src.pbox_reporting import (
+    build_guarded_pbox_report,
+    probability_rows_from_pbox_family,
+)
+from src.pbox_result_guards import FinalResultPrerequisites, PaperFacingResultKind
+
+
+def _estimate(probability: float, successes: int = 1) -> ProbabilityEstimate:
+    return ProbabilityEstimate(
+        probability=probability,
+        ci_lower=max(0.0, probability - 0.05),
+        ci_upper=min(1.0, probability + 0.05),
+        successes=successes,
+        sample_count=10,
+    )
+
+
+def _pbox_family(*, use_mode: VertexUseMode = VertexUseMode.PRE_G3_SYNTHETIC):
+    return {
+        0.5: PBoxAlphaResult(
+            use_mode=use_mode,
+            alpha=0.5,
+            rho_lower=0.25,
+            rho_upper=0.75,
+            lower=_estimate(0.15),
+            upper=_estimate(0.25, successes=2),
+        ),
+        0.0: PBoxAlphaResult(
+            use_mode=use_mode,
+            alpha=0.0,
+            rho_lower=0.0,
+            rho_upper=1.0,
+            lower=_estimate(0.10),
+            upper=_estimate(0.30, successes=3),
+        ),
+    }
+
+
+def _complete_prerequisites(*, g3: bool = False) -> FinalResultPrerequisites:
+    return FinalResultPrerequisites(
+        g2_tier1_envelope_approved=True,
+        a013_grid_error_signed=True,
+        capacity_convention_approved=True,
+        capacity_denominator_provenance="manifested synthetic capacity denominator",
+        output_error_endpoint_records_manifested=True,
+        g3_vertex_shortcut_approved=g3,
+    )
+
+
+def _output_error_record() -> dict[str, object]:
+    return {
+        "config": {
+            "event_semantics": {
+                "direction_gate": "unwidened_p_net_import_mask",
+                "min_consecutive_steps": 4,
+                "threshold_pu": 1.0,
+            }
+        },
+        "event_count_bounds": {
+            "lower_successes": 1,
+            "sample_count": 10,
+            "upper_successes": 3,
+        },
+        "probability_bounds": {
+            "lower": {"probability": 0.1},
+            "upper": {"probability": 0.3},
+        },
+        "probability_widening": "forbidden",
+        "sample_endpoint_events": [],
+    }
+
+
+def test_probability_rows_from_pbox_family_are_sorted_alpha_indexed_bounds() -> None:
+    rows = probability_rows_from_pbox_family(_pbox_family())
+
+    assert [row["alpha"] for row in rows] == [0.0, 0.5]
+    assert rows[0]["p_lower"] == 0.10
+    assert rows[0]["p_upper"] == 0.30
+    assert rows[0]["vertex_use_mode"] == "pre-g3-synthetic"
+    assert "p_hat" not in rows[0]
+    assert "defuzzified_probability" not in rows[0]
+
+
+def test_synthetic_guarded_report_serializes_blocked_prerequisites() -> None:
+    report = build_guarded_pbox_report(
+        pbox_family=_pbox_family(),
+        prerequisites=FinalResultPrerequisites(),
+    )
+
+    payload = report.to_mapping()
+
+    assert payload["use_status"] == "synthetic-only"
+    assert payload["guard"]["allowed"] is False
+    assert "G2 Tier-1 envelope/adequacy approval" in payload["guard"]["missing_prerequisites"]
+    assert len(payload["probability_rows"]) == 2
+
+
+def test_paper_facing_report_rejects_missing_prerequisites() -> None:
+    with pytest.raises(RuntimeError, match="signed A-013"):
+        build_guarded_pbox_report(
+            pbox_family=_pbox_family(),
+            prerequisites=FinalResultPrerequisites(),
+            use_status="paper-facing",
+            output_error_record=_output_error_record(),
+        )
+
+
+def test_paper_facing_report_requires_endpoint_record_even_when_gates_are_supplied() -> None:
+    with pytest.raises(RuntimeError, match="output-error endpoint records"):
+        build_guarded_pbox_report(
+            pbox_family=_pbox_family(),
+            prerequisites=_complete_prerequisites(),
+            use_status="paper-facing",
+        )
+
+
+def test_paper_facing_report_accepts_complete_guarded_fixture() -> None:
+    report = build_guarded_pbox_report(
+        pbox_family=_pbox_family(),
+        prerequisites=_complete_prerequisites(),
+        use_status="paper-facing",
+        output_error_record=_output_error_record(),
+    )
+
+    payload = report.to_mapping()
+
+    assert payload["guard"]["allowed"] is True
+    assert payload["output_error_record"]["probability_widening"] == "forbidden"
+
+
+def test_output_error_record_must_forbid_probability_widening() -> None:
+    with pytest.raises(ValueError, match="probability_widening='forbidden'"):
+        build_guarded_pbox_report(
+            pbox_family=_pbox_family(),
+            prerequisites=_complete_prerequisites(),
+            output_error_record={
+                **_output_error_record(),
+                "probability_widening": "allowed",
+            },
+        )
+
+
+def test_paper_facing_vertex_report_requires_g3_approved_pbox_rows() -> None:
+    with pytest.raises(RuntimeError, match="G3-approved"):
+        build_guarded_pbox_report(
+            pbox_family=_pbox_family(use_mode=VertexUseMode.PRE_G3_SYNTHETIC),
+            prerequisites=_complete_prerequisites(g3=True),
+            result_kind=PaperFacingResultKind.VERTEX_SHORTCUT,
+            use_status="paper-facing",
+            output_error_record=_output_error_record(),
+        )
+
+
+def test_paper_facing_vertex_report_accepts_g3_approved_fixture_only_when_guard_allows() -> None:
+    report = build_guarded_pbox_report(
+        pbox_family=_pbox_family(use_mode=VertexUseMode.G3_APPROVED),
+        prerequisites=_complete_prerequisites(g3=True),
+        result_kind=PaperFacingResultKind.VERTEX_SHORTCUT,
+        use_status="paper-facing",
+        output_error_record=_output_error_record(),
+    )
+
+    assert report.to_mapping()["guard"]["allowed"] is True
+
+
+def test_invalid_use_status_is_rejected() -> None:
+    with pytest.raises(ValueError, match="use_status"):
+        build_guarded_pbox_report(
+            pbox_family=_pbox_family(),
+            prerequisites=FinalResultPrerequisites(),
+            use_status="draft",
+        )
