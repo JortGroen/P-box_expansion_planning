@@ -367,3 +367,57 @@ def test_boundary_payload_validator_rejects_endpoint_record_when_guard_says_abse
 
     with pytest.raises(ValueError, match="endpoint-record prerequisite"):
         assert_runner_report_boundary_payload(payload)
+
+
+def test_decision_result_boundary_blocks_paper_facing_without_gates() -> None:
+    with pytest.raises(RuntimeError, match="G2 Tier-1"):
+        build_runner_report_boundary_record(
+            boundary_id="decision-without-gates",
+            pbox_family=_pbox_family(),
+            prerequisites=FinalResultPrerequisites(),
+            result_kind=PaperFacingResultKind.DECISION_RESULT,
+            use_status="paper-facing",
+            output_error_record=_output_error_record(),
+        )
+
+
+def test_decision_result_boundary_requires_endpoint_record_when_paper_facing() -> None:
+    with pytest.raises(RuntimeError, match="output-error endpoint records"):
+        build_runner_report_boundary_record(
+            boundary_id="decision-without-endpoints",
+            pbox_family=_pbox_family(),
+            prerequisites=_complete_prerequisites(),
+            result_kind=PaperFacingResultKind.DECISION_RESULT,
+            use_status="paper-facing",
+        )
+
+
+def test_decision_result_boundary_accepts_complete_synthetic_fixture_without_g3() -> None:
+    payload = build_runner_report_boundary_record(
+        boundary_id="complete-decision-fixture",
+        pbox_family=_pbox_family(),
+        prerequisites=_complete_prerequisites(g3=False),
+        result_kind=PaperFacingResultKind.DECISION_RESULT,
+        use_status="paper-facing",
+        output_error_record=_output_error_record(),
+    ).to_mapping()
+
+    assert payload["paper_facing_allowed"] is True
+    assert payload["guarded_report"]["result_kind"] == "decision-result"
+    assert_runner_report_boundary_payload(payload)
+
+
+def test_decision_result_boundary_rejects_tampered_result_kind_mismatch() -> None:
+    payload = build_runner_report_boundary_record(
+        boundary_id="decision-kind-mismatch",
+        pbox_family=_pbox_family(),
+        prerequisites=_complete_prerequisites(),
+        result_kind=PaperFacingResultKind.DECISION_RESULT,
+        use_status="paper-facing",
+        output_error_record=_output_error_record(),
+    ).to_mapping()
+    guarded_report = dict(payload["guarded_report"])
+    guarded_report["result_kind"] = "pbox-probability"
+
+    with pytest.raises(ValueError, match="guard result_kind"):
+        assert_runner_report_boundary_payload({**payload, "guarded_report": guarded_report})

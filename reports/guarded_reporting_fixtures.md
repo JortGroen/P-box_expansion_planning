@@ -79,3 +79,11 @@ payload whose guard says endpoint records are manifested must actually include
 an `output_error_record`, and a payload that includes endpoint records cannot
 keep the guard prerequisite marked absent. This makes endpoint-record presence a
 structural property of the future report boundary rather than a nearby note.
+## Decision-Result Boundary Coverage
+
+The same guarded boundary now has explicit synthetic tests for
+`decision-result` payloads. Paper-facing decision results require G2, signed
+A-013, capacity convention/provenance, and endpoint records, but do not require
+G3 unless the result is specifically a vertex-shortcut output. Serialized
+payload validation also rejects tampered decision-result records whose report
+kind and guard kind disagree.
