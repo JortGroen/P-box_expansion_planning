@@ -1576,6 +1576,12 @@ explicitly promotes that use.
 
 
 
+
+<!-- methods-id: E2-S3-HP001-SCALING-FORMULA-CONFIG -->
+### E2-S3-HP001-SCALING-FORMULA-CONFIG - HP-001 Local Scaling Formula/Config Guard
+
+**Status: Proposed packet; executable annual values unsigned.** The HP-001 local scaling formula/config packet records the remaining decisions needed after A-015/D013-PBL-MAPPING approved only the PBL indicator mapping assumption. The proposed route would use PBL `Referentie_2030` values from `Alkmaar_strategie.csv`, multiply the approved residential space and domestic-hot-water indicators by `I11_woningequivalenten [Woning]`, convert GJ/year to TWh/year by division by `3,600,000`, split each end use over SFH/MFH using CBS 85035NED count shares unless another split is signed, and then apply a separately signed 2035 HP service/adoption/electrification multiplier. The implementation scaffold is fail-closed: `HP001LocalScalingConfig` records candidate choices and values, but `hp001_components_from_local_scaling_config` raises until approval IDs are present for value-column use, denominator use, unit conversion, SFH/MFH split, and 2035 adoption/electrification. This packet does not approve annual TWh values, D-004 or cold-spell acceptance, net-load/event analysis, `P(E)`, threshold/capacity-screen results, manuscript numbers, or probability results.
+
 <!-- methods-id: E2-S3-HP-LOCAL-SCALING-SOURCE-USE-PROPOSAL -->
 ### E2-S3-HP-LOCAL-SCALING-SOURCE-USE-PROPOSAL - HP-001 D-013 Local Scaling Source-Use Proposal
 

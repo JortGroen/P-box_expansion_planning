@@ -232,6 +232,36 @@ def test_hp_scaling_route_keeps_hp001_components_traceable() -> None:
     )
 
 
+def test_hp001_scaling_formula_packet_records_remaining_unsigned_decisions(tmp_path: Path) -> None:
+    packet = hp_scaling.build_hp001_scaling_formula_config_decision_packet()
+
+    assert packet["decision_packet_id"] == "E2-S3-HP001-SCALING-FORMULA-CONFIG"
+    assert packet["already_approved"]["indicator_mapping"]["approval_ids"] == (
+        "D013-PBL-MAPPING",
+        "A-015",
+    )
+    assert {item["key"] for item in packet["remaining_decisions"]} == {
+        "value_column",
+        "denominator",
+        "unit_conversion",
+        "sfh_mfh_split",
+        "adoption_electrification",
+    }
+    assert packet["fail_closed_config_contract"]["required_approval_keys"] == [
+        "value_column",
+        "denominator",
+        "unit_conversion",
+        "sfh_mfh_split",
+        "adoption_electrification",
+    ]
+    assert packet["formula_under_review"]["space_indicator"] == "H23_Vraag_RV_w"
+    assert "No annual HP TWh values are executable." in packet["non_claims"]
+
+    path = hp_scaling.write_hp001_scaling_formula_config_decision_packet(tmp_path)
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    assert payload["status"].endswith("annual HP TWh values not executable")
+
+
 def test_elaad_source_uses_profile_generator_route() -> None:
     d002 = next(spec for spec in source_specs() if spec.data_id == "D-002")
 

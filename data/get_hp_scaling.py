@@ -24,6 +24,7 @@ MUNICIPALITY_CODE = "GM0361"
 MUNICIPALITY_NAME = "Alkmaar"
 CHECKPOINT_FILENAME = "hp001_alkmaar_gm0361_retrieval_checkpoint.json"
 RETRIEVAL_MANIFEST_FILENAME = "hp001_alkmaar_gm0361_retrieval_manifest.json"
+FORMULA_DECISION_PACKET_FILENAME = "hp001_alkmaar_gm0361_scaling_formula_config_decision_packet.json"
 DOWNLOAD_TIMEOUT_S = 120.0
 PBL_HEAT_TERMS = ("warmte", "heat", "gas", "energie", "energy", "verbruik", "demand", "vraag")
 PBL_DHW_TERMS = ("tapwater", "warm_water", "dhw", "water")
@@ -160,6 +161,97 @@ def build_hp_scaling_retrieval_plan() -> dict[str, Any]:
             "No commercial heat is included in the primary route.",
         ],
     }
+
+
+def build_hp001_scaling_formula_config_decision_packet() -> dict[str, Any]:
+    """Return the remaining HP-001 scaling decisions without executable values."""
+    return {
+        "data_id": DATA_ID,
+        "decision_packet_id": "E2-S3-HP001-SCALING-FORMULA-CONFIG",
+        "created_utc": _utc_now(),
+        "status": "proposed decision packet; annual HP TWh values not executable",
+        "already_approved": {
+            "indicator_mapping": {
+                "approval_ids": ("D013-PBL-MAPPING", "A-015"),
+                "scope": "Mapping only: _w/_u and H22/H23/H24 residential space/DHW/total meanings in [GJ/weq/jaar].",
+            },
+            "hp001_boundary": "Residential SFH/MFH space heat plus domestic hot water; commercial heat excluded.",
+        },
+        "remaining_decisions": [
+            {
+                "key": "value_column",
+                "recommended_choice": "Referentie_2030",
+                "source": "PBL Startanalyse 2025 Alkmaar, Alkmaar_strategie.csv",
+                "reason": "Reference heat-demand column rather than a strategy/pathway optimization output.",
+                "approval_required_before_executable_values": True,
+            },
+            {
+                "key": "denominator",
+                "recommended_choice": "I11_woningequivalenten [Woning]",
+                "source": "PBL Startanalyse 2025 Alkmaar, Alkmaar_strategie.csv",
+                "reason": "Matches the [GJ/weq/jaar] intensity basis for residential rows under A-015.",
+                "approval_required_before_executable_values": True,
+            },
+            {
+                "key": "unit_conversion",
+                "recommended_choice": "divide summed GJ/year by 3,600,000 to obtain TWh/year",
+                "source": "SI energy conversion; 1 TWh = 3,600,000 GJ",
+                "reason": "Keeps PBL useful-thermal intensity units explicit before When2Heat annual-TWh scaling.",
+                "approval_required_before_executable_values": True,
+            },
+            {
+                "key": "sfh_mfh_split",
+                "recommended_choice": "CBS 85035NED count-share split between Eengezinswoningen totaal and Meergezinswoningen totaal",
+                "source": "CBS 85035NED Alkmaar GM0361 dwelling stock/type evidence",
+                "reason": "Uses the cleanest signed denominator candidate without adding an area-as-heat proxy.",
+                "sensitivity_option": "Area-weighted split using CBS average floor area, if separately signed.",
+                "approval_required_before_executable_values": True,
+            },
+            {
+                "key": "adoption_electrification",
+                "recommended_choice": "separate signed 2035 HP service fraction/count scenario",
+                "source": "pending PI-selected source or author-specified scenario",
+                "reason": "Keeps local heat demand separate from 2035 HP adoption/electrification and DHW service boundary.",
+                "approval_required_before_executable_values": True,
+            },
+        ],
+        "fail_closed_config_contract": {
+            "config_type": "src.hp_model.HP001LocalScalingConfig",
+            "required_approval_keys": [
+                "value_column",
+                "denominator",
+                "unit_conversion",
+                "sfh_mfh_split",
+                "adoption_electrification",
+            ],
+            "builder": "src.hp_model.hp001_components_from_local_scaling_config",
+            "guard": "src.hp_model.require_signed_hp001_local_scaling_config",
+            "behavior": "The builder raises until every required approval key has a non-empty signed approval ID.",
+        },
+        "formula_under_review": {
+            "local_heat_twh_by_end_use": "sum_b intensity_GJ_per_weq_year[b,end_use] * I11_woningequivalenten_woning[b] / 3_600_000",
+            "space_indicator": "H23_Vraag_RV_w",
+            "water_indicator": "H24_Vraag_TW_w",
+            "diagnostic_total_indicator": "H22_Vraag_totaal_w",
+            "class_allocation": "H_local_TWh[class,end_use] = H_local_TWh[end_use] * w_class[class]",
+            "hp_served_twh": "H_HP_TWh[class,end_use,scenario] = H_local_TWh[class,end_use] * f_HP_service[class,end_use,scenario]",
+        },
+        "non_claims": [
+            "No annual HP TWh values are executable.",
+            "No 2035 HP adoption/electrification value is signed.",
+            "No D-004/cold-spell acceptance, net-load, event, P(E), threshold, capacity-screen, manuscript, or probability analysis is run.",
+        ],
+    }
+
+
+def write_hp001_scaling_formula_config_decision_packet(metadata_dir: Path) -> Path:
+    """Write the proposed remaining-choice packet without executable values."""
+    target_dir = metadata_dir / "hp_scaling"
+    target_dir.mkdir(parents=True, exist_ok=True)
+    path = target_dir / FORMULA_DECISION_PACKET_FILENAME
+    payload = build_hp001_scaling_formula_config_decision_packet()
+    path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    return path
 
 
 def write_hp_scaling_retrieval_plan(metadata_dir: Path) -> Path:
@@ -555,6 +647,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Write or execute the HP-001 Alkmaar local scaling source route.")
     parser.add_argument("--metadata-dir", default="data/metadata")
     parser.add_argument("--write-plan", action="store_true", help="Write the approved retrieval/checksum/value route without downloading data.")
+    parser.add_argument("--write-formula-packet", action="store_true", help="Write the proposed HP-001 formula/config decision packet without executable values.")
     parser.add_argument("--download", action="store_true", help="Retrieve/checksum the approved D-013 public sources; no values are produced.")
     parser.add_argument("--inspect-existing", action="store_true", help="Refresh schema metadata from existing ignored D-013 raw files without network or values.")
     parser.add_argument("--resume", action="store_true", help="Skip completed sources whose raw files match checkpoint byte size and SHA-256.")
@@ -564,6 +657,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         path = retrieve_hp_scaling_sources(raw_dir=Path(args.raw_dir), metadata_dir=Path(args.metadata_dir), resume=args.resume)
     elif args.inspect_existing:
         path = inspect_existing_hp_scaling_sources(raw_dir=Path(args.raw_dir), metadata_dir=Path(args.metadata_dir))
+    elif args.write_formula_packet:
+        path = write_hp001_scaling_formula_config_decision_packet(Path(args.metadata_dir))
     else:
         path = write_hp_scaling_retrieval_plan(Path(args.metadata_dir))
     print(path)

@@ -40,6 +40,15 @@ HP001_WATER_COP_COLUMN = "NL_COP_ASHP_water"
 HP001_RESIDENTIAL_BUILDING_CLASSES = ("SFH", "MFH")
 HP001_DECISION_ID = "HP-001"
 HP001_DATA_ID = "D-003"
+HP001_LOCAL_SCALING_DATA_ID = "D-013"
+HP001_INDICATOR_MAPPING_ASSUMPTION_ID = "A-015"
+HP001_SCALING_REQUIRED_APPROVAL_KEYS = (
+    "value_column",
+    "denominator",
+    "unit_conversion",
+    "sfh_mfh_split",
+    "adoption_electrification",
+)
 
 
 class SharedWeatherMember(Protocol):
@@ -171,6 +180,90 @@ class When2HeatCsvMetadata:
             "first_timestamp_local": self.first_timestamp_local,
             "last_timestamp_local": self.last_timestamp_local,
             "n_rows_loaded": self.n_rows_loaded,
+        }
+
+
+@dataclass(frozen=True)
+class HP001LocalScalingConfig:
+    """Guarded local annual-scaling config for HP-001 components.
+
+    The config can record proposed formula choices and candidate values, but it
+    cannot build executable HP components until all remaining non-mapping
+    choices have signed approval IDs.
+    """
+
+    value_column: str
+    denominator_column: str
+    gj_to_twh_divisor: float
+    sfh_mfh_split_rule: str
+    adoption_electrification_scenario: str
+    space_heat_twh_by_class: Mapping[str, float]
+    water_heat_twh_by_class: Mapping[str, float]
+    approval_ids: Mapping[str, str] = field(default_factory=dict)
+    provenance: Mapping[str, Any] = field(default_factory=dict)
+    indicator_mapping_approval_id: str = HP001_INDICATOR_MAPPING_ASSUMPTION_ID
+
+    def __post_init__(self) -> None:
+        for field_name in (
+            "value_column",
+            "denominator_column",
+            "sfh_mfh_split_rule",
+            "adoption_electrification_scenario",
+            "indicator_mapping_approval_id",
+        ):
+            value = getattr(self, field_name)
+            if not str(value).strip():
+                raise ValueError(f"{field_name} must be non-empty")
+            object.__setattr__(self, field_name, str(value).strip())
+        if self.gj_to_twh_divisor <= 0:
+            raise ValueError("gj_to_twh_divisor must be positive")
+        _require_exact_hp001_classes(self.space_heat_twh_by_class, label="space_heat_twh_by_class")
+        _require_exact_hp001_classes(self.water_heat_twh_by_class, label="water_heat_twh_by_class")
+        _validate_positive_twh_values(self.space_heat_twh_by_class, label="space_heat_twh_by_class")
+        _validate_positive_twh_values(self.water_heat_twh_by_class, label="water_heat_twh_by_class")
+        object.__setattr__(
+            self,
+            "space_heat_twh_by_class",
+            _coerce_twh_by_class(self.space_heat_twh_by_class),
+        )
+        object.__setattr__(
+            self,
+            "water_heat_twh_by_class",
+            _coerce_twh_by_class(self.water_heat_twh_by_class),
+        )
+        object.__setattr__(
+            self,
+            "approval_ids",
+            _as_provenance_mapping(self.approval_ids, "approval_ids"),
+        )
+        object.__setattr__(
+            self,
+            "provenance",
+            _as_provenance_mapping(self.provenance, "scaling provenance"),
+        )
+
+    def missing_approval_keys(self) -> tuple[str, ...]:
+        """Return unsigned remaining choices that block executable HP values."""
+        missing: list[str] = []
+        for key in HP001_SCALING_REQUIRED_APPROVAL_KEYS:
+            if not str(self.approval_ids.get(key, "")).strip():
+                missing.append(key)
+        return tuple(missing)
+
+    def as_record(self) -> dict[str, object]:
+        """Return JSON-serializable config metadata for reports/manifests."""
+        return {
+            "value_column": self.value_column,
+            "denominator_column": self.denominator_column,
+            "gj_to_twh_divisor": self.gj_to_twh_divisor,
+            "sfh_mfh_split_rule": self.sfh_mfh_split_rule,
+            "adoption_electrification_scenario": self.adoption_electrification_scenario,
+            "space_heat_twh_by_class": dict(self.space_heat_twh_by_class),
+            "water_heat_twh_by_class": dict(self.water_heat_twh_by_class),
+            "approval_ids": dict(self.approval_ids),
+            "missing_approval_keys": self.missing_approval_keys(),
+            "indicator_mapping_approval_id": self.indicator_mapping_approval_id,
+            "provenance": dict(self.provenance),
         }
 
 
@@ -505,6 +598,43 @@ def hp001_residential_when2heat_components(
             )
         )
     return tuple(components)
+
+
+def require_signed_hp001_local_scaling_config(config: HP001LocalScalingConfig) -> None:
+    """Raise unless every remaining HP-001 local-scaling choice is signed."""
+    missing = config.missing_approval_keys()
+    if missing:
+        raise ValueError(
+            "Executable HP-001 annual scaling requires signed approvals for "
+            f"remaining choices; missing={missing}"
+        )
+
+
+def hp001_components_from_local_scaling_config(
+    config: HP001LocalScalingConfig,
+) -> tuple[When2HeatComponent, ...]:
+    """Build executable HP-001 components only from a fully signed config."""
+    require_signed_hp001_local_scaling_config(config)
+    approval_id = " + ".join(
+        str(config.approval_ids[key]).strip() for key in HP001_SCALING_REQUIRED_APPROVAL_KEYS
+    )
+    return hp001_residential_when2heat_components(
+        space_heat_twh_by_class=config.space_heat_twh_by_class,
+        water_heat_twh_by_class=config.water_heat_twh_by_class,
+        provenance={
+            "annual_scaling_status": "signed",
+            "annual_scaling_approval_id": approval_id,
+            "local_scaling_data_id": HP001_LOCAL_SCALING_DATA_ID,
+            "indicator_mapping_approval_id": config.indicator_mapping_approval_id,
+            "value_column": config.value_column,
+            "denominator_column": config.denominator_column,
+            "gj_to_twh_divisor": config.gj_to_twh_divisor,
+            "sfh_mfh_split_rule": config.sfh_mfh_split_rule,
+            "adoption_electrification_scenario": config.adoption_electrification_scenario,
+            "local_scaling_config": config.as_record(),
+            **dict(config.provenance),
+        },
+    )
 
 
 def load_when2heat_hourly_csv(
@@ -919,6 +1049,16 @@ def _require_exact_hp001_classes(values: Mapping[str, float], *, label: str) -> 
             f"{label} must contain exactly HP-001 residential classes "
             f"{HP001_RESIDENTIAL_BUILDING_CLASSES}; missing={missing}, extra={extra}"
         )
+
+
+def _validate_positive_twh_values(values: Mapping[str, float], *, label: str) -> None:
+    for building_class, value in values.items():
+        if float(value) <= 0:
+            raise ValueError(f"{label}[{building_class!r}] must be positive")
+
+
+def _coerce_twh_by_class(values: Mapping[str, float]) -> dict[str, float]:
+    return {str(key): float(value) for key, value in sorted(values.items())}
 
 
 def _paired_pv_weather_field_names(weather: object, *, expected_shape: tuple[int, ...]) -> tuple[str, ...]:
