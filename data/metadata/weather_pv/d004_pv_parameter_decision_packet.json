@@ -1,0 +1,67 @@
+{
+  "blocks_signed_executable_pv_generation": true,
+  "created_utc": "2026-07-23T07:43:15+00:00",
+  "data_id": "D-004",
+  "decision_id": "PV-PARAM-001",
+  "governing_inputs": [
+    "WEATHER-001",
+    "D004-MC-001",
+    "D004-SOURCE-MEMBER-ACCEPTANCE"
+  ],
+  "out_of_scope_guards": [
+    "no final paired HP/PV acceptance",
+    "no cold-spell tolerance approval",
+    "no net-load/event/P(E)/capacity-screen/manuscript results"
+  ],
+  "parameter_config_status": "unsigned_fail_closed_scaffold",
+  "recommended_decisions": [
+    {
+      "fail_closed_rule": "No default installed capacity is provided by D-004.",
+      "field": "installed_capacity_kw",
+      "question": "Should PV installed capacity be caller-supplied per node/fleet from a signed adoption/allocation layer rather than inferred from the normalized 1.0 kWp PVGIS reference?",
+      "recommendation": "Require signed caller-supplied installed_capacity_kw for each PV fleet; PVGIS peakpower=1.0 remains a normalized reference only."
+    },
+    {
+      "fail_closed_rule": "Tilt/aspect cannot change generated PV unless PV-PARAM-001 signs a plane-of-array treatment.",
+      "field": "tilt_aspect",
+      "question": "Approve fixed tilt/aspect values for PV conversion, or keep them as metadata until a plane-of-array treatment is signed?",
+      "recommendation": "Carry the PVGIS reference geometry of 35 degree tilt and south-facing aspect as provenance; do not apply it to KNMI GHI without a signed transposition rule."
+    },
+    {
+      "fail_closed_rule": "Unsigned configs may be used in scaffold tests only and must raise before signed executable PV input use.",
+      "field": "losses_or_performance_ratio",
+      "question": "Should the PV model use a signed loss percentage, a signed performance ratio, or a documented mapping between the two?",
+      "recommendation": "Require one signed performance_ratio for executable component use; keep the PVGIS 14% loss as reference provenance only until PI approval."
+    },
+    {
+      "fail_closed_rule": "No paper-use coefficient is implied by D-004 source/member acceptance.",
+      "field": "temperature_coefficient_per_c",
+      "question": "Approve the temperature coefficient and reference temperature used to adjust PV output from WEATHER-001 temperature_c.",
+      "recommendation": "Do not infer a coefficient from PVGIS output; PI should sign the coefficient/reference-temperature pair or approve temperature adjustment disabled."
+    },
+    {
+      "fail_closed_rule": "Unsigned clip_to_capacity values are scaffold-only.",
+      "field": "clipping",
+      "question": "Should PV generation be clipped at installed_capacity_kw after loss and temperature adjustment?",
+      "recommendation": "Require PI to sign clipping semantics together with installed capacity and performance-ratio handling."
+    },
+    {
+      "fail_closed_rule": "The scaffold records plane_of_array_treatment and requires signed approval before executable PV use.",
+      "field": "ghi_vs_plane_of_array",
+      "question": "Should KNMI Q-derived GHI be used directly as a conservative first-pass irradiance input, or transformed to plane-of-array before PV conversion?",
+      "recommendation": "Keep WEATHER-001 realized irradiance as KNMI GHI; request PI approval before any GHI-to-plane transposition or claim that GHI equals fixed-plane irradiance."
+    }
+  ],
+  "scaffold_contract": {
+    "approved_status": "approved_for_executable_component_use",
+    "class": "src.pv_model.PVSystemConfig",
+    "guard_method": "PVSystemConfig.require_signed_parameters()",
+    "required_signed_field": "signed_parameter_decision_id",
+    "unsigned_statuses": [
+      "unsigned_scaffold",
+      "proposed_pending_pi_signoff"
+    ]
+  },
+  "scope": "PV conversion parameters after WEATHER-001 source/member readiness",
+  "status": "proposed_pending_pi_signoff"
+}

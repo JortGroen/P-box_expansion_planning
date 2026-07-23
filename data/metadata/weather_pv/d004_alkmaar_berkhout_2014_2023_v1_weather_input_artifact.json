@@ -1,6 +1,6 @@
 {
   "accepted_for_source_member_use": true,
-  "artifact_type": "accepted_weather_001_member_index_for_executable_input_gate",
+  "artifact_type": "accepted_weather_001_source_member_index_for_component_input_gate",
   "blocked_acceptance_gates": {
     "cold_spell_acceptance": {
       "blocked": true,
@@ -33,7 +33,7 @@
       2023
     ]
   },
-  "created_utc": "2026-07-22T14:19:30+00:00",
+  "created_utc": "2026-07-23T07:43:15+00:00",
   "data_id": "D-004",
   "evidence_artifacts": {
     "member_readiness_diagnostics": "data/metadata/weather_pv/d004_alkmaar_berkhout_2014_2023_v1_member_readiness_diagnostics.json",
@@ -376,7 +376,10 @@
   ],
   "pvgis_realized_weather_path": false,
   "pvgis_role": "qualitative seasonal/peak sanity and provenance/calibration context only",
+  "readiness_scope": "source_member_component_input_only_not_final_integrated",
   "ready_for_executable_input_gate": true,
+  "ready_for_executable_input_gate_scope": "legacy_field_true_for_source_member_component_input_only_not_final_integrated",
+  "ready_for_source_member_component_input_gate": true,
   "realized_weather_path": "KNMI station 249 Berkhout hourly T and Q expanded under D004-MC-001",
   "required_identity_fields_for_hp_pv_pairing": [
     "member_id",
@@ -391,6 +394,6 @@
   "selection_id": "d004_alkmaar_berkhout_2014_2023_v1",
   "source_member_acceptance_id": "D004-SOURCE-MEMBER-ACCEPTANCE",
   "source_member_acceptance_status": "approved_for_internal_first_screen_source_member_use_final_paired_acceptance_pending",
-  "status": "accepted_for_source_member_use_final_paired_cold_spell_pending",
+  "status": "accepted_for_source_member_readiness_final_paired_cold_spell_pending",
   "weather_contract": "WEATHER-001"
 }

@@ -11,7 +11,7 @@ from typing import Any, Mapping, Sequence
 
 import numpy as np
 
-from src.rng import ComponentSelection, ComponentStream
+from src.rng import ComponentSelection, ComponentStream, SeedTree
 
 
 EXPECTED_FULL_YEAR_STEPS = 35_040
@@ -1848,6 +1848,361 @@ def ev_candidate_member_selection_manifest(
             "event_or_p_e_analysis_performed": False,
             "m_sufficiency_claimed": False,
         },
+    }
+
+
+
+def ev_candidate_member_selection_manifest_set(
+    candidate_member_reference: Mapping[str, Any],
+    *,
+    decisions_text: str,
+    root_seed: int,
+    sample_index: int,
+    scenarios: Sequence[str] | None = None,
+    materialized_timestamp_utc: str | None = None,
+) -> dict[str, object]:
+    """Materialize candidate-only EV-005B member-selection manifests.
+
+    This emits provenance rows only. It never opens generated profile arrays,
+    held-out batches, or quarantined diagnostic batches.
+    """
+
+    members = _validated_candidate_member_rows(candidate_member_reference)
+    _require_ev005b_approved(decisions_text)
+    seed_tree = SeedTree(root_seed=_require_int(root_seed, "root_seed"))
+    sample = _require_int(sample_index, "sample_index")
+    if sample < 0:
+        raise ValueError("sample_index must be non-negative")
+
+    requirements = candidate_member_reference.get("scenario_node_requirements")
+    if not isinstance(requirements, list):
+        raise ValueError("EV member-selection manifest sets require scenario_node_requirements")
+    requested_scenarios = None if scenarios is None else {_require_non_empty_string(item, "scenario") for item in scenarios}
+    requirement_rows = [
+        _validated_ev_selection_requirement_row(row)
+        for row in requirements
+        if requested_scenarios is None
+        or (isinstance(row, dict) and str(row.get("scenario", "")).strip() in requested_scenarios)
+    ]
+    if not requirement_rows:
+        raise ValueError("No EV scenario-node requirements match the requested scenarios")
+    present_scenarios = {str(row["scenario"]) for row in requirement_rows}
+    if requested_scenarios is not None and present_scenarios != requested_scenarios:
+        missing = sorted(requested_scenarios - present_scenarios)
+        raise ValueError(f"EV scenario-node requirements missing requested scenarios: {missing}")
+
+    home_pool = _candidate_pool_for_component(members, EV_HOME_COMPONENT)
+    public_pools = {
+        capacity_class: _candidate_pool_for_component(
+            members,
+            EV_PUBLIC_COMPONENT,
+            capacity_class=capacity_class,
+        )
+        for capacity_class, _capacity_kw, _share in EV_PUBLIC_SET_B_CAPACITY_MIX
+    }
+    timestamp = materialized_timestamp_utc or datetime.now(UTC).isoformat().replace("+00:00", "Z")
+    scenario_manifests: list[dict[str, object]] = []
+    all_duplicate_summaries: list[dict[str, object]] = []
+
+    for scenario in sorted(present_scenarios):
+        scenario_rows = sorted(
+            [row for row in requirement_rows if row["scenario"] == scenario],
+            key=lambda item: str(item["node_id"]),
+        )
+        home_stream = seed_tree.component_stream(sample, EV_HOME_COMPONENT)
+        public_stream = seed_tree.component_stream(sample, EV_PUBLIC_COMPONENT)
+        home_rng = home_stream.rng()
+        public_rng = public_stream.rng()
+
+        total_home = sum(int(row["home_required_members"]) for row in scenario_rows)
+        total_public_by_capacity = {
+            capacity_class: sum(
+                int(row["public_required_members_by_capacity_class"][capacity_class])
+                for row in scenario_rows
+            )
+            for capacity_class, _capacity_kw, _share in EV_PUBLIC_SET_B_CAPACITY_MIX
+        }
+        home_indices = _draw_candidate_pool_indices(home_rng, len(home_pool), total_home)
+        public_indices_by_capacity = {
+            capacity_class: _draw_candidate_pool_indices(
+                public_rng,
+                len(public_pools[capacity_class]),
+                total_public_by_capacity[capacity_class],
+            )
+            for capacity_class, _capacity_kw, _share in EV_PUBLIC_SET_B_CAPACITY_MIX
+        }
+        home_multiplicities = _member_multiplicities(home_pool, home_indices)
+        public_multiplicities_by_capacity = {
+            capacity_class: _member_multiplicities(public_pools[capacity_class], indices)
+            for capacity_class, indices in public_indices_by_capacity.items()
+        }
+
+        node_manifests: list[dict[str, object]] = []
+        home_offset = 0
+        public_offsets = {capacity_class: 0 for capacity_class, _capacity_kw, _share in EV_PUBLIC_SET_B_CAPACITY_MIX}
+        global_counters: dict[tuple[str, str | None], int] = {
+            (EV_HOME_COMPONENT, None): 0,
+            **{(EV_PUBLIC_COMPONENT, capacity_class): 0 for capacity_class, _kw, _share in EV_PUBLIC_SET_B_CAPACITY_MIX},
+        }
+        for row in scenario_rows:
+            node_id = str(row["node_id"])
+            home_count = int(row["home_required_members"])
+            home_slice = home_indices[home_offset : home_offset + home_count]
+            home_offset += home_count
+            node_selections = _ev_selection_rows_from_indices(
+                pool=home_pool,
+                selected_indices=home_slice,
+                multiplicities=home_multiplicities,
+                scenario=scenario,
+                planning_year=int(row["year"]),
+                node_id=node_id,
+                component_id=EV_HOME_COMPONENT,
+                component_stream=home_stream,
+                capacity_class=None,
+                cp_capacity_kw=None,
+                selection_count_at_node=home_count,
+                global_start_index=global_counters[(EV_HOME_COMPONENT, None)],
+            )
+            global_counters[(EV_HOME_COMPONENT, None)] += home_count
+
+            public_required = row["public_required_members_by_capacity_class"]
+            for capacity_class, capacity_kw, _share in EV_PUBLIC_SET_B_CAPACITY_MIX:
+                public_count = int(public_required[capacity_class])
+                start = public_offsets[capacity_class]
+                stop = start + public_count
+                public_offsets[capacity_class] = stop
+                public_slice = public_indices_by_capacity[capacity_class][start:stop]
+                node_selections.extend(
+                    _ev_selection_rows_from_indices(
+                        pool=public_pools[capacity_class],
+                        selected_indices=public_slice,
+                        multiplicities=public_multiplicities_by_capacity[capacity_class],
+                        scenario=scenario,
+                        planning_year=int(row["year"]),
+                        node_id=node_id,
+                        component_id=EV_PUBLIC_COMPONENT,
+                        component_stream=public_stream,
+                        capacity_class=capacity_class,
+                        cp_capacity_kw=capacity_kw,
+                        selection_count_at_node=public_count,
+                        global_start_index=global_counters[(EV_PUBLIC_COMPONENT, capacity_class)],
+                    )
+                )
+                global_counters[(EV_PUBLIC_COMPONENT, capacity_class)] += public_count
+
+            node_manifests.append(
+                {
+                    "scenario": scenario,
+                    "planning_year": int(row["year"]),
+                    "node_id": node_id,
+                    "home_required_members": home_count,
+                    "public_required_members": int(row["public_required_members"]),
+                    "public_required_members_by_capacity_class": dict(public_required),
+                    "selections": node_selections,
+                }
+            )
+
+        scenario_duplicate_summary = [
+            _duplicate_summary_record(
+                scenario=scenario,
+                component_id=EV_HOME_COMPONENT,
+                capacity_class=None,
+                selected_count=total_home,
+                multiplicities=home_multiplicities,
+            )
+        ]
+        scenario_duplicate_summary.extend(
+            _duplicate_summary_record(
+                scenario=scenario,
+                component_id=EV_PUBLIC_COMPONENT,
+                capacity_class=capacity_class,
+                selected_count=total_public_by_capacity[capacity_class],
+                multiplicities=public_multiplicities_by_capacity[capacity_class],
+            )
+            for capacity_class, _capacity_kw, _share in EV_PUBLIC_SET_B_CAPACITY_MIX
+        )
+        all_duplicate_summaries.extend(scenario_duplicate_summary)
+
+        scenario_manifests.append(
+            {
+                "scenario": scenario,
+                "planning_year": int(scenario_rows[0]["year"]),
+                "node_count": len(scenario_rows),
+                "home_required_members": total_home,
+                "public_required_members": sum(total_public_by_capacity.values()),
+                "public_required_members_by_capacity_class": dict(sorted(total_public_by_capacity.items())),
+                "component_streams": {
+                    EV_HOME_COMPONENT: home_stream.manifest_record(),
+                    EV_PUBLIC_COMPONENT: public_stream.manifest_record(),
+                },
+                "node_manifests": node_manifests,
+                "duplicate_summary": scenario_duplicate_summary,
+            }
+        )
+
+    return {
+        "schema_version": 1,
+        "artifact_type": "ev_candidate_member_selection_manifest_set",
+        "status": "candidate_member_selection_metadata_only",
+        "task_id": "E2.S2",
+        "decision_id": "EV-005B",
+        "source_candidate_member_reference": "data/metadata/ev_adoption/e2_s2_ev_ic1_candidate_member_reference.json",
+        "materialized_timestamp_utc": timestamp,
+        "root_seed": seed_tree.root_seed,
+        "sample_index": sample,
+        "seed_tree": {
+            "protocol_id": "RNG-001",
+            "sample_seed": seed_tree.sample_seed(sample),
+        },
+        "planning_year": _require_int(candidate_member_reference.get("planning_year"), "planning_year"),
+        "calendar_mapping": {
+            "status": "approved",
+            "rule_id": EV_CALENDAR_MAPPING_RULE_ID,
+            "rule_version": EV_CALENDAR_MAPPING_RULE_VERSION,
+            "source_calendar_id": EV_SOURCE_CALENDAR_ID,
+            "target_calendar_id": EV_TARGET_CALENDAR_ID,
+            "source_timestamp_index_policy": "target_index_i_uses_source_index_i",
+            "n_timesteps": EXPECTED_FULL_YEAR_STEPS,
+            "weekday_weekend_preserved": False,
+        },
+        "scenario_count": len(scenario_manifests),
+        "scenarios": scenario_manifests,
+        "duplicate_summary": all_duplicate_summaries,
+        "policy": {
+            "candidate_only": True,
+            "replacement_policy_id": "EV-005B",
+            "replacement_enabled": True,
+            "held_out_access": False,
+            "quarantined_access": False,
+            "profile_arrays_loaded": False,
+            "integrated_analysis_performed": False,
+            "event_or_p_e_analysis_performed": False,
+            "capacity_screen_performed": False,
+            "manuscript_numbers_produced": False,
+            "m_sufficiency_claimed": False,
+        },
+    }
+
+
+def _validated_ev_selection_requirement_row(value: Any) -> dict[str, object]:
+    if not isinstance(value, dict):
+        raise ValueError("EV scenario-node requirements must be mappings")
+    public_by_capacity = _require_int_mapping(
+        value.get("public_required_members_by_capacity_class"),
+        "public_required_members_by_capacity_class",
+    )
+    expected_capacity_classes = {capacity_class for capacity_class, _kw, _share in EV_PUBLIC_SET_B_CAPACITY_MIX}
+    if set(public_by_capacity) != expected_capacity_classes:
+        raise ValueError("EV public requirements must cover every EV-008A capacity class exactly once")
+    row = {
+        "scenario": _require_non_empty_string(value.get("scenario"), "scenario"),
+        "year": _require_int(value.get("year"), "year"),
+        "node_id": _require_non_empty_string(value.get("node_id"), "node_id"),
+        "home_required_members": _require_int(value.get("home_required_members"), "home_required_members"),
+        "public_required_members": _require_int(value.get("public_required_members"), "public_required_members"),
+        "public_required_members_by_capacity_class": dict(sorted(public_by_capacity.items())),
+    }
+    if int(row["home_required_members"]) < 0 or int(row["public_required_members"]) < 0:
+        raise ValueError("EV scenario-node requirements must be nonnegative")
+    if sum(public_by_capacity.values()) != int(row["public_required_members"]):
+        raise ValueError("EV public capacity-class requirements must conserve node public total")
+    return row
+
+
+def _candidate_pool_for_component(
+    members: Sequence[Mapping[str, object]],
+    component_id: str,
+    *,
+    capacity_class: str | None = None,
+) -> list[dict[str, object]]:
+    pool = [
+        dict(row)
+        for row in members
+        if row["component_id"] == component_id
+        and (capacity_class is None or row.get("capacity_class") == capacity_class)
+    ]
+    if not pool:
+        raise ValueError("No candidate EV source members match the requested component/capacity class")
+    return pool
+
+
+def _draw_candidate_pool_indices(rng: np.random.Generator, pool_size: int, count: int) -> list[int]:
+    if count < 0:
+        raise ValueError("EV member-selection counts must be nonnegative")
+    if count == 0:
+        return []
+    return [int(index) for index in rng.choice(pool_size, size=count, replace=True)]
+
+
+def _member_multiplicities(
+    pool: Sequence[Mapping[str, object]],
+    selected_indices: Sequence[int],
+) -> Counter[str]:
+    return Counter(str(pool[index]["source_member_id"]) for index in selected_indices)
+
+
+def _ev_selection_rows_from_indices(
+    *,
+    pool: Sequence[Mapping[str, object]],
+    selected_indices: Sequence[int],
+    multiplicities: Mapping[str, int],
+    scenario: str,
+    planning_year: int,
+    node_id: str,
+    component_id: str,
+    component_stream: ComponentStream,
+    capacity_class: str | None,
+    cp_capacity_kw: int | None,
+    selection_count_at_node: int,
+    global_start_index: int,
+) -> list[dict[str, object]]:
+    selections: list[dict[str, object]] = []
+    for node_selection_index, pool_index in enumerate(selected_indices):
+        row = pool[pool_index]
+        member_id = str(row["source_member_id"])
+        multiplicity = int(multiplicities[member_id])
+        selections.append(
+            {
+                "node_id": node_id,
+                "component_id": component_id,
+                "capacity_class": capacity_class,
+                "cp_capacity_kw": cp_capacity_kw,
+                "selection_index": node_selection_index,
+                "realization_selection_index": global_start_index + node_selection_index,
+                "selection_pool_index": int(pool_index),
+                "selection_count_at_node": selection_count_at_node,
+                "source_member_id": member_id,
+                "library_id": str(row["library_id"]),
+                "partition": str(row["partition"]),
+                "control_mode": str(row["control_mode"]),
+                "batch_seed": int(row["batch_seed"]),
+                "returned_profile_index": int(row["returned_profile_index"]),
+                "candidate_processed_path": str(row["processed_path"]),
+                "candidate_processed_sha256_file": str(row["candidate_processed_sha256_file"]),
+                "duplicate_within_realization": multiplicity > 1,
+                "duplicate_multiplicity": multiplicity,
+            }
+        )
+    return selections
+
+
+def _duplicate_summary_record(
+    *,
+    scenario: str,
+    component_id: str,
+    capacity_class: str | None,
+    selected_count: int,
+    multiplicities: Mapping[str, int],
+) -> dict[str, object]:
+    duplicate_values = [count for count in multiplicities.values() if count > 1]
+    return {
+        "scenario": scenario,
+        "component_id": component_id,
+        "capacity_class": capacity_class,
+        "selected_count": selected_count,
+        "unique_source_member_count": len(multiplicities),
+        "duplicate_source_member_count": len(duplicate_values),
+        "max_duplicate_multiplicity": max(duplicate_values, default=1),
     }
 
 

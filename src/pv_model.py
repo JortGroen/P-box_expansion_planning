@@ -48,6 +48,10 @@ class PVSystemConfig:
     reference_temperature_c: float
     clip_to_capacity: bool
     config_id: str = "explicit"
+    parameter_status: str = "unsigned_scaffold"
+    signed_parameter_decision_id: str | None = None
+    irradiance_input_basis: str = "weather_member_ghi_w_per_m2"
+    plane_of_array_treatment: str = "ghi_used_directly_no_transposition_unsigned_scaffold"
 
     def __post_init__(self) -> None:
         if not self.config_id:
@@ -60,6 +64,23 @@ class PVSystemConfig:
         _require_finite(self.reference_temperature_c, "reference_temperature_c")
         if not isinstance(self.clip_to_capacity, bool):
             raise ValueError("clip_to_capacity must be a bool")
+        if self.parameter_status not in {
+            "unsigned_scaffold",
+            "proposed_pending_pi_signoff",
+            "approved_for_executable_component_use",
+        }:
+            raise ValueError("parameter_status must be unsigned, proposed, or approved")
+        if self.parameter_status == "approved_for_executable_component_use" and not self.signed_parameter_decision_id:
+            raise ValueError("approved PV parameter configs require signed_parameter_decision_id")
+        if not self.irradiance_input_basis:
+            raise ValueError("irradiance_input_basis must be non-empty")
+        if not self.plane_of_array_treatment:
+            raise ValueError("plane_of_array_treatment must be non-empty")
+
+    def require_signed_parameters(self) -> None:
+        """Raise unless the PV parameter set has PI-signed executable approval."""
+        if self.parameter_status != "approved_for_executable_component_use" or not self.signed_parameter_decision_id:
+            raise ValueError("PV parameters are unsigned and cannot be used for signed executable PV input")
 
 
 @dataclass(frozen=True)
@@ -205,7 +226,7 @@ class PVGISSanityCheck:
 
 @dataclass(frozen=True)
 class PVWeatherInputArtifact:
-    """Accepted WEATHER-001 member index for PV executable-input gating."""
+    """Accepted WEATHER-001 source/member index for PV component-input gating."""
 
     data_id: str
     selection_id: str
@@ -221,6 +242,8 @@ class PVWeatherInputArtifact:
     calendar_contract: Mapping[str, object]
     members: Sequence[Mapping[str, object]]
     blocked_acceptance_gates: Mapping[str, object]
+    readiness_scope: str = "source_member_component_input_only_not_final_integrated"
+    ready_for_source_member_component_input_gate: bool = True
     evidence_artifacts: Mapping[str, object] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
@@ -238,6 +261,10 @@ class PVWeatherInputArtifact:
             raise ValueError("PV weather input artifact must be ready for executable-input gating")
         if self.pvgis_realized_weather_path is not False:
             raise ValueError("PVGIS must remain outside the realized weather path")
+        if self.readiness_scope != "source_member_component_input_only_not_final_integrated":
+            raise ValueError("PV weather input artifact must be scoped to source/member component readiness")
+        if self.ready_for_source_member_component_input_gate is not True:
+            raise ValueError("PV weather input artifact must be ready for source/member component input only")
         required_fields = tuple(str(item) for item in self.required_identity_fields_for_hp_pv_pairing)
         required = {
             "member_id",
@@ -256,6 +283,7 @@ class PVWeatherInputArtifact:
             raise ValueError("PV weather input artifact must include at least one member")
         calendar_contract = _audit_json_mapping(self.calendar_contract, "calendar_contract")
         blocked_gates = _audit_json_mapping(self.blocked_acceptance_gates, "blocked_acceptance_gates")
+        evidence_artifacts = _audit_json_mapping(self.evidence_artifacts, "evidence_artifacts")
         for gate in ("final_paired_hp_pv_acceptance", "cold_spell_acceptance", "integrated_analysis"):
             gate_record = blocked_gates.get(gate)
             if not isinstance(gate_record, Mapping) or gate_record.get("blocked") is not True:
@@ -266,7 +294,6 @@ class PVWeatherInputArtifact:
                 raise ValueError("member cadence_seconds must match the artifact calendar contract")
 
         object.__setattr__(self, "required_identity_fields_for_hp_pv_pairing", required_fields)
-        evidence_artifacts = _audit_json_mapping(self.evidence_artifacts, "evidence_artifacts")
         object.__setattr__(self, "calendar_contract", calendar_contract)
         object.__setattr__(self, "members", members)
         object.__setattr__(self, "blocked_acceptance_gates", blocked_gates)
@@ -288,7 +315,7 @@ class PVWeatherInputArtifact:
 
 
 def load_pv_weather_input_artifact(path: str | Path) -> PVWeatherInputArtifact:
-    """Load an accepted WEATHER-001 member index for PV input readiness."""
+    """Load an accepted WEATHER-001 source/member index for PV input readiness."""
     payload = json.loads(Path(path).read_text(encoding="utf-8"))
     return PVWeatherInputArtifact(
         data_id=str(payload.get("data_id", "")),
@@ -305,6 +332,8 @@ def load_pv_weather_input_artifact(path: str | Path) -> PVWeatherInputArtifact:
         calendar_contract=payload.get("calendar_contract", {}),
         members=payload.get("members", ()),
         blocked_acceptance_gates=payload.get("blocked_acceptance_gates", {}),
+        readiness_scope=str(payload.get("readiness_scope", "")),
+        ready_for_source_member_component_input_gate=payload.get("ready_for_source_member_component_input_gate"),
         evidence_artifacts=payload.get("evidence_artifacts", {}),
     )
 
@@ -320,12 +349,14 @@ def build_pv_ic1_executable_input_artifact(
     version_id: str | None = None,
     ic1_calendar_id: str | None = None,
 ) -> ExecutableInputArtifact:
-    """Convert accepted D-004 PV/weather metadata into an IC-1 gate artifact.
+    """Convert D-004 PV/weather source-member metadata into an IC-1 artifact.
 
-    The returned object is metadata-only: it does not load PV trajectories,
-    map historical weather onto a planning calendar, assemble net load, or
-    relax the later paired HP/PV and cold-spell acceptance gates.
+    The bridge is metadata-only: it preserves the source/member acceptance
+    evidence and blocked final gates, but it does not sign paired HP/PV
+    validation, map historical weather onto a planning calendar, approve PV
+    parameters, assemble net load, or run event analysis.
     """
+    assert_pv_weather_artifact_allows_consumer_use(artifact, intended_use="source_member_component_input")
     member = artifact.member_for_year(year)
     source_calendar_id = str(member["calendar_id"])
     target_calendar_id = source_calendar_id if ic1_calendar_id is None else str(ic1_calendar_id)
@@ -340,6 +371,8 @@ def build_pv_ic1_executable_input_artifact(
         "weather_contract": artifact.weather_contract,
         "source_member_acceptance_id": artifact.source_member_acceptance_id,
         "weather_input_artifact_status": artifact.status,
+        "readiness_scope": artifact.readiness_scope,
+        "ready_for_executable_input_gate_scope": "source_member_component_input_only_not_final_integrated",
         "selection_id": artifact.selection_id,
         "source_calendar_id": source_calendar_id,
         "source_cadence_seconds": int(member["cadence_seconds"]),
@@ -352,18 +385,18 @@ def build_pv_ic1_executable_input_artifact(
         "pvgis_role": artifact.pvgis_role,
         "pvgis_realized_weather_path": artifact.pvgis_realized_weather_path,
         "deferred_acceptance_gates": deferred_gates,
+        "pv_parameter_decision_status": "PV-PARAM-001 proposed; executable PV parameters unsigned",
         "no_net_load_or_event_analysis": True,
     }
     if target_calendar_id != source_calendar_id:
         provenance["ic1_calendar_id"] = target_calendar_id
         provenance["calendar_mapping_status"] = "caller_supplied_not_d004_signed_by_this_helper"
-    # D004-SOURCE-MEMBER-ACCEPTANCE is source/member acceptance only; the
-    # deferred gate list stays manifest-visible so IC-1 cannot launder this
-    # artifact into final paired/cold-spell acceptance.
+    # Source/member acceptance is intentionally narrower than final paired or
+    # integrated readiness; keep the deferred gates visible to IC-1 consumers.
     return ExecutableInputArtifact(
         artifact_id=artifact_id or f"{artifact.selection_id}:pv_weather:{year}",
         kind="pv",
-        artifact_status="accepted",
+        artifact_status="unsigned",
         version_id=version_id or artifact.selection_id,
         source_id=source_id or f"D-004:{artifact.selection_id}:WEATHER-001:pv",
         member_id=str(member["member_id"]),
@@ -374,7 +407,27 @@ def build_pv_ic1_executable_input_artifact(
         shared_weather_driver_id=str(member["shared_weather_driver_id"]),
         manifest_path=manifest,
         provenance=provenance,
+        blocking_register_ids=(
+            "PV-PARAM-001",
+            "FINAL-PAIRED-HP-PV-ACCEPTANCE",
+            "COLD-SPELL-ACCEPTANCE",
+        ),
     )
+
+
+def assert_pv_weather_artifact_allows_consumer_use(
+    artifact: PVWeatherInputArtifact,
+    *,
+    intended_use: str,
+) -> None:
+    """Raise when a consumer asks the source/member artifact to satisfy a blocked gate."""
+    if intended_use == "source_member_component_input":
+        return
+    gate = artifact.blocked_acceptance_gates.get(intended_use)
+    if isinstance(gate, Mapping) and gate.get("blocked") is True:
+        raise ValueError(f"PV weather artifact cannot satisfy blocked gate {intended_use}")
+    raise ValueError(f"PV weather artifact does not authorize intended_use {intended_use!r}")
+
 
 def assert_weather_member_matches_input_artifact(
     weather: WeatherMember | Mapping[str, object],
@@ -405,8 +458,10 @@ def generate_pv_profile_from_input_artifact(
     artifact: PVWeatherInputArtifact,
     *,
     year: int | None = None,
+    intended_use: str = "source_member_component_input",
 ) -> PVGenerationProfile:
     """Generate PV only after the weather member matches the accepted artifact."""
+    assert_pv_weather_artifact_allows_consumer_use(artifact, intended_use=intended_use)
     member = assert_weather_member_matches_input_artifact(weather, artifact, year=year)
     profile = generate_pv_profile(weather, config)
     identity = dict(profile.weather_identity)
@@ -595,6 +650,7 @@ def _default_weather_input_artifact_path(artifact: PVWeatherInputArtifact) -> st
     if isinstance(raw_path, str) and raw_path:
         return raw_path
     return f"data/metadata/weather_pv/{artifact.selection_id}_weather_input_artifact.json"
+
 
 def _validate_weather_input_member_record(member: Mapping[str, object], *, acceptance_id: str) -> None:
     required = (

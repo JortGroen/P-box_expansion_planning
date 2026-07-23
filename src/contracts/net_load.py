@@ -9,6 +9,7 @@ adequacy and physics checks.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from pathlib import Path
 from types import MappingProxyType
 from typing import Literal, Mapping, Protocol, Sequence
 
@@ -53,6 +54,17 @@ ALLOWED_COMPONENT_ARTIFACT_STATUSES: tuple[ComponentArtifactStatus, ...] = (
 
 DEFAULT_REALIZATION_COMPONENTS: tuple[str, ...] = REQUIRED_INTEGRATION_COMPONENT_KINDS
 DEFAULT_SAMPLE_INDEX = 0
+REGISTER_FILES: tuple[tuple[str, int, int, int], ...] = (
+    ("registers/DECISIONS.md", 0, 6, 7),
+    ("registers/ASSUMPTIONS.md", 0, 6, 7),
+    ("registers/DATA_REGISTER.md", 0, 8, 9),
+)
+_UNSIGNED_REGISTER_STATUS_MARKERS = (
+    "pending",
+    "proposed",
+    "superseded",
+    "unsigned",
+)
 
 
 @dataclass(frozen=True)
@@ -1402,6 +1414,8 @@ def validate_executable_input_gate(
             f"blocking register/decision ID(s): {details}"
         )
 
+    _validate_artifact_register_backing(required_artifacts)
+
     return {
         "intended_use": intended_use,
         "ready_for_execution": True,
@@ -1720,6 +1734,79 @@ def validate_net_load_result(result: NetLoadResult) -> None:
 _VALID_COMPONENT_KINDS = frozenset(ComponentKind.__args__)
 _VALID_EXECUTABLE_INPUT_STATUSES = frozenset(ExecutableInputArtifactStatus.__args__)
 
+
+def _validate_artifact_register_backing(artifacts: Sequence[ExecutableInputArtifact]) -> None:
+    rows = _load_register_rows()
+    failures: dict[str, list[str]] = {}
+    for artifact in artifacts:
+        for register_id in artifact.signed_register_ids:
+            row = rows.get(register_id)
+            if row is None:
+                failures.setdefault(artifact.kind, []).append(f"{register_id} (not found)")
+                continue
+            if not _register_id_matches_component_kind(register_id, artifact.kind):
+                failures.setdefault(artifact.kind, []).append(f"{register_id} (not valid for {artifact.kind})")
+                continue
+            if not _register_row_is_executable(row):
+                failures.setdefault(artifact.kind, []).append(
+                    f"{register_id} (status={row['status']}; signoff={row['signoff']})"
+                )
+    if failures:
+        details = "; ".join(
+            f"{kind}: {', '.join(values)}"
+            for kind, values in sorted(failures.items())
+        )
+        raise ValueError(f"executable input artifact register backing is not accepted: {details}")
+
+
+def _load_register_rows() -> dict[str, dict[str, str]]:
+    repo_root = Path(__file__).resolve().parents[2]
+    rows: dict[str, dict[str, str]] = {}
+    for relative_path, id_index, status_index, signoff_index in REGISTER_FILES:
+        register_path = repo_root / relative_path
+        if not register_path.exists():
+            raise ValueError(f"required register file is missing: {relative_path}")
+        for line in register_path.read_text(encoding="utf-8").splitlines():
+            cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
+            if len(cells) <= max(id_index, status_index, signoff_index):
+                continue
+            register_id = cells[id_index]
+            if not register_id or register_id == "ID" or set(register_id) == {"-"}:
+                continue
+            rows[register_id] = {
+                "status": cells[status_index],
+                "signoff": cells[signoff_index],
+                "source": relative_path,
+            }
+    return rows
+
+
+def _register_row_is_executable(row: Mapping[str, str]) -> bool:
+    status = row["status"].strip().lower()
+    signoff = row["signoff"].strip().lower()
+    if not signoff or signoff == "--":
+        return False
+    # Artifact metadata cannot self-attest acceptance; executable use requires
+    # the committed register row to be signed and free of unresolved caveats.
+    if any(marker in status for marker in _UNSIGNED_REGISTER_STATUS_MARKERS):
+        return False
+    return "approved" in status or "accepted" in status
+
+
+def _register_id_matches_component_kind(register_id: str, kind: ComponentKind) -> bool:
+    if kind == "baseline":
+        return register_id in {"D-001"} or register_id.startswith("BASELINE-")
+    if kind == "ev":
+        return register_id.startswith("EV-") or register_id in {"D-002", "D-010", "A-014"}
+    if kind == "hp":
+        return register_id.startswith("HP-") or register_id in {"D-003", "D-013", "WEATHER-001"}
+    if kind == "pv":
+        return register_id.startswith("PV-") or register_id.startswith("D004-") or register_id in {"D-004", "WEATHER-001"}
+    if kind == "adoption":
+        return register_id.startswith("EV-007") or register_id in {"D-010", "A-014"}
+    if kind == "flexibility":
+        return register_id.startswith("FLEX-")
+    return False
 
 def _normalized_blockers_by_kind(
     values: Mapping[str, Sequence[str]] | None,
