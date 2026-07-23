@@ -39,6 +39,7 @@ from src.contracts.net_load import (
     validate_future_layer_screen_preflight,
 )
 from src.contracts.loading_trajectory import TimeDomain
+from reports.e3_s2_generate_executable_readiness_preflight import _component_groups, _table_rows
 
 
 def _calendar() -> np.ndarray:
@@ -1932,6 +1933,57 @@ def test_integrated_input_preflight_dry_run_reports_register_blocked_artifacts()
     assert report["executable_input_gate"] is None
 
 
+
+def test_executable_readiness_report_separates_packet_status_from_gate_result() -> None:
+    preflight = {
+        "required_component_kinds": ("baseline", "hp", "ev"),
+        "component_reports": {
+            "baseline": {
+                "state": "blocked",
+                "artifact_status": "scaffold",
+                "artifact_id": "baseline-readiness",
+                "manifest_path": "reports/baseline.md",
+                "signed_register_ids": (),
+                "blocking_register_ids": ("E2.S5-BASELINE-EXECUTABLE-ARTIFACT",),
+                "artifact": {
+                    "provenance": {
+                        "packet_status": "scaffold present; accepted executable artifact missing"
+                    }
+                },
+            },
+            "hp": {
+                "state": "blocked",
+                "artifact_status": "unsigned",
+                "artifact_id": "hp-value-binding-packet",
+                "manifest_path": "data/metadata/hp.json",
+                "signed_register_ids": ("HP-001",),
+                "blocking_register_ids": ("E2-S3-HP001-EXECUTABLE-VALUE-BINDING-PACKET",),
+                "artifact": {
+                    "provenance": {
+                        "packet_status": "proposed executable-value-binding decision packet"
+                    }
+                },
+            },
+            "ev": {
+                "state": "accepted",
+                "artifact_status": "accepted",
+                "artifact_id": "ev-artifact",
+                "manifest_path": "data/metadata/ev.json",
+                "signed_register_ids": ("EV-003",),
+                "blocking_register_ids": (),
+                "artifact": {"provenance": {}},
+            },
+        },
+    }
+
+    groups = _component_groups(preflight)
+    rows = _table_rows(preflight)
+
+    assert groups["accepted"] == "ev"
+    assert groups["blocked"] == "baseline, hp"
+    assert groups["proposed_or_unsigned"] == "baseline, hp"
+    assert "| hp | blocked | proposed executable-value-binding decision packet |" in rows
+    assert "| ev | accepted | accepted |" in rows
 
 
 def test_future_layer_screen_preflight_reports_missing_artifact_blocker_ids() -> None:
