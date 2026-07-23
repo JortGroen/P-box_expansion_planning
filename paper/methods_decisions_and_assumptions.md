@@ -1590,6 +1590,10 @@ explicitly promotes that use.
 
 
 
+<!-- methods-id: E2-S3-HP001-EXECUTABLE-VALUE-BINDING-BRIEF -->
+### E2-S3-HP001-EXECUTABLE-VALUE-BINDING-BRIEF - HP-001 Executable Value-Binding Decision Brief
+
+**Status: Proposed brief; executable annual values and final paired acceptance unsigned.** The HP-001 executable value-binding decision brief restates the merged packet as simple PI approval options: approve or amend PBL `Referentie_2030`, PBL `I11_woningequivalenten [Woning]`, GJ/year-to-TWh/year conversion by division by `3,600,000`, the CBS 85035NED SFH/MFH split rule, and the 2035 HP service/adoption/electrification route for residential space heat plus domestic hot water. Its candidate adoption options are unsigned scenario choices only: a `0.50` first-pass service fraction, a `0.25`/`0.50`/`0.75` low/mid/high scenario set, a PBL pathway sensitivity using `A08_Aandeel_eWP_GJ` with `A07_Aandeel_eWP_WEQ` and `A02_Aansl_eWP` diagnostics, or a future external public source. The fractions are not source-estimated adoption values, not probabilities, and not executable annual HP TWh. Final HP use remains blocked on separately signed D-004 paired-weather acceptance and cold-spell numerical tolerances. This brief does not approve annual HP values, net-load/event analysis, `P(E)`, threshold/capacity-screen results, manuscript numbers, or probability results.
 <!-- methods-id: E2-S3-HP001-EXECUTABLE-VALUE-BINDING-PACKET -->
 ### E2-S3-HP001-EXECUTABLE-VALUE-BINDING-PACKET - HP-001 Executable Value-Binding Decision Packet
 
@@ -1688,3 +1692,4 @@ base policy as well. The sole code-level bootstrap exception is the initial
 `codex/ownership-enforcement` pull request when neither policy file exists on
 its base; after that first merge, the same branch is governed by the base
 policy like every other branch.
+
