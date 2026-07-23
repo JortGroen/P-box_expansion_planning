@@ -11,6 +11,7 @@ import numpy as np
 import pytest
 
 import data.get_weather_pv as weather_pv
+from src.contracts.net_load import validate_executable_input_gate
 from src.hp_model import HeatPumpProfile
 from src.pv_model import (
     PVGISReference,
@@ -21,6 +22,7 @@ from src.pv_model import (
     canonical_15min_utc_axis_for_local_year,
     assert_pv_weather_artifact_allows_consumer_use,
     assert_weather_member_matches_input_artifact,
+    build_pv_ic1_executable_input_artifact,
     check_profile_against_pvgis_reference,
     generate_pv_profile,
     generate_pv_profile_from_input_artifact,
@@ -1103,6 +1105,75 @@ def test_committed_d004_pv_parameter_decision_packet_is_unsigned_fail_closed() -
     assert "no net-load/event/P(E)/capacity-screen/manuscript results" in payload["out_of_scope_guards"]
 
 
+
+def test_pv_weather_artifact_builds_ic1_source_member_input_bridge_but_blocks_execution() -> None:
+    artifact = load_pv_weather_input_artifact(
+        "data/metadata/weather_pv/d004_alkmaar_berkhout_2014_2023_v1_weather_input_artifact.json"
+    )
+
+    ic1_artifact = build_pv_ic1_executable_input_artifact(
+        artifact,
+        year=2021,
+        node_ids=("pv-node-a", "pv-node-b"),
+    )
+    record = ic1_artifact.manifest_record()
+
+    assert record["artifact_status"] == "unsigned"
+    assert record["member_id"] == "d004_alkmaar_berkhout_2021_v1"
+    assert record["source_id"] == "D-004:d004_alkmaar_berkhout_2014_2023_v1:WEATHER-001:pv"
+    assert record["node_ids"] == ("pv-node-a", "pv-node-b")
+    assert record["calendar_id"] == "d004_alkmaar_berkhout_2014_2023_v1:utc_year_15min_europe_amsterdam:2021"
+    assert record["shared_weather_driver_id"] == "d004_alkmaar_berkhout_2014_2023_v1:2021"
+    assert record["signed_register_ids"] == (
+        "WEATHER-001",
+        "D004-MC-001",
+        "D004-SOURCE-MEMBER-ACCEPTANCE",
+    )
+    assert record["blocking_register_ids"] == (
+        "PV-PARAM-001",
+        "FINAL-PAIRED-HP-PV-ACCEPTANCE",
+        "COLD-SPELL-ACCEPTANCE",
+    )
+    assert record["provenance"]["content_sha256"] == artifact.member_for_year(2021)["content_sha256"]
+    assert record["provenance"]["pvgis_realized_weather_path"] is False
+    assert record["provenance"]["readiness_scope"] == "source_member_component_input_only_not_final_integrated"
+    assert record["provenance"]["pv_parameter_decision_status"].startswith("PV-PARAM-001 proposed")
+    assert record["provenance"]["deferred_acceptance_gates"] == (
+        "cold_spell_acceptance",
+        "final_paired_hp_pv_acceptance",
+        "integrated_analysis",
+    )
+    with pytest.raises(ValueError, match="PV-PARAM-001"):
+        validate_executable_input_gate(
+            (ic1_artifact,),
+            required_component_kinds=("pv",),
+            intended_use="pv_weather_source_member_component_input_readiness",
+        )
+
+
+def test_pv_weather_ic1_artifact_calendar_override_is_explicit_not_silent() -> None:
+    artifact = load_pv_weather_input_artifact(
+        "data/metadata/weather_pv/d004_alkmaar_berkhout_2014_2023_v1_weather_input_artifact.json"
+    )
+
+    ic1_artifact = build_pv_ic1_executable_input_artifact(
+        artifact,
+        year=2022,
+        node_ids=("pv-node-a",),
+        ic1_calendar_id="ic1-planning-calendar-2035-v1",
+        manifest_path="data/metadata/weather_pv/custom_manifest.json",
+    )
+    manifest = ic1_artifact.manifest_record()
+
+    assert manifest["calendar_id"] == "ic1-planning-calendar-2035-v1"
+    assert manifest["provenance"]["source_calendar_id"] == (
+        "d004_alkmaar_berkhout_2014_2023_v1:utc_year_15min_europe_amsterdam:2022"
+    )
+    assert manifest["provenance"]["ic1_calendar_id"] == "ic1-planning-calendar-2035-v1"
+    assert manifest["provenance"]["calendar_mapping_status"] == "caller_supplied_not_d004_signed_by_this_helper"
+    assert manifest["manifest_path"] == "data/metadata/weather_pv/custom_manifest.json"
+
+
 def test_pv_weather_input_artifact_matches_identity_and_blocks_checksum_drift() -> None:
     artifact = load_pv_weather_input_artifact(
         "data/metadata/weather_pv/d004_alkmaar_berkhout_2014_2023_v1_weather_input_artifact.json"
@@ -1154,6 +1225,7 @@ def test_generate_pv_profile_from_input_artifact_preserves_weather_artifact_prov
         ready_for_executable_input_gate=artifact.ready_for_executable_input_gate,
         readiness_scope=artifact.readiness_scope,
         ready_for_source_member_component_input_gate=artifact.ready_for_source_member_component_input_gate,
+        evidence_artifacts=artifact.evidence_artifacts,
         realized_weather_path=artifact.realized_weather_path,
         pvgis_role=artifact.pvgis_role,
         pvgis_realized_weather_path=artifact.pvgis_realized_weather_path,

@@ -10,6 +10,7 @@ from typing import Any
 
 import numpy as np
 
+from src.contracts.net_load import ExecutableInputArtifact
 from src.weather_model import (
     LOCAL_TIMEZONE,
     STEP_SECONDS_15MIN,
@@ -243,6 +244,7 @@ class PVWeatherInputArtifact:
     blocked_acceptance_gates: Mapping[str, object]
     readiness_scope: str = "source_member_component_input_only_not_final_integrated"
     ready_for_source_member_component_input_gate: bool = True
+    evidence_artifacts: Mapping[str, object] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         if self.data_id != "D-004":
@@ -281,6 +283,7 @@ class PVWeatherInputArtifact:
             raise ValueError("PV weather input artifact must include at least one member")
         calendar_contract = _audit_json_mapping(self.calendar_contract, "calendar_contract")
         blocked_gates = _audit_json_mapping(self.blocked_acceptance_gates, "blocked_acceptance_gates")
+        evidence_artifacts = _audit_json_mapping(self.evidence_artifacts, "evidence_artifacts")
         for gate in ("final_paired_hp_pv_acceptance", "cold_spell_acceptance", "integrated_analysis"):
             gate_record = blocked_gates.get(gate)
             if not isinstance(gate_record, Mapping) or gate_record.get("blocked") is not True:
@@ -294,6 +297,7 @@ class PVWeatherInputArtifact:
         object.__setattr__(self, "calendar_contract", calendar_contract)
         object.__setattr__(self, "members", members)
         object.__setattr__(self, "blocked_acceptance_gates", blocked_gates)
+        object.__setattr__(self, "evidence_artifacts", evidence_artifacts)
 
     def member_for_year(self, year: int) -> Mapping[str, object]:
         """Return the accepted member record for a UTC calendar year."""
@@ -330,6 +334,84 @@ def load_pv_weather_input_artifact(path: str | Path) -> PVWeatherInputArtifact:
         blocked_acceptance_gates=payload.get("blocked_acceptance_gates", {}),
         readiness_scope=str(payload.get("readiness_scope", "")),
         ready_for_source_member_component_input_gate=payload.get("ready_for_source_member_component_input_gate"),
+        evidence_artifacts=payload.get("evidence_artifacts", {}),
+    )
+
+
+def build_pv_ic1_executable_input_artifact(
+    artifact: PVWeatherInputArtifact,
+    *,
+    year: int,
+    node_ids: Sequence[str],
+    manifest_path: str | None = None,
+    artifact_id: str | None = None,
+    source_id: str | None = None,
+    version_id: str | None = None,
+    ic1_calendar_id: str | None = None,
+) -> ExecutableInputArtifact:
+    """Convert D-004 PV/weather source-member metadata into an IC-1 artifact.
+
+    The bridge is metadata-only: it preserves the source/member acceptance
+    evidence and blocked final gates, but it does not sign paired HP/PV
+    validation, map historical weather onto a planning calendar, approve PV
+    parameters, assemble net load, or run event analysis.
+    """
+    assert_pv_weather_artifact_allows_consumer_use(artifact, intended_use="source_member_component_input")
+    member = artifact.member_for_year(year)
+    source_calendar_id = str(member["calendar_id"])
+    target_calendar_id = source_calendar_id if ic1_calendar_id is None else str(ic1_calendar_id)
+    evidence_path = _default_weather_input_artifact_path(artifact)
+    manifest = evidence_path if manifest_path is None else manifest_path
+    deferred_gates = tuple(
+        gate
+        for gate, value in sorted(artifact.blocked_acceptance_gates.items())
+        if isinstance(value, Mapping) and value.get("blocked") is True
+    )
+    provenance = {
+        "weather_contract": artifact.weather_contract,
+        "source_member_acceptance_id": artifact.source_member_acceptance_id,
+        "weather_input_artifact_status": artifact.status,
+        "readiness_scope": artifact.readiness_scope,
+        "ready_for_executable_input_gate_scope": "source_member_component_input_only_not_final_integrated",
+        "selection_id": artifact.selection_id,
+        "source_calendar_id": source_calendar_id,
+        "source_cadence_seconds": int(member["cadence_seconds"]),
+        "source_n_timesteps": int(member["n_timesteps"]),
+        "source_first_timestamp_utc": str(member["first_timestamp_utc"]),
+        "source_last_timestamp_utc": str(member["last_timestamp_utc"]),
+        "content_sha256": str(member["content_sha256"]),
+        "shared_weather_driver_id": str(member["shared_weather_driver_id"]),
+        "realized_weather_path": artifact.realized_weather_path,
+        "pvgis_role": artifact.pvgis_role,
+        "pvgis_realized_weather_path": artifact.pvgis_realized_weather_path,
+        "deferred_acceptance_gates": deferred_gates,
+        "pv_parameter_decision_status": "PV-PARAM-001 proposed; executable PV parameters unsigned",
+        "no_net_load_or_event_analysis": True,
+    }
+    if target_calendar_id != source_calendar_id:
+        provenance["ic1_calendar_id"] = target_calendar_id
+        provenance["calendar_mapping_status"] = "caller_supplied_not_d004_signed_by_this_helper"
+    # Source/member acceptance is intentionally narrower than final paired or
+    # integrated readiness; keep the deferred gates visible to IC-1 consumers.
+    return ExecutableInputArtifact(
+        artifact_id=artifact_id or f"{artifact.selection_id}:pv_weather:{year}",
+        kind="pv",
+        artifact_status="unsigned",
+        version_id=version_id or artifact.selection_id,
+        source_id=source_id or f"D-004:{artifact.selection_id}:WEATHER-001:pv",
+        member_id=str(member["member_id"]),
+        calendar_id=target_calendar_id,
+        node_ids=tuple(node_ids),
+        signed_register_ids=("WEATHER-001", "D004-MC-001", "D004-SOURCE-MEMBER-ACCEPTANCE"),
+        timestep_seconds=int(member["cadence_seconds"]),
+        shared_weather_driver_id=str(member["shared_weather_driver_id"]),
+        manifest_path=manifest,
+        provenance=provenance,
+        blocking_register_ids=(
+            "PV-PARAM-001",
+            "FINAL-PAIRED-HP-PV-ACCEPTANCE",
+            "COLD-SPELL-ACCEPTANCE",
+        ),
     )
 
 
@@ -561,6 +643,13 @@ def parse_pvgis_monthly_reference(
         annual_energy_kwh=sum(by_month.values()),
         peak_month=peak_month,
     )
+
+
+def _default_weather_input_artifact_path(artifact: PVWeatherInputArtifact) -> str:
+    raw_path = artifact.evidence_artifacts.get("weather_input_artifact")
+    if isinstance(raw_path, str) and raw_path:
+        return raw_path
+    return f"data/metadata/weather_pv/{artifact.selection_id}_weather_input_artifact.json"
 
 
 def _validate_weather_input_member_record(member: Mapping[str, object], *, acceptance_id: str) -> None:
