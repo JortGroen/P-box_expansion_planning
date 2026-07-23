@@ -23,6 +23,7 @@ from src.pv_model import (
     assert_pv_weather_artifact_allows_consumer_use,
     assert_weather_member_matches_input_artifact,
     build_pv_ic1_executable_input_artifact,
+    build_pv_paired_readiness_preflight_packet,
     check_profile_against_pvgis_reference,
     generate_pv_profile,
     generate_pv_profile_from_input_artifact,
@@ -1021,7 +1022,6 @@ def test_pv_weather_input_artifact_rejects_pvgis_as_realized_or_unblocked_final_
         load_pv_weather_input_artifact(unsafe_path)
 
 
-
 def test_pv_weather_artifact_consumer_gate_rejects_final_acceptance_use() -> None:
     artifact = load_pv_weather_input_artifact(
         "data/metadata/weather_pv/d004_alkmaar_berkhout_2014_2023_v1_weather_input_artifact.json"
@@ -1105,6 +1105,94 @@ def test_committed_d004_pv_parameter_decision_packet_is_unsigned_fail_closed() -
     assert "no net-load/event/P(E)/capacity-screen/manuscript results" in payload["out_of_scope_guards"]
 
 
+def test_pv_paired_readiness_preflight_fails_closed_without_signed_inputs() -> None:
+    artifact = load_pv_weather_input_artifact(
+        "data/metadata/weather_pv/d004_alkmaar_berkhout_2014_2023_v1_weather_input_artifact.json"
+    )
+
+    packet = build_pv_paired_readiness_preflight_packet(artifact)
+
+    assert packet["source_member_acceptance_id"] == "D004-SOURCE-MEMBER-ACCEPTANCE"
+    assert packet["source_member_ready"] is True
+    assert packet["pvgis_realized_weather_path"] is False
+    assert packet["pv_parameters_signed_for_component_use"] is False
+    assert packet["hp_weather_identity_supplied"] is False
+    assert packet["hp_pv_weather_identity_equal"] is False
+    assert packet["cold_spell_tolerances_status"] == "pending_unsigned"
+    assert packet["ready_for_final_paired_hp_pv_acceptance_run"] is False
+    assert packet["final_paired_hp_pv_acceptance_signed_by_this_packet"] is False
+    assert packet["blocking_register_ids"] == (
+        "PV-PARAM-001",
+        "FINAL-PAIRED-HP-PV-ACCEPTANCE",
+        "COLD-SPELL-ACCEPTANCE",
+    )
+
+
+def test_pv_paired_readiness_preflight_requires_exact_weather_identity() -> None:
+    artifact = load_pv_weather_input_artifact(
+        "data/metadata/weather_pv/d004_alkmaar_berkhout_2014_2023_v1_weather_input_artifact.json"
+    )
+    hp_identity = dict(artifact.member_for_year(2020))
+    hp_identity["content_sha256"] = "f" * 64
+    signed_config = PVSystemConfig(
+        installed_capacity_kw=1.0,
+        performance_ratio=0.9,
+        reference_irradiance_w_per_m2=1000.0,
+        temperature_coefficient_per_c=0.0,
+        reference_temperature_c=25.0,
+        clip_to_capacity=True,
+        parameter_status="approved_for_executable_component_use",
+        signed_parameter_decision_id="PV-PARAM-001",
+    )
+
+    packet = build_pv_paired_readiness_preflight_packet(
+        artifact,
+        parameter_config=signed_config,
+        hp_weather_identity=hp_identity,
+        cold_spell_metadata={
+            "numerical_tolerances_status": "approved_with_signed_tolerances",
+            "signed_decision_id": "COLD-SPELL-TOLERANCE-001",
+        },
+    )
+
+    assert packet["pv_parameters_signed_for_component_use"] is True
+    assert packet["hp_pv_weather_identity_equal"] is False
+    assert packet["ready_for_final_paired_hp_pv_acceptance_run"] is False
+    assert packet["blocking_register_ids"] == ("FINAL-PAIRED-HP-PV-ACCEPTANCE",)
+    assert "content_sha256" in packet["hp_pv_identity_check"]
+
+
+def test_pv_paired_readiness_preflight_can_only_make_run_prerequisites_true_not_sign_acceptance() -> None:
+    artifact = load_pv_weather_input_artifact(
+        "data/metadata/weather_pv/d004_alkmaar_berkhout_2014_2023_v1_weather_input_artifact.json"
+    )
+    signed_config = PVSystemConfig(
+        installed_capacity_kw=1.0,
+        performance_ratio=0.9,
+        reference_irradiance_w_per_m2=1000.0,
+        temperature_coefficient_per_c=0.0,
+        reference_temperature_c=25.0,
+        clip_to_capacity=True,
+        parameter_status="approved_for_executable_component_use",
+        signed_parameter_decision_id="PV-PARAM-001",
+    )
+
+    packet = build_pv_paired_readiness_preflight_packet(
+        artifact,
+        parameter_config=signed_config,
+        hp_weather_identity=artifact.member_for_year(2020),
+        cold_spell_metadata={
+            "numerical_tolerances_status": "approved_with_signed_tolerances",
+            "signed_decision_id": "COLD-SPELL-TOLERANCE-001",
+            "near_freezing_band_status": "signed_fixture_for_contract_test_only",
+        },
+    )
+
+    assert packet["hp_pv_weather_identity_equal"] is True
+    assert packet["ready_for_final_paired_hp_pv_acceptance_run"] is True
+    assert packet["final_paired_hp_pv_acceptance_signed_by_this_packet"] is False
+    assert packet["blocking_register_ids"] == ()
+    json.dumps(dict(packet))
 
 def test_pv_weather_artifact_builds_ic1_source_member_input_bridge_but_blocks_execution() -> None:
     artifact = load_pv_weather_input_artifact(

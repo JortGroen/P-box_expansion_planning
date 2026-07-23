@@ -15,6 +15,7 @@ from src.weather_model import (
     LOCAL_TIMEZONE,
     STEP_SECONDS_15MIN,
     WeatherMember,
+    assert_same_weather_realization,
     canonical_15min_local_axis_for_year,
     canonical_15min_utc_axis_for_local_year,
     validate_canonical_15min_calendar,
@@ -415,6 +416,103 @@ def build_pv_ic1_executable_input_artifact(
     )
 
 
+def build_pv_paired_readiness_preflight_packet(
+    artifact: PVWeatherInputArtifact,
+    *,
+    parameter_config: PVSystemConfig | None = None,
+    hp_weather_identity: Mapping[str, object] | WeatherMember | None = None,
+    cold_spell_metadata: Mapping[str, object] | None = None,
+) -> Mapping[str, object]:
+    """Return a fail-closed PV/weather packet for later paired HP/PV review.
+
+    This packet is deliberately metadata-only: it can show that D-004 source
+    members are accepted and that HP/PV weather identity is structurally
+    checkable, but it cannot sign PV parameters, cold-spell tolerances, or final
+    paired acceptance by itself.
+    """
+    assert_pv_weather_artifact_allows_consumer_use(artifact, intended_use="source_member_component_input")
+    pv_parameters_signed = False
+    pv_parameter_status = "missing_unsigned"
+    signed_pv_parameter_decision_id = None
+    if parameter_config is not None:
+        pv_parameter_status = parameter_config.parameter_status
+        signed_pv_parameter_decision_id = parameter_config.signed_parameter_decision_id
+        try:
+            parameter_config.require_signed_parameters()
+        except ValueError:
+            pv_parameters_signed = False
+        else:
+            pv_parameters_signed = True
+
+    hp_identity_record = _identity_record_or_none(hp_weather_identity)
+    hp_pv_identity_equal = False
+    hp_pv_identity_check = "missing_hp_weather_identity"
+    compared_member_id = None
+    if hp_identity_record is not None:
+        compared_member_id = str(hp_identity_record.get("member_id", ""))
+        try:
+            member = assert_weather_member_matches_input_artifact(hp_identity_record, artifact)
+            assert_same_weather_realization(member, hp_identity_record)
+        except (KeyError, ValueError) as exc:
+            hp_pv_identity_check = f"blocked: {exc}"
+        else:
+            hp_pv_identity_equal = True
+            hp_pv_identity_check = "exact_weather_001_identity_calendar_content_match"
+
+    cold_spell = _audit_json_mapping(cold_spell_metadata or {}, "cold_spell_metadata")
+    cold_spell_tolerances_status = str(cold_spell.get("numerical_tolerances_status", "pending_unsigned"))
+    cold_spell_tolerances_signed = (
+        cold_spell_tolerances_status == "approved_with_signed_tolerances"
+        and bool(cold_spell.get("signed_decision_id"))
+    )
+
+    blockers: list[str] = []
+    if not pv_parameters_signed:
+        blockers.append("PV-PARAM-001")
+    if not hp_pv_identity_equal:
+        blockers.append("FINAL-PAIRED-HP-PV-ACCEPTANCE")
+    if not cold_spell_tolerances_signed:
+        blockers.append("COLD-SPELL-ACCEPTANCE")
+
+    return MappingProxyType(
+        {
+            "packet_id": f"{artifact.selection_id}:pv_paired_readiness_preflight",
+            "data_id": artifact.data_id,
+            "weather_contract": artifact.weather_contract,
+            "source_member_acceptance_id": artifact.source_member_acceptance_id,
+            "source_member_readiness_scope": artifact.readiness_scope,
+            "source_member_ready": artifact.accepted_for_source_member_use,
+            "realized_weather_path": artifact.realized_weather_path,
+            "pvgis_role": artifact.pvgis_role,
+            "pvgis_realized_weather_path": artifact.pvgis_realized_weather_path,
+            "pv_parameter_decision_id": "PV-PARAM-001",
+            "pv_parameter_status": pv_parameter_status,
+            "signed_pv_parameter_decision_id": signed_pv_parameter_decision_id,
+            "pv_parameters_signed_for_component_use": pv_parameters_signed,
+            "hp_weather_identity_supplied": hp_identity_record is not None,
+            "compared_member_id": compared_member_id,
+            "hp_pv_weather_identity_equal": hp_pv_identity_equal,
+            "hp_pv_identity_check": hp_pv_identity_check,
+            "required_identity_fields_for_hp_pv_pairing": artifact.required_identity_fields_for_hp_pv_pairing,
+            "cold_spell_acceptance_design_id": "E2-S3-COLD-SPELL-ACCEPTANCE-DESIGN",
+            "cold_spell_tolerances_status": cold_spell_tolerances_status,
+            "cold_spell_tolerances_signed": cold_spell_tolerances_signed,
+            "cold_spell_metadata": dict(cold_spell),
+            "ready_for_final_paired_hp_pv_acceptance_run": not blockers,
+            "final_paired_hp_pv_acceptance_signed_by_this_packet": False,
+            "blocking_register_ids": tuple(blockers),
+            "out_of_scope": (
+                "no net-load",
+                "no event detection",
+                "no P(E)",
+                "no capacity screen",
+                "no threshold analysis",
+                "no manuscript results",
+            ),
+        }
+    )
+
+
 def assert_pv_weather_artifact_allows_consumer_use(
     artifact: PVWeatherInputArtifact,
     *,
@@ -650,6 +748,16 @@ def _default_weather_input_artifact_path(artifact: PVWeatherInputArtifact) -> st
     if isinstance(raw_path, str) and raw_path:
         return raw_path
     return f"data/metadata/weather_pv/{artifact.selection_id}_weather_input_artifact.json"
+
+
+def _identity_record_or_none(
+    identity: Mapping[str, object] | WeatherMember | None,
+) -> Mapping[str, object] | None:
+    if identity is None:
+        return None
+    if isinstance(identity, WeatherMember):
+        return identity.identity_record()
+    return _audit_json_mapping(identity, "hp_weather_identity")
 
 
 def _validate_weather_input_member_record(member: Mapping[str, object], *, acceptance_id: str) -> None:
