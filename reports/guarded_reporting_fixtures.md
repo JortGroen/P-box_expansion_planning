@@ -1,0 +1,41 @@
+# Guarded Reporting Fixtures For B-Owned P-Box Outputs
+
+Status: scaffold-only. This packet wires the final-result guards into a future
+report/runner-facing record shape using synthetic p-box fixtures only.
+
+## Purpose
+
+The project now has executable final-result guards for p-box probabilities,
+decision results, and vertex-shortcut outputs. The next risk is a reporting or
+runner surface bypassing those guards by directly serializing a valid-looking
+p-box table. The `src.pbox_reporting` scaffold closes that route for B-owned
+outputs: a report record carries the alpha-indexed probability rows, the guard
+decision, and, for paper-facing mode, a manifested output-error endpoint record.
+
+## Enforced Shape
+
+The reporting scaffold preserves alpha-indexed lower/upper probability rows
+with separate confidence intervals. It rejects collapsed fields such as `p_hat`
+or `defuzzified_probability`. If a record is marked `paper-facing`, it must pass
+the prerequisite guard and include an output-error endpoint record whose
+`probability_widening` field is exactly `forbidden`.
+
+For vertex-shortcut reports, paper-facing mode also requires rows generated in
+`G3_APPROVED` vertex mode. Pre-G3 synthetic vertex rows can still be serialized
+for synthetic tests, but the scaffold refuses to present them as paper-facing
+even if a caller supplies complete-looking prerequisites.
+
+## What This Does Not Decide
+
+This scaffold does not run real E3 trajectories, estimate real `P(E)`, sign the
+G2 Tier-1 envelope, sign A-013 grid-error values, choose a capacity convention
+or denominator, authorize G3, or produce manuscript numbers. It only makes the
+missing prerequisites visible at future report/runner boundaries.
+
+## Synthetic Fixtures
+
+The tests use hand-built p-box rows and a minimal synthetic endpoint-count
+record. They verify blocked synthetic serialization, paper-facing rejection
+when prerequisites or endpoint records are absent, acceptance when all guard
+inputs are explicitly supplied, and rejection of pre-G3 vertex rows in
+paper-facing mode.
