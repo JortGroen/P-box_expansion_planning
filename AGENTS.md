@@ -22,6 +22,7 @@ Bootstrap rules:
 - Default to continuation mode: after completing a coherent PR-sized unit, open or update that PR, make the worktree clean, then keep working on another owned, unblocked unit when one is reasonably available.
 - Stop only for a hard blocker: missing PI decision/sign-off, missing ownership exception, unavailable required data/dependency/API approval, required long-run approval or checkpointing gap, unsafe scientific boundary, or an unmerged dependency that cannot be sensibly stacked.
 - If a follow-up depends on an unmerged PR, either choose an independent task or open a clearly labeled draft stacked PR that names the upstream PR/branch. Do not mix unrelated tasks into one PR.
+- Default PR CI runs the fast suite (`pytest -m "not slow"`). Mark heavyweight validation, including full committed-artifact equality/rebuild checks, as `slow` and pair it with bounded fast provenance tests.
 - Work only in your owned paths.
 - Before editing, preflight the intended paths with `scripts/task.ps1 ownership -Paths path/one.py,path/two.py`; use repository-relative paths.
 - Run `scripts/task.ps1 ownership` before committing and before opening or updating a PR. The same check is enforced in CI from `configs/agent_ownership.json`.

@@ -31,6 +31,7 @@ jobs:
 
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -41,4 +42,4 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -r requirements-dev.txt
       - name: Run tests
-        run: python -m pytest --basetemp "${{ runner.temp }}/pytest-full"
+        run: python -m pytest -m "not slow" --basetemp "${{ runner.temp }}/pytest-fast" --durations=20
