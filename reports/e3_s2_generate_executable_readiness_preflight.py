@@ -78,7 +78,7 @@ def _report_text(preflight: dict[str, object], git_commit: str, input_checksum: 
     ready_flag = str(preflight["ready_for_input_assembly"]).lower()
     return f"""# E3.S2 Executable Readiness Preflight
 
-Task: E3.S2 IC-1 NetLoadProvider readiness.  
+Task: E3.S2 IC-1 NetLoadProvider readiness.
 Status: metadata/preflight only. This refreshed packet discovers the component-readiness artifacts currently merged on `origin/main`, including the newer HP/PV readiness packets, routes them through the register-backed executable-input dry run, and reports whether each IC-1 input family is ready, missing, or blocked.
 
 ## Boundary
@@ -91,8 +91,8 @@ The dry run used the version-controlled input `{INPUT_PATH.as_posix()}` at commi
 
 Overall ready for executable input assembly: `{ready_flag}`.
 
-Ready component families: {ready}.  
-Blocked component families: {blocked}.  
+Ready component families: {ready}.
+Blocked component families: {blocked}.
 Missing component families: {missing}.
 
 | Component | State | Artifact | Signed IDs | Blocking IDs | Artifact path |
@@ -107,8 +107,8 @@ Baseline, HP, PV/weather, and adoption are not ready for executable IC-1 aggrega
 
 ## Reproduction
 
-Command: `{COMMAND}`  
-Input SHA-256: `{input_checksum}`  
+Command: `{COMMAND}`
+Input SHA-256: `{input_checksum}`
 Generated from git commit: `{git_commit}`
 
 Verification for the PR should still use `./scripts/task.ps1 ownership`, `./scripts/task.ps1 test`, and `git diff --check`.
