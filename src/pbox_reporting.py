@@ -9,7 +9,7 @@ allowed to present as paper-facing.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Mapping
+from typing import Mapping, Sequence
 
 from src.pbox import PBoxFamily, VertexUseMode
 from src.pbox_result_guards import (
@@ -184,6 +184,133 @@ def build_runner_report_boundary_record(
         ),
     )
 
+
+
+def assert_runner_report_boundary_payload(payload: Mapping[str, object]) -> None:
+    """Validate a serialized guarded p-box runner/report boundary payload.
+
+    This is the defensive counterpart to `build_runner_report_boundary_record`:
+    future reporting code may receive plain mappings, so the guard decision,
+    alpha rows, endpoint record, and vertex-mode evidence must survive
+    serialization instead of being trusted by convention.
+    """
+
+    required = {
+        "boundary_id",
+        "boundary_protocol",
+        "guarded_report",
+        "paper_facing_allowed",
+        "paper_facing_requested",
+    }
+    _require_mapping_fields(payload, required, name="boundary payload")
+    if payload["boundary_protocol"] != RUNNER_REPORT_BOUNDARY_PROTOCOL:
+        raise ValueError(
+            f"boundary_protocol must be {RUNNER_REPORT_BOUNDARY_PROTOCOL!r}"
+        )
+    if not isinstance(payload["boundary_id"], str) or not payload["boundary_id"].strip():
+        raise ValueError("boundary_id must be a nonempty string")
+    if not isinstance(payload["paper_facing_requested"], bool):
+        raise TypeError("paper_facing_requested must be a boolean")
+    if not isinstance(payload["paper_facing_allowed"], bool):
+        raise TypeError("paper_facing_allowed must be a boolean")
+    guarded_report = _expect_mapping(payload["guarded_report"], name="guarded_report")
+    _validate_guarded_report_mapping(guarded_report)
+    guard = _expect_mapping(guarded_report["guard"], name="guard")
+    guard_allowed = bool(guard["allowed"])
+    requested = bool(payload["paper_facing_requested"])
+    expected_allowed = requested and guard_allowed
+    if payload["paper_facing_allowed"] != expected_allowed:
+        raise ValueError("paper_facing_allowed must exactly reflect requested and guard state")
+    if requested:
+        if guarded_report["use_status"] != "paper-facing":
+            raise ValueError("paper_facing_requested requires use_status='paper-facing'")
+        if "output_error_record" not in guarded_report:
+            raise ValueError(
+                "paper-facing boundary payload requires output_error_record"
+            )
+        if not guard_allowed:
+            missing = guard.get("missing_prerequisites", [])
+            raise RuntimeError(f"paper-facing boundary payload is blocked by: {missing}")
+    elif guarded_report["use_status"] == "paper-facing":
+        raise ValueError("paper-facing use_status must set paper_facing_requested=true")
+
+
+def _validate_guarded_report_mapping(report: Mapping[str, object]) -> None:
+    required = {"guard", "probability_rows", "result_kind", "use_status"}
+    _require_mapping_fields(report, required, name="guarded_report")
+    if report["use_status"] not in {"synthetic-only", "paper-facing"}:
+        raise ValueError("use_status must be 'synthetic-only' or 'paper-facing'")
+    try:
+        result_kind = PaperFacingResultKind(str(report["result_kind"]))
+    except ValueError as exc:
+        raise ValueError("result_kind must be a known paper-facing result kind") from exc
+    guard = _expect_mapping(report["guard"], name="guard")
+    _validate_guard_mapping(guard, result_kind=result_kind)
+    rows = _expect_sequence(report["probability_rows"], name="probability_rows")
+    row_mappings = tuple(_expect_mapping(row, name="probability row") for row in rows)
+    assert_alpha_indexed_probability_report(row_mappings)
+    if "output_error_record" in report:
+        _validate_output_error_record(
+            _expect_mapping(report["output_error_record"], name="output_error_record")
+        )
+    if result_kind is PaperFacingResultKind.VERTEX_SHORTCUT:
+        for row in row_mappings:
+            if row.get("vertex_use_mode") != VertexUseMode.G3_APPROVED.value:
+                raise RuntimeError(
+                    "vertex boundary payload requires G3-approved vertex rows"
+                )
+
+
+def _validate_guard_mapping(
+    guard: Mapping[str, object], *, result_kind: PaperFacingResultKind
+) -> None:
+    required = {"allowed", "missing_prerequisites", "prerequisites", "result_kind"}
+    _require_mapping_fields(guard, required, name="guard")
+    if guard["result_kind"] != result_kind.value:
+        raise ValueError("guard result_kind must match guarded_report result_kind")
+    if not isinstance(guard["allowed"], bool):
+        raise TypeError("guard.allowed must be a boolean")
+    missing = _expect_sequence(
+        guard["missing_prerequisites"], name="guard.missing_prerequisites"
+    )
+    if any(not isinstance(item, str) for item in missing):
+        raise TypeError("guard.missing_prerequisites must contain strings")
+    if bool(guard["allowed"]) != (len(missing) == 0):
+        raise ValueError("guard.allowed must exactly reflect missing_prerequisites")
+    prerequisites = _expect_mapping(guard["prerequisites"], name="guard.prerequisites")
+    required_prerequisites = {
+        "a013_grid_error_signed",
+        "capacity_convention_approved",
+        "capacity_denominator_provenance",
+        "g2_tier1_envelope_approved",
+        "g3_vertex_shortcut_approved",
+        "output_error_endpoint_records_manifested",
+    }
+    _require_mapping_fields(
+        prerequisites,
+        required_prerequisites,
+        name="guard.prerequisites",
+    )
+
+
+def _require_mapping_fields(
+    mapping: Mapping[str, object], required: set[str], *, name: str
+) -> None:
+    missing = required.difference(mapping)
+    if missing:
+        raise ValueError(f"{name} is missing fields: {sorted(missing)}")
+
+
+def _expect_mapping(value: object, *, name: str) -> Mapping[str, object]:
+    if not isinstance(value, Mapping):
+        raise TypeError(f"{name} must be a mapping")
+    return value
+
+
+def _expect_sequence(value: object, *, name: str) -> Sequence[object]:
+    if isinstance(value, (str, bytes)) or not isinstance(value, Sequence):
+        raise TypeError(f"{name} must be a sequence")
+    return value
 
 def _assert_g3_approved_vertex_family(pbox_family: PBoxFamily) -> None:
     for result in pbox_family.values():
