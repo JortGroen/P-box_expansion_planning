@@ -5,6 +5,7 @@ import pytest
 from src.pbox import PBoxAlphaResult, ProbabilityEstimate, VertexUseMode
 from src.pbox_reporting import (
     RUNNER_REPORT_BOUNDARY_PROTOCOL,
+    assert_runner_report_boundary_payload,
     build_guarded_pbox_report,
     build_runner_report_boundary_record,
     probability_rows_from_pbox_family,
@@ -262,3 +263,84 @@ def test_runner_report_boundary_accepts_complete_paper_facing_fixture() -> None:
     assert payload["paper_facing_requested"] is True
     assert payload["paper_facing_allowed"] is True
     assert payload["guarded_report"]["output_error_record"]["probability_widening"] == "forbidden"
+
+def test_runner_report_boundary_payload_validator_accepts_synthetic_payload() -> None:
+    payload = build_runner_report_boundary_record(
+        boundary_id="serialized-synthetic-fixture",
+        pbox_family=_pbox_family(),
+        prerequisites=FinalResultPrerequisites(),
+    ).to_mapping()
+
+    assert_runner_report_boundary_payload(payload)
+
+
+def test_runner_report_boundary_payload_validator_rejects_missing_guard() -> None:
+    payload = build_runner_report_boundary_record(
+        boundary_id="missing-guard-fixture",
+        pbox_family=_pbox_family(),
+        prerequisites=FinalResultPrerequisites(),
+    ).to_mapping()
+    guarded_report = dict(payload["guarded_report"])
+    guarded_report.pop("guard")
+
+    with pytest.raises(ValueError, match="guarded_report is missing fields"):
+        assert_runner_report_boundary_payload({**payload, "guarded_report": guarded_report})
+
+
+def test_runner_report_boundary_payload_validator_rejects_lied_allowed_flag() -> None:
+    payload = build_runner_report_boundary_record(
+        boundary_id="lied-allowed-fixture",
+        pbox_family=_pbox_family(),
+        prerequisites=FinalResultPrerequisites(),
+    ).to_mapping()
+
+    with pytest.raises(ValueError, match="paper_facing_allowed"):
+        assert_runner_report_boundary_payload({**payload, "paper_facing_allowed": True})
+
+
+def test_runner_report_boundary_payload_validator_rejects_missing_endpoint_record() -> None:
+    payload = build_runner_report_boundary_record(
+        boundary_id="complete-then-stripped-endpoints",
+        pbox_family=_pbox_family(),
+        prerequisites=_complete_prerequisites(),
+        use_status="paper-facing",
+        output_error_record=_output_error_record(),
+    ).to_mapping()
+    guarded_report = dict(payload["guarded_report"])
+    guarded_report.pop("output_error_record")
+
+    with pytest.raises(ValueError, match="output_error_record"):
+        assert_runner_report_boundary_payload({**payload, "guarded_report": guarded_report})
+
+
+def test_runner_report_boundary_payload_validator_rejects_tampered_missing_prerequisites() -> None:
+    payload = build_runner_report_boundary_record(
+        boundary_id="tampered-prerequisite-fixture",
+        pbox_family=_pbox_family(),
+        prerequisites=FinalResultPrerequisites(),
+    ).to_mapping()
+    guarded_report = dict(payload["guarded_report"])
+    guard = dict(guarded_report["guard"])
+    guard["allowed"] = True
+    guarded_report["guard"] = guard
+
+    with pytest.raises(ValueError, match="guard.allowed"):
+        assert_runner_report_boundary_payload({**payload, "guarded_report": guarded_report})
+
+
+def test_runner_report_boundary_payload_validator_rejects_stripped_vertex_mode() -> None:
+    payload = build_runner_report_boundary_record(
+        boundary_id="vertex-mode-stripped-fixture",
+        pbox_family=_pbox_family(use_mode=VertexUseMode.G3_APPROVED),
+        prerequisites=_complete_prerequisites(g3=True),
+        result_kind=PaperFacingResultKind.VERTEX_SHORTCUT,
+        use_status="paper-facing",
+        output_error_record=_output_error_record(),
+    ).to_mapping()
+    guarded_report = dict(payload["guarded_report"])
+    row = dict(guarded_report["probability_rows"][0])
+    row["vertex_use_mode"] = "pre-g3-synthetic"
+    guarded_report["probability_rows"] = [row, *guarded_report["probability_rows"][1:]]
+
+    with pytest.raises(RuntimeError, match="G3-approved vertex rows"):
+        assert_runner_report_boundary_payload({**payload, "guarded_report": guarded_report})

@@ -1,0 +1,7 @@
+# E5 Boundary Payload Validation
+
+## 2026-07-23 13:00 - E5/E4 readiness - in-progress
+DID: Started from latest `origin/main` after PR #177 merged. Added serialized payload validation for the guarded p-box runner/report boundary, so future plain-dict report surfaces can reject missing guards, inconsistent paper-facing flags, missing endpoint records, tampered prerequisite state, and stripped G3 vertex-mode evidence.
+VERIFIED: Planned-path ownership preflight passed for `src/pbox_reporting.py`, `tests/test_pbox_reporting.py`, `reports/guarded_reporting_fixtures.md`, and this log. Focused validation passed: `.\.venv\Scripts\python.exe -m pytest tests/test_pbox_reporting.py tests/test_pbox_result_guards.py` collected 28 tests, 28 passed in 3.35 s. Full validation passed: `.\scripts\task.ps1 test` collected 495 tests with 493 passed and 2 skipped in 174.99 s. `git diff --check` passed.
+OPEN: This remains synthetic-only and does not edit C-owned runner code. Real paper-facing use remains blocked by signed G2, signed A-013, capacity convention/provenance, endpoint records, and G3 for vertex outputs.
+NEXT: Open PR for review; future C-owned runner/report code can validate serialized boundary payloads before presentation.
