@@ -1583,6 +1583,10 @@ explicitly promotes that use.
 
 
 
+<!-- methods-id: E2-S3-HP001-EXECUTABLE-VALUE-BINDING-PACKET -->
+### E2-S3-HP001-EXECUTABLE-VALUE-BINDING-PACKET - HP-001 Executable Value-Binding Decision Packet
+
+**Status: Proposed packet; executable annual values and final paired acceptance unsigned.** The HP-001 executable value-binding packet is an approval template, not an approval. It asks the PI to approve or amend the remaining annual value-binding choices: PBL `Referentie_2030` value-column use, PBL `I11_woningequivalenten [Woning]` denominator use, GJ/year-to-TWh/year conversion by division by `3,600,000`, CBS 85035NED count-share allocation over SFH/MFH, and the 2035 HP service/adoption/electrification scenario for space heat and domestic hot water. It also keeps final integrated HP use blocked on separately signed D-004 paired-weather acceptance evidence and cold-spell numerical tolerances. The generated candidate record remains fail-closed with blank approval IDs and a non-approved status, so the HP adapter rejects it until a later signed record is committed. This packet does not approve annual HP TWh values, D-004 paired-weather or cold-spell acceptance, net-load/event analysis, `P(E)`, threshold/capacity-screen results, manuscript numbers, or probability results.
 <!-- methods-id: E2-S3-HP001-READINESS-APPROVAL-CHECKLIST -->
 ### E2-S3-HP001-READINESS-APPROVAL-CHECKLIST - HP-001 Final-Readiness Approval Checklist
 
