@@ -23,6 +23,7 @@ from src.pv_model import (
     assert_pv_weather_artifact_allows_consumer_use,
     assert_weather_member_matches_input_artifact,
     build_pv_ic1_executable_input_artifact,
+    build_pv_final_acceptance_gate_packet,
     build_pv_paired_readiness_preflight_packet,
     check_profile_against_pvgis_reference,
     generate_pv_profile,
@@ -1193,6 +1194,134 @@ def test_pv_paired_readiness_preflight_can_only_make_run_prerequisites_true_not_
     assert packet["final_paired_hp_pv_acceptance_signed_by_this_packet"] is False
     assert packet["blocking_register_ids"] == ()
     json.dumps(dict(packet))
+
+
+def _signed_pv_config_for_gate() -> PVSystemConfig:
+    return PVSystemConfig(
+        installed_capacity_kw=1.0,
+        performance_ratio=0.9,
+        reference_irradiance_w_per_m2=1000.0,
+        temperature_coefficient_per_c=0.0,
+        reference_temperature_c=25.0,
+        clip_to_capacity=True,
+        parameter_status="approved_for_executable_component_use",
+        signed_parameter_decision_id="PV-PARAM-001",
+    )
+
+
+def _signed_cold_spell_metadata_for_gate() -> dict[str, object]:
+    return {
+        "numerical_tolerances_status": "approved_with_signed_tolerances",
+        "signed_decision_id": "COLD-SPELL-TOLERANCE-001",
+        "near_freezing_band_c_min": -2.0,
+        "near_freezing_band_c_max": 2.0,
+        "coldest_7_day_mean_temperature_tolerance_c": 1.0,
+        "coldest_3_day_mean_temperature_tolerance_c": 1.0,
+        "temperature_load_response_metric": "signed_metric_placeholder",
+        "cop_response_metric": "signed_metric_placeholder",
+        "first_real_acceptance_run_preinspection_signed": True,
+    }
+
+
+def test_pv_final_acceptance_gate_requires_explicit_member_subset() -> None:
+    artifact = load_pv_weather_input_artifact(
+        "data/metadata/weather_pv/d004_alkmaar_berkhout_2014_2023_v1_weather_input_artifact.json"
+    )
+
+    with pytest.raises(ValueError, match="member_ids"):
+        build_pv_final_acceptance_gate_packet(
+            artifact,
+            parameter_config=_signed_pv_config_for_gate(),
+            hp_weather_identities=(),
+            cold_spell_metadata=_signed_cold_spell_metadata_for_gate(),
+            member_ids=(),
+        )
+
+
+def test_pv_final_acceptance_gate_blocks_vague_cold_spell_tolerance_metadata() -> None:
+    artifact = load_pv_weather_input_artifact(
+        "data/metadata/weather_pv/d004_alkmaar_berkhout_2014_2023_v1_weather_input_artifact.json"
+    )
+    member = artifact.member_for_year(2020)
+
+    packet = build_pv_final_acceptance_gate_packet(
+        artifact,
+        parameter_config=_signed_pv_config_for_gate(),
+        hp_weather_identities=(member,),
+        cold_spell_metadata={
+            "numerical_tolerances_status": "approved_with_signed_tolerances",
+            "signed_decision_id": "COLD-SPELL-TOLERANCE-001",
+        },
+        member_ids=(str(member["member_id"]),),
+    )
+
+    assert packet["hp_pv_weather_identity_equal"] is True
+    assert packet["cold_spell_tolerances_signed"] is False
+    assert "near_freezing_band_c_min" in packet["missing_cold_spell_tolerance_fields"]
+    assert packet["blocking_register_ids"] == ("COLD-SPELL-ACCEPTANCE",)
+    assert packet["ready_for_first_real_paired_acceptance_run"] is False
+
+
+def test_pv_final_acceptance_gate_blocks_hp_weather_identity_drift() -> None:
+    artifact = load_pv_weather_input_artifact(
+        "data/metadata/weather_pv/d004_alkmaar_berkhout_2014_2023_v1_weather_input_artifact.json"
+    )
+    member = dict(artifact.member_for_year(2020))
+    member["shared_weather_driver_id"] = "different-driver"
+
+    packet = build_pv_final_acceptance_gate_packet(
+        artifact,
+        parameter_config=_signed_pv_config_for_gate(),
+        hp_weather_identities=(member,),
+        cold_spell_metadata=_signed_cold_spell_metadata_for_gate(),
+        member_ids=(str(member["member_id"]),),
+    )
+
+    assert packet["hp_pv_weather_identity_equal"] is False
+    assert packet["paired_identity_results"][0]["passed"] is False
+    assert "shared_weather_driver_id" in packet["paired_identity_results"][0]["reason"]
+    assert packet["blocking_register_ids"] == ("FINAL-PAIRED-HP-PV-ACCEPTANCE",)
+
+
+def test_pv_final_acceptance_gate_can_be_structurally_ready_without_signing_final_acceptance() -> None:
+    artifact = load_pv_weather_input_artifact(
+        "data/metadata/weather_pv/d004_alkmaar_berkhout_2014_2023_v1_weather_input_artifact.json"
+    )
+    member = artifact.member_for_year(2020)
+
+    packet = build_pv_final_acceptance_gate_packet(
+        artifact,
+        parameter_config=_signed_pv_config_for_gate(),
+        hp_weather_identities=(member,),
+        cold_spell_metadata=_signed_cold_spell_metadata_for_gate(),
+        member_ids=(str(member["member_id"]),),
+    )
+
+    assert packet["ready_for_first_real_paired_acceptance_run"] is True
+    assert packet["final_paired_hp_pv_acceptance_signed_by_this_packet"] is False
+    assert packet["blocking_register_ids"] == ()
+    assert packet["paired_identity_results"][0]["content_sha256"] == member["content_sha256"]
+    json.dumps(dict(packet))
+
+
+def test_committed_pv_final_acceptance_gate_packet_is_fail_closed() -> None:
+    payload = json.loads(Path("data/metadata/weather_pv/d004_pv_final_acceptance_gate_packet.json").read_text(encoding="utf-8"))
+
+    assert payload["scaffold_helper"] == "src.pv_model.build_pv_final_acceptance_gate_packet"
+    assert payload["source_member_acceptance_id"] == "D004-SOURCE-MEMBER-ACCEPTANCE"
+    assert payload["pv_parameter_gate"]["current_status"] == "proposed_pending_pi_signoff"
+    assert payload["pv_parameter_gate"]["currently_satisfied"] is False
+    assert payload["paired_weather_identity_gate"]["currently_satisfied"] is False
+    assert payload["cold_spell_tolerance_gate"]["currently_satisfied"] is False
+    assert "near_freezing_band_c_min" in payload["cold_spell_tolerance_gate"]["required_fields"]
+    assert payload["fail_closed_result"]["ready_for_first_real_paired_acceptance_run"] is False
+    assert payload["fail_closed_result"]["final_paired_hp_pv_acceptance_signed_by_this_packet"] is False
+    assert payload["fail_closed_result"]["blocking_register_ids"] == [
+        "PV-PARAM-001",
+        "FINAL-PAIRED-HP-PV-ACCEPTANCE",
+        "COLD-SPELL-ACCEPTANCE",
+    ]
+    assert "no event detection" in payload["out_of_scope_guards"]
 
 def test_pv_weather_artifact_builds_ic1_source_member_input_bridge_but_blocks_execution() -> None:
     artifact = load_pv_weather_input_artifact(

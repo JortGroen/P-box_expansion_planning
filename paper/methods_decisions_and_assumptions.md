@@ -1578,6 +1578,10 @@ explicitly promotes that use.
 
 
 
+<!-- methods-id: E2-S3-HP001-READINESS-APPROVAL-CHECKLIST -->
+### E2-S3-HP001-READINESS-APPROVAL-CHECKLIST - HP-001 Final-Readiness Approval Checklist
+
+**Status: Proposed checklist; executable annual values and final paired acceptance unsigned.** The HP-001 readiness checklist separates the approvals that still block integrated heat-pump use after HP-001 and A-015/D013-PBL-MAPPING. The annual value-binding group requires explicit PI approval for PBL `Referentie_2030` value-column use, `I11_woningequivalenten [Woning]` denominator use, GJ-to-TWh conversion by division by `3,600,000`, the CBS 85035NED SFH/MFH count-share split, and the 2035 HP service/adoption/electrification scenario. The weather-acceptance group separately requires final D-004 paired-weather acceptance evidence and signed cold-spell numerical tolerances. The implementation scaffold can list missing approval keys and raises until all required IDs are present, so approved shape/COP and indicator mapping cannot by themselves create executable integrated HP inputs. This checklist does not approve annual HP TWh values, D-004 paired-weather or cold-spell acceptance, net-load/event analysis, `P(E)`, threshold/capacity-screen results, manuscript numbers, or probability results.
 <!-- methods-id: E2-S3-HP001-VALUE-BINDING-READINESS -->
 ### E2-S3-HP001-VALUE-BINDING-READINESS - HP-001 Value-Binding Readiness Packet
 

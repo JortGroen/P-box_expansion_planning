@@ -53,3 +53,16 @@ A-013, capacity provenance, output-error endpoint records, or G3 for vertex
 outputs. Those paper-facing attempts fail before a boundary payload can be
 emitted. Synthetic-only payloads remain allowed so fixtures can document the
 blocked state without becoming paper results.
+## Serialized Payload Validation
+
+`assert_runner_report_boundary_payload` validates the mapping produced by the
+boundary record after serialization. This matters because future runner/report
+code may handle dictionaries rather than Python dataclasses. The validator
+rejects payloads that drop the guard, lie about `paper_facing_allowed`, request
+paper-facing output without endpoint records, tamper with guard allowed/missing
+prerequisite consistency, or strip G3-approved vertex-mode evidence from vertex
+rows.
+
+These checks are still synthetic guard fixtures. They do not create real result
+manifests, run integrated trajectories, compute `P(E)`, choose capacity
+conventions, or approve G2/A-013/G3.

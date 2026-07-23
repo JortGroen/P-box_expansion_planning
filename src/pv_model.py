@@ -36,6 +36,16 @@ SEASON_BY_MONTH = {
     11: "SON",
 }
 SEASONS = ("DJF", "MAM", "JJA", "SON")
+REQUIRED_COLD_SPELL_TOLERANCE_FIELDS = (
+    "signed_decision_id",
+    "near_freezing_band_c_min",
+    "near_freezing_band_c_max",
+    "coldest_7_day_mean_temperature_tolerance_c",
+    "coldest_3_day_mean_temperature_tolerance_c",
+    "temperature_load_response_metric",
+    "cop_response_metric",
+    "first_real_acceptance_run_preinspection_signed",
+)
 
 
 @dataclass(frozen=True)
@@ -512,6 +522,122 @@ def build_pv_paired_readiness_preflight_packet(
         }
     )
 
+
+def build_pv_final_acceptance_gate_packet(
+    artifact: PVWeatherInputArtifact,
+    *,
+    parameter_config: PVSystemConfig | None,
+    hp_weather_identities: Sequence[Mapping[str, object] | WeatherMember],
+    cold_spell_metadata: Mapping[str, object],
+    member_ids: Sequence[str],
+) -> Mapping[str, object]:
+    """Return the exact fail-closed gate record for a future paired run.
+
+    The helper can make prerequisites auditable, but it never signs final paired
+    acceptance and never runs HP/PV, cold-spell, net-load, or event analysis.
+    """
+    assert_pv_weather_artifact_allows_consumer_use(artifact, intended_use="source_member_component_input")
+    requested_member_ids = tuple(str(item) for item in member_ids)
+    if not requested_member_ids:
+        raise ValueError("member_ids must identify the future paired-acceptance member subset")
+    if len(set(requested_member_ids)) != len(requested_member_ids):
+        raise ValueError("member_ids must not contain duplicates")
+
+    pv_parameters_signed = False
+    pv_parameter_status = "missing_unsigned"
+    signed_pv_parameter_decision_id = None
+    if parameter_config is not None:
+        pv_parameter_status = parameter_config.parameter_status
+        signed_pv_parameter_decision_id = parameter_config.signed_parameter_decision_id
+        try:
+            parameter_config.require_signed_parameters()
+        except ValueError:
+            pv_parameters_signed = False
+        else:
+            pv_parameters_signed = parameter_config.signed_parameter_decision_id == "PV-PARAM-001"
+
+    hp_records = tuple(_identity_record_or_none(item) for item in hp_weather_identities)
+    if any(item is None for item in hp_records):
+        raise ValueError("hp_weather_identities must not contain None")
+    hp_by_member_id = {str(record["member_id"]): record for record in hp_records if record is not None}
+    paired_identity_results: list[dict[str, object]] = []
+    for member_id in requested_member_ids:
+        try:
+            artifact_member = artifact.member_for_id(member_id)
+        except KeyError as exc:
+            paired_identity_results.append({"member_id": member_id, "passed": False, "reason": str(exc)})
+            continue
+        hp_record = hp_by_member_id.get(member_id)
+        if hp_record is None:
+            paired_identity_results.append({"member_id": member_id, "passed": False, "reason": "missing_hp_identity"})
+            continue
+        try:
+            assert_weather_member_matches_input_artifact(hp_record, artifact, member_id=member_id)
+            assert_same_weather_realization(artifact_member, hp_record)
+        except ValueError as exc:
+            paired_identity_results.append({"member_id": member_id, "passed": False, "reason": str(exc)})
+        else:
+            paired_identity_results.append(
+                {
+                    "member_id": member_id,
+                    "passed": True,
+                    "shared_weather_driver_id": artifact_member["shared_weather_driver_id"],
+                    "content_sha256": artifact_member["content_sha256"],
+                    "calendar_id": artifact_member["calendar_id"],
+                }
+            )
+    hp_pv_identity_equal = all(item["passed"] is True for item in paired_identity_results)
+
+    cold_spell = _audit_json_mapping(cold_spell_metadata, "cold_spell_metadata")
+    missing_cold_spell_fields = tuple(
+        field for field in REQUIRED_COLD_SPELL_TOLERANCE_FIELDS if field not in cold_spell
+    )
+    cold_spell_tolerances_signed = (
+        str(cold_spell.get("numerical_tolerances_status", "")) == "approved_with_signed_tolerances"
+        and bool(cold_spell.get("signed_decision_id"))
+        and cold_spell.get("first_real_acceptance_run_preinspection_signed") is True
+        and not missing_cold_spell_fields
+    )
+
+    blockers: list[str] = []
+    if not pv_parameters_signed:
+        blockers.append("PV-PARAM-001")
+    if not hp_pv_identity_equal:
+        blockers.append("FINAL-PAIRED-HP-PV-ACCEPTANCE")
+    if not cold_spell_tolerances_signed:
+        blockers.append("COLD-SPELL-ACCEPTANCE")
+
+    return MappingProxyType(
+        {
+            "packet_id": f"{artifact.selection_id}:pv_final_acceptance_gate",
+            "data_id": artifact.data_id,
+            "weather_contract": artifact.weather_contract,
+            "source_member_acceptance_id": artifact.source_member_acceptance_id,
+            "source_member_readiness_scope": artifact.readiness_scope,
+            "member_ids": requested_member_ids,
+            "pv_parameter_decision_id": "PV-PARAM-001",
+            "pv_parameter_status": pv_parameter_status,
+            "signed_pv_parameter_decision_id": signed_pv_parameter_decision_id,
+            "pv_parameters_signed_for_component_use": pv_parameters_signed,
+            "paired_identity_results": tuple(paired_identity_results),
+            "hp_pv_weather_identity_equal": hp_pv_identity_equal,
+            "cold_spell_acceptance_design_id": "E2-S3-COLD-SPELL-ACCEPTANCE-DESIGN",
+            "required_cold_spell_tolerance_fields": REQUIRED_COLD_SPELL_TOLERANCE_FIELDS,
+            "missing_cold_spell_tolerance_fields": missing_cold_spell_fields,
+            "cold_spell_tolerances_signed": cold_spell_tolerances_signed,
+            "ready_for_first_real_paired_acceptance_run": not blockers,
+            "final_paired_hp_pv_acceptance_signed_by_this_packet": False,
+            "blocking_register_ids": tuple(blockers),
+            "out_of_scope": (
+                "no net-load",
+                "no event detection",
+                "no P(E)",
+                "no threshold analysis",
+                "no capacity screen",
+                "no manuscript results",
+            ),
+        }
+    )
 
 def assert_pv_weather_artifact_allows_consumer_use(
     artifact: PVWeatherInputArtifact,
