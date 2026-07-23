@@ -159,12 +159,39 @@ def test_ndw_metadata_default_is_metadata_only(tmp_path: Path) -> None:
     assert payload["data_id"] == "D-012"
     assert payload["download_performed_by_script"] is False
     assert payload["status"] == "proposed_not_pi_signed"
+    assert payload["use_boundary"] == {
+        "contextual_only": True,
+        "promoted_to_executable_source": False,
+        "not_adoption_count_source": True,
+        "not_profile_library": True,
+        "not_congestion_input": True,
+        "promotion_requirement": "A later PI decision must explicitly promote D-012 before executable inventory-to-grid use.",
+    }
     assert "summaries" not in payload
     assert payload["selection"]["municipality_boundary_note"].startswith(
         "The NDW OCPI file exposes city strings"
     )
 
 
+
+def test_committed_ndw_metadata_remains_contextual_only() -> None:
+    payload = json.loads(
+        Path("data/metadata/ev_adoption/ndw_alkmaar_public_charging_inventory_metadata.json").read_text(
+            encoding="utf-8"
+        )
+    )
+
+    assert payload["data_id"] == "D-012"
+    assert payload["status"] == "proposed_not_pi_signed"
+    assert payload["use_boundary"] == {
+        "contextual_only": True,
+        "promoted_to_executable_source": False,
+        "not_adoption_count_source": True,
+        "not_profile_library": True,
+        "not_congestion_input": True,
+        "promotion_requirement": "A later PI decision must explicitly promote D-012 before executable inventory-to-grid use.",
+    }
+    assert "No integrated net-load" in payload["non_actions"][2]
 def test_data_register_has_no_e2_s1_placeholders() -> None:
     register = Path("registers/DATA_REGISTER.md").read_text(encoding="utf-8")
 

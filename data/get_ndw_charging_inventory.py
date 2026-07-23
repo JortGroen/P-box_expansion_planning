@@ -193,6 +193,14 @@ def build_metadata(
             "municipality_boundary_note": "The NDW OCPI file exposes city strings and coordinates but no CBS municipality code; exact GM0361 counts require an external boundary join.",
         },
         "download_performed_by_script": input_gzip is not None,
+        "use_boundary": {
+            "contextual_only": True,
+            "promoted_to_executable_source": False,
+            "not_adoption_count_source": True,
+            "not_profile_library": True,
+            "not_congestion_input": True,
+            "promotion_requirement": "A later PI decision must explicitly promote D-012 before executable inventory-to-grid use.",
+        },
         "non_actions": [
             "No ElaadNL public Set B profile was generated.",
             "No EV held-out batch was opened.",

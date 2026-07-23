@@ -92,7 +92,7 @@ Diagnostic bins:
 Interpretation: 22 kW-ish connectors are common, but they are not dominant in
 the current Alkmaar slice. The 11 kW-ish bin is slightly larger than the
 22 kW-ish bin, and the exact 13 kW group is the largest single current value.
-NDW therefore weakens a claim that `cp_capacity_kw = 22` is the unique
+As contextual evidence only, NDW therefore weakens a claim that `cp_capacity_kw = 22` is the unique
 representative current Alkmaar public charging capacity.
 
 ## Unit Implications For EV-008
@@ -116,7 +116,7 @@ one generated ElaadNL public cp member ~= one NDW public EVSE/connector/charge p
 two generated public cp members ~= one public pole connection for pole-level accounting
 ```
 
-This supports treating D-010/EV-007 public totals as charge-point-like counts
+This contextual evidence supports treating D-010/EV-007 public totals as charge-point-like counts
 only if the Outlook public-count definition is confirmed to mean public charge
 points, not poles. NDW itself cannot validate the Outlook unit; it can only
 show how a current infrastructure source separates locations, EVSEs, and
@@ -141,7 +141,7 @@ Recommended amendment before public Set B generation:
      separate 11/13/15/22 kW capacity classes or a signed simplification such as
      11 kW primary plus 22 kW sensitivity.
 
-Eco-Movement is not needed for this decision packet. NDW already provides a
+Eco-Movement is not needed for this contextual decision packet. NDW already provides a
 free, reproducible OCPI hierarchy with current locations, EVSEs, connectors,
 and connector power. Eco-Movement would only be an optional cross-check if a
 free, reproducible, acceptable-terms extract becomes available.
@@ -155,3 +155,6 @@ free, reproducible, acceptable-terms extract becomes available.
   slices.
 - Public profile generation, EV held-out adequacy, integrated net-load/event
   analysis, `P(E)`, and manuscript results remain out of scope.
+## Contextual-Only Boundary
+
+D-012 remains proposed contextual evidence unless a later PI decision explicitly promotes it. It is not an executable adoption-count source, profile library, inventory-to-grid allocation source, congestion input, or manuscript-result dataset. EV-008A used it as a capacity/unit decision aid only; later public profile generation and EV adoption counts remain governed by EV-008A and D-010/EV-007A respectively.

@@ -1840,6 +1840,70 @@ def test_adoption_config_validates_schema_and_provenance() -> None:
     assert national[0].source_id == "D-010"
 
 
+
+def test_d010_minimal_evidence_matches_approved_local_counts() -> None:
+    evidence = json.loads(
+        Path("data/metadata/ev_adoption/d010_elaad_outlook_minimal_evidence.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    source_metadata = json.loads(
+        Path("data/metadata/ev_adoption/e2_s6_local_adoption_counts_metadata.json").read_text(
+            encoding="utf-8"
+        )
+    )
+
+    assert evidence["data_id"] == "D-010"
+    assert evidence["artifact_type"] == "d010_elaad_outlook_minimal_evidence"
+    assert evidence["status"] == "source-approved-for-ev007a-local-counts"
+    assert evidence["approved_scope"] == {
+        "decision_id": "EV-007A",
+        "area_type": "municipalities",
+        "area_identifier": "GM0361",
+        "area_name": "Alkmaar",
+        "planning_year": 2035,
+        "selected_month": 12,
+        "scenarios": ["low", "middle", "high"],
+        "locations": ["home", "public"],
+        "rounding_rule": source_metadata["rounding_rule"],
+        "national_totals_policy": "National D-010 Outlook projections remain context/provenance only and must not be used directly as SimBench physical counts.",
+    }
+    assert evidence["schema_evidence"]["selected_row_fields"] == [
+        "year",
+        "month",
+        "scenario",
+        "location",
+        "variant",
+        "number",
+    ]
+    assert evidence["schema_evidence"]["raw_payload_identity"].startswith("Each approved query")
+    assert evidence["non_actions"] == [
+        "No new API request was made for this evidence freeze.",
+        "No raw API response was committed.",
+        "No EV profile generation, held-out access, net-load integration, event analysis, P(E), capacity screen, or manuscript number was produced.",
+    ]
+    expected_counts = {
+        f"{row['scenario']}_{row['location']}": row
+        for row in source_metadata["local_2035_charge_point_counts"]
+    }
+    assert set(evidence["approved_local_counts"]) == set(expected_counts)
+    for key, row in expected_counts.items():
+        frozen = evidence["approved_local_counts"][key]
+        assert frozen["query"] == row["query"]
+        assert frozen["retrieved_utc"] == row["retrieved_utc"]
+        assert frozen["response_sha256"] == row["response_sha256"]
+        assert frozen["row_count"] == 26
+        assert frozen["selected_row_filter"] == {
+            "year": 2035,
+            "month": 12,
+            "scenario": row["scenario"],
+            "location": row["location"],
+            "variant": row["variant"],
+        }
+        assert frozen["api_number"] == row["value"]
+        assert frozen["rounded_count"] == row["rounded_count"]
+
+
 def test_committed_adoption_scenarios_config_validates() -> None:
     config = load_adoption_scenarios_config(Path("configs/scenarios.yaml"))
     national = national_outlook_projections(config)

@@ -49,7 +49,7 @@ The generator is ElaadNL's dashboard + API that produces charging profiles based
 
 **3.4 Charging control.** All P1/P2 batches: **no smart charging** (uncontrolled). Only Set D (P3) uses `Smart charging (17h–23h)`.
 
-**3.5 Charge-point capacity.** EV-004 fixes `cp_capacity_kw = 11` for the primary home charge-point class. Public charging capacity remains unresolved; no public bulk library may inherit the superseded 22 kW proposal without a separate PI decision.
+**3.5 Charge-point capacity.** EV-004 fixes `cp_capacity_kw = 11` for the primary home charge-point class. EV-008A now governs public Set B source-generation capacity as an equal mix over 11, 13, 15, and 22 kW AC classes; no public sensitivity, smart-charging class, DC/fast class, or alternative capacity convention may be generated without a separate PI decision.
 
 **3.6 Residential sampling unit and scaling.** The primary home member is one `cp` profile for one physical home charge point. ElaadNL automatically includes its forecast car/van mixture in home charge-point profiles, and the project does not reweight that mixture. Nodal aggregation therefore selects and sums `K_r` complete members for the externally sourced number of home charge points at node `r`; it applies no additional home-share or vehicles-per-charge-point multiplier. The earlier vehicle-level scaling proposal A-011 is superseded. Public charge points remain a separate class.
 

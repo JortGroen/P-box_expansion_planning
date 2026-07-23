@@ -579,12 +579,15 @@ member traceable through its batch seed and returned profile index. Profile
 member IDs and seed metadata are stored in experiment manifests rather than
 reported as scientific parameters in the manuscript. Finite-library adequacy is
 tested against integrated transformer results under ALEA-002 and is reported
-separately from Monte Carlo sampling error. Whether members may be resampled
-with replacement inside one system realization remains unresolved until the
-generator's same-seed warning and the scenario-specific EV/charge-point cohort
-sizes are reconciled. If direct bootstrapping cannot satisfy those conditions,
-the calibrated stochastic sampler remains an explicit fallback rather than an
-unreported substitution.
+separately from Monte Carlo sampling error. EV-005B resolves the
+within-realization candidate member-selection rule as charge-point-level
+sampling with replacement from verified candidate libraries, with duplicate
+selections recorded as bootstrap multiplicities. That approval is limited to
+candidate member-selection implementation; held-out adequacy, profile-array
+loading for integrated use, and source-library sufficiency remain governed by
+EV-005/ALEA-002. If direct bootstrapping cannot satisfy those downstream
+conditions, the calibrated stochastic sampler remains an explicit fallback
+rather than an unreported substitution.
 
 The EV-to-integration readiness artifact records the approved candidate source
 libraries and A-014 allocations in a manifest-only adapter shape for later IC-1
@@ -592,8 +595,8 @@ use. It exposes home and public EV component identifiers, candidate batch seeds,
 processed-file checksums, source manifest paths, member ID patterns based on
 batch seed and returned profile index, and the EV-007A/A-014 per-node charge
 point counts. This readiness record does not load generated profile arrays,
-open held-out batches, choose the within-realization replacement rule, certify
-`M`, aggregate net load, evaluate events, estimate `P(E)`, or produce manuscript
+open held-out batches, materialize an EV-005B realization, certify `M`,
+aggregate net load, evaluate events, estimate `P(E)`, or produce manuscript
 numbers. Its calendar note preserves the 2025 ElaadNL source calendar and
 requires deterministic mapping onto the common planning-year calendar before
 IC-1 aggregation.
@@ -607,8 +610,8 @@ records the source-to-planning-year calendar obligation as a blocking
 precondition: the complete 2025 Europe/Amsterdam source members must be mapped
 onto the G0-A4 2035 common calendar by an approved deterministic procedure
 before Agent A can aggregate EV demand with baseline, HP, or PV components.
-This guardrail packet still does not choose the mapping algorithm, choose a
-replacement rule, certify `M`, inspect held-out data, or run event analysis.
+This guardrail packet still does not choose a realization schedule, certify
+`M`, inspect held-out data, load profile arrays, or run event analysis.
 
 The next candidate-adapter artifact materializes the approved EV-007A/A-014
 2035 Alkmaar low, middle, and high home/public charge-point allocations as
@@ -648,7 +651,7 @@ source-library identity, processed-checksum provenance, and candidate/held-out
 partition separation. It does not preserve actual 2035 weekday/weekend or
 holiday labels when those differ from the 2025 source calendar, so mapping
 provenance records `weekday_weekend_preserved = false` and
-`source_timestamp_index_policy = target_index_i_uses_source_index_i`. This approval authorizes readiness/adapter mapping code only. The candidate member-reference artifact materializes source-member IDs, batch seeds, returned profile indices, processed checksums, component identity, and EV-CAL-001 calendar provenance for home Set A and public Set B without loading profile arrays or selecting a realization. Held-out adequacy, finite-library sufficiency, within-realization replacement, net-load/event/`P(E)`, capacity-screen, and manuscript-result work remain outside this step.
+`source_timestamp_index_policy = target_index_i_uses_source_index_i`. This approval authorizes readiness/adapter mapping code only. The candidate member-reference artifact materializes source-member IDs, batch seeds, returned profile indices, processed checksums, component identity, and EV-CAL-001 calendar provenance for home Set A and public Set B without loading profile arrays or selecting a realization. Held-out adequacy, finite-library sufficiency, EV-005B member-selection realization, net-load/event/`P(E)`, capacity-screen, and manuscript-result work remain outside this step.
 <!-- methods-id: EV-004 -->
 ### EV-004 - Fixed Residential Charge-Point Distribution
 
@@ -669,8 +672,7 @@ charging is modeled as a separate class and is not governed by this decision.
 <!-- methods-id: EV-005 -->
 ### EV-005 - Finite Profile-Library Uncertainty
 
-**Status: Approved protocol; numerical stopping tolerance and within-realization
-replacement rule pending.** The archived ElaadNL library is treated as a finite
+**Status: Approved protocol; numerical stopping tolerance pending; candidate replacement resolved by EV-005B.** The archived ElaadNL library is treated as a finite
 random sample from an unknown generator distribution rather than as the true
 distribution itself. Library size `M`, home-charge-point cohort size `K`, and
 whole-system Monte Carlo size `N` therefore have distinct roles: one realization
@@ -688,9 +690,11 @@ common random numbers, and variation between those results is reported
 separately from the Monte Carlo confidence interval conditional on a fixed
 library. The library is extended if the predeclared downstream adequacy
 criterion fails. Resampling one library cannot detect behavior absent from all
-its members, so independent held-out generation is mandatory and ordinary
-within-library bootstrapping is only supplementary.
-The acceptance tolerance is fixed before the adequacy results are inspected and
+its members, so independent held-out generation is mandatory and ordinary within-library
+bootstrapping is only supplementary. EV-005B now fixes the within-realization
+candidate member-selection rule as charge-point-level sampling with replacement,
+but it does not certify library adequacy or authorize held-out use. The
+acceptance tolerance is fixed before the adequacy results are inspected and
 is tied to transformer-result or reinforcement-decision stability rather than
 to an isolated EV-profile percentile.
 
@@ -1522,8 +1526,13 @@ with a 24-month validity note, identifies Scenariotool v1.0.0 as last updated
 on 9 June 2026, and licenses the site under CC BY-NC-ND 4.0. The committed
 config and metadata record exact query strings, UTC retrieval time, raw floating
 API values, nearest-integer rounded counts, and response checksums without
-redistributing raw dashboard data. Public behavior profiles are separately
-governed by the EV-008A capacity-stratified generation protocol.
+redistributing raw dashboard data. The frozen minimal evidence packet
+`data/metadata/ev_adoption/d010_elaad_outlook_minimal_evidence.json` collects
+the approved Alkmaar API/schema evidence in one reviewable artifact: six local
+queries, their response hashes, the 26-row response-shape note, the selected
+2035/December row fields, the rounding rule, and the no-raw-redistribution
+boundary. Public behavior profiles are separately governed by the EV-008A
+capacity-stratified generation protocol.
 
 <!-- methods-id: D-011 -->
 ### D-011 - II3050 Scenario Framing
@@ -1541,11 +1550,13 @@ in which the ElaadNL Outlook scenarios are considered.
 <!-- methods-id: D-012 -->
 ### D-012 - NDW/DOT-NL Public Charging Inventory
 
-**Status: Proposed.** D-012 records NDW/DOT-NL laadpunten open data as current
-infrastructure evidence for the public-charging unit and capacity questions
-that block EV-008. The source is used only as a decision packet, not as a
-profile library or congestion input: raw live NDW responses are not committed,
-and no ElaadNL public Set B profile is generated by this work. The OCPI full
+**Status: Proposed contextual evidence; not executable unless promoted.** D-012
+records NDW/DOT-NL laadpunten open data as current infrastructure context for
+the public-charging unit and capacity questions that informed EV-008A. The
+source is used only as a decision packet unless a later PI decision promotes it
+to an executable data source; it is not a profile library, adoption-count source,
+or congestion input: raw live NDW responses are not committed, and no ElaadNL
+public Set B profile is generated by this evidence packet. The OCPI full
 dataset exposes a hierarchy of locations, EVSEs, and connectors, including
 connector `max_electric_power`; the GeoJSON bbox endpoint provides a smaller
 spatial cross-check. For Alkmaar, the committed metadata records both an exact
@@ -1556,10 +1567,12 @@ charge-point/EVSE/connector-like unit rather than a pole, while exact `GM0361`
 municipality counts require a separate boundary join. The observed current
 connector-power distribution includes substantial 11 kW-ish, 13 kW, 15 kW, and
 22 kW-ish groups, so D-012 weakens any claim that 22 kW is the unique
-representative current Alkmaar public capacity. It therefore supports the
-EV-008A choice to use an amended equal-mix capacity-stratified public profile
-design instead of treating 22 kW as the only current-fleet representative
-capacity.
+representative current Alkmaar public capacity. It therefore provides contextual
+support for the EV-008A choice to use an amended equal-mix capacity-stratified
+public profile design instead of treating 22 kW as the only current-fleet
+representative capacity. D-012 does not itself approve capacity weights, count
+units, or any future inventory-to-grid allocation unless a later PI decision
+explicitly promotes that use.
 
 
 
