@@ -1,0 +1,7 @@
+# E5 Fast Validation Guard Fixtures
+
+## 2026-07-23 14:00 - E5/E4 readiness - in-progress
+DID: Started from latest `origin/main` after PR #186 merged. Adapted the guarded p-box fixture documentation to the new fast/full validation policy and tightened serialized boundary validation so endpoint-record prerequisite claims must match actual `output_error_record` presence.
+VERIFIED: Planned-path ownership preflight passed for `src/pbox_reporting.py`, `tests/test_pbox_reporting.py`, `reports/guarded_reporting_fixtures.md`, and this log. Focused validation passed: `.\.venv\Scripts\python.exe -m pytest tests/test_pbox_reporting.py tests/test_pbox_result_guards.py` collected 30 tests, 30 passed in 3.31 s. Ownership passed for 4 changed paths. Fast-suite validation passed: `.\scripts\task.ps1 test-fast` selected 498 tests with 496 passed, 2 skipped, and 6 deselected in 111.13 s. `git diff --check` passed.
+OPEN: This remains synthetic-only and does not edit C-owned runner code. Real paper-facing use remains blocked by signed G2, signed A-013, capacity convention/provenance, endpoint records, and G3 for vertex outputs.
+NEXT: Open PR for review; future B-owned guard fixtures should use focused tests plus `test-fast` unless a gate/real-result artifact requires full validation.

@@ -344,3 +344,26 @@ def test_runner_report_boundary_payload_validator_rejects_stripped_vertex_mode()
 
     with pytest.raises(RuntimeError, match="G3-approved vertex rows"):
         assert_runner_report_boundary_payload({**payload, "guarded_report": guarded_report})
+
+def test_boundary_payload_validator_rejects_endpoint_prerequisite_without_record() -> None:
+    payload = build_runner_report_boundary_record(
+        boundary_id="endpoint-claim-without-record",
+        pbox_family=_pbox_family(),
+        prerequisites=_complete_prerequisites(),
+        use_status="synthetic-only",
+    ).to_mapping()
+
+    with pytest.raises(ValueError, match="endpoint-record prerequisite"):
+        assert_runner_report_boundary_payload(payload)
+
+
+def test_boundary_payload_validator_rejects_endpoint_record_when_guard_says_absent() -> None:
+    payload = build_runner_report_boundary_record(
+        boundary_id="endpoint-record-with-absent-guard-claim",
+        pbox_family=_pbox_family(),
+        prerequisites=FinalResultPrerequisites(),
+        output_error_record=_output_error_record(),
+    ).to_mapping()
+
+    with pytest.raises(ValueError, match="endpoint-record prerequisite"):
+        assert_runner_report_boundary_payload(payload)

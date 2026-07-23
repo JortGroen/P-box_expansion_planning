@@ -249,9 +249,17 @@ def _validate_guarded_report_mapping(report: Mapping[str, object]) -> None:
     rows = _expect_sequence(report["probability_rows"], name="probability_rows")
     row_mappings = tuple(_expect_mapping(row, name="probability row") for row in rows)
     assert_alpha_indexed_probability_report(row_mappings)
-    if "output_error_record" in report:
+    has_endpoint_record = "output_error_record" in report
+    if has_endpoint_record:
         _validate_output_error_record(
             _expect_mapping(report["output_error_record"], name="output_error_record")
+        )
+    prerequisites = _expect_mapping(
+        guard["prerequisites"], name="guard.prerequisites"
+    )
+    if prerequisites["output_error_endpoint_records_manifested"] != has_endpoint_record:
+        raise ValueError(
+            "guard endpoint-record prerequisite must match output_error_record presence"
         )
     if result_kind is PaperFacingResultKind.VERTEX_SHORTCUT:
         for row in row_mappings:
