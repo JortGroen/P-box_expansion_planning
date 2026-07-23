@@ -52,6 +52,7 @@ D004_ACCEPTANCE_TOLERANCE_PACKET_NAME = f"{D004_SELECTION_ID}_acceptance_toleran
 D004_PI_RECOMMENDATION_PACKET_NAME = f"{D004_SELECTION_ID}_pi_recommendation_packet.json"
 D004_SOURCE_MEMBER_ACCEPTANCE_DECISION_NAME = f"{D004_SELECTION_ID}_source_member_acceptance_decision.json"
 D004_WEATHER_INPUT_ARTIFACT_NAME = f"{D004_SELECTION_ID}_weather_input_artifact.json"
+D004_PV_PARAMETER_DECISION_PACKET_NAME = "d004_pv_parameter_decision_packet.json"
 D004_SOURCE_MEMBER_ACCEPTANCE_ID = "D004-SOURCE-MEMBER-ACCEPTANCE"
 
 
@@ -826,7 +827,7 @@ def write_d004_pi_recommendation_packet(*, metadata_dir: str | Path = "data/meta
 
 
 def build_d004_weather_input_artifact(*, metadata_dir: str | Path = "data/metadata") -> dict[str, Any]:
-    """Expose accepted D-004 WEATHER-001 member identities for executable-input gates."""
+    """Expose accepted D-004 WEATHER-001 source/member identities for component-input gates."""
     metadata_root = Path(metadata_dir)
     weather_dir = metadata_root / "weather_pv"
     decision = _load_json(weather_dir / D004_SOURCE_MEMBER_ACCEPTANCE_DECISION_NAME)
@@ -885,9 +886,9 @@ def build_d004_weather_input_artifact(*, metadata_dir: str | Path = "data/metada
     return {
         "data_id": "D-004",
         "selection_id": D004_SELECTION_ID,
-        "artifact_type": "accepted_weather_001_member_index_for_executable_input_gate",
+        "artifact_type": "accepted_weather_001_source_member_index_for_component_input_gate",
         "created_utc": _now_utc_iso(),
-        "status": "accepted_for_source_member_use_final_paired_cold_spell_pending",
+        "status": "accepted_for_source_member_readiness_final_paired_cold_spell_pending",
         "source_member_acceptance_id": decision.get("decision_id"),
         "source_member_acceptance_status": decision.get("status"),
         "weather_contract": "WEATHER-001",
@@ -896,7 +897,10 @@ def build_d004_weather_input_artifact(*, metadata_dir: str | Path = "data/metada
         "pvgis_role": "qualitative seasonal/peak sanity and provenance/calibration context only",
         "pvgis_realized_weather_path": False,
         "accepted_for_source_member_use": decision.get("decision_id") == D004_SOURCE_MEMBER_ACCEPTANCE_ID,
+        "readiness_scope": "source_member_component_input_only_not_final_integrated",
+        "ready_for_source_member_component_input_gate": True,
         "ready_for_executable_input_gate": True,
+        "ready_for_executable_input_gate_scope": "legacy_field_true_for_source_member_component_input_only_not_final_integrated",
         "required_identity_fields_for_hp_pv_pairing": exact_identity_fields,
         "calendar_contract": {
             "calendar_id_pattern": f"{D004_SELECTION_ID}:utc_year_15min_europe_amsterdam:<YEAR>",
@@ -930,7 +934,7 @@ def build_d004_weather_input_artifact(*, metadata_dir: str | Path = "data/metada
 
 
 def write_d004_weather_input_artifact(*, metadata_dir: str | Path = "data/metadata") -> Path:
-    """Write the accepted D-004 WEATHER-001 member index for executable-input gates."""
+    """Write the accepted D-004 WEATHER-001 source/member index for component-input gates."""
     directory = Path(metadata_dir) / "weather_pv"
     directory.mkdir(parents=True, exist_ok=True)
     return _write_json(
@@ -940,15 +944,94 @@ def write_d004_weather_input_artifact(*, metadata_dir: str | Path = "data/metada
 
 
 def load_d004_weather_input_artifact(*, metadata_dir: str | Path = "data/metadata") -> dict[str, Any]:
-    """Load and validate the accepted D-004 WEATHER-001 member index."""
+    """Load and validate the accepted D-004 WEATHER-001 source/member index."""
     payload = _load_json(Path(metadata_dir) / "weather_pv" / D004_WEATHER_INPUT_ARTIFACT_NAME)
     if payload.get("source_member_acceptance_id") != D004_SOURCE_MEMBER_ACCEPTANCE_ID:
         raise ValueError("D-004 weather input artifact lacks the approved source/member decision ID")
     if payload.get("pvgis_realized_weather_path") is not False:
         raise ValueError("D-004 weather input artifact must keep PVGIS out of the realized weather path")
+    if payload.get("readiness_scope") != "source_member_component_input_only_not_final_integrated":
+        raise ValueError("D-004 weather input artifact must be scoped to source/member readiness")
+    if payload.get("ready_for_source_member_component_input_gate") is not True:
+        raise ValueError("D-004 weather input artifact must be component-input ready only at source/member scope")
     if payload.get("blocked_acceptance_gates", {}).get("final_paired_hp_pv_acceptance", {}).get("blocked") is not True:
         raise ValueError("D-004 weather input artifact must not imply final paired HP/PV acceptance")
     return payload
+
+
+def build_d004_pv_parameter_decision_packet() -> dict[str, Any]:
+    """Prepare unsigned PV parameter choices for PI signoff without approving values."""
+    return {
+        "data_id": "D-004",
+        "decision_id": "PV-PARAM-001",
+        "created_utc": _now_utc_iso(),
+        "status": "proposed_pending_pi_signoff",
+        "parameter_config_status": "unsigned_fail_closed_scaffold",
+        "blocks_signed_executable_pv_generation": True,
+        "scope": "PV conversion parameters after WEATHER-001 source/member readiness",
+        "governing_inputs": [
+            "WEATHER-001",
+            "D004-MC-001",
+            "D004-SOURCE-MEMBER-ACCEPTANCE",
+        ],
+        "recommended_decisions": [
+            {
+                "field": "installed_capacity_kw",
+                "question": "Should PV installed capacity be caller-supplied per node/fleet from a signed adoption/allocation layer rather than inferred from the normalized 1.0 kWp PVGIS reference?",
+                "recommendation": "Require signed caller-supplied installed_capacity_kw for each PV fleet; PVGIS peakpower=1.0 remains a normalized reference only.",
+                "fail_closed_rule": "No default installed capacity is provided by D-004.",
+            },
+            {
+                "field": "tilt_aspect",
+                "question": "Approve fixed tilt/aspect values for PV conversion, or keep them as metadata until a plane-of-array treatment is signed?",
+                "recommendation": "Carry the PVGIS reference geometry of 35 degree tilt and south-facing aspect as provenance; do not apply it to KNMI GHI without a signed transposition rule.",
+                "fail_closed_rule": "Tilt/aspect cannot change generated PV unless PV-PARAM-001 signs a plane-of-array treatment.",
+            },
+            {
+                "field": "losses_or_performance_ratio",
+                "question": "Should the PV model use a signed loss percentage, a signed performance ratio, or a documented mapping between the two?",
+                "recommendation": "Require one signed performance_ratio for executable component use; keep the PVGIS 14% loss as reference provenance only until PI approval.",
+                "fail_closed_rule": "Unsigned configs may be used in scaffold tests only and must raise before signed executable PV input use.",
+            },
+            {
+                "field": "temperature_coefficient_per_c",
+                "question": "Approve the temperature coefficient and reference temperature used to adjust PV output from WEATHER-001 temperature_c.",
+                "recommendation": "Do not infer a coefficient from PVGIS output; PI should sign the coefficient/reference-temperature pair or approve temperature adjustment disabled.",
+                "fail_closed_rule": "No paper-use coefficient is implied by D-004 source/member acceptance.",
+            },
+            {
+                "field": "clipping",
+                "question": "Should PV generation be clipped at installed_capacity_kw after loss and temperature adjustment?",
+                "recommendation": "Require PI to sign clipping semantics together with installed capacity and performance-ratio handling.",
+                "fail_closed_rule": "Unsigned clip_to_capacity values are scaffold-only.",
+            },
+            {
+                "field": "ghi_vs_plane_of_array",
+                "question": "Should KNMI Q-derived GHI be used directly as a conservative first-pass irradiance input, or transformed to plane-of-array before PV conversion?",
+                "recommendation": "Keep WEATHER-001 realized irradiance as KNMI GHI; request PI approval before any GHI-to-plane transposition or claim that GHI equals fixed-plane irradiance.",
+                "fail_closed_rule": "The scaffold records plane_of_array_treatment and requires signed approval before executable PV use.",
+            },
+        ],
+        "scaffold_contract": {
+            "class": "src.pv_model.PVSystemConfig",
+            "unsigned_statuses": ["unsigned_scaffold", "proposed_pending_pi_signoff"],
+            "approved_status": "approved_for_executable_component_use",
+            "required_signed_field": "signed_parameter_decision_id",
+            "guard_method": "PVSystemConfig.require_signed_parameters()",
+        },
+        "out_of_scope_guards": [
+            "no final paired HP/PV acceptance",
+            "no cold-spell tolerance approval",
+            "no net-load/event/P(E)/capacity-screen/manuscript results",
+        ],
+    }
+
+
+def write_d004_pv_parameter_decision_packet(*, metadata_dir: str | Path = "data/metadata") -> Path:
+    """Write the unsigned PV-parameter PI decision packet."""
+    directory = Path(metadata_dir) / "weather_pv"
+    directory.mkdir(parents=True, exist_ok=True)
+    return _write_json(directory / D004_PV_PARAMETER_DECISION_PACKET_NAME, build_d004_pv_parameter_decision_packet())
 
 
 def write_retrieval_plan(metadata_dir: str | Path = "data/metadata") -> Path:

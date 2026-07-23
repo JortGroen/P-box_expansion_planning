@@ -1,0 +1,7 @@
+# E5 Final-Result Guards
+
+## 2026-07-23 - E5/E6 paper-facing guardrails - scaffold-only
+DID: Started from latest `origin/main` while PR #167 remained open. Added B-owned final-result guardrails for paper-facing p-box probabilities, decision results, and vertex-shortcut outputs. The guard requires explicit G2, signed A-013, capacity convention/provenance, manifested output-error endpoint records, and G3 for vertex shortcut outputs.
+SCOPE: Synthetic/governance infrastructure only. This does not run real E3 trajectories, estimate real `P(E)`, select a capacity convention, sign model-error values, authorize G3, or produce manuscript numbers.
+VERIFIED: Planned-path ownership preflight passed for `src/pbox_result_guards.py`, `tests/test_pbox_result_guards.py`, `reports/final_result_guardrails.md`, and this log. Focused validation passed: `./.venv/Scripts/python.exe -m pytest tests/test_pbox_result_guards.py` collected 7 tests, 7 passed in 0.23 s. Full validation passed: `./scripts/task.ps1 test` collected 445 tests with 443 passed and 2 skipped in 65.98 s. `git diff --check` passed.
+OPEN: The guard blocks paper-facing presentation until upstream signed prerequisites are supplied by the PI and manifested real-result pipeline.
