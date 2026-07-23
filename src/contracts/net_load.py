@@ -1436,6 +1436,127 @@ def validate_executable_input_gate(
         "artifacts": [artifact.manifest_record() for artifact in required_artifacts],
     }
 
+def dry_run_integrated_input_preflight(
+    config: FutureLayerScreenPreflightConfig,
+    artifacts: Sequence[ExecutableInputArtifact],
+    *,
+    required_component_kinds: Sequence[ComponentKind] = REQUIRED_INTEGRATION_COMPONENT_KINDS,
+    missing_artifact_blockers: Mapping[str, Sequence[str]] | None = None,
+    intended_use: str = "e3_s2b_integrated_input_preflight",
+) -> dict[str, object]:
+    """Summarize E3.S2 integrated-input readiness without executing IC-1.
+
+    The dry run inventories accepted, missing, and blocked artifacts using the
+    same register-backed acceptance rule as the executable gate. It returns a
+    manifestable report even when inputs are incomplete, and it intentionally
+    performs no array loading, net-load assembly, event detection, or capacity
+    calculation.
+    """
+
+    required = tuple(required_component_kinds)
+    if not required:
+        raise ValueError("required_component_kinds must not be empty")
+    for kind in required:
+        if kind not in _VALID_COMPONENT_KINDS:
+            raise ValueError("required_component_kinds must contain valid component kinds")
+    blockers_by_kind = _normalized_blockers_by_kind(missing_artifact_blockers)
+    by_kind: dict[ComponentKind, ExecutableInputArtifact] = {}
+    for artifact in artifacts:
+        if artifact.kind in by_kind:
+            raise ValueError("executable input artifact kinds must be unique")
+        by_kind[artifact.kind] = artifact
+
+    component_reports: dict[str, dict[str, object]] = {}
+    accepted_kinds: list[str] = []
+    missing_kinds: list[str] = []
+    blocked_kinds: list[str] = []
+    for kind in required:
+        artifact = by_kind.get(kind)
+        if artifact is None:
+            missing_kinds.append(kind)
+            component_reports[kind] = {
+                "kind": kind,
+                "state": "missing",
+                "accepted_for_gate": False,
+                "blocking_register_ids": blockers_by_kind.get(kind, ("missing artifact metadata",)),
+                "artifact": None,
+            }
+            continue
+        report: dict[str, object] = {
+            "kind": kind,
+            "artifact_id": artifact.artifact_id,
+            "artifact_status": artifact.artifact_status,
+            "manifest_path": artifact.manifest_path,
+            "signed_register_ids": artifact.signed_register_ids,
+            "blocking_register_ids": artifact.blocking_register_ids,
+            "artifact": artifact.manifest_record(),
+        }
+        if artifact.artifact_status != "accepted":
+            blocked_kinds.append(kind)
+            report.update(
+                {
+                    "state": "blocked",
+                    "accepted_for_gate": False,
+                    "reason": "artifact_status_not_accepted",
+                }
+            )
+        else:
+            register_failures = _register_backing_failures_for_artifact(artifact)
+            if register_failures:
+                blocked_kinds.append(kind)
+                report.update(
+                    {
+                        "state": "blocked",
+                        "accepted_for_gate": False,
+                        "reason": "register_backing_not_accepted",
+                        "register_backing_errors": tuple(register_failures),
+                    }
+                )
+            else:
+                accepted_kinds.append(kind)
+                report.update({"state": "accepted", "accepted_for_gate": True})
+        component_reports[kind] = report
+
+    executable_input_gate: dict[str, object] | None = None
+    gate_error: str | None = None
+    if not missing_kinds and not blocked_kinds:
+        try:
+            executable_input_gate = validate_executable_input_gate(
+                tuple(by_kind[kind] for kind in required),
+                required_component_kinds=required,
+                intended_use=intended_use,
+            )
+            if executable_input_gate["calendar_id"] != config.metadata.get("calendar_id", executable_input_gate["calendar_id"]):
+                raise ValueError("screen preflight config calendar_id must match executable input artifacts")
+        except ValueError as exc:
+            gate_error = str(exc)
+
+    ready_for_input_assembly = (
+        executable_input_gate is not None
+        and gate_error is None
+        and not missing_kinds
+        and not blocked_kinds
+    )
+    return {
+        "intended_use": intended_use,
+        "dry_run_only": True,
+        "ready_for_input_assembly": ready_for_input_assembly,
+        "screen_prerequisite_only": True,
+        "no_real_net_load_arrays": True,
+        "no_event_detection": True,
+        "no_probability_estimate": True,
+        "no_capacity_screen_result": True,
+        "config_manifest": config.manifest_record(),
+        "required_component_kinds": tuple(required),
+        "present_component_kinds": tuple(sorted(by_kind)),
+        "accepted_component_kinds": tuple(sorted(accepted_kinds)),
+        "missing_component_kinds": tuple(missing_kinds),
+        "blocked_component_kinds": tuple(blocked_kinds),
+        "component_reports": component_reports,
+        "gate_error": gate_error,
+        "executable_input_gate": executable_input_gate,
+    }
+
 def validate_future_layer_screen_preflight(
     config: FutureLayerScreenPreflightConfig,
     artifacts: Sequence[ExecutableInputArtifact],
@@ -1736,27 +1857,35 @@ _VALID_EXECUTABLE_INPUT_STATUSES = frozenset(ExecutableInputArtifactStatus.__arg
 
 
 def _validate_artifact_register_backing(artifacts: Sequence[ExecutableInputArtifact]) -> None:
-    rows = _load_register_rows()
     failures: dict[str, list[str]] = {}
     for artifact in artifacts:
-        for register_id in artifact.signed_register_ids:
-            row = rows.get(register_id)
-            if row is None:
-                failures.setdefault(artifact.kind, []).append(f"{register_id} (not found)")
-                continue
-            if not _register_id_matches_component_kind(register_id, artifact.kind):
-                failures.setdefault(artifact.kind, []).append(f"{register_id} (not valid for {artifact.kind})")
-                continue
-            if not _register_row_is_executable(row):
-                failures.setdefault(artifact.kind, []).append(
-                    f"{register_id} (status={row['status']}; signoff={row['signoff']})"
-                )
+        artifact_failures = _register_backing_failures_for_artifact(artifact)
+        if artifact_failures:
+            failures[artifact.kind] = artifact_failures
     if failures:
         details = "; ".join(
             f"{kind}: {', '.join(values)}"
             for kind, values in sorted(failures.items())
         )
         raise ValueError(f"executable input artifact register backing is not accepted: {details}")
+
+
+def _register_backing_failures_for_artifact(artifact: ExecutableInputArtifact) -> list[str]:
+    rows = _load_register_rows()
+    failures: list[str] = []
+    for register_id in artifact.signed_register_ids:
+        row = rows.get(register_id)
+        if row is None:
+            failures.append(f"{register_id} (not found)")
+            continue
+        if not _register_id_matches_component_kind(register_id, artifact.kind):
+            failures.append(f"{register_id} (not valid for {artifact.kind})")
+            continue
+        if not _register_row_is_executable(row):
+            failures.append(
+                f"{register_id} (status={row['status']}; signoff={row['signoff']})"
+            )
+    return failures
 
 
 def _load_register_rows() -> dict[str, dict[str, str]]:
