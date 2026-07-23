@@ -48,6 +48,7 @@ the corresponding register row.
 | `A-013` | Symmetric relative grid-model discrepancy with unknown dependence; numerical values unsigned. | proposed |
 | `A-014` | Load-proportional EV adoption allocation across SimBench load nodes. | approved for second-stage use after local totals |
 | `A-015` | PBL Startanalyse D-013 suffix/indicator mapping for residential HP scaling. | approved for D-013 indicator mapping only |
+| `A-016` | EV/HP/PV 2035 source and scenario-lineage consistency must be checked before integrated analysis. | approved consistency requirement |
 <!-- assumption-inventory-end -->
 
 ### Additional Modelling and Data-Inference Boundaries
@@ -68,6 +69,7 @@ the corresponding register row.
 | D004-MC-001/D004-SOURCE-MEMBER-ACCEPTANCE | KNMI Berkhout is the realized weather path for Alkmaar; hourly `T` and `Q` are expanded to 15-minute members, and PVGIS remains sanity/provenance only. | Approved for internal source/member use; final paired HP/PV validation and cold-spell tolerances remain pending. |
 | PV-PARAM-001 | PV conversion parameters remain unsigned: installed capacity, tilt/aspect, losses/PR, temperature coefficient, clipping, and GHI-vs-plane treatment require PI signoff. | Proposed; fail-closed scaffold only. |
 | PV-CAP-001/D-014 | PV installed capacity is anchored to local Alkmaar CBS photovoltaic capacity and scaled to 2035 through a signed II3050/scenario growth factor; optional DEGO/Zonnedakje/building sources support allocation only if registered. | Approved route; concrete retrieval, values, capacity convention, and per-node allocation remain pending. |
+| A-016/Scenario consistency | EV, HP, and PV may use different best-available sources, but their 2035 branches must be reconciled and manifested before integrated net-load/event analysis. | Approved consistency requirement; unresolved mismatch is a limitation or escalation, not a silent assumption. |
 | EV-007A/A-014/D-010 | Alkmaar municipality is the local proxy for the synthetic SimBench case, and local counts are allocated across grid loads by static `p_mw`. | EV local totals and A-014 allocation are approved; this remains an illustrative-case transfer assumption. |
 | A-013 | The candidate `epsilon_grid = 5%` with `2%`/`10%` sensitivities is not empirical or expert-signed. | Proposed only; E9.S5a evidence review is required before numerical use as a scientific claim. |
 ## Decisions
@@ -985,6 +987,11 @@ A direction change resets the consecutive-step counter, preventing separate
 import episodes from being joined across an intervening export interval. The
 unconditioned magnitude is retained for screening so reverse-flow stress
 remains visible.
+
+<!-- methods-id: A-016 -->
+### A-016 - Cross-Source 2035 Scenario Consistency
+
+**Status: Approved consistency requirement.** The 2035 EV, heat-pump, and PV layers may draw on different best-available Dutch sources because no single source cleanly supplies all local quantities needed for this synthetic DSO case. EV counts are anchored to ElaadNL Outlook, HP scaling is built from When2Heat shape/COP evidence plus PBL/CBS local heat-demand evidence, and PV installed capacity is routed through CBS local capacity and II3050 scenario growth. Before any executable integrated net-load or event analysis, each component artifact and the integration manifest must therefore record source lineage, source year, planning year, scenario label, scaling factor or adoption branch, and an explicit consistency check across the EV/HP/PV choices. If those choices cannot be reconciled as one coherent 2035 case, the mismatch is reported as a limitation or escalated for a signed amendment; it must not be hidden behind a shared `low`, `middle`, or `high` label.
 
 <!-- methods-id: A-013 -->
 ### A-013 - Grid-Model Output Discrepancy
