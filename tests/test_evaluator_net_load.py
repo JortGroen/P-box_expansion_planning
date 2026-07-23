@@ -1597,7 +1597,7 @@ def _executable_input_artifact(
         signed_register_ids = {
             "baseline": ("D-001",),
             "ev": ("EV-003", "EV-004", "EV-007A", "EV-CAL-001"),
-            "hp": ("HP-001", "D-003"),
+            "hp": ("HP-001",),
             "pv": ("WEATHER-001", "D004-MC-001"),
             "adoption": ("EV-007A", "A-014"),
             "flexibility": ("FLEX-001",),
@@ -1662,6 +1662,36 @@ def test_executable_input_gate_rejects_missing_required_component() -> None:
     with pytest.raises(ValueError, match=r"missing executable input artifact kind\(s\): adoption"):
         validate_executable_input_gate(artifacts)
 
+
+def test_executable_input_gate_rejects_self_attested_pending_or_unsigned_ids() -> None:
+    artifacts = _executable_input_artifacts()
+    artifacts[2] = _executable_input_artifact(
+        "hp",
+        signed_register_ids=("D-013",),
+    )
+
+    with pytest.raises(ValueError, match=r"D-013 .*unsigned"):
+        validate_executable_input_gate(artifacts)
+
+    artifacts = _executable_input_artifacts()
+    artifacts[5] = _executable_input_artifact(
+        "flexibility",
+        signed_register_ids=("A-013",),
+    )
+
+    with pytest.raises(ValueError, match=r"A-013 .*not valid for flexibility"):
+        validate_executable_input_gate(artifacts)
+
+
+def test_executable_input_gate_rejects_arbitrary_approved_ids_for_wrong_component() -> None:
+    artifacts = _executable_input_artifacts()
+    artifacts[1] = _executable_input_artifact(
+        "ev",
+        signed_register_ids=("G0",),
+    )
+
+    with pytest.raises(ValueError, match=r"G0 .*not valid for ev"):
+        validate_executable_input_gate(artifacts)
 
 def test_executable_input_gate_rejects_unsigned_inputs_with_blocking_ids() -> None:
     artifacts = _executable_input_artifacts()
