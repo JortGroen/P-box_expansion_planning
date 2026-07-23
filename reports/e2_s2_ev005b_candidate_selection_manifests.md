@@ -18,8 +18,9 @@ The artifact is compressed deterministic JSON metadata. It records member select
 - Home component stream: `ev_home`
 - Public component stream: `ev_public`
 - Materialized timestamp: `2026-07-22T17:45:00Z`
-- Compressed artifact size: 1,385,206 bytes
-- Compressed artifact SHA-256: `4580e6a99ef70f9bf63083ce8d3561898f9c855129d87f6300ccde5a5264cce9`
+- Compressed artifact size: 1,225,163 bytes
+- Compressed artifact SHA-256: `9fc6098d20f220193064c4f008fc01c92a222750c7d01adfab4cd73e549d2578`
+- Candidate member reference SHA-256: `d54fb4f99fb1972c9c77d917176224a359c75bfc66f4cc60d8e8ab26422145de`
 
 This is an IC-1 readiness realization, not a manuscript Monte Carlo result and not a signed production run schedule.
 
@@ -35,7 +36,7 @@ The full manifest contains 43,169 selected charge-point rows across 115 in-servi
 
 ## Provenance Fields
 
-Each selected row records the scenario node, component, public capacity class where relevant, node-local and realization-level selection indices, source member ID, library ID, candidate partition, control mode, batch seed, returned profile index, processed candidate path, processed SHA-256 expectation, duplicate flag, and duplicate multiplicity.
+Each selected row records the scenario node, component, public capacity class where relevant, node-local and realization-level selection indices, source member ID, library ID, candidate partition, control mode, batch seed, returned profile index, processed candidate path, processed SHA-256 expectation, duplicate flag, and duplicate multiplicity. The manifest set also records the SHA-256 of the candidate-member reference artifact it was drawn from, so later IC-1 consumption can prove the selected rows match the reviewed eligible-member table.
 
 Shared manifest metadata records the RNG-001 component stream records, EV-005B replacement policy, EV-CAL-001 ordinal calendar mapping, and blocked-analysis guardrails.
 

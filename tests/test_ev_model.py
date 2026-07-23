@@ -1312,9 +1312,12 @@ def test_ev_ic1_candidate_member_reference_expands_synthetic_batches(tmp_path: P
     assert first_home["weekday_weekend_preserved"] is False
     assert len(reference["scenario_node_requirements"]) == 6
     assert reference["selection_boundary"] == {
-        "replacement_rule_chosen": False,
+        "replacement_policy_id": "EV-005B",
+        "replacement_rule_chosen": True,
+        "replacement_policy_scope": "candidate_member_selection_only",
         "component_stream_required": True,
-        "sample_rows_materialized": False,
+        "sample_rows_materialized_in_reference": False,
+        "candidate_selection_manifest_set": "data/metadata/ev_adoption/e2_s2_ev005b_candidate_selection_manifests.json.gz",
         "realization_selection_performed": False,
     }
     assert reference["policy"]["profile_arrays_loaded"] is False
@@ -1336,12 +1339,14 @@ def test_ev_candidate_member_selection_manifest_set_materializes_declared_branch
         root_seed=20260722,
         sample_index=0,
         materialized_timestamp_utc="2026-07-22T17:45:00Z",
+        source_candidate_member_reference_sha256="0" * 64,
     )
 
     assert artifact["artifact_type"] == "ev_candidate_member_selection_manifest_set"
     assert artifact["decision_id"] == "EV-005B"
     assert artifact["root_seed"] == 20260722
     assert artifact["sample_index"] == 0
+    assert artifact["source_candidate_member_reference_sha256"] == "0" * 64
     assert artifact["policy"] == {
         "candidate_only": True,
         "replacement_policy_id": "EV-005B",
@@ -1426,6 +1431,19 @@ def test_ev_candidate_member_selection_manifest_set_materializes_declared_branch
     assert "np.load" not in source
 
 
+
+def test_committed_ev_candidate_member_selection_manifest_set_records_reference_checksum() -> None:
+    reference_path = Path("data/metadata/ev_adoption/e2_s2_ev_ic1_candidate_member_reference.json")
+    selection_path = Path("data/metadata/ev_adoption/e2_s2_ev005b_candidate_selection_manifests.json.gz")
+    reference_sha = ev_model._sha256_file(reference_path)
+    committed = json.loads(gzip.decompress(selection_path.read_bytes()))
+
+    assert committed["source_candidate_member_reference"] == str(reference_path).replace("\\", "/")
+    assert committed["source_candidate_member_reference_sha256"] == reference_sha
+    assert committed["policy"]["held_out_access"] is False
+    assert committed["policy"]["profile_arrays_loaded"] is False
+    assert committed["policy"]["m_sufficiency_claimed"] is False
+
 def test_ev_candidate_member_selection_manifest_set_is_deterministic_and_guarded() -> None:
     reference = json.loads(
         Path("data/metadata/ev_adoption/e2_s2_ev_ic1_candidate_member_reference.json").read_text(
@@ -1494,12 +1512,14 @@ def test_committed_ev005b_candidate_selection_manifest_set_matches_builder() -> 
         )
     )
     decisions = Path("registers/DECISIONS.md").read_text(encoding="utf-8")
+    reference_sha = ev_model._sha256_file(Path("data/metadata/ev_adoption/e2_s2_ev_ic1_candidate_member_reference.json"))
     expected = ev_candidate_member_selection_manifest_set(
         reference,
         decisions_text=decisions,
         root_seed=20260722,
         sample_index=0,
         materialized_timestamp_utc="2026-07-22T17:45:00Z",
+        source_candidate_member_reference_sha256=reference_sha,
     )
     committed_path = Path("data/metadata/ev_adoption/e2_s2_ev005b_candidate_selection_manifests.json.gz")
     committed = json.loads(gzip.decompress(committed_path.read_bytes()).decode("utf-8"))

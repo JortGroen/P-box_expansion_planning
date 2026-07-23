@@ -22,8 +22,8 @@ Each candidate member row records partition, component ID, library ID, source me
 
 ## IC-1 Use Boundary
 
-This artifact does not select members for a Monte Carlo realization. It tells IC-1 which candidate members are eligible and how many home/public/public-capacity-class members each scenario-node requires. A later Agent A or integration step must still verify local processed-file checksums in its consuming worktree, apply RNG-001 component streams, record selected source-member IDs and stream identities, and map loaded candidate trajectories through EV-CAL-001 before aggregation.
+This artifact tells IC-1 which candidate members are eligible and how many home/public/public-capacity-class members each scenario-node requires. EV-005B is now approved for candidate member-selection implementation, and the separate manifest set at `data/metadata/ev_adoption/e2_s2_ev005b_candidate_selection_manifests.json.gz` materializes one metadata-only readiness draw from this reference. A later Agent A or integration step must still verify local processed-file checksums in its consuming worktree, preserve the RNG-001 stream identity, and map loaded candidate trajectories through EV-CAL-001 before aggregation.
 
 ## Non-Claims
 
-No held-out adequacy batches were opened or used. No profile arrays were loaded. This artifact does not materialize an EV-005B member-selection realization; it only records eligible candidate members and required counts. No low/middle/high paper branch was selected. No net-load, congestion, event, `P(E)`, capacity-screen, or manuscript-result analysis was run. The artifact does not claim that home `M = 1000` or public `M = 1200` is sufficient.
+No held-out adequacy batches were opened or used. No profile arrays were loaded. This reference artifact records eligible candidate members and required counts; EV-005B sample-row materialization is kept in the separate candidate-selection manifest set. No low/middle/high paper branch was selected. No net-load, congestion, event, `P(E)`, capacity-screen, or manuscript-result analysis was run. The artifact does not claim that home `M = 1000` or public `M = 1200` is sufficient.

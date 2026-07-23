@@ -49210,10 +49210,13 @@
   ],
   "schema_version": 1,
   "selection_boundary": {
+    "candidate_selection_manifest_set": "data/metadata/ev_adoption/e2_s2_ev005b_candidate_selection_manifests.json.gz",
     "component_stream_required": true,
     "realization_selection_performed": false,
-    "replacement_rule_chosen": false,
-    "sample_rows_materialized": false
+    "replacement_policy_id": "EV-005B",
+    "replacement_policy_scope": "candidate_member_selection_only",
+    "replacement_rule_chosen": true,
+    "sample_rows_materialized_in_reference": false
   },
   "source_candidate_adapter_artifact": "data/metadata/ev_adoption/e2_s2_ev_ic1_candidate_adapter_artifact.json",
   "source_public_capacity_artifact": "data/metadata/ev_adoption/e2_s2_public_set_b_capacity_allocation_readiness.json"
