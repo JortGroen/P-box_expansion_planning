@@ -26,6 +26,7 @@ CHECKPOINT_FILENAME = "hp001_alkmaar_gm0361_retrieval_checkpoint.json"
 RETRIEVAL_MANIFEST_FILENAME = "hp001_alkmaar_gm0361_retrieval_manifest.json"
 FORMULA_DECISION_PACKET_FILENAME = "hp001_alkmaar_gm0361_scaling_formula_config_decision_packet.json"
 VALUE_BINDING_READINESS_FILENAME = "hp001_alkmaar_gm0361_value_binding_readiness_packet.json"
+READINESS_APPROVAL_CHECKLIST_FILENAME = "hp001_alkmaar_gm0361_readiness_approval_checklist.json"
 DOWNLOAD_TIMEOUT_S = 120.0
 PBL_HEAT_TERMS = ("warmte", "heat", "gas", "energie", "energy", "verbruik", "demand", "vraag")
 PBL_DHW_TERMS = ("tapwater", "warm_water", "dhw", "water")
@@ -348,6 +349,75 @@ def build_hp001_value_binding_readiness_packet() -> dict[str, Any]:
         ],
     }
 
+
+
+def build_hp001_readiness_approval_checklist_packet() -> dict[str, Any]:
+    """Return the remaining HP-001 approvals before integrated HP use."""
+    annual_value_keys = [
+        "value_column",
+        "denominator",
+        "unit_conversion",
+        "sfh_mfh_split",
+        "adoption_electrification",
+    ]
+    weather_acceptance_keys = [
+        "d004_paired_weather_acceptance",
+        "cold_spell_tolerances",
+    ]
+    return {
+        "data_ids": ["D-003", "D-004", "D-013"],
+        "decision_packet_id": "E2-S3-HP001-READINESS-APPROVAL-CHECKLIST",
+        "created_utc": _utc_now(),
+        "status": "proposed approval checklist only; executable annual HP values and final paired-weather acceptance remain unsigned",
+        "approved_foundation": {
+            "hp001_boundary": "Residential SFH/MFH space heat plus domestic hot water using approved D-003 When2Heat shape/COP columns; COM heat excluded.",
+            "indicator_mapping": "D013-PBL-MAPPING/A-015 approves only the PBL residential indicator mapping.",
+            "d004_source_member_use": "D004-SOURCE-MEMBER-ACCEPTANCE approves D-004 source/member use for internal first-screen work only.",
+            "weather_contract": "WEATHER-001 requires HP/PV to consume the same shared weather member identity and calendar.",
+            "cold_spell_design": "E2-S3-COLD-SPELL-ACCEPTANCE-DESIGN approves the diagnostic design but not numerical tolerances.",
+        },
+        "approval_groups": {
+            "annual_value_binding": annual_value_keys,
+            "weather_acceptance": weather_acceptance_keys,
+        },
+        "required_approvals": [
+            {"key": "value_column", "candidate": "Referentie_2030", "current_status": "unsigned", "blocks": "Using PBL values as local annual heat-demand input."},
+            {"key": "denominator", "candidate": "I11_woningequivalenten [Woning]", "current_status": "unsigned", "blocks": "Multiplying PBL intensities by dwelling-equivalent counts."},
+            {"key": "unit_conversion", "candidate": "GJ/year divided by 3,600,000 to obtain TWh/year", "current_status": "unsigned", "blocks": "Converting candidate thermal demand into annual TWh scales."},
+            {"key": "sfh_mfh_split", "candidate": "CBS 85035NED count-share allocation between SFH and MFH", "current_status": "unsigned", "blocks": "Assigning local space/DHW heat demand to HP-001 building classes."},
+            {"key": "adoption_electrification", "candidate": "separate signed 2035 HP service/adoption/electrification scenario", "current_status": "unsigned", "blocks": "Converting local residential heat demand into 2035 heat-pump-served demand."},
+            {"key": "d004_paired_weather_acceptance", "candidate": "exact WEATHER-001 member identity/calendar equality before HP/PV paired diagnostics", "current_status": "unsigned for final paired acceptance", "blocks": "Treating HP and PV profiles as driven by an accepted same-weather realization."},
+            {"key": "cold_spell_tolerances", "candidate": "future signed numerical coldest-window and near-freezing diagnostic tolerances", "current_status": "unsigned", "blocks": "Accepting When2Heat-derived HP behavior under the selected D-004 cold-weather members."},
+        ],
+        "fail_closed_handoff": {
+            "value_binding_adapter": "src.hp_model.hp001_local_scaling_config_from_value_binding_record",
+            "value_binding_required_status": "approved_for_executable_value_binding",
+            "annual_scaling_guard": "src.hp_model.require_signed_hp001_local_scaling_config",
+            "final_readiness_guard": "src.hp_model.require_hp001_final_readiness_approvals",
+            "required_final_approval_keys": annual_value_keys + weather_acceptance_keys,
+        },
+        "next_pi_decision": (
+            "Approve or amend the five annual value-binding choices, then separately "
+            "approve final D-004 paired-weather acceptance evidence and cold-spell "
+            "tolerances before HP profiles enter integrated analysis."
+        ),
+        "non_claims": [
+            "No annual HP TWh values are executable.",
+            "No 2035 HP adoption/electrification value is signed.",
+            "No D-004 paired-weather or cold-spell acceptance is signed.",
+            "No net-load, event, P(E), threshold, capacity-screen, manuscript, or probability analysis is run.",
+        ],
+    }
+
+
+def write_hp001_readiness_approval_checklist_packet(metadata_dir: Path) -> Path:
+    """Write the proposed HP-001 approval checklist for PI review."""
+    target_dir = metadata_dir / "hp_scaling"
+    target_dir.mkdir(parents=True, exist_ok=True)
+    path = target_dir / READINESS_APPROVAL_CHECKLIST_FILENAME
+    payload = build_hp001_readiness_approval_checklist_packet()
+    path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    return path
 
 def write_hp001_value_binding_readiness_packet(metadata_dir: Path) -> Path:
     """Write the unsigned next-step value-binding packet for PI review."""
@@ -764,6 +834,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--write-plan", action="store_true", help="Write the approved retrieval/checksum/value route without downloading data.")
     parser.add_argument("--write-formula-packet", action="store_true", help="Write the proposed HP-001 formula/config decision packet without executable values.")
     parser.add_argument("--write-value-binding-packet", action="store_true", help="Write the proposed HP-001 value-binding readiness packet without executable values.")
+    parser.add_argument("--write-readiness-checklist", action="store_true", help="Write the proposed HP-001 final-readiness approval checklist without executable values.")
     parser.add_argument("--download", action="store_true", help="Retrieve/checksum the approved D-013 public sources; no values are produced.")
     parser.add_argument("--inspect-existing", action="store_true", help="Refresh schema metadata from existing ignored D-013 raw files without network or values.")
     parser.add_argument("--resume", action="store_true", help="Skip completed sources whose raw files match checkpoint byte size and SHA-256.")
@@ -775,6 +846,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         path = inspect_existing_hp_scaling_sources(raw_dir=Path(args.raw_dir), metadata_dir=Path(args.metadata_dir))
     elif args.write_value_binding_packet:
         path = write_hp001_value_binding_readiness_packet(Path(args.metadata_dir))
+    elif args.write_readiness_checklist:
+        path = write_hp001_readiness_approval_checklist_packet(Path(args.metadata_dir))
     elif args.write_formula_packet:
         path = write_hp001_scaling_formula_config_decision_packet(Path(args.metadata_dir))
     else:
@@ -785,3 +858,4 @@ def main(argv: Sequence[str] | None = None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+

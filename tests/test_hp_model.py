@@ -22,6 +22,7 @@ from data.get_when2heat import (
     write_when2heat_source_metadata,
 )
 from src.hp_model import (
+    HP001_FINAL_READINESS_REQUIRED_APPROVAL_KEYS,
     HP001LocalScalingConfig,
     HeatPumpProfile,
     HeatPumpComponentSeries,
@@ -34,8 +35,10 @@ from src.hp_model import (
     default_when2heat_components,
     downscale_hourly_to_15min,
     hp001_components_from_local_scaling_config,
+    hp001_final_readiness_missing_approval_keys,
     hp001_local_scaling_config_from_value_binding_record,
     hp001_residential_when2heat_components,
+    require_hp001_final_readiness_approvals,
     require_signed_hp001_local_scaling_config,
     load_when2heat_hourly_csv,
     require_signed_annual_scaling,
@@ -875,3 +878,38 @@ def test_alignment_rejects_temperature_only_shared_driver() -> None:
 
     with pytest.raises(ValueError, match="PV/irradiance"):
         align_heat_pump_profile(quarter, weather)
+
+
+def test_hp001_final_readiness_guard_requires_weather_and_cold_spell_approvals() -> None:
+    annual_approvals = {
+        "value_column": "HP-SCALING-VALUE-COLUMN",
+        "denominator": "HP-SCALING-DENOMINATOR",
+        "unit_conversion": "HP-SCALING-CONVERSION",
+        "sfh_mfh_split": "HP-SCALING-SPLIT",
+        "adoption_electrification": "HP-SCALING-ADOPTION",
+    }
+
+    assert HP001_FINAL_READINESS_REQUIRED_APPROVAL_KEYS == (
+        "value_column",
+        "denominator",
+        "unit_conversion",
+        "sfh_mfh_split",
+        "adoption_electrification",
+        "d004_paired_weather_acceptance",
+        "cold_spell_tolerances",
+    )
+    assert hp001_final_readiness_missing_approval_keys(annual_approvals) == (
+        "d004_paired_weather_acceptance",
+        "cold_spell_tolerances",
+    )
+    with pytest.raises(ValueError, match="paired-weather"):
+        require_hp001_final_readiness_approvals(annual_approvals)
+
+    require_hp001_final_readiness_approvals(
+        {
+            **annual_approvals,
+            "d004_paired_weather_acceptance": "D004-PAIRED-ACCEPTANCE-FUTURE",
+            "cold_spell_tolerances": "HP-COLD-SPELL-TOLERANCES-FUTURE",
+        }
+    )
+
