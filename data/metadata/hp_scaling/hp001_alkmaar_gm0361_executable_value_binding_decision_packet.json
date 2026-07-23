@@ -1,0 +1,165 @@
+{
+  "created_utc": "2026-07-23T12:20:21Z",
+  "data_ids": [
+    "D-003",
+    "D-004",
+    "D-013"
+  ],
+  "decision_packet_id": "E2-S3-HP001-EXECUTABLE-VALUE-BINDING-PACKET",
+  "evidence_already_present": {
+    "d003_shape_cop_boundary": "HP-001 approves D-003 Dutch residential SFH/MFH space and DHW shape/COP columns for internal source use.",
+    "d004_source_member": "D004-SOURCE-MEMBER-ACCEPTANCE approves source/member use for internal first-screen work only.",
+    "d013_indicator_mapping": "D013-PBL-MAPPING/A-015 approves the PBL residential indicator mapping only.",
+    "d013_retrieval_checksum": "D-013 CBS/PBL raw public files have retrieval/checksum metadata recorded; raw files remain ignored.",
+    "weather_contract": "WEATHER-001 requires common HP/PV member identity, shared_weather_driver_id, source/provenance, and UTC/local calendar."
+  },
+  "final_readiness_dependency": {
+    "all_required_before_integrated_hp_use": [
+      "value_column",
+      "denominator",
+      "unit_conversion",
+      "sfh_mfh_split",
+      "adoption_electrification",
+      "d004_paired_weather_acceptance",
+      "cold_spell_tolerances"
+    ],
+    "annual_value_binding_keys": [
+      "value_column",
+      "denominator",
+      "unit_conversion",
+      "sfh_mfh_split",
+      "adoption_electrification"
+    ],
+    "guard": "src.hp_model.require_hp001_final_readiness_approvals",
+    "weather_acceptance_keys": [
+      "d004_paired_weather_acceptance",
+      "cold_spell_tolerances"
+    ]
+  },
+  "future_executable_handoff_if_pi_signs": {
+    "adapter": "src.hp_model.hp001_local_scaling_config_from_value_binding_record",
+    "annual_scaling_guard": "src.hp_model.require_signed_hp001_local_scaling_config",
+    "component_builder": "src.hp_model.hp001_components_from_local_scaling_config",
+    "required_record_status": "approved_for_executable_value_binding",
+    "still_not_enough_for_integrated_use": "Annual value-binding approval does not by itself sign D-004 paired-weather acceptance or cold-spell tolerances."
+  },
+  "non_claims": [
+    "No annual HP TWh values are executable.",
+    "No 2035 HP adoption/electrification value is signed.",
+    "No D-004 paired-weather or cold-spell acceptance is signed or run.",
+    "No net-load, event, P(E), threshold, capacity-screen, manuscript, or probability analysis is run."
+  ],
+  "pi_approval_request": [
+    {
+      "key": "value_column",
+      "requested_decision": "Approve or amend use of PBL Referentie_2030 as the value column."
+    },
+    {
+      "key": "denominator",
+      "requested_decision": "Approve or amend use of PBL I11_woningequivalenten [Woning] as the denominator."
+    },
+    {
+      "key": "unit_conversion",
+      "requested_decision": "Approve or amend GJ/year divided by 3,600,000 to obtain TWh/year."
+    },
+    {
+      "key": "sfh_mfh_split",
+      "requested_decision": "Approve or amend CBS 85035NED count-share allocation for SFH/MFH."
+    },
+    {
+      "key": "adoption_electrification",
+      "requested_decision": "Provide or approve a 2035 HP service/adoption/electrification scenario for space and DHW."
+    },
+    {
+      "key": "d004_paired_weather_acceptance",
+      "requested_decision": "Approve later paired HP/PV evidence using exact WEATHER-001 identity/calendar equality."
+    },
+    {
+      "key": "cold_spell_tolerances",
+      "requested_decision": "Approve later numerical coldest-window and near-freezing cold-spell tolerances before the real check."
+    }
+  ],
+  "status": "proposed executable-value-binding decision packet; approval template only",
+  "unsigned_candidate_binding_record": {
+    "approval_state": {
+      "approval_ids": {},
+      "approved_indicator_mapping_ids": [
+        "D013-PBL-MAPPING",
+        "A-015"
+      ],
+      "executable_binding_allowed": false,
+      "missing_approval_keys": [
+        "value_column",
+        "denominator",
+        "unit_conversion",
+        "sfh_mfh_split",
+        "adoption_electrification"
+      ],
+      "required_before_executable_binding": [
+        "value_column",
+        "denominator",
+        "unit_conversion",
+        "sfh_mfh_split",
+        "adoption_electrification"
+      ]
+    },
+    "component_value_drafts_unsigned_before_2035_adoption": [
+      {
+        "annual_heat_twh": 0.221155323,
+        "annual_twh_status": "unsigned_local_heat_demand_before_2035_adoption",
+        "building_class": "SFH",
+        "component_id": "sfh_space",
+        "cop_column": "NL_COP_ASHP_radiator",
+        "end_use": "space",
+        "shape_column": "NL_heat_profile_space_SFH"
+      },
+      {
+        "annual_heat_twh": 0.140904121,
+        "annual_twh_status": "unsigned_local_heat_demand_before_2035_adoption",
+        "building_class": "MFH",
+        "component_id": "mfh_space",
+        "cop_column": "NL_COP_ASHP_radiator",
+        "end_use": "space",
+        "shape_column": "NL_heat_profile_space_MFH"
+      },
+      {
+        "annual_heat_twh": 0.059798509,
+        "annual_twh_status": "unsigned_local_heat_demand_before_2035_adoption",
+        "building_class": "SFH",
+        "component_id": "sfh_water",
+        "cop_column": "NL_COP_ASHP_water",
+        "end_use": "water",
+        "shape_column": "NL_heat_profile_water_SFH"
+      },
+      {
+        "annual_heat_twh": 0.038099269,
+        "annual_twh_status": "unsigned_local_heat_demand_before_2035_adoption",
+        "building_class": "MFH",
+        "component_id": "mfh_water",
+        "cop_column": "NL_COP_ASHP_water",
+        "end_use": "water",
+        "shape_column": "NL_heat_profile_water_MFH"
+      }
+    ],
+    "local_heat_demand_diagnostics_unsigned": {
+      "diagnostic_note": "H22 exceeds H23+H24, so other residential heat/end-use categories remain outside HP-001 unless separately approved.",
+      "residential_total_diagnostic_twh": 0.634250556,
+      "space_heat_twh": 0.362059444,
+      "water_heat_twh": 0.097897778,
+      "weq_summed": 67422
+    },
+    "source_inputs_under_review": {
+      "adoption_electrification_scenario": "unsigned_2035_hp_service_fraction_or_count_pending",
+      "cbs_source": "D-013 CBS StatLine 85035NED Alkmaar GM0361 dwelling stock/type evidence",
+      "denominator_column": "I11_woningequivalenten [Woning]",
+      "diagnostic_total_indicator": "H22_Vraag_totaal_w",
+      "gj_to_twh_divisor": 3600000.0,
+      "pbl_source": "D-013 PBL Startanalyse 2025 Alkmaar, Alkmaar_strategie.csv",
+      "sfh_mfh_split_rule": "cbs_85035ned_count_share",
+      "space_indicator": "H23_Vraag_RV_w",
+      "value_column": "Referentie_2030",
+      "water_indicator": "H24_Vraag_TW_w"
+    },
+    "status": "proposed_template_not_approved_for_executable_use"
+  }
+}

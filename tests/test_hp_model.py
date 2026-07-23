@@ -913,3 +913,12 @@ def test_hp001_final_readiness_guard_requires_weather_and_cold_spell_approvals()
         }
     )
 
+
+def test_hp001_executable_value_binding_template_stays_fail_closed() -> None:
+    packet = hp_scaling.build_hp001_executable_value_binding_decision_packet()
+
+    with pytest.raises(ValueError, match="not approved for executable use"):
+        hp001_local_scaling_config_from_value_binding_record(
+            packet["unsigned_candidate_binding_record"]
+        )
+

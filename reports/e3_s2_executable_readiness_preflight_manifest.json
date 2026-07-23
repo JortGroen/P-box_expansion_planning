@@ -1,16 +1,16 @@
 {
   "command": ".\\.venv\\Scripts\\python.exe reports\\e3_s2_generate_executable_readiness_preflight.py",
-  "generated_at_utc": "2026-07-23T11:12:11Z",
-  "git_commit": "930e4aec767f3c2ec1537c673c59b92e2cbcc150",
+  "generated_at_utc": "2026-07-23T12:13:42Z",
+  "git_commit": "adaa617f4cbcfb32321f0ebbecc75f799e147b32",
   "git_status_short_before_generation": "",
   "input": {
     "path": "reports/e3_s2_executable_readiness_preflight_input.json",
-    "schema_version": "e3_s2_executable_readiness_preflight_input_v2",
-    "sha256": "93fd4dbe9fb3a7a52dca1792f0f65f44686e03b92fbbf4da47f08eb69eacd6f5"
+    "schema_version": "e3_s2_executable_readiness_preflight_input_v3",
+    "sha256": "4b9c6f89b3cdf559b3e6e60bda8d07b4bf6ebc4686f103ffc33cfdc041541ff3"
   },
   "outputs": {
     "report_path": "reports/E3_S2_EXECUTABLE_READINESS_PREFLIGHT.md",
-    "report_sha256": "7e3ed26dd7d77bbb52c144ac69fd3ed9d709aeeaa857af97d44200ab35662ca9"
+    "report_sha256": "ae9989f44423c98977ce0995b8099e20c515b6290319b1c091fd6077c5c55416"
   },
   "preflight": {
     "accepted_component_kinds": [
@@ -188,64 +188,73 @@
       "hp": {
         "accepted_for_gate": false,
         "artifact": {
-          "artifact_id": "e2_s3_hp001_value_binding_readiness_packet",
+          "artifact_id": "hp001_alkmaar_gm0361_readiness_approval_checklist",
           "artifact_status": "unsigned",
           "blocking_register_ids": [
-            "E2-S3-HP001-VALUE-BINDING-READINESS",
-            "HP001-VALUE-COLUMN-SIGNOFF",
-            "HP001-DENOMINATOR-SIGNOFF",
-            "HP001-UNIT-CONVERSION-SIGNOFF",
-            "HP001-SFH-MFH-SPLIT-SIGNOFF",
-            "HP001-2035-ADOPTION-ELECTRIFICATION-SIGNOFF"
+            "E2-S3-HP001-READINESS-APPROVAL-CHECKLIST",
+            "value_column",
+            "denominator",
+            "unit_conversion",
+            "sfh_mfh_split",
+            "adoption_electrification",
+            "d004_paired_weather_acceptance",
+            "cold_spell_tolerances"
           ],
           "calendar_id": "calendar_2035_15min_full_year_35040",
           "kind": "hp",
-          "manifest_path": "reports/e2_s3_hp001_value_binding_readiness_packet.md",
-          "member_id": "hp001_value_binding_unapproved",
+          "manifest_path": "data/metadata/hp_scaling/hp001_alkmaar_gm0361_readiness_approval_checklist.json",
+          "member_id": "hp001_final_readiness_unapproved",
           "node_ids": [
             "simbench_1_mv_semiurb_0_sw_all_in_service_load_nodes"
           ],
           "provenance": {
-            "classification_note": "value-binding readiness packet is present, but it is proposed only and records unsigned value-column, denominator, conversion, SFH/MFH split, and 2035 adoption/electrification approvals",
-            "discovered_path": "reports/e2_s3_hp001_value_binding_readiness_packet.md",
-            "supporting_log": "reports/agent_logs/agent-c/E2.S3-hp001-value-binding-readiness.md"
+            "classification_note": "readiness approval checklist is the current HP gate packet; the older value-binding packet remains relevant for the five annual value-binding keys, but final readiness also requires D-004 paired-weather acceptance and cold-spell tolerances",
+            "discovered_path": "data/metadata/hp_scaling/hp001_alkmaar_gm0361_readiness_approval_checklist.json",
+            "older_value_binding_packet": "reports/e2_s3_hp001_value_binding_readiness_packet.md",
+            "supporting_report": "reports/e2_s3_hp001_readiness_approval_checklist.md"
           },
           "shared_weather_driver_id": "d004_alkmaar_berkhout_2014_2023_v1:unselected",
           "signed_register_ids": [
             "HP-001",
             "D-013",
             "D013-PBL-MAPPING",
-            "A-015"
+            "A-015",
+            "WEATHER-001",
+            "D004-SOURCE-MEMBER-ACCEPTANCE"
           ],
-          "source_id": "hp001_value_binding_readiness_metadata",
+          "source_id": "hp001_readiness_approval_checklist_metadata",
           "timestep_seconds": 900,
-          "version_id": "e2_s3_hp001_value_binding_readiness_packet_v1"
+          "version_id": "hp001_readiness_approval_checklist_v1"
         },
-        "artifact_id": "e2_s3_hp001_value_binding_readiness_packet",
+        "artifact_id": "hp001_alkmaar_gm0361_readiness_approval_checklist",
         "artifact_status": "unsigned",
         "blocking_register_ids": [
-          "E2-S3-HP001-VALUE-BINDING-READINESS",
-          "HP001-VALUE-COLUMN-SIGNOFF",
-          "HP001-DENOMINATOR-SIGNOFF",
-          "HP001-UNIT-CONVERSION-SIGNOFF",
-          "HP001-SFH-MFH-SPLIT-SIGNOFF",
-          "HP001-2035-ADOPTION-ELECTRIFICATION-SIGNOFF"
+          "E2-S3-HP001-READINESS-APPROVAL-CHECKLIST",
+          "value_column",
+          "denominator",
+          "unit_conversion",
+          "sfh_mfh_split",
+          "adoption_electrification",
+          "d004_paired_weather_acceptance",
+          "cold_spell_tolerances"
         ],
         "kind": "hp",
-        "manifest_path": "reports/e2_s3_hp001_value_binding_readiness_packet.md",
+        "manifest_path": "data/metadata/hp_scaling/hp001_alkmaar_gm0361_readiness_approval_checklist.json",
         "reason": "artifact_status_not_accepted",
         "signed_register_ids": [
           "HP-001",
           "D-013",
           "D013-PBL-MAPPING",
-          "A-015"
+          "A-015",
+          "WEATHER-001",
+          "D004-SOURCE-MEMBER-ACCEPTANCE"
         ],
         "state": "blocked"
       },
       "pv": {
         "accepted_for_gate": false,
         "artifact": {
-          "artifact_id": "d004_pv_paired_readiness_preflight_packet",
+          "artifact_id": "d004_pv_final_acceptance_gate_packet",
           "artifact_status": "unsigned",
           "blocking_register_ids": [
             "PV-PARAM-001",
@@ -254,15 +263,16 @@
           ],
           "calendar_id": "calendar_2035_15min_full_year_35040",
           "kind": "pv",
-          "manifest_path": "data/metadata/weather_pv/d004_pv_paired_readiness_preflight_packet.json",
-          "member_id": "pv_weather_member_unselected",
+          "manifest_path": "data/metadata/weather_pv/d004_pv_final_acceptance_gate_packet.json",
+          "member_id": "pv_final_acceptance_unapproved",
           "node_ids": [
             "simbench_1_mv_semiurb_0_sw_all_in_service_load_nodes"
           ],
           "provenance": {
-            "classification_note": "PV/weather paired-readiness preflight is present and source/member-ready, but final executable PV remains blocked by PV parameter signoff, final paired HP/PV acceptance, and cold-spell acceptance",
-            "discovered_path": "data/metadata/weather_pv/d004_pv_paired_readiness_preflight_packet.json",
-            "supporting_report": "reports/e2_s4_pv_paired_readiness_preflight.md",
+            "classification_note": "PV final-acceptance gate packet is the current PV gate packet; older paired-readiness remains provenance, while final executable PV remains blocked by parameter signoff, final paired HP/PV acceptance, and cold-spell acceptance",
+            "discovered_path": "data/metadata/weather_pv/d004_pv_final_acceptance_gate_packet.json",
+            "older_paired_readiness_packet": "data/metadata/weather_pv/d004_pv_paired_readiness_preflight_packet.json",
+            "supporting_report": "reports/e2_s4_pv_final_acceptance_gate_packet.md",
             "weather_input_artifact": "data/metadata/weather_pv/d004_alkmaar_berkhout_2014_2023_v1_weather_input_artifact.json"
           },
           "shared_weather_driver_id": "d004_alkmaar_berkhout_2014_2023_v1:unselected",
@@ -271,11 +281,11 @@
             "D004-MC-001",
             "D004-SOURCE-MEMBER-ACCEPTANCE"
           ],
-          "source_id": "d004_pv_weather_paired_readiness_metadata",
+          "source_id": "d004_pv_final_acceptance_gate_metadata",
           "timestep_seconds": 900,
-          "version_id": "d004_pv_paired_readiness_preflight_packet_v1"
+          "version_id": "d004_pv_final_acceptance_gate_packet_v1"
         },
-        "artifact_id": "d004_pv_paired_readiness_preflight_packet",
+        "artifact_id": "d004_pv_final_acceptance_gate_packet",
         "artifact_status": "unsigned",
         "blocking_register_ids": [
           "PV-PARAM-001",
@@ -283,7 +293,7 @@
           "COLD-SPELL-ACCEPTANCE"
         ],
         "kind": "pv",
-        "manifest_path": "data/metadata/weather_pv/d004_pv_paired_readiness_preflight_packet.json",
+        "manifest_path": "data/metadata/weather_pv/d004_pv_final_acceptance_gate_packet.json",
         "reason": "artifact_status_not_accepted",
         "signed_register_ids": [
           "WEATHER-001",
@@ -294,7 +304,7 @@
       }
     },
     "config_manifest": {
-      "config_id": "e3_s2_refreshed_executable_readiness_preflight_v2",
+      "config_id": "e3_s2_forward_fix_executable_readiness_preflight_v3",
       "metadata": {
         "calendar_id": "calendar_2035_15min_full_year_35040",
         "gate": "register_backed_executable_input_gate",
@@ -303,7 +313,7 @@
         "no_probability_estimate": true,
         "no_real_net_load_arrays": true,
         "planning_year_basis": "G0-A4",
-        "refresh_basis": "origin/main after merged PRs #179, #181, and #180",
+        "refresh_basis": "origin/main after PR #184 merged on top of PRs #183 and #185",
         "threshold_basis": "G0-A3 resolved but not evaluated in this preflight"
       },
       "node_ids": [
@@ -328,7 +338,7 @@
     "dry_run_only": true,
     "executable_input_gate": null,
     "gate_error": null,
-    "intended_use": "e3_s2_refreshed_executable_readiness_report_after_hp_pv_readiness",
+    "intended_use": "e3_s2_forward_fix_executable_readiness_report_after_pr183_pr185",
     "missing_component_kinds": [],
     "no_capacity_screen_result": true,
     "no_event_detection": true,

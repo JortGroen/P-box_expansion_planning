@@ -1025,3 +1025,38 @@ def test_hp001_readiness_approval_checklist_records_remaining_blockers(tmp_path:
     assert path.name == "hp001_alkmaar_gm0361_readiness_approval_checklist.json"
     assert payload["status"].startswith("proposed approval checklist only")
 
+
+def test_hp001_executable_value_binding_packet_is_approval_template_only(tmp_path: Path) -> None:
+    packet = hp_scaling.build_hp001_executable_value_binding_decision_packet()
+
+    assert packet["decision_packet_id"] == "E2-S3-HP001-EXECUTABLE-VALUE-BINDING-PACKET"
+    assert packet["data_ids"] == ["D-003", "D-004", "D-013"]
+    assert {item["key"] for item in packet["pi_approval_request"]} == {
+        "value_column",
+        "denominator",
+        "unit_conversion",
+        "sfh_mfh_split",
+        "adoption_electrification",
+        "d004_paired_weather_acceptance",
+        "cold_spell_tolerances",
+    }
+    candidate = packet["unsigned_candidate_binding_record"]
+    assert candidate["status"] == "proposed_template_not_approved_for_executable_use"
+    assert candidate["approval_state"]["approval_ids"] == {}
+    assert candidate["approval_state"]["executable_binding_allowed"] is False
+    assert packet["final_readiness_dependency"]["all_required_before_integrated_hp_use"] == [
+        "value_column",
+        "denominator",
+        "unit_conversion",
+        "sfh_mfh_split",
+        "adoption_electrification",
+        "d004_paired_weather_acceptance",
+        "cold_spell_tolerances",
+    ]
+    assert "No annual HP TWh values are executable." in packet["non_claims"]
+
+    path = hp_scaling.write_hp001_executable_value_binding_decision_packet(tmp_path)
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    assert path.name == "hp001_alkmaar_gm0361_executable_value_binding_decision_packet.json"
+    assert payload["status"].endswith("approval template only")
+
