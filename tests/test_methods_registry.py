@@ -63,6 +63,8 @@ def test_formal_assumption_inventory_lists_every_assumption_row() -> None:
 
 def test_methods_inventory_flags_inferred_pbl_hp_indicator_mapping() -> None:
     methods_text = METHODS_PATH.read_text(encoding="utf-8")
+    assert "A-015" in methods_text
+    assert "approved for D-013 indicator mapping only" in methods_text
     assert "H23_Vraag_RV_w" in methods_text
     assert "H24_Vraag_TW_w" in methods_text
     assert "currently inferred" in methods_text

@@ -47,6 +47,7 @@ the corresponding register row.
 | `A-012` | Import/export sign convention and direction-flip episode reset. | proposed |
 | `A-013` | Symmetric relative grid-model discrepancy with unknown dependence; numerical values unsigned. | proposed |
 | `A-014` | Load-proportional EV adoption allocation across SimBench load nodes. | approved for second-stage use after local totals |
+| `A-015` | PBL Startanalyse D-013 suffix/indicator mapping for residential HP scaling. | approved for D-013 indicator mapping only |
 <!-- assumption-inventory-end -->
 
 ### Additional Modelling and Data-Inference Boundaries
@@ -62,7 +63,7 @@ the corresponding register row.
 | EV-CAL-001 | EV source profiles are mapped to the planning calendar by ordinal timestep, preserving annual sequence but not actual 2035 weekday/holiday identity. | Approved limitation; provenance must record the mismatch. |
 | EV-008A/D-012 | Public EV profiles use an equal 25% split across 11/13/15/22 kW AC classes. | Approved for source generation only; it simplifies an NDW snapshot and is not a precise fleet forecast. |
 | HP-001/D-003 | When2Heat provides Dutch residential shape/COP trajectories for SFH/MFH space heat and domestic hot water; commercial heat is excluded. | Approved source/technology boundary; local annual scaling and paired-weather acceptance remain separate gates. |
-| D-013/HP local scaling | PBL `H23_Vraag_RV_w` and `H24_Vraag_TW_w` are candidate residential space-heat and hot-water indicators, but the exact raw-code meaning is presently inferred from code pattern plus Startanalyse documentation unless C.HP finds an explicit dictionary. | Proposed only; this inference must not become executable or manuscript-facing until explicit evidence is found or a PI-signed assumption records the limitation. |
+| D-013/HP local scaling | PBL `H23_Vraag_RV_w` and `H24_Vraag_TW_w` are treated as residential space-heat and domestic-hot-water indicators under A-015/D013-PBL-MAPPING, but the exact raw-code meaning is still currently inferred from code pattern plus Startanalyse documentation rather than explicit PBL evidence for those literal labels. | Approved as a transparent assumption for indicator mapping only; annual TWh values, `Referentie_2030` value-column use, SFH/MFH split, 2035 adoption, and executable HP load remain separate gates. |
 | D-013/CBS split | HP local heat is split over SFH/MFH using CBS Alkmaar dwelling counts, not measured class-specific heat demand. | Proposed route; count-share versus area-weighted split requires PI sign-off before executable values. |
 | D004-MC-001/D004-SOURCE-MEMBER-ACCEPTANCE | KNMI Berkhout is the realized weather path for Alkmaar; hourly `T` and `Q` are expanded to 15-minute members, and PVGIS remains sanity/provenance only. | Approved for internal source/member use; final paired HP/PV validation and cold-spell tolerances remain pending. |
 | EV-007A/A-014/D-010 | Alkmaar municipality is the local proxy for the synthetic SimBench case, and local counts are allocated across grid loads by static `p_mw`. | EV local totals and A-014 allocation are approved; this remains an illustrative-case transfer assumption. |
@@ -1024,6 +1025,28 @@ materialized allocation does not choose the final paper branch, open EV
 held-out adequacy data, run net-load integration, perform event analysis, or
 produce manuscript results.
 
+<!-- methods-id: A-015 -->
+### A-015 - D-013 PBL Indicator Mapping Assumption
+
+**Status: Approved for D-013 indicator mapping only.** A-015 records a
+transparent source-use assumption for the PBL Startanalyse 2025 Alkmaar fields
+used by the HP-001 local scaling route. The project treats `_w` as
+woningen/residential and `_u` as utiliteit/non-residential; treats
+`H23_Vraag_RV_w` as residential space-heating demand intensity; treats
+`H24_Vraag_TW_w` as residential domestic-hot-water demand intensity; and keeps
+`H22_Vraag_totaal_w` as a residential total-demand diagnostic. The units are
+interpreted as `[GJ/weq/jaar]`. This mapping is currently inferred from PBL's
+documented H01/H02/H03 energy-demand concepts, the documented 2025
+woningen/utiliteit split, the official Alkmaar CSV schema, and ASA25 template
+context. No explicit PBL evidence was found that defines these literal raw
+suffixes and H22/H23/H24 labels. The assumption is therefore manuscript-facing:
+readers must be able to see that the interpretation is signed and traceable,
+but not directly documented by a PBL column dictionary. A-015 does not approve
+`Referentie_2030` as an executable value column, SFH/MFH splitting, annual TWh
+values, 2035 HP adoption/electrification, D-004/cold-spell acceptance, net-load
+integration, event analysis, `P(E)`, capacity-screen conclusions, or manuscript
+results.
+
 ## Data and Evidence Choices
 
 <!-- methods-id: D-001 -->
@@ -1536,9 +1559,15 @@ capacity.
 <!-- methods-id: E2-S3-HP-LOCAL-SCALING-SOURCE-USE-PROPOSAL -->
 ### E2-S3-HP-LOCAL-SCALING-SOURCE-USE-PROPOSAL - HP-001 D-013 Local Scaling Source-Use Proposal
 
-**Status: Proposed packet; values unsigned; PBL raw-code meaning not yet proven.** The D-013 local scaling source-use proposal uses the retrieved CBS/PBL schema evidence to define a candidate route for later HP-001 annual thermal scaling, without making any value executable. The proposed PBL fields are `H23_Vraag_RV_w` as candidate residential space heat and `H24_Vraag_TW_w` as candidate residential domestic hot water in `Alkmaar_strategie.csv`, both with unit `[GJ/weq/jaar]`; `H22_Vraag_totaal_w` is retained only as a residential-total diagnostic. The exact meanings of `H23`, `H24`, and the `_w` suffix are currently inferred from the raw-code pattern, the Dutch abbreviations for `ruimteverwarming` and `tapwater`, and Startanalyse documentation that explains the base heat-demand indicators and the 2025 woning/utiliteit split. Because no explicit PBL dictionary line has yet been found for these raw names, the mapping is not approved as a settled data definition. C.HP must either find explicit PBL evidence for the raw-code meanings or return a PI-facing assumption/alternative-source decision before any executable annual HP value is produced.
+**Status: Partly resolved by D013-PBL-MAPPING; values unsigned.** The D-013 local scaling source-use proposal uses the retrieved CBS/PBL schema evidence to define a candidate route for later HP-001 annual thermal scaling, without making any value executable. D013-PBL-MAPPING and A-015 approve the narrow source-use assumption that `_w` means woningen/residential, `_u` means utiliteit/non-residential, `H23_Vraag_RV_w` is residential space-heating demand intensity, `H24_Vraag_TW_w` is residential domestic-hot-water demand intensity, and `H22_Vraag_totaal_w` is a residential total-demand diagnostic, all in `[GJ/weq/jaar]`. The exact raw-code meaning remains currently inferred from the raw-code pattern, the Dutch abbreviations for `ruimteverwarming` and `tapwater`, and Startanalyse documentation that explains the base heat-demand indicators and the 2025 woning/utiliteit split; no explicit PBL evidence was found for these literal raw labels.
 
-If the indicator mapping is later approved, the candidate conversion multiplies those intensities by PBL `I11_woningequivalenten [Woning]` and converts GJ to TWh, then allocates space and water separately to SFH/MFH using a PI-signed CBS 85035NED class split for Alkmaar `GM0361`. The packet records CBS `2026JJ00` `Eengezinswoningen totaal` and `Meergezinswoningen totaal` as denominator/crosswalk evidence and gives unsigned illustrative count-share and area-weighted allocations only to make the PI decision concrete. A separate signed 2035 HP adoption/electrification multiplier remains required before HP component values can be used. This proposal does not approve PBL columns, value columns, unit conversions, split rules, annual TWh values, adoption fractions, D-004 acceptance, cold-spell tolerances, net-load/event analysis, `P(E)`, threshold or capacity-screen analysis, manuscript numbers, or probability results.
+The still-unsigned candidate conversion would multiply those intensities by PBL `I11_woningequivalenten [Woning]` and convert GJ to TWh, then allocate space and water separately to SFH/MFH using a PI-signed CBS 85035NED class split for Alkmaar `GM0361`. The packet records CBS `2026JJ00` `Eengezinswoningen totaal` and `Meergezinswoningen totaal` as denominator/crosswalk evidence and gives unsigned illustrative count-share and area-weighted allocations only to make the PI decision concrete. A separate signed 2035 HP adoption/electrification multiplier remains required before HP component values can be used. This proposal does not approve `Referentie_2030` as an executable value column, unit conversions beyond the A-015 indicator-unit interpretation, split rules, annual TWh values, adoption fractions, D-004 acceptance, cold-spell tolerances, net-load/event analysis, `P(E)`, threshold or capacity-screen analysis, manuscript numbers, or probability results.
+
+<!-- methods-id: D013-PBL-MAPPING -->
+### D013-PBL-MAPPING - D-013 PBL Startanalyse Indicator Mapping Assumption
+
+**Status: Approved transparent assumption; executable values and adoption unsigned.** D013-PBL-MAPPING records the PI decision to use the PBL Startanalyse 2025 Alkmaar residential indicator mapping as an explicit assumption rather than as an undocumented loader convention. The mapping treats `_w` as woningen/residential, `_u` as utiliteit/non-residential, `H23_Vraag_RV_w` as residential space-heating demand intensity, `H24_Vraag_TW_w` as residential domestic-hot-water demand intensity, and `H22_Vraag_totaal_w` as a residential total-demand diagnostic, with units `[GJ/weq/jaar]`. The evidence basis is inferential: PBL documents H01/H02/H03 heat-demand concepts, documents that the 2025 municipal data distinguish woningen and utiliteit, and the official Alkmaar CSV schema and ASA25 template context are consistent with this interpretation, but no explicit PBL evidence was found that defines the literal H22/H23/H24 `_w` labels. The manuscript must therefore present this as a signed modelling/data assumption. This decision unlocks column naming for later HP-001 source-use work, but it does not approve value-column selection, formula use, annual HP TWh inputs, 2035 adoption/electrification, D-004 or cold-spell acceptance, net-load/event analysis, `P(E)`, capacity-screen conclusions, or manuscript results.
+
 <!-- methods-id: E2-S3-HP-SCALING-SCHEMA-INSPECTION -->
 ### E2-S3-HP-SCALING-SCHEMA-INSPECTION - D-013 HP Scaling Schema Inspection
 
@@ -1559,7 +1588,7 @@ net-load/event analysis, estimate `P(E)`, or produce manuscript numbers.
 <!-- methods-id: D-013 -->
 ### D-013 - HP-001 Alkmaar Local Scaling Source Bundle
 
-**Status: Approved retrieval/checksum route; values unsigned.** D-013 records
+**Status: Approved retrieval/checksum route and indicator mapping assumption; values unsigned.** D-013 records
 public source evidence for later deriving local annual heat-pump scaling inputs
 for HP-001 in Alkmaar municipality `GM0361`. CBS StatLine 85035NED has now
 been retrieved as filtered Alkmaar dwelling-stock/type evidence, with metadata
@@ -1573,7 +1602,7 @@ future heat-demand/pathway/suitability review. CBS StatLine 85523NED has been
 retrieved as national/current heat-pump context only, not as a local 2035
 adoption source. The retrieval manifest and per-source metadata record exact
 URLs, byte sizes, SHA-256 checksums, timestamps, raw ignored paths, and resume
-checkpoint state. This source bundle keeps local heat demand,
+checkpoint state. A-015/D013-PBL-MAPPING approves the PBL residential indicator mapping as a transparent assumption, while leaving value-column use and annual scaling choices unsigned. This source bundle keeps local heat demand,
 suitability/pathway evidence, and unsigned 2035 heat-pump adoption separate so
 pathway suitability cannot become adoption volume by implication. The four
 HP-001 components, SFH/MFH crossed with space/DHW, retain separate
