@@ -70,7 +70,7 @@ recorded with the RNG-001 stream identity in manifests.
 - No held-out EV batches were opened or used.
 - No candidate profile arrays were opened for this packet.
 - No source-library adequacy conclusion was made.
-- No within-realization replacement rule was chosen.
+- No EV-005B member-selection realization was materialized.
 - No net-load, congestion, event, `P(E)`, or manuscript-result analysis was
   performed.
 
@@ -83,4 +83,3 @@ recorded with the RNG-001 stream identity in manifests.
 - rejection of held-out-like processed paths in the preflight;
 - blocking 2035 planning-year calendar assumptions;
 - committed guardrail packet counts and policy flags.
-

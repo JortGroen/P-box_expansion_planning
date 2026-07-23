@@ -76,7 +76,7 @@ local checksum verification.
 - Held-out EV adequacy batches were not opened.
 - Real candidate profile arrays were not loaded.
 - `M = 1000` home and `M = 1200` public are not certified sufficient.
-- No within-realization replacement rule was chosen.
+- No EV-005B member-selection realization was materialized.
 - No net-load, congestion, threshold/event, `P(E)`, capacity-screen, or
   manuscript-result analysis was performed.
 

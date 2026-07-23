@@ -108,9 +108,7 @@ Finite-library uncertainty remains separate from Monte Carlo uncertainty:
 
 Candidate, nested, disjoint, leave-one-batch-out, and held-out public views
 should mirror the Set A home-library protocol. Held-out public profiles must
-remain unopened until E3.S2a freezes the downstream adequacy criterion. The
-within-realization replacement rule remains pending under EV-005 and must not
-be inferred from this packet.
+remain unopened until E3.S2a freezes the downstream adequacy criterion. Historical note: the within-realization replacement rule was later resolved by EV-005B for candidate member-selection implementation only. It still must not be inferred from this public-profile packet, and EV-005B does not certify library adequacy, open held-out data, or authorize integrated analysis.
 
 ## Future Long-Run Notice Template
 

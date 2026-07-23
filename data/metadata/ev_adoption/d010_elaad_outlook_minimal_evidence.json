@@ -1,0 +1,183 @@
+{
+  "approved_local_counts": {
+    "high_home": {
+      "api_number": 10343.304477753807,
+      "http_status": 200,
+      "query": "/charging_infrastructure?area_type=municipalities&area_identifier=GM0361&scenario=high&location=home",
+      "response_sha256": "3f16acac00eb389bca0105ed1b7ecc899c4cf5a0983d76450ab4bcf8dd519224",
+      "retrieved_utc": "2026-07-21T09:33:36.7211960Z",
+      "rounded_count": 10343,
+      "row_count": 26,
+      "selected_row_filter": {
+        "location": "home",
+        "month": 12,
+        "scenario": "high",
+        "variant": "car_bev, car_phev",
+        "year": 2035
+      },
+      "url": "https://api-outlook-v2-prd.thankfulrock-fcd5ae60.westeurope.azurecontainerapps.io/charging_infrastructure?area_type=municipalities&area_identifier=GM0361&scenario=high&location=home"
+    },
+    "high_public": {
+      "api_number": 6137.847745988891,
+      "http_status": 200,
+      "query": "/charging_infrastructure?area_type=municipalities&area_identifier=GM0361&scenario=high&location=public",
+      "response_sha256": "b6c2d52a8baf9f41719fbe4449554a12f06fa292d5ab716781aac5ee15ad0b07",
+      "retrieved_utc": "2026-07-21T09:33:36.9886557Z",
+      "rounded_count": 6138,
+      "row_count": 26,
+      "selected_row_filter": {
+        "location": "public",
+        "month": 12,
+        "scenario": "high",
+        "variant": "van, car_bev, car_phev",
+        "year": 2035
+      },
+      "url": "https://api-outlook-v2-prd.thankfulrock-fcd5ae60.westeurope.azurecontainerapps.io/charging_infrastructure?area_type=municipalities&area_identifier=GM0361&scenario=high&location=public"
+    },
+    "low_home": {
+      "api_number": 7991.80830348258,
+      "http_status": 200,
+      "query": "/charging_infrastructure?area_type=municipalities&area_identifier=GM0361&scenario=low&location=home",
+      "response_sha256": "2b91de9e67c0ccddffa5c11293571391886b7a59414ae4549f5a0aad868e9bd4",
+      "retrieved_utc": "2026-07-21T09:33:34.9663859Z",
+      "rounded_count": 7992,
+      "row_count": 26,
+      "selected_row_filter": {
+        "location": "home",
+        "month": 12,
+        "scenario": "low",
+        "variant": "car_bev, car_phev",
+        "year": 2035
+      },
+      "url": "https://api-outlook-v2-prd.thankfulrock-fcd5ae60.westeurope.azurecontainerapps.io/charging_infrastructure?area_type=municipalities&area_identifier=GM0361&scenario=low&location=home"
+    },
+    "low_public": {
+      "api_number": 4182.6860541073265,
+      "http_status": 200,
+      "query": "/charging_infrastructure?area_type=municipalities&area_identifier=GM0361&scenario=low&location=public",
+      "response_sha256": "b97e7883c719e726b349ae16f8438d16308762125684d6b871772fac1dcef169",
+      "retrieved_utc": "2026-07-21T09:33:36.3256749Z",
+      "rounded_count": 4183,
+      "row_count": 26,
+      "selected_row_filter": {
+        "location": "public",
+        "month": 12,
+        "scenario": "low",
+        "variant": "van, car_bev, car_phev",
+        "year": 2035
+      },
+      "url": "https://api-outlook-v2-prd.thankfulrock-fcd5ae60.westeurope.azurecontainerapps.io/charging_infrastructure?area_type=municipalities&area_identifier=GM0361&scenario=low&location=public"
+    },
+    "middle_home": {
+      "api_number": 9386.406999563205,
+      "http_status": 200,
+      "query": "/charging_infrastructure?area_type=municipalities&area_identifier=GM0361&scenario=middle&location=home",
+      "response_sha256": "7f5e22504bdf98a36b407c2e861d4583dec040ead7d93e29958b625f3b48de46",
+      "retrieved_utc": "2026-07-21T09:33:36.4313293Z",
+      "rounded_count": 9386,
+      "row_count": 26,
+      "selected_row_filter": {
+        "location": "home",
+        "month": 12,
+        "scenario": "middle",
+        "variant": "car_bev, car_phev",
+        "year": 2035
+      },
+      "url": "https://api-outlook-v2-prd.thankfulrock-fcd5ae60.westeurope.azurecontainerapps.io/charging_infrastructure?area_type=municipalities&area_identifier=GM0361&scenario=middle&location=home"
+    },
+    "middle_public": {
+      "api_number": 5127.01005454311,
+      "http_status": 200,
+      "query": "/charging_infrastructure?area_type=municipalities&area_identifier=GM0361&scenario=middle&location=public",
+      "response_sha256": "108956322a7a9ef6872aa02bcd6605bbc2aacfc0840c1a4d07974c44364b9243",
+      "retrieved_utc": "2026-07-21T09:33:36.5641931Z",
+      "rounded_count": 5127,
+      "row_count": 26,
+      "selected_row_filter": {
+        "location": "public",
+        "month": 12,
+        "scenario": "middle",
+        "variant": "van, car_bev, car_phev",
+        "year": 2035
+      },
+      "url": "https://api-outlook-v2-prd.thankfulrock-fcd5ae60.westeurope.azurecontainerapps.io/charging_infrastructure?area_type=municipalities&area_identifier=GM0361&scenario=middle&location=public"
+    }
+  },
+  "approved_scope": {
+    "area_identifier": "GM0361",
+    "area_name": "Alkmaar",
+    "area_type": "municipalities",
+    "decision_id": "EV-007A",
+    "locations": [
+      "home",
+      "public"
+    ],
+    "national_totals_policy": "National D-010 Outlook projections remain context/provenance only and must not be used directly as SimBench physical counts.",
+    "planning_year": 2035,
+    "rounding_rule": "Round floating API field number to nearest integer for proposed physical charge-point totals.",
+    "scenarios": [
+      "low",
+      "middle",
+      "high"
+    ],
+    "selected_month": 12
+  },
+  "artifact_type": "d010_elaad_outlook_minimal_evidence",
+  "created_utc": "2026-07-23T07:43:17Z",
+  "data_id": "D-010",
+  "fallback_context": {
+    "delft_gm0503_checked": true,
+    "delft_status": "checked_available_not_selected",
+    "fallback_policy": "Delft metadata remains a fallback availability check only; EV-007A selected Alkmaar."
+  },
+  "neighborhood_filter_attempt": {
+    "error": "Response status code does not indicate success: 500 (Internal Server Error).",
+    "query": "/filters/municipalities/neighborhoods/GM0361",
+    "result": "failed_http_500",
+    "retrieved_utc": "2026-07-21T09:32:50.1236021Z",
+    "url": "https://api-outlook-v2-prd.thankfulrock-fcd5ae60.westeurope.azurecontainerapps.io/filters/municipalities/neighborhoods/GM0361"
+  },
+  "non_actions": [
+    "No new API request was made for this evidence freeze.",
+    "No raw API response was committed.",
+    "No EV profile generation, held-out access, net-load integration, event analysis, P(E), capacity screen, or manuscript number was produced."
+  ],
+  "schema_evidence": {
+    "endpoint": "/charging_infrastructure",
+    "raw_payload_identity": "Each approved query records the SHA-256 of the raw JSON response payload; raw payload bytes are not committed.",
+    "required_query_parameters": [
+      "area_type",
+      "area_identifier",
+      "scenario",
+      "location"
+    ],
+    "response_shape": "JSON array; each approved local query returned 26 rows.",
+    "schema_limitations": [
+      "The municipality endpoint was used because the live neighbourhood endpoint returned HTTP 500 during retrieval.",
+      "The API response is source evidence for EV adoption counts only; it is not a behavior profile library.",
+      "D-010 does not define public profile capacity classes; EV-008A handles public behavior capacity separately."
+    ],
+    "selected_row_fields": [
+      "year",
+      "month",
+      "scenario",
+      "location",
+      "variant",
+      "number"
+    ],
+    "value_field": "number",
+    "value_interpretation": "ElaadNL Outlook projected charging-infrastructure count for the queried area/scenario/location row; rounded only after filtering to year 2035 and month 12."
+  },
+  "schema_version": 1,
+  "source": {
+    "api_base": "https://api-outlook-v2-prd.thankfulrock-fcd5ae60.westeurope.azurecontainerapps.io",
+    "app_last_updated": "2026-06-09",
+    "app_url": "https://outlook.elaad.nl/scenariotool",
+    "app_version": "ElaadNL Scenariotool v1.0.0",
+    "license": "CC BY-NC-ND 4.0 as stated on https://outlook.elaad.nl/",
+    "name": "ElaadNL Outlook Mobiliteit Scenariotool/API",
+    "raw_data_policy": "No raw API response files are committed or redistributed; response SHA-256 digests identify the retrieved JSON payloads."
+  },
+  "status": "source-approved-for-ev007a-local-counts",
+  "task_id": "E2.S6"
+}

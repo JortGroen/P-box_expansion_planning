@@ -26,4 +26,4 @@ This artifact does not select members for a Monte Carlo realization. It tells IC
 
 ## Non-Claims
 
-No held-out adequacy batches were opened or used. No profile arrays were loaded. No within-realization replacement rule was chosen. No low/middle/high paper branch was selected. No net-load, congestion, event, `P(E)`, capacity-screen, or manuscript-result analysis was run. The artifact does not claim that home `M = 1000` or public `M = 1200` is sufficient.
+No held-out adequacy batches were opened or used. No profile arrays were loaded. This artifact does not materialize an EV-005B member-selection realization; it only records eligible candidate members and required counts. No low/middle/high paper branch was selected. No net-load, congestion, event, `P(E)`, capacity-screen, or manuscript-result analysis was run. The artifact does not claim that home `M = 1000` or public `M = 1200` is sufficient.

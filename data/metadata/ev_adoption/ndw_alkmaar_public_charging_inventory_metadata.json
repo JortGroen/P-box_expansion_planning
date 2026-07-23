@@ -155,5 +155,13 @@
       "city_locations_outside_bbox": 4
     }
   },
-  "task": "E2.S2"
+  "task": "E2.S2",
+  "use_boundary": {
+    "contextual_only": true,
+    "promoted_to_executable_source": false,
+    "not_adoption_count_source": true,
+    "not_profile_library": true,
+    "not_congestion_input": true,
+    "promotion_requirement": "A later PI decision must explicitly promote D-012 before executable inventory-to-grid use."
+  }
 }
