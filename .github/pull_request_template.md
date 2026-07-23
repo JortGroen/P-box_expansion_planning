@@ -13,7 +13,7 @@
 
 - `.\scripts\task.ps1 ownership`:
 - `.\scripts\task.ps1 test-fast`:
-- `.\scripts\task.ps1 test`:
+- `.\scripts\task.ps1 test` or manual Full Validation workflow, if applicable:
 
 ## Evidence
 
@@ -30,7 +30,8 @@
 ## Checklist
 
 - [ ] `.\scripts\task.ps1 ownership` green locally (or base-branch PI exception linked)
-- [ ] `.\scripts\task.ps1 test` green locally
+- [ ] `.\scripts\task.ps1 test-fast` green locally
+- [ ] Full validation run or explicitly not applicable for this PR
 - [ ] Invariant suite green (if math touched)
 - [ ] Manifest(s) attached for every produced result
 - [ ] Registers updated (`ASSUMPTIONS`/`DATA_REGISTER` rows `proposed` where needed)

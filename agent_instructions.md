@@ -74,7 +74,7 @@ If your current directory, branch, or worktree does not match your role and assi
 1. Confirm you are in your assigned role worktree, not the PI dashboard: run `git status --short --branch` and check that the branch prefix matches your role (`agent-a/`, `agent-b/`, or `agent-c/`). If it does not match, stop and ask the PI.
 2. Ensure the worktree `.venv` exists: if `.venv\Scripts\python.exe` is missing, run `.\scripts\setup_venv.ps1` from the worktree root.
 3. In Codex shell calls, use non-login PowerShell (`login:false`) for project commands. Login shells may run the user's PowerShell profile and print unrelated Anaconda hook errors before your command starts.
-4. Use `.\scripts\task.ps1 test-fast` for the normal local development loop, `.\scripts\task.ps1 test` (or `test-full`) for the full merge-gate suite, and `run` / `figures` for project tasks. The wrapper selects `.venv` directly, sets `NUMBA_CACHE_DIR` to `.tmp\numba_cache`, and keeps pytest temporary files under `.tmp`.
+4. Use `.\scripts\task.ps1 test-fast` for the normal local development loop and default PR validation. Use `.\scripts\task.ps1 test` (or `test-full`) for explicit full validation before gates, first real experiments, slow-artifact checks, or when the PI requests it. The wrapper selects `.venv` directly, sets `NUMBA_CACHE_DIR` to `.tmp\numba_cache`, and keeps pytest temporary files under `.tmp`.
 5. For direct Python commands, use `.venv\Scripts\python.exe` rather than `python` from Anaconda `base`. If the command imports pandapower/numba, set `NUMBA_CACHE_DIR` to `.tmp\numba_cache` first.
 6. Treat Anaconda hook tracebacks from login shells as environment noise only if the actual project command used `.venv` or `scripts/task.ps1` and exited successfully. If the project command failed, or if a bare `python`/`pip`/`pytest` command was used, diagnose the command and rerun through the project wrapper before reporting success.
 7. `git fetch --all --prune`; update your task branch from `origin/main` only by fast-forward or an explicit PR/PI instruction. Never `git switch` into another agent's branch inside your worktree.
@@ -86,7 +86,7 @@ If your current directory, branch, or worktree does not match your role and assi
 
 ### 3.2 During the session
 - One task at a time; scope = exactly the task's deliverable, nothing more. A long working session may contain multiple tasks only as separate, reviewable PR-sized units. New ideas go to `BACKLOG.md`, not into code.
-- Math modules: tests first (or alongside). Run focused tests or `.\scripts\task.ps1 test-fast` during iteration, and `.\scripts\task.ps1 test` before PR completion. A red test you cannot fix without changing the spec ⇒ escalate (§4); never bend the test.
+- Math modules: tests first (or alongside). Run focused tests or `.\scripts\task.ps1 test-fast` during iteration and before PR completion. Run `.\scripts\task.ps1 test`/`test-full` when the PR touches slow-marked validation, a gate artifact, math invariants, or when the PI asks. A red test you cannot fix without changing the spec ⇒ escalate (§4); never bend the test.
 - All randomness through `src/rng.py`'s seed tree — never a bare `np.random` call.
 - No magic numbers in code: scientific constants and parameters live in `configs/*.yaml` with units in key names (`p_crit`, `s_rated_kva`, `step_min: 15`).
 - A PR that adds or changes an entry in `DECISIONS.md`, `ASSUMPTIONS.md`, or `DATA_REGISTER.md` must add or update its same-ID block in `paper/methods_decisions_and_assumptions.md`. Write one standalone manuscript paragraph explaining and defending the choice, scope, and limitations. Use an explicit status label so proposed, not-invoked, superseded, and pending items cannot be mistaken for approved claims.
@@ -198,6 +198,18 @@ checkpoints.
 
 **Coverage expectation:** ≥ 85% on math-core modules (`fuzzy`, `pbox*`, `decision`, `dfmp`); pragmatic elsewhere. A failing test is a stop condition, not a to-do item.
 
+**Fast PR checks versus full validation:** required PR CI runs the fast suite
+(`pytest -m "not slow"`) with a job timeout so metadata-only changes cannot
+hold the queue for an hour. Heavyweight checks, such as rebuilding or comparing
+large committed artifact payloads, complete AC/integration benchmarks, and
+full-file equality tests that can produce massive diffs, must be marked
+`@pytest.mark.slow`. Every slow validation must have a bounded fast companion
+test that checks the invariant needed for ordinary review: schema/version,
+source IDs, guard flags, counts, checksums, and a small deterministic row/sample
+where appropriate. Full validation is still required before gate sign-off,
+first real experiments, and any PI-requested release-quality check, but it is
+not the default PR status check.
+
 ---
 
 ## 8. Data & citation discipline
@@ -228,7 +240,8 @@ checkpoints.
 - Keep PR prose direct and readable. Explain why a change exists and what a reviewer should verify; avoid inflated claims, repetitive detail, internal chain-of-thought, or unexplained task jargon.
 - **PR checklist:**
   - [ ] `.\scripts\task.ps1 ownership` green locally (or base-branch PI exception linked)
-  - [ ] `.\scripts\task.ps1 test` green locally
+  - [ ] `.\scripts\task.ps1 test-fast` green locally
+  - [ ] Full validation run or explicitly not applicable for this PR
   - [ ] Invariant suite green (if math touched)
   - [ ] Manifest(s) attached for every produced result
   - [ ] Registers updated (`ASSUMPTIONS`/`DATA_REGISTER` rows `proposed` where needed)
