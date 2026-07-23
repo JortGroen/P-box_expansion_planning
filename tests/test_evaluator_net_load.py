@@ -28,6 +28,7 @@ from src.contracts.net_load import (
     build_component_adapter_registry_from_artifacts,
     build_realization_context,
     build_net_load_result,
+    dry_run_integrated_input_preflight,
     net_load_component_from_adapter_output,
     prepare_loading_input_from_registry_outputs,
     validate_component_adapter_skeletons,
@@ -1849,6 +1850,88 @@ def test_future_layer_screen_preflight_records_manifest_fields_without_results()
     assert "threshold_pu" not in preflight
     assert "overload" not in preflight
     assert "capacity_screen" not in preflight
+
+def test_integrated_input_preflight_dry_run_reports_ready_artifacts_without_results() -> None:
+    report = dry_run_integrated_input_preflight(
+        _screen_preflight_config(),
+        _executable_input_artifacts(),
+    )
+
+    assert report["dry_run_only"] is True
+    assert report["ready_for_input_assembly"] is True
+    assert report["accepted_component_kinds"] == (
+        "adoption",
+        "baseline",
+        "ev",
+        "flexibility",
+        "hp",
+        "pv",
+    )
+    assert report["missing_component_kinds"] == ()
+    assert report["blocked_component_kinds"] == ()
+    assert report["component_reports"]["ev"]["state"] == "accepted"
+    assert report["executable_input_gate"]["ready_for_execution"] is True
+    assert report["no_real_net_load_arrays"] is True
+    assert report["no_event_detection"] is True
+    assert report["no_probability_estimate"] is True
+    assert report["no_capacity_screen_result"] is True
+    assert "threshold_pu" not in report
+    assert "overload" not in report
+    assert "capacity_screen" not in report
+
+
+def test_integrated_input_preflight_dry_run_reports_missing_artifacts_with_blockers() -> None:
+    artifacts = [
+        artifact
+        for artifact in _executable_input_artifacts()
+        if artifact.kind not in {"hp", "pv"}
+    ]
+
+    report = dry_run_integrated_input_preflight(
+        _screen_preflight_config(),
+        artifacts,
+        missing_artifact_blockers={
+            "hp": ("D-013", "HP-LOCAL-SCALING"),
+            "pv": ("PV-PARAM-001", "D004-SOURCE-MEMBER-ACCEPTANCE"),
+        },
+    )
+
+    assert report["ready_for_input_assembly"] is False
+    assert report["present_component_kinds"] == ("adoption", "baseline", "ev", "flexibility")
+    assert report["accepted_component_kinds"] == ("adoption", "baseline", "ev", "flexibility")
+    assert report["missing_component_kinds"] == ("hp", "pv")
+    assert report["blocked_component_kinds"] == ()
+    assert report["component_reports"]["hp"]["state"] == "missing"
+    assert report["component_reports"]["hp"]["blocking_register_ids"] == ("D-013", "HP-LOCAL-SCALING")
+    assert report["component_reports"]["pv"]["blocking_register_ids"] == (
+        "PV-PARAM-001",
+        "D004-SOURCE-MEMBER-ACCEPTANCE",
+    )
+    assert report["executable_input_gate"] is None
+
+
+def test_integrated_input_preflight_dry_run_reports_register_blocked_artifacts() -> None:
+    artifacts = _executable_input_artifacts()
+    artifacts[2] = _executable_input_artifact("hp", signed_register_ids=("D-013",))
+    artifacts[3] = _executable_input_artifact("pv", signed_register_ids=("PV-PARAM-001",))
+
+    report = dry_run_integrated_input_preflight(
+        _screen_preflight_config(),
+        artifacts,
+    )
+
+    assert report["ready_for_input_assembly"] is False
+    assert report["missing_component_kinds"] == ()
+    assert report["blocked_component_kinds"] == ("hp", "pv")
+    assert report["component_reports"]["hp"]["reason"] == "register_backing_not_accepted"
+    assert report["component_reports"]["pv"]["reason"] == "register_backing_not_accepted"
+    assert "D-013" in report["component_reports"]["hp"]["register_backing_errors"][0]
+    assert "values/adoption" in report["component_reports"]["hp"]["register_backing_errors"][0]
+    assert "PV-PARAM-001" in report["component_reports"]["pv"]["register_backing_errors"][0]
+    assert "proposed" in report["component_reports"]["pv"]["register_backing_errors"][0]
+    assert report["executable_input_gate"] is None
+
+
 
 
 def test_future_layer_screen_preflight_reports_missing_artifact_blocker_ids() -> None:
