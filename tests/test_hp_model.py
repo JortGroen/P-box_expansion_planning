@@ -21,6 +21,7 @@ from data.get_when2heat import (
     write_when2heat_source_metadata,
 )
 from src.hp_model import (
+    HP001LocalScalingConfig,
     HeatPumpProfile,
     HeatPumpComponentSeries,
     When2HeatComponent,
@@ -31,7 +32,9 @@ from src.hp_model import (
     cold_week_sanity_check,
     default_when2heat_components,
     downscale_hourly_to_15min,
+    hp001_components_from_local_scaling_config,
     hp001_residential_when2heat_components,
+    require_signed_hp001_local_scaling_config,
     load_when2heat_hourly_csv,
     require_signed_annual_scaling,
 )
@@ -571,6 +574,61 @@ def test_executable_hp001_profile_requires_signed_annual_scaling(tmp_path: Path)
     profile = build_executable_hp001_profile_from_when2heat_csv(path, weather=weather, components=signed)
 
     assert np.allclose(profile.electric_kw, [1000.0] * 4)
+
+
+def test_hp001_local_scaling_config_fails_closed_until_all_remaining_choices_signed() -> None:
+    config = HP001LocalScalingConfig(
+        value_column="Referentie_2030",
+        denominator_column="I11_woningequivalenten [Woning]",
+        gj_to_twh_divisor=3_600_000.0,
+        sfh_mfh_split_rule="cbs_85035ned_count_share",
+        adoption_electrification_scenario="unsigned_2035_full_service_fraction",
+        space_heat_twh_by_class={"SFH": 0.2, "MFH": 0.1},
+        water_heat_twh_by_class={"SFH": 0.04, "MFH": 0.02},
+        approval_ids={"value_column": "D013-PBL-MAPPING"},
+    )
+
+    assert config.missing_approval_keys() == (
+        "denominator",
+        "unit_conversion",
+        "sfh_mfh_split",
+        "adoption_electrification",
+    )
+    with pytest.raises(ValueError, match="remaining choices"):
+        require_signed_hp001_local_scaling_config(config)
+    with pytest.raises(ValueError, match="remaining choices"):
+        hp001_components_from_local_scaling_config(config)
+
+
+def test_hp001_local_scaling_config_records_signed_formula_provenance() -> None:
+    config = HP001LocalScalingConfig(
+        value_column="Referentie_2030",
+        denominator_column="I11_woningequivalenten [Woning]",
+        gj_to_twh_divisor=3_600_000.0,
+        sfh_mfh_split_rule="cbs_85035ned_count_share",
+        adoption_electrification_scenario="signed_2035_full_service_fraction",
+        space_heat_twh_by_class={"SFH": 0.2, "MFH": 0.1},
+        water_heat_twh_by_class={"SFH": 0.04, "MFH": 0.02},
+        approval_ids={
+            "value_column": "HP-SCALING-VALUE-COLUMN",
+            "denominator": "HP-SCALING-DENOMINATOR",
+            "unit_conversion": "HP-SCALING-CONVERSION",
+            "sfh_mfh_split": "HP-SCALING-SPLIT",
+            "adoption_electrification": "HP-SCALING-ADOPTION",
+        },
+        provenance={"source_use": "unit-test signed fixture"},
+    )
+
+    components = hp001_components_from_local_scaling_config(config)
+
+    assert config.missing_approval_keys() == ()
+    assert len(components) == 4
+    assert {component.provenance["annual_scaling_status"] for component in components} == {"signed"}
+    assert all(component.provenance["local_scaling_data_id"] == "D-013" for component in components)
+    assert all(component.provenance["indicator_mapping_approval_id"] == "A-015" for component in components)
+    assert components[0].provenance["value_column"] == "Referentie_2030"
+    assert components[0].provenance["denominator_column"] == "I11_woningequivalenten [Woning]"
+    assert components[0].provenance["local_scaling_config"]["missing_approval_keys"] == ()
 
 
 def test_default_components_require_explicit_scales() -> None:
