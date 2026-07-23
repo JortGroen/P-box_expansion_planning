@@ -1,0 +1,142 @@
+{
+  "schema_version": "e3_s2_executable_readiness_preflight_input_v1",
+  "task_id": "E3.S2",
+  "intended_use": "e3_s2_first_executable_readiness_report",
+  "scope": "metadata_preflight_only_no_arrays_no_events_no_probability_no_capacity_screen",
+  "config": {
+    "config_id": "e3_s2_first_executable_readiness_preflight_v1",
+    "scenario_ids": ["low", "middle", "high"],
+    "planning_years": [2035],
+    "rho_values": [0.0, 1.0],
+    "node_ids": ["simbench_1_mv_semiurb_0_sw_all_in_service_load_nodes"],
+    "time_domain": "full_year",
+    "timestep_seconds": 900,
+    "metadata": {
+      "calendar_id": "calendar_2035_15min_full_year_35040",
+      "planning_year_basis": "G0-A4",
+      "threshold_basis": "G0-A3 resolved but not evaluated in this preflight",
+      "gate": "register_backed_executable_input_gate",
+      "no_real_net_load_arrays": true,
+      "no_event_detection": true,
+      "no_probability_estimate": true,
+      "no_capacity_screen_result": true
+    }
+  },
+  "missing_artifact_blockers": {},
+  "artifacts": [
+    {
+      "artifact_id": "e2_s5_baseline_diversity_readiness_report",
+      "kind": "baseline",
+      "artifact_status": "scaffold",
+      "version_id": "e2_s5_baseline_readiness_report_v1",
+      "source_id": "simbench_baseline_readiness_metadata_only",
+      "member_id": "baseline_member_unmaterialized",
+      "calendar_id": "calendar_2035_15min_full_year_35040",
+      "node_ids": ["simbench_1_mv_semiurb_0_sw_all_in_service_load_nodes"],
+      "signed_register_ids": [],
+      "blocking_register_ids": ["E2.S5-BASELINE-EXECUTABLE-ARTIFACT"],
+      "timestep_seconds": 900,
+      "manifest_path": "reports/e2_s5_baseline_diversity_readiness.md",
+      "provenance": {
+        "discovered_path": "reports/e2_s5_baseline_diversity_readiness.md",
+        "classification_note": "readiness report present; accepted executable IC-1 baseline artifact not present"
+      }
+    },
+    {
+      "artifact_id": "e2_s2_ev_ic1_candidate_adapter_artifact",
+      "kind": "ev",
+      "artifact_status": "accepted",
+      "version_id": "e2_s2_ev_ic1_candidate_adapter_artifact_v1",
+      "source_id": "elaadnl_candidate_ev_ic1_adapter_metadata",
+      "member_id": "candidate_member_reference_unselected",
+      "calendar_id": "calendar_2035_15min_full_year_35040",
+      "node_ids": ["simbench_1_mv_semiurb_0_sw_all_in_service_load_nodes"],
+      "signed_register_ids": ["EV-003", "EV-004", "EV-005B", "EV-007A", "EV-008A", "EV-CAL-001"],
+      "blocking_register_ids": [],
+      "timestep_seconds": 900,
+      "manifest_path": "data/metadata/ev_adoption/e2_s2_ev_ic1_candidate_adapter_artifact.json",
+      "provenance": {
+        "discovered_path": "data/metadata/ev_adoption/e2_s2_ev_ic1_candidate_adapter_artifact.json",
+        "supporting_member_reference": "data/metadata/ev_adoption/e2_s2_ev_ic1_candidate_member_reference.json",
+        "boundary_note": "candidate metadata only; no held-out data opened and no member trajectories loaded"
+      }
+    },
+    {
+      "artifact_id": "hp001_alkmaar_gm0361_local_scaling_source_use_proposal",
+      "kind": "hp",
+      "artifact_status": "unsigned",
+      "version_id": "hp001_alkmaar_gm0361_local_scaling_source_use_proposal_v1",
+      "source_id": "hp001_alkmaar_gm0361_scaling_metadata",
+      "member_id": "hp_member_unselected",
+      "calendar_id": "calendar_2035_15min_full_year_35040",
+      "node_ids": ["simbench_1_mv_semiurb_0_sw_all_in_service_load_nodes"],
+      "signed_register_ids": [],
+      "blocking_register_ids": ["D-013", "HP-001-LOCAL-SCALING-VALUE-SIGNOFF"],
+      "timestep_seconds": 900,
+      "shared_weather_driver_id": "d004_alkmaar_berkhout_2014_2023_v1:unselected",
+      "manifest_path": "data/metadata/hp_scaling/hp001_alkmaar_gm0361_local_scaling_source_use_proposal.json",
+      "provenance": {
+        "discovered_path": "data/metadata/hp_scaling/hp001_alkmaar_gm0361_local_scaling_source_use_proposal.json",
+        "classification_note": "source/use and scaling guards present; D-013 values/adoption/executable annual TWh remain unsigned"
+      }
+    },
+    {
+      "artifact_id": "d004_alkmaar_berkhout_2014_2023_v1_weather_input_artifact",
+      "kind": "pv",
+      "artifact_status": "unsigned",
+      "version_id": "d004_weather_pv_input_artifact_v1",
+      "source_id": "d004_alkmaar_berkhout_2014_2023_v1_weather_members",
+      "member_id": "weather_member_unselected",
+      "calendar_id": "calendar_2035_15min_full_year_35040",
+      "node_ids": ["simbench_1_mv_semiurb_0_sw_all_in_service_load_nodes"],
+      "signed_register_ids": ["WEATHER-001", "D004-MC-001", "D004-SOURCE-MEMBER-ACCEPTANCE"],
+      "blocking_register_ids": ["PV-PARAM-001", "D004-PAIRED-HP-PV-VALIDATION", "D004-COLD-SPELL-TOLERANCE-SIGNOFF"],
+      "timestep_seconds": 900,
+      "shared_weather_driver_id": "d004_alkmaar_berkhout_2014_2023_v1:unselected",
+      "manifest_path": "data/metadata/weather_pv/d004_alkmaar_berkhout_2014_2023_v1_weather_input_artifact.json",
+      "provenance": {
+        "discovered_path": "data/metadata/weather_pv/d004_alkmaar_berkhout_2014_2023_v1_weather_input_artifact.json",
+        "parameter_packet": "data/metadata/weather_pv/d004_pv_parameter_decision_packet.json",
+        "classification_note": "WEATHER-001 source/member input is accepted for internal first-screen source/member use, but PV executable conversion remains blocked by PV-PARAM-001 and paired/cold-spell gates"
+      }
+    },
+    {
+      "artifact_id": "e2_s6_a014_alkmaar_allocation_preview",
+      "kind": "adoption",
+      "artifact_status": "unsigned",
+      "version_id": "e2_s6_a014_allocation_preview_v1",
+      "source_id": "alkmaar_ev_adoption_counts_and_a014_preview",
+      "member_id": "adoption_member_unmaterialized",
+      "calendar_id": "calendar_2035_15min_full_year_35040",
+      "node_ids": ["simbench_1_mv_semiurb_0_sw_all_in_service_load_nodes"],
+      "signed_register_ids": ["EV-007A", "A-014"],
+      "blocking_register_ids": ["E2.S6-PER-NODE-EXECUTABLE-ADOPTION-ARTIFACT"],
+      "timestep_seconds": 900,
+      "manifest_path": "data/metadata/ev_adoption/e2_s6_a014_alkmaar_allocation_preview.json",
+      "provenance": {
+        "discovered_path": "data/metadata/ev_adoption/e2_s6_a014_alkmaar_allocation_preview.json",
+        "supporting_counts": "data/metadata/ev_adoption/e2_s6_local_adoption_counts_metadata.json",
+        "classification_note": "approved local counts/allocation rule are present, but this preview still advertises proposed_not_pi_signed and is not an accepted executable adoption artifact"
+      }
+    },
+    {
+      "artifact_id": "flex001_scaffold_protocol",
+      "kind": "flexibility",
+      "artifact_status": "accepted",
+      "version_id": "flex001_scaffold_protocol_v1",
+      "source_id": "flex_aggregator_scaffold_protocol",
+      "member_id": "rho_endpoint_protocol_no_real_values",
+      "calendar_id": "calendar_2035_15min_full_year_35040",
+      "node_ids": ["simbench_1_mv_semiurb_0_sw_all_in_service_load_nodes"],
+      "signed_register_ids": ["FLEX-001"],
+      "blocking_register_ids": [],
+      "timestep_seconds": 900,
+      "manifest_path": "src/flex_aggregator.py",
+      "provenance": {
+        "discovered_path": "src/flex_aggregator.py",
+        "supporting_report": "reports/E3_S1_FLEX_EXPORT_HARDENING.md",
+        "boundary_note": "approved scaffold protocol only; no flexibility-factor values, fuzzy corners, or real flexibility result are signed here"
+      }
+    }
+  ]
+}

@@ -49,6 +49,7 @@ HP001_SCALING_REQUIRED_APPROVAL_KEYS = (
     "sfh_mfh_split",
     "adoption_electrification",
 )
+HP001_VALUE_BINDING_APPROVED_STATUS = "approved_for_executable_value_binding"
 
 
 class SharedWeatherMember(Protocol):
@@ -637,6 +638,66 @@ def hp001_components_from_local_scaling_config(
     )
 
 
+def hp001_local_scaling_config_from_value_binding_record(
+    record: Mapping[str, Any],
+) -> HP001LocalScalingConfig:
+    """Create a scaling config only from a signed value-binding record.
+
+    The D-013 value-binding packets are allowed to carry unsigned candidate
+    numbers for PI review. This adapter is the narrow future handoff into the
+    executable HP scaffold, so it requires an explicit approved status and all
+    remaining approval IDs before returning a config.
+    """
+    if not isinstance(record, Mapping):
+        raise ValueError("HP-001 value-binding record must be a mapping")
+    status = str(record.get("status", "")).strip()
+    if status != HP001_VALUE_BINDING_APPROVED_STATUS:
+        raise ValueError(
+            "HP-001 value-binding record is not approved for executable use; "
+            f"status={status!r}"
+        )
+    source_inputs = _require_mapping(record.get("source_inputs_under_review"), "source_inputs_under_review")
+    approval_state = _require_mapping(record.get("approval_state"), "approval_state")
+    approval_ids = _require_mapping(approval_state.get("approval_ids"), "approval_ids")
+    component_records = record.get("component_value_drafts_unsigned_before_2035_adoption")
+    if not isinstance(component_records, Sequence) or isinstance(component_records, (str, bytes)):
+        raise ValueError("component value drafts must be a sequence")
+
+    space_heat_twh_by_class: dict[str, float] = {}
+    water_heat_twh_by_class: dict[str, float] = {}
+    for component in component_records:
+        component_record = _require_mapping(component, "component value draft")
+        building_class = str(component_record.get("building_class", "")).strip()
+        end_use = str(component_record.get("end_use", "")).strip()
+        annual_heat_twh = float(component_record.get("annual_heat_twh", 0.0))
+        if end_use == "space":
+            space_heat_twh_by_class[building_class] = annual_heat_twh
+        elif end_use == "water":
+            water_heat_twh_by_class[building_class] = annual_heat_twh
+        else:
+            raise ValueError(f"unsupported HP-001 value-binding end_use={end_use!r}")
+
+    config = HP001LocalScalingConfig(
+        value_column=str(source_inputs.get("value_column", "")),
+        denominator_column=str(source_inputs.get("denominator_column", "")),
+        gj_to_twh_divisor=float(source_inputs.get("gj_to_twh_divisor", 0.0)),
+        sfh_mfh_split_rule=str(source_inputs.get("sfh_mfh_split_rule", "")),
+        adoption_electrification_scenario=str(
+            source_inputs.get("adoption_electrification_scenario", "")
+        ),
+        space_heat_twh_by_class=space_heat_twh_by_class,
+        water_heat_twh_by_class=water_heat_twh_by_class,
+        approval_ids=approval_ids,
+        provenance={
+            "value_binding_packet_id": str(record.get("decision_packet_id", "")),
+            "value_binding_status": status,
+            "local_scaling_data_id": HP001_LOCAL_SCALING_DATA_ID,
+        },
+    )
+    require_signed_hp001_local_scaling_config(config)
+    return config
+
+
 def load_when2heat_hourly_csv(
     path: str | Path,
     *,
@@ -968,6 +1029,12 @@ def _downscale_component_series(component: HeatPumpComponentSeries) -> HeatPumpC
         interval_hours=QUARTER_HOUR_STEP_MINUTES / 60,
         provenance=component.provenance,
     )
+
+
+def _require_mapping(raw: object, label: str) -> Mapping[str, Any]:
+    if not isinstance(raw, Mapping):
+        raise ValueError(f"{label} must be a mapping")
+    return raw
 
 
 def _validate_component_series(

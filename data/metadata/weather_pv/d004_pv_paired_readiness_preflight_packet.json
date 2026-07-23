@@ -1,0 +1,90 @@
+{
+  "packet_id": "d004_alkmaar_berkhout_2014_2023_v1:pv_paired_readiness_preflight",
+  "created_utc": "2026-07-23T10:20:00+00:00",
+  "data_id": "D-004",
+  "weather_contract": "WEATHER-001",
+  "source_member_acceptance_id": "D004-SOURCE-MEMBER-ACCEPTANCE",
+  "source_member_readiness_scope": "source_member_component_input_only_not_final_integrated",
+  "source_member_ready": true,
+  "selection_id": "d004_alkmaar_berkhout_2014_2023_v1",
+  "realized_weather_path": "KNMI station 249 Berkhout hourly T and Q expanded under D004-MC-001",
+  "pvgis_role": "qualitative seasonal/peak sanity and provenance/calibration context only",
+  "pvgis_realized_weather_path": false,
+  "governing_ids": [
+    "WEATHER-001",
+    "D004-MC-001",
+    "D004-SOURCE-MEMBER-ACCEPTANCE",
+    "PV-PARAM-001",
+    "E2-S3-COLD-SPELL-ACCEPTANCE-DESIGN"
+  ],
+  "current_preflight_status": "blocked_pending_pi_parameter_cold_spell_and_real_hp_identity_evidence",
+  "pv_parameter_decision": {
+    "decision_id": "PV-PARAM-001",
+    "status": "proposed_pending_pi_signoff",
+    "blocks_signed_executable_pv_generation": true,
+    "required_fields": [
+      "installed_capacity_kw",
+      "tilt_aspect_or_plane_of_array_treatment",
+      "losses_or_performance_ratio",
+      "temperature_coefficient_per_c_and_reference_temperature_c",
+      "clipping",
+      "ghi_vs_plane_of_array"
+    ],
+    "scaffold_guard": "PVSystemConfig.require_signed_parameters()"
+  },
+  "paired_weather_prerequisite": {
+    "required_identity_equality": "exact WEATHER-001 identity/calendar/content equality before paired HP/PV acceptance diagnostics are inspected",
+    "required_fields": [
+      "member_id",
+      "shared_weather_driver_id",
+      "source",
+      "first_timestamp_utc",
+      "last_timestamp_utc",
+      "n_timesteps",
+      "cadence_seconds",
+      "content_sha256"
+    ],
+    "current_hp_identity_evidence_status": "not_supplied_in_this_pv_packet",
+    "preflight_helper": "src.pv_model.build_pv_paired_readiness_preflight_packet"
+  },
+  "cold_spell_metadata": {
+    "design_id": "E2-S3-COLD-SPELL-ACCEPTANCE-DESIGN",
+    "design_status": "approved_design_tolerances_pending",
+    "numerical_tolerances_status": "pending_unsigned",
+    "required_before_final_acceptance_run": [
+      "near_freezing_band",
+      "coldest_7_day_and_3_day_pass_fail_tolerances",
+      "temperature_response_tolerances",
+      "COP_or_HP_load_response_tolerances"
+    ]
+  },
+  "fail_closed_result": {
+    "ready_for_final_paired_hp_pv_acceptance_run": false,
+    "final_paired_hp_pv_acceptance_signed_by_this_packet": false,
+    "blocking_register_ids": [
+      "PV-PARAM-001",
+      "FINAL-PAIRED-HP-PV-ACCEPTANCE",
+      "COLD-SPELL-ACCEPTANCE"
+    ]
+  },
+  "evidence_artifacts": {
+    "weather_input_artifact": "data/metadata/weather_pv/d004_alkmaar_berkhout_2014_2023_v1_weather_input_artifact.json",
+    "weather_member_manifest": "data/metadata/weather_pv/d004_alkmaar_berkhout_2014_2023_v1_weather_members_manifest.json",
+    "pv_parameter_decision_packet": "data/metadata/weather_pv/d004_pv_parameter_decision_packet.json",
+    "paired_weather_acceptance_scaffold": "data/metadata/weather_pv/d004_alkmaar_berkhout_2014_2023_v1_paired_weather_acceptance_scaffold.json",
+    "source_member_acceptance_decision": "data/metadata/weather_pv/d004_alkmaar_berkhout_2014_2023_v1_source_member_acceptance_decision.json"
+  },
+  "out_of_scope_guards": [
+    "no net-load aggregation",
+    "no event detection",
+    "no P(E)",
+    "no capacity screen",
+    "no threshold analysis",
+    "no manuscript results"
+  ],
+  "pi_review_questions": [
+    "Approve or amend PV-PARAM-001 before signed executable PV generation is allowed.",
+    "Confirm the HP artifact identity record and WEATHER-001 member subset to use for the first paired HP/PV acceptance run.",
+    "Sign numerical cold-spell and near-freezing tolerances before the first real paired acceptance run."
+  ]
+}

@@ -1577,6 +1577,11 @@ explicitly promotes that use.
 
 
 
+
+<!-- methods-id: E2-S3-HP001-VALUE-BINDING-READINESS -->
+### E2-S3-HP001-VALUE-BINDING-READINESS - HP-001 Value-Binding Readiness Packet
+
+**Status: Proposed packet; executable annual values unsigned.** The HP-001 value-binding readiness packet prepares the future handoff from D-013 local-scaling evidence into the guarded HP component configuration without approving the values. It records candidate PBL `Referentie_2030`, `I11_woningequivalenten [Woning]`, GJ-to-TWh conversion, CBS 85035NED count-share allocation, and four unsigned SFH/MFH by space/DHW component value drafts before any 2035 HP adoption/electrification multiplier. The accompanying adapter, `hp001_local_scaling_config_from_value_binding_record`, is fail-closed: it rejects the current proposed packet and returns `HP001LocalScalingConfig` only if a later record is explicitly marked `approved_for_executable_value_binding` and carries approval IDs for value-column use, denominator use, unit conversion, SFH/MFH split, and adoption/electrification. This packet does not approve annual TWh values, D-004 or cold-spell acceptance, net-load/event analysis, `P(E)`, threshold/capacity-screen results, manuscript numbers, or probability results.
 <!-- methods-id: E2-S3-HP001-SCALING-FORMULA-CONFIG -->
 ### E2-S3-HP001-SCALING-FORMULA-CONFIG - HP-001 Local Scaling Formula/Config Guard
 
@@ -1659,3 +1664,4 @@ base policy as well. The sole code-level bootstrap exception is the initial
 `codex/ownership-enforcement` pull request when neither policy file exists on
 its base; after that first merge, the same branch is governed by the base
 policy like every other branch.
+

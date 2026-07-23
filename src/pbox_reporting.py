@@ -21,6 +21,7 @@ from src.pbox_result_guards import (
 )
 
 UseStatus = str
+RUNNER_REPORT_BOUNDARY_PROTOCOL = "guarded-pbox-report-v1"
 
 
 @dataclass(frozen=True)
@@ -64,6 +65,38 @@ class GuardedPBoxReport:
         if self.output_error_record is not None:
             record["output_error_record"] = dict(self.output_error_record)
         return record
+
+
+@dataclass(frozen=True)
+class RunnerReportBoundaryRecord:
+    """Manifest-like boundary payload for future runner/report integration."""
+
+    boundary_id: str
+    guarded_report: GuardedPBoxReport
+    boundary_protocol: str = RUNNER_REPORT_BOUNDARY_PROTOCOL
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.boundary_id, str) or not self.boundary_id.strip():
+            raise ValueError("boundary_id must be a nonempty string")
+        if self.boundary_protocol != RUNNER_REPORT_BOUNDARY_PROTOCOL:
+            raise ValueError(
+                f"boundary_protocol must be {RUNNER_REPORT_BOUNDARY_PROTOCOL!r}"
+            )
+
+    def to_mapping(self) -> dict[str, object]:
+        """Return the stable payload expected at the runner/report boundary."""
+
+        report = self.guarded_report.to_mapping()
+        paper_facing_requested = self.guarded_report.use_status == "paper-facing"
+        return {
+            "boundary_id": self.boundary_id,
+            "boundary_protocol": self.boundary_protocol,
+            "guarded_report": report,
+            "paper_facing_allowed": (
+                paper_facing_requested and self.guarded_report.guard.allowed
+            ),
+            "paper_facing_requested": paper_facing_requested,
+        }
 
 
 def probability_rows_from_pbox_family(
@@ -121,6 +154,34 @@ def build_guarded_pbox_report(
         probability_rows=probability_rows_from_pbox_family(pbox_family),
         use_status=use_status,
         output_error_record=output_error_record,
+    )
+
+
+def build_runner_report_boundary_record(
+    *,
+    boundary_id: str,
+    pbox_family: PBoxFamily,
+    prerequisites: FinalResultPrerequisites,
+    result_kind: PaperFacingResultKind = PaperFacingResultKind.PBOX_PROBABILITY,
+    use_status: UseStatus = "synthetic-only",
+    output_error_record: Mapping[str, object] | None = None,
+) -> RunnerReportBoundaryRecord:
+    """Build the guarded p-box payload future runner/report code should emit.
+
+    The boundary record keeps the gate decision beside the p-box rows, so a
+    downstream report cannot silently drop G2/A-013/capacity/G3 blockers while
+    still displaying a plausible alpha-indexed table.
+    """
+
+    return RunnerReportBoundaryRecord(
+        boundary_id=boundary_id,
+        guarded_report=build_guarded_pbox_report(
+            pbox_family=pbox_family,
+            prerequisites=prerequisites,
+            result_kind=result_kind,
+            use_status=use_status,
+            output_error_record=output_error_record,
+        ),
     )
 
 
