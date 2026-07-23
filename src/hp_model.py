@@ -50,6 +50,14 @@ HP001_SCALING_REQUIRED_APPROVAL_KEYS = (
     "adoption_electrification",
 )
 HP001_VALUE_BINDING_APPROVED_STATUS = "approved_for_executable_value_binding"
+HP001_WEATHER_ACCEPTANCE_REQUIRED_APPROVAL_KEYS = (
+    "d004_paired_weather_acceptance",
+    "cold_spell_tolerances",
+)
+HP001_FINAL_READINESS_REQUIRED_APPROVAL_KEYS = (
+    *HP001_SCALING_REQUIRED_APPROVAL_KEYS,
+    *HP001_WEATHER_ACCEPTANCE_REQUIRED_APPROVAL_KEYS,
+)
 
 
 class SharedWeatherMember(Protocol):
@@ -600,6 +608,28 @@ def hp001_residential_when2heat_components(
         )
     return tuple(components)
 
+
+
+def hp001_final_readiness_missing_approval_keys(
+    approval_ids: Mapping[str, str],
+) -> tuple[str, ...]:
+    """Return HP-001 approvals still missing before integrated HP use."""
+    approval_mapping = _as_provenance_mapping(approval_ids, "approval_ids")
+    return tuple(
+        key
+        for key in HP001_FINAL_READINESS_REQUIRED_APPROVAL_KEYS
+        if not str(approval_mapping.get(key, "")).strip()
+    )
+
+
+def require_hp001_final_readiness_approvals(approval_ids: Mapping[str, str]) -> None:
+    """Raise until annual-value and weather/cold-spell gates are signed."""
+    missing = hp001_final_readiness_missing_approval_keys(approval_ids)
+    if missing:
+        raise ValueError(
+            "Executable integrated HP-001 use requires signed annual-scaling, "
+            f"paired-weather, and cold-spell approvals; missing={missing}"
+        )
 
 def require_signed_hp001_local_scaling_config(config: HP001LocalScalingConfig) -> None:
     """Raise unless every remaining HP-001 local-scaling choice is signed."""
@@ -1251,3 +1281,4 @@ def _as_aware_timestamp(value: datetime, label: str) -> datetime:
     if value.tzinfo is None or value.utcoffset() is None:
         raise ValueError(f"{label} must be timezone-aware")
     return value
+
