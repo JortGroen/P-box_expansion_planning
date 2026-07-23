@@ -1432,17 +1432,84 @@ def test_ev_candidate_member_selection_manifest_set_materializes_declared_branch
 
 
 
-def test_committed_ev_candidate_member_selection_manifest_set_records_reference_checksum() -> None:
+def test_committed_ev_candidate_member_selection_manifest_set_records_fast_provenance() -> None:
     reference_path = Path("data/metadata/ev_adoption/e2_s2_ev_ic1_candidate_member_reference.json")
     selection_path = Path("data/metadata/ev_adoption/e2_s2_ev005b_candidate_selection_manifests.json.gz")
     reference_sha = ev_model._sha256_file(reference_path)
-    committed = json.loads(gzip.decompress(selection_path.read_bytes()))
+    compressed = selection_path.read_bytes()
+    committed = json.loads(gzip.decompress(compressed))
 
+    assert compressed[4:8] == b"\x00\x00\x00\x00"
+    assert committed["schema_version"] == 1
+    assert committed["artifact_type"] == "ev_candidate_member_selection_manifest_set"
+    assert committed["decision_id"] == "EV-005B"
     assert committed["source_candidate_member_reference"] == str(reference_path).replace("\\", "/")
     assert committed["source_candidate_member_reference_sha256"] == reference_sha
-    assert committed["policy"]["held_out_access"] is False
-    assert committed["policy"]["profile_arrays_loaded"] is False
-    assert committed["policy"]["m_sufficiency_claimed"] is False
+    assert committed["seed_tree"]["protocol_id"] == "RNG-001"
+    assert committed["calendar_mapping"] == {
+        "status": "approved",
+        "rule_id": EV_CALENDAR_MAPPING_RULE_ID,
+        "rule_version": "ordinal-v1",
+        "source_calendar_id": "elaad-2025-europe-amsterdam-15min",
+        "target_calendar_id": "planning-2035-europe-amsterdam-15min",
+        "source_timestamp_index_policy": "target_index_i_uses_source_index_i",
+        "n_timesteps": EXPECTED_FULL_YEAR_STEPS,
+        "weekday_weekend_preserved": False,
+    }
+    assert committed["policy"] == {
+        "candidate_only": True,
+        "replacement_policy_id": "EV-005B",
+        "replacement_enabled": True,
+        "held_out_access": False,
+        "quarantined_access": False,
+        "profile_arrays_loaded": False,
+        "integrated_analysis_performed": False,
+        "event_or_p_e_analysis_performed": False,
+        "capacity_screen_performed": False,
+        "manuscript_numbers_produced": False,
+        "m_sufficiency_claimed": False,
+    }
+    totals = {
+        item["scenario"]: (item["home_required_members"], item["public_required_members"])
+        for item in committed["scenarios"]
+    }
+    assert totals == {"high": (10343, 6138), "low": (7992, 4183), "middle": (9386, 5127)}
+    assert committed["scenario_count"] == 3
+    first_node = committed["scenarios"][0]["node_manifests"][0]
+    assert first_node["scenario"] == "high"
+    assert first_node["node_id"] == "load_000"
+    assert first_node["home_required_members"] == 111
+    assert first_node["public_required_members"] == 66
+    first_selection = first_node["selections"][0]
+    assert first_selection == {
+        "batch_seed": 140401,
+        "candidate_processed_path": "data/processed/elaad_profiles/A_home_vancar_cp_y2030_batchseed140401_n100.npz",
+        "candidate_processed_sha256_file": "ec00d29fdbcec28a78620d688bfb583ec73265f23a29272883ae7036957645a1",
+        "capacity_class": None,
+        "component_id": EV_HOME_COMPONENT,
+        "control_mode": "uncontrolled",
+        "cp_capacity_kw": None,
+        "duplicate_multiplicity": 15,
+        "duplicate_within_realization": True,
+        "library_id": "A_home_vancar_cp_y2030",
+        "node_id": "load_000",
+        "partition": "candidate",
+        "realization_selection_index": 0,
+        "returned_profile_index": 70,
+        "selection_count_at_node": 111,
+        "selection_index": 0,
+        "selection_pool_index": 470,
+        "source_member_id": "profile_140401_070",
+    }
+    assert committed["duplicate_summary"][0] == {
+        "capacity_class": None,
+        "component_id": EV_HOME_COMPONENT,
+        "duplicate_source_member_count": 1000,
+        "max_duplicate_multiplicity": 23,
+        "scenario": "high",
+        "selected_count": 10343,
+        "unique_source_member_count": 1000,
+    }
 
 def test_ev_candidate_member_selection_manifest_set_is_deterministic_and_guarded() -> None:
     reference = json.loads(
@@ -1505,6 +1572,7 @@ def test_ev_candidate_member_selection_manifest_set_is_deterministic_and_guarded
         )
 
 
+@pytest.mark.slow
 def test_committed_ev005b_candidate_selection_manifest_set_matches_builder() -> None:
     reference = json.loads(
         Path("data/metadata/ev_adoption/e2_s2_ev_ic1_candidate_member_reference.json").read_text(
