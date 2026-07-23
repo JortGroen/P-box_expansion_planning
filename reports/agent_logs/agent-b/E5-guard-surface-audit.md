@@ -1,0 +1,7 @@
+# E5 Guard Surface Audit
+
+## 2026-07-23 15:00 - E5/E4 readiness - in-progress
+DID: Started from latest `origin/main` after PR #188 merged. Audited B-owned p-box/reporting/decision guard surfaces and added synthetic decision-result boundary tests so paper-facing decision payloads cannot bypass G2, signed A-013, capacity provenance, or endpoint records.
+VERIFIED: Planned-path ownership preflight passed for `tests/test_pbox_reporting.py`, `reports/guarded_reporting_fixtures.md`, `reports/guard_surface_audit.md`, and this log. Focused validation passed: `.\.venv\Scripts\python.exe -m pytest tests/test_pbox_reporting.py tests/test_pbox_result_guards.py` collected 34 tests, 34 passed in 3.50 s. Ownership passed for 4 changed paths. Fast-suite validation passed: `.\scripts\task.ps1 test-fast` selected 502 tests with 500 passed, 2 skipped, and 6 deselected in 67.62 s. `git diff --check` passed.
+OPEN: C-owned runner/report surfaces still need to consume the B-owned guarded boundary. Real paper-facing use remains blocked by signed G2, signed A-013, capacity convention/provenance, real endpoint records, and G3 for vertex outputs.
+NEXT: Open PR for review; remaining paper-facing guard integration is blocked on C-owned runner/report consumption and upstream PI/Agent A/C artifacts.
