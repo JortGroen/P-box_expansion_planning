@@ -66,3 +66,16 @@ rows.
 These checks are still synthetic guard fixtures. They do not create real result
 manifests, run integrated trajectories, compute `P(E)`, choose capacity
 conventions, or approve G2/A-013/G3.
+## Fast/Full Validation Policy
+
+After the fast/full validation policy update, these guard fixtures remain in the
+fast PR suite because they are deterministic, synthetic, and do not run external
+or slow adapter paths. Focused guard tests plus `scripts/task.ps1 test-fast` are
+the default PR evidence. Full validation remains available for gate artifacts,
+first real experiments, slow-marked checks, or explicit PI requests.
+
+The serialized boundary validator also cross-checks endpoint-record claims: a
+payload whose guard says endpoint records are manifested must actually include
+an `output_error_record`, and a payload that includes endpoint records cannot
+keep the guard prerequisite marked absent. This makes endpoint-record presence a
+structural property of the future report boundary rather than a nearby note.
