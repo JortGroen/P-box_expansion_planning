@@ -39,3 +39,17 @@ record. They verify blocked synthetic serialization, paper-facing rejection
 when prerequisites or endpoint records are absent, acceptance when all guard
 inputs are explicitly supplied, and rejection of pre-G3 vertex rows in
 paper-facing mode.
+
+## Runner/Report Boundary Payload
+
+`build_runner_report_boundary_record` adds a named `guarded-pbox-report-v1`
+payload around the guarded p-box report. Future runner or report code can emit
+this stable record instead of serializing p-box rows directly. The payload keeps
+whether paper-facing output was requested, whether it was allowed, the complete
+guard decision, the alpha-indexed rows, and any endpoint-count record together.
+
+The synthetic tests deliberately try to bypass the boundary by omitting G2,
+A-013, capacity provenance, output-error endpoint records, or G3 for vertex
+outputs. Those paper-facing attempts fail before a boundary payload can be
+emitted. Synthetic-only payloads remain allowed so fixtures can document the
+blocked state without becoming paper results.

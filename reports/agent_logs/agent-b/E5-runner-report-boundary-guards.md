@@ -1,0 +1,7 @@
+# E5 Runner/Report Boundary Guards
+
+## 2026-07-23 12:00 - E5/E4 readiness - in-progress
+DID: Started from latest `origin/main` after PR #174 merged. Added a B-owned `guarded-pbox-report-v1` runner/report boundary payload builder around the guarded p-box report so future surfaces can carry guard state, alpha-indexed rows, and endpoint records together.
+VERIFIED: Planned-path ownership preflight passed for `src/pbox_reporting.py`, `tests/test_pbox_reporting.py`, `reports/guarded_reporting_fixtures.md`, and this log. Focused validation passed: `.\.venv\Scripts\python.exe -m pytest tests/test_pbox_reporting.py tests/test_pbox_result_guards.py` collected 22 tests, 22 passed in 1.95 s. Full validation passed: `.\scripts\task.ps1 test` collected 482 tests with 480 passed and 2 skipped in 152.99 s. `git diff --check` passed.
+OPEN: This does not edit C-owned `src/runner.py`; future runner integration should call this B-owned boundary once real prerequisites are signed and manifests exist. Real paper-facing use remains blocked by G2, signed A-013, capacity convention/provenance, endpoint records, and G3 for vertex outputs.
+NEXT: Open PR for review; C-owned runner code can later consume the B-owned boundary payload without changing the guard semantics.

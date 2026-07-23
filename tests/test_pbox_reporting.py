@@ -4,7 +4,9 @@ import pytest
 
 from src.pbox import PBoxAlphaResult, ProbabilityEstimate, VertexUseMode
 from src.pbox_reporting import (
+    RUNNER_REPORT_BOUNDARY_PROTOCOL,
     build_guarded_pbox_report,
+    build_runner_report_boundary_record,
     probability_rows_from_pbox_family,
 )
 from src.pbox_result_guards import FinalResultPrerequisites, PaperFacingResultKind
@@ -175,3 +177,88 @@ def test_invalid_use_status_is_rejected() -> None:
             prerequisites=FinalResultPrerequisites(),
             use_status="draft",
         )
+
+
+def test_runner_report_boundary_serializes_blocked_synthetic_guard_state() -> None:
+    record = build_runner_report_boundary_record(
+        boundary_id="synthetic-pbox-fixture",
+        pbox_family=_pbox_family(),
+        prerequisites=FinalResultPrerequisites(),
+    )
+
+    payload = record.to_mapping()
+
+    assert payload["boundary_protocol"] == RUNNER_REPORT_BOUNDARY_PROTOCOL
+    assert payload["paper_facing_requested"] is False
+    assert payload["paper_facing_allowed"] is False
+    guard = payload["guarded_report"]["guard"]
+    assert "G2 Tier-1 envelope/adequacy approval" in guard["missing_prerequisites"]
+    assert "signed A-013 grid-error value" in guard["missing_prerequisites"]
+    assert "approved capacity convention" in guard["missing_prerequisites"]
+    assert "capacity denominator provenance" in guard["missing_prerequisites"]
+    assert "manifested output-error endpoint event records" in guard["missing_prerequisites"]
+
+
+def test_runner_report_boundary_blocks_paper_facing_without_endpoint_record() -> None:
+    with pytest.raises(RuntimeError, match="output-error endpoint records"):
+        build_runner_report_boundary_record(
+            boundary_id="paper-facing-without-endpoints",
+            pbox_family=_pbox_family(),
+            prerequisites=_complete_prerequisites(),
+            use_status="paper-facing",
+        )
+
+
+def test_runner_report_boundary_blocks_paper_facing_without_scientific_gates() -> None:
+    with pytest.raises(RuntimeError, match="G2 Tier-1"):
+        build_runner_report_boundary_record(
+            boundary_id="paper-facing-without-gates",
+            pbox_family=_pbox_family(),
+            prerequisites=FinalResultPrerequisites(),
+            use_status="paper-facing",
+            output_error_record=_output_error_record(),
+        )
+
+
+def test_runner_report_boundary_blocks_vertex_output_without_g3_guard() -> None:
+    with pytest.raises(RuntimeError, match="G3 vertex-shortcut approval"):
+        build_runner_report_boundary_record(
+            boundary_id="vertex-without-g3",
+            pbox_family=_pbox_family(use_mode=VertexUseMode.G3_APPROVED),
+            prerequisites=_complete_prerequisites(g3=False),
+            result_kind=PaperFacingResultKind.VERTEX_SHORTCUT,
+            use_status="paper-facing",
+            output_error_record=_output_error_record(),
+        )
+
+
+def test_runner_report_boundary_rejects_invalid_protocol_override() -> None:
+    report = build_guarded_pbox_report(
+        pbox_family=_pbox_family(),
+        prerequisites=FinalResultPrerequisites(),
+    )
+
+    with pytest.raises(ValueError, match="boundary_protocol"):
+        from src.pbox_reporting import RunnerReportBoundaryRecord
+
+        RunnerReportBoundaryRecord(
+            boundary_id="bad-protocol",
+            guarded_report=report,
+            boundary_protocol="unguarded-v0",
+        )
+
+
+def test_runner_report_boundary_accepts_complete_paper_facing_fixture() -> None:
+    record = build_runner_report_boundary_record(
+        boundary_id="complete-paper-facing-fixture",
+        pbox_family=_pbox_family(),
+        prerequisites=_complete_prerequisites(),
+        use_status="paper-facing",
+        output_error_record=_output_error_record(),
+    )
+
+    payload = record.to_mapping()
+
+    assert payload["paper_facing_requested"] is True
+    assert payload["paper_facing_allowed"] is True
+    assert payload["guarded_report"]["output_error_record"]["probability_widening"] == "forbidden"
