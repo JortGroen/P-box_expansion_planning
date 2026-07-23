@@ -262,6 +262,42 @@ def test_hp001_scaling_formula_packet_records_remaining_unsigned_decisions(tmp_p
     assert payload["status"].endswith("annual HP TWh values not executable")
 
 
+def test_hp001_value_binding_packet_preserves_unsigned_component_values(tmp_path: Path) -> None:
+    packet = hp_scaling.build_hp001_value_binding_readiness_packet()
+
+    assert packet["decision_packet_id"] == "E2-S3-HP001-VALUE-BINDING-READINESS"
+    assert packet["approval_state"]["executable_binding_allowed"] is False
+    assert packet["approval_state"]["missing_approval_keys"] == [
+        "value_column",
+        "denominator",
+        "unit_conversion",
+        "sfh_mfh_split",
+        "adoption_electrification",
+    ]
+    assert packet["source_inputs_under_review"]["gj_to_twh_divisor"] == 3_600_000.0
+    components = packet["component_value_drafts_unsigned_before_2035_adoption"]
+    assert {component["component_id"] for component in components} == {
+        "sfh_space",
+        "mfh_space",
+        "sfh_water",
+        "mfh_water",
+    }
+    assert {component["annual_twh_status"] for component in components} == {
+        "unsigned_local_heat_demand_before_2035_adoption"
+    }
+    assert {component["cop_column"] for component in components if component["end_use"] == "space"} == {
+        "NL_COP_ASHP_radiator"
+    }
+    assert {component["cop_column"] for component in components if component["end_use"] == "water"} == {
+        "NL_COP_ASHP_water"
+    }
+    assert "No annual HP TWh values are executable." in packet["non_claims"]
+
+    path = hp_scaling.write_hp001_value_binding_readiness_packet(tmp_path)
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    assert payload["status"].startswith("proposed value-binding draft")
+
+
 def test_elaad_source_uses_profile_generator_route() -> None:
     d002 = next(spec for spec in source_specs() if spec.data_id == "D-002")
 
