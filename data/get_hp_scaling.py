@@ -25,6 +25,7 @@ MUNICIPALITY_NAME = "Alkmaar"
 CHECKPOINT_FILENAME = "hp001_alkmaar_gm0361_retrieval_checkpoint.json"
 RETRIEVAL_MANIFEST_FILENAME = "hp001_alkmaar_gm0361_retrieval_manifest.json"
 FORMULA_DECISION_PACKET_FILENAME = "hp001_alkmaar_gm0361_scaling_formula_config_decision_packet.json"
+VALUE_BINDING_READINESS_FILENAME = "hp001_alkmaar_gm0361_value_binding_readiness_packet.json"
 DOWNLOAD_TIMEOUT_S = 120.0
 PBL_HEAT_TERMS = ("warmte", "heat", "gas", "energie", "energy", "verbruik", "demand", "vraag")
 PBL_DHW_TERMS = ("tapwater", "warm_water", "dhw", "water")
@@ -242,6 +243,120 @@ def build_hp001_scaling_formula_config_decision_packet() -> dict[str, Any]:
             "No D-004/cold-spell acceptance, net-load, event, P(E), threshold, capacity-screen, manuscript, or probability analysis is run.",
         ],
     }
+
+
+def build_hp001_value_binding_readiness_packet() -> dict[str, Any]:
+    """Return unsigned HP-001 value-binding evidence without executable values."""
+    return {
+        "data_id": DATA_ID,
+        "decision_packet_id": "E2-S3-HP001-VALUE-BINDING-READINESS",
+        "created_utc": _utc_now(),
+        "status": "proposed value-binding draft; not approved for executable HP loads",
+        "approval_state": {
+            "approved_indicator_mapping_ids": ("D013-PBL-MAPPING", "A-015"),
+            "required_before_executable_binding": [
+                "value_column",
+                "denominator",
+                "unit_conversion",
+                "sfh_mfh_split",
+                "adoption_electrification",
+            ],
+            "approval_ids": {},
+            "missing_approval_keys": [
+                "value_column",
+                "denominator",
+                "unit_conversion",
+                "sfh_mfh_split",
+                "adoption_electrification",
+            ],
+            "executable_binding_allowed": False,
+        },
+        "source_inputs_under_review": {
+            "pbl_source": "D-013 PBL Startanalyse 2025 Alkmaar, Alkmaar_strategie.csv",
+            "value_column": "Referentie_2030",
+            "denominator_column": "I11_woningequivalenten [Woning]",
+            "space_indicator": "H23_Vraag_RV_w",
+            "water_indicator": "H24_Vraag_TW_w",
+            "diagnostic_total_indicator": "H22_Vraag_totaal_w",
+            "cbs_source": "D-013 CBS StatLine 85035NED Alkmaar GM0361 dwelling stock/type evidence",
+            "sfh_mfh_split_rule": "cbs_85035ned_count_share",
+            "gj_to_twh_divisor": 3_600_000.0,
+            "adoption_electrification_scenario": "unsigned_2035_hp_service_fraction_or_count_pending",
+        },
+        "local_heat_demand_diagnostics_unsigned": {
+            "weq_summed": 67_422,
+            "space_heat_twh": 0.362059444,
+            "water_heat_twh": 0.097897778,
+            "residential_total_diagnostic_twh": 0.634250556,
+            "diagnostic_note": "H22 exceeds H23+H24, so other residential heat/end-use categories remain outside HP-001 unless separately approved.",
+        },
+        "component_value_drafts_unsigned_before_2035_adoption": [
+            {
+                "component_id": "sfh_space",
+                "building_class": "SFH",
+                "end_use": "space",
+                "annual_heat_twh": 0.221155323,
+                "shape_column": "NL_heat_profile_space_SFH",
+                "cop_column": "NL_COP_ASHP_radiator",
+                "annual_twh_status": "unsigned_local_heat_demand_before_2035_adoption",
+            },
+            {
+                "component_id": "mfh_space",
+                "building_class": "MFH",
+                "end_use": "space",
+                "annual_heat_twh": 0.140904121,
+                "shape_column": "NL_heat_profile_space_MFH",
+                "cop_column": "NL_COP_ASHP_radiator",
+                "annual_twh_status": "unsigned_local_heat_demand_before_2035_adoption",
+            },
+            {
+                "component_id": "sfh_water",
+                "building_class": "SFH",
+                "end_use": "water",
+                "annual_heat_twh": 0.059798509,
+                "shape_column": "NL_heat_profile_water_SFH",
+                "cop_column": "NL_COP_ASHP_water",
+                "annual_twh_status": "unsigned_local_heat_demand_before_2035_adoption",
+            },
+            {
+                "component_id": "mfh_water",
+                "building_class": "MFH",
+                "end_use": "water",
+                "annual_heat_twh": 0.038099269,
+                "shape_column": "NL_heat_profile_water_MFH",
+                "cop_column": "NL_COP_ASHP_water",
+                "annual_twh_status": "unsigned_local_heat_demand_before_2035_adoption",
+            },
+        ],
+        "future_binding_contract": {
+            "config_type": "src.hp_model.HP001LocalScalingConfig",
+            "adapter": "src.hp_model.hp001_local_scaling_config_from_value_binding_record",
+            "guard": "src.hp_model.require_signed_hp001_local_scaling_config",
+            "required_status_before_config": "approved_for_executable_value_binding",
+            "required_approval_keys": [
+                "value_column",
+                "denominator",
+                "unit_conversion",
+                "sfh_mfh_split",
+                "adoption_electrification",
+            ],
+        },
+        "non_claims": [
+            "No annual HP TWh values are executable.",
+            "No 2035 HP adoption/electrification value is signed.",
+            "No D-004/cold-spell acceptance, net-load, event, P(E), threshold, capacity-screen, manuscript, or probability analysis is run.",
+        ],
+    }
+
+
+def write_hp001_value_binding_readiness_packet(metadata_dir: Path) -> Path:
+    """Write the unsigned next-step value-binding packet for PI review."""
+    target_dir = metadata_dir / "hp_scaling"
+    target_dir.mkdir(parents=True, exist_ok=True)
+    path = target_dir / VALUE_BINDING_READINESS_FILENAME
+    payload = build_hp001_value_binding_readiness_packet()
+    path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    return path
 
 
 def write_hp001_scaling_formula_config_decision_packet(metadata_dir: Path) -> Path:
@@ -648,6 +763,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--metadata-dir", default="data/metadata")
     parser.add_argument("--write-plan", action="store_true", help="Write the approved retrieval/checksum/value route without downloading data.")
     parser.add_argument("--write-formula-packet", action="store_true", help="Write the proposed HP-001 formula/config decision packet without executable values.")
+    parser.add_argument("--write-value-binding-packet", action="store_true", help="Write the proposed HP-001 value-binding readiness packet without executable values.")
     parser.add_argument("--download", action="store_true", help="Retrieve/checksum the approved D-013 public sources; no values are produced.")
     parser.add_argument("--inspect-existing", action="store_true", help="Refresh schema metadata from existing ignored D-013 raw files without network or values.")
     parser.add_argument("--resume", action="store_true", help="Skip completed sources whose raw files match checkpoint byte size and SHA-256.")
@@ -657,6 +773,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         path = retrieve_hp_scaling_sources(raw_dir=Path(args.raw_dir), metadata_dir=Path(args.metadata_dir), resume=args.resume)
     elif args.inspect_existing:
         path = inspect_existing_hp_scaling_sources(raw_dir=Path(args.raw_dir), metadata_dir=Path(args.metadata_dir))
+    elif args.write_value_binding_packet:
+        path = write_hp001_value_binding_readiness_packet(Path(args.metadata_dir))
     elif args.write_formula_packet:
         path = write_hp001_scaling_formula_config_decision_packet(Path(args.metadata_dir))
     else:

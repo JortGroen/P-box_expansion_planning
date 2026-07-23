@@ -13,6 +13,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
+import data.get_hp_scaling as hp_scaling
 from data.get_when2heat import (
     PRIMARY_WHEN2HEAT_FILE_KEY,
     WHEN2HEAT_FILES,
@@ -33,6 +34,7 @@ from src.hp_model import (
     default_when2heat_components,
     downscale_hourly_to_15min,
     hp001_components_from_local_scaling_config,
+    hp001_local_scaling_config_from_value_binding_record,
     hp001_residential_when2heat_components,
     require_signed_hp001_local_scaling_config,
     load_when2heat_hourly_csv,
@@ -629,6 +631,55 @@ def test_hp001_local_scaling_config_records_signed_formula_provenance() -> None:
     assert components[0].provenance["value_column"] == "Referentie_2030"
     assert components[0].provenance["denominator_column"] == "I11_woningequivalenten [Woning]"
     assert components[0].provenance["local_scaling_config"]["missing_approval_keys"] == ()
+
+
+def test_hp001_value_binding_readiness_packet_is_not_config_approved() -> None:
+    packet = hp_scaling.build_hp001_value_binding_readiness_packet()
+
+    with pytest.raises(ValueError, match="not approved for executable use"):
+        hp001_local_scaling_config_from_value_binding_record(packet)
+
+
+def test_hp001_value_binding_record_adapter_requires_all_approval_ids() -> None:
+    packet = hp_scaling.build_hp001_value_binding_readiness_packet()
+    packet = {
+        **packet,
+        "status": "approved_for_executable_value_binding",
+        "approval_state": {
+            **packet["approval_state"],
+            "approval_ids": {"value_column": "HP-SCALING-VALUE-COLUMN"},
+        },
+    }
+
+    with pytest.raises(ValueError, match="remaining choices"):
+        hp001_local_scaling_config_from_value_binding_record(packet)
+
+
+def test_hp001_value_binding_record_adapter_builds_signed_config_only() -> None:
+    packet = hp_scaling.build_hp001_value_binding_readiness_packet()
+    packet = {
+        **packet,
+        "status": "approved_for_executable_value_binding",
+        "approval_state": {
+            **packet["approval_state"],
+            "approval_ids": {
+                "value_column": "HP-SCALING-VALUE-COLUMN",
+                "denominator": "HP-SCALING-DENOMINATOR",
+                "unit_conversion": "HP-SCALING-CONVERSION",
+                "sfh_mfh_split": "HP-SCALING-SPLIT",
+                "adoption_electrification": "HP-SCALING-ADOPTION",
+            },
+        },
+    }
+
+    config = hp001_local_scaling_config_from_value_binding_record(packet)
+
+    assert config.value_column == "Referentie_2030"
+    assert config.denominator_column == "I11_woningequivalenten [Woning]"
+    assert config.missing_approval_keys() == ()
+    assert config.space_heat_twh_by_class == {"MFH": 0.140904121, "SFH": 0.221155323}
+    assert config.water_heat_twh_by_class == {"MFH": 0.038099269, "SFH": 0.059798509}
+    assert config.provenance["value_binding_packet_id"] == "E2-S3-HP001-VALUE-BINDING-READINESS"
 
 
 def test_default_components_require_explicit_scales() -> None:
