@@ -1,16 +1,16 @@
 {
   "command": ".\\.venv\\Scripts\\python.exe reports\\e3_s2_generate_executable_readiness_preflight.py",
-  "generated_at_utc": "2026-07-23T12:13:42Z",
-  "git_commit": "adaa617f4cbcfb32321f0ebbecc75f799e147b32",
+  "generated_at_utc": "2026-07-23T13:30:26Z",
+  "git_commit": "7408e5b52c2126e6c57f86856749515876a84825",
   "git_status_short_before_generation": "",
   "input": {
     "path": "reports/e3_s2_executable_readiness_preflight_input.json",
-    "schema_version": "e3_s2_executable_readiness_preflight_input_v3",
-    "sha256": "4b9c6f89b3cdf559b3e6e60bda8d07b4bf6ebc4686f103ffc33cfdc041541ff3"
+    "schema_version": "e3_s2_executable_readiness_preflight_input_v4",
+    "sha256": "339d6144b521e955e99353aad58a7c048f61ec119f90d1f358eb62975afda646"
   },
   "outputs": {
     "report_path": "reports/E3_S2_EXECUTABLE_READINESS_PREFLIGHT.md",
-    "report_sha256": "ae9989f44423c98977ce0995b8099e20c515b6290319b1c091fd6077c5c55416"
+    "report_sha256": "66f9ae462aed75d72d0483230dcddfecf1963d5b7c1fceeb65876c6dc382e755"
   },
   "preflight": {
     "accepted_component_kinds": [
@@ -42,6 +42,8 @@
           "provenance": {
             "classification_note": "approved local counts/allocation rule are present, but this preview still advertises proposed_not_pi_signed and is not an accepted executable adoption artifact",
             "discovered_path": "data/metadata/ev_adoption/e2_s6_a014_alkmaar_allocation_preview.json",
+            "packet_status": "proposed preview; accepted executable per-node adoption artifact missing",
+            "readiness_bucket": "blocked",
             "supporting_counts": "data/metadata/ev_adoption/e2_s6_local_adoption_counts_metadata.json"
           },
           "shared_weather_driver_id": null,
@@ -84,7 +86,9 @@
           ],
           "provenance": {
             "classification_note": "readiness report present; accepted executable IC-1 baseline artifact not present",
-            "discovered_path": "reports/e2_s5_baseline_diversity_readiness.md"
+            "discovered_path": "reports/e2_s5_baseline_diversity_readiness.md",
+            "packet_status": "scaffold present; accepted executable artifact missing",
+            "readiness_bucket": "blocked"
           },
           "shared_weather_driver_id": null,
           "signed_register_ids": [],
@@ -165,6 +169,8 @@
           "provenance": {
             "boundary_note": "approved scaffold protocol only; no flexibility-factor values, fuzzy corners, or real flexibility result are signed here",
             "discovered_path": "src/flex_aggregator.py",
+            "packet_status": "approved scaffold protocol; real flexibility values/results pending",
+            "readiness_bucket": "accepted",
             "supporting_report": "reports/E3_S1_FLEX_EXPORT_HARDENING.md"
           },
           "shared_weather_driver_id": null,
@@ -188,10 +194,10 @@
       "hp": {
         "accepted_for_gate": false,
         "artifact": {
-          "artifact_id": "hp001_alkmaar_gm0361_readiness_approval_checklist",
+          "artifact_id": "hp001_alkmaar_gm0361_executable_value_binding_decision_packet",
           "artifact_status": "unsigned",
           "blocking_register_ids": [
-            "E2-S3-HP001-READINESS-APPROVAL-CHECKLIST",
+            "E2-S3-HP001-EXECUTABLE-VALUE-BINDING-PACKET",
             "value_column",
             "denominator",
             "unit_conversion",
@@ -202,16 +208,18 @@
           ],
           "calendar_id": "calendar_2035_15min_full_year_35040",
           "kind": "hp",
-          "manifest_path": "data/metadata/hp_scaling/hp001_alkmaar_gm0361_readiness_approval_checklist.json",
-          "member_id": "hp001_final_readiness_unapproved",
+          "manifest_path": "data/metadata/hp_scaling/hp001_alkmaar_gm0361_executable_value_binding_decision_packet.json",
+          "member_id": "hp001_executable_value_binding_unapproved",
           "node_ids": [
             "simbench_1_mv_semiurb_0_sw_all_in_service_load_nodes"
           ],
           "provenance": {
-            "classification_note": "readiness approval checklist is the current HP gate packet; the older value-binding packet remains relevant for the five annual value-binding keys, but final readiness also requires D-004 paired-weather acceptance and cold-spell tolerances",
-            "discovered_path": "data/metadata/hp_scaling/hp001_alkmaar_gm0361_readiness_approval_checklist.json",
-            "older_value_binding_packet": "reports/e2_s3_hp001_value_binding_readiness_packet.md",
-            "supporting_report": "reports/e2_s3_hp001_readiness_approval_checklist.md"
+            "classification_note": "newest HP packet is a proposed executable value-binding approval template; it does not approve annual HP values or integrated HP use, and final readiness also requires D-004 paired-weather acceptance and cold-spell tolerances",
+            "discovered_path": "data/metadata/hp_scaling/hp001_alkmaar_gm0361_executable_value_binding_decision_packet.json",
+            "packet_status": "proposed executable-value-binding decision packet; approval template only",
+            "readiness_bucket": "proposed_blocked",
+            "supporting_final_readiness_checklist": "data/metadata/hp_scaling/hp001_alkmaar_gm0361_readiness_approval_checklist.json",
+            "supporting_report": "reports/e2_s3_hp001_executable_value_binding_decision_packet.md"
           },
           "shared_weather_driver_id": "d004_alkmaar_berkhout_2014_2023_v1:unselected",
           "signed_register_ids": [
@@ -222,14 +230,14 @@
             "WEATHER-001",
             "D004-SOURCE-MEMBER-ACCEPTANCE"
           ],
-          "source_id": "hp001_readiness_approval_checklist_metadata",
+          "source_id": "hp001_executable_value_binding_decision_packet_metadata",
           "timestep_seconds": 900,
-          "version_id": "hp001_readiness_approval_checklist_v1"
+          "version_id": "hp001_executable_value_binding_decision_packet_v1"
         },
-        "artifact_id": "hp001_alkmaar_gm0361_readiness_approval_checklist",
+        "artifact_id": "hp001_alkmaar_gm0361_executable_value_binding_decision_packet",
         "artifact_status": "unsigned",
         "blocking_register_ids": [
-          "E2-S3-HP001-READINESS-APPROVAL-CHECKLIST",
+          "E2-S3-HP001-EXECUTABLE-VALUE-BINDING-PACKET",
           "value_column",
           "denominator",
           "unit_conversion",
@@ -239,7 +247,7 @@
           "cold_spell_tolerances"
         ],
         "kind": "hp",
-        "manifest_path": "data/metadata/hp_scaling/hp001_alkmaar_gm0361_readiness_approval_checklist.json",
+        "manifest_path": "data/metadata/hp_scaling/hp001_alkmaar_gm0361_executable_value_binding_decision_packet.json",
         "reason": "artifact_status_not_accepted",
         "signed_register_ids": [
           "HP-001",
@@ -269,9 +277,12 @@
             "simbench_1_mv_semiurb_0_sw_all_in_service_load_nodes"
           ],
           "provenance": {
-            "classification_note": "PV final-acceptance gate packet is the current PV gate packet; older paired-readiness remains provenance, while final executable PV remains blocked by parameter signoff, final paired HP/PV acceptance, and cold-spell acceptance",
+            "capacity_source_route": "PV-CAP-001 approved route; concrete D-014 retrieval, numeric capacity value, scenario growth factor, capacity convention, and per-node allocation remain pending",
+            "classification_note": "PV final-acceptance gate packet remains the current PV/weather gate packet; PV-CAP-001 is now an approved source route only, while executable PV remains blocked by parameter signoff, final paired HP/PV acceptance, cold-spell acceptance, and later D-014/value/allocation approvals",
             "discovered_path": "data/metadata/weather_pv/d004_pv_final_acceptance_gate_packet.json",
             "older_paired_readiness_packet": "data/metadata/weather_pv/d004_pv_paired_readiness_preflight_packet.json",
+            "packet_status": "blocked pending PV-PARAM-001, final paired HP/PV acceptance, and cold-spell acceptance; PV-CAP-001 route approved but executable values pending",
+            "readiness_bucket": "proposed_blocked",
             "supporting_report": "reports/e2_s4_pv_final_acceptance_gate_packet.md",
             "weather_input_artifact": "data/metadata/weather_pv/d004_alkmaar_berkhout_2014_2023_v1_weather_input_artifact.json"
           },
@@ -279,7 +290,8 @@
           "signed_register_ids": [
             "WEATHER-001",
             "D004-MC-001",
-            "D004-SOURCE-MEMBER-ACCEPTANCE"
+            "D004-SOURCE-MEMBER-ACCEPTANCE",
+            "PV-CAP-001"
           ],
           "source_id": "d004_pv_final_acceptance_gate_metadata",
           "timestep_seconds": 900,
@@ -298,13 +310,14 @@
         "signed_register_ids": [
           "WEATHER-001",
           "D004-MC-001",
-          "D004-SOURCE-MEMBER-ACCEPTANCE"
+          "D004-SOURCE-MEMBER-ACCEPTANCE",
+          "PV-CAP-001"
         ],
         "state": "blocked"
       }
     },
     "config_manifest": {
-      "config_id": "e3_s2_forward_fix_executable_readiness_preflight_v3",
+      "config_id": "e3_s2_current_packet_executable_readiness_preflight_v4",
       "metadata": {
         "calendar_id": "calendar_2035_15min_full_year_35040",
         "gate": "register_backed_executable_input_gate",
@@ -313,7 +326,7 @@
         "no_probability_estimate": true,
         "no_real_net_load_arrays": true,
         "planning_year_basis": "G0-A4",
-        "refresh_basis": "origin/main after PR #184 merged on top of PRs #183 and #185",
+        "refresh_basis": "origin/main after PRs #192 and #193 merged on top of PR #189",
         "threshold_basis": "G0-A3 resolved but not evaluated in this preflight"
       },
       "node_ids": [
@@ -338,7 +351,7 @@
     "dry_run_only": true,
     "executable_input_gate": null,
     "gate_error": null,
-    "intended_use": "e3_s2_forward_fix_executable_readiness_report_after_pr183_pr185",
+    "intended_use": "e3_s2_current_packet_executable_readiness_report_after_hp_pv_decisions",
     "missing_component_kinds": [],
     "no_capacity_screen_result": true,
     "no_event_detection": true,
