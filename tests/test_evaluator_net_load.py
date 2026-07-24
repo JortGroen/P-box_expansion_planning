@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import numpy as np
 import pytest
 
@@ -44,6 +45,14 @@ from src.contracts.net_load import (
 )
 from src.contracts.loading_trajectory import LoadingTrajectoryPreRunConfig, TimeDomain
 from reports.e3_s2_generate_executable_readiness_preflight import _component_groups, _table_rows
+from reports.e3_s2_generate_real_artifact_assembly_preflight import (
+    INPUT_PATH as REAL_ARTIFACT_ASSEMBLY_INPUT_PATH,
+    _component_groups as _real_artifact_component_groups,
+    _component_table_rows as _real_artifact_component_table_rows,
+    _source_groups as _real_artifact_source_groups,
+    _source_record_status,
+    build_dossier_from_payload,
+)
 
 
 def _calendar() -> np.ndarray:
@@ -2521,3 +2530,59 @@ def test_future_layer_screen_preflight_rejects_invalid_config_and_blocker_metada
             [artifact for artifact in _executable_input_artifacts() if artifact.kind != "ev"],
             missing_artifact_blockers={"ev": ()},
         )
+
+
+def test_real_artifact_readiness_report_labels_source_checksum_states() -> None:
+    records = (
+        {"kind": "ev", "artifact_id": "ev-a", "path": "data/ev.json", "exists": True, "checksum_match": True},
+        {"kind": "hp", "artifact_id": "hp-a", "path": "data/hp.json", "exists": True},
+        {"kind": "pv", "artifact_id": "pv-a", "path": "data/pv.json", "exists": True, "checksum_match": False},
+        {"kind": "baseline", "artifact_id": "base-a", "path": "reports/base.md", "exists": False},
+    )
+
+    assert [_source_record_status(record) for record in records] == [
+        "checksum-verified",
+        "checksum-unverified",
+        "checksum-mismatch",
+        "missing",
+    ]
+    groups = _real_artifact_source_groups({"source_artifact_records": records})
+
+    assert groups["checksum_verified"] == "data/ev.json"
+    assert groups["checksum_unverified"] == "data/hp.json"
+    assert groups["checksum_mismatch"] == "data/pv.json"
+    assert groups["missing"] == "reports/base.md"
+
+
+def test_current_main_real_artifact_generator_fails_closed_without_arrays() -> None:
+    payload = json.loads(REAL_ARTIFACT_ASSEMBLY_INPUT_PATH.read_text(encoding="utf-8"))
+
+    dossier = build_dossier_from_payload(payload)
+    component_groups = _real_artifact_component_groups(dossier)
+    source_groups = _real_artifact_source_groups(dossier)
+    rows = _real_artifact_component_table_rows(dossier)
+
+    assert dossier["metadata_preflight_only"] is True
+    assert dossier["dry_run_only"] is True
+    assert dossier["no_real_net_load_arrays"] is True
+    assert dossier["no_event_detection"] is True
+    assert dossier["no_event_counts"] is True
+    assert dossier["no_probability_estimate"] is True
+    assert dossier["ready_for_real_artifact_assembly"] is False
+    assert dossier["bridge_preflight"]["blockers"]["capacity_provenance_missing"] is True
+    assert "A-013" in dossier["bridge_preflight"]["blockers"]["downstream_gate_blockers"]
+    assert "G1-A2-CAPACITY-CONVENTION" in dossier["bridge_preflight"]["blockers"]["downstream_gate_blockers"]
+    assert component_groups["accepted"] == "ev, flexibility"
+    assert component_groups["unsigned"] == "baseline, hp, pv, adoption"
+    assert component_groups["blocked"] == "baseline, hp, pv, adoption"
+    assert component_groups["missing"] == "none"
+    assert source_groups["missing"] == "none"
+    assert "checksum-unverified" in rows
+    assert "pending_open_pr_224_not_merged" in rows or any(
+        artifact["kind"] == "ev"
+        and artifact["provenance"]["ev_output_verifier_status"] == "pending_open_pr_224_not_merged"
+        for artifact in payload["artifacts"]
+    )
+    assert "D014-CBS-PV-CAPACITY-ANCHOR-EVIDENCE" in rows
+    assert "threshold_pu" not in dossier
+    assert "overload" not in dossier
