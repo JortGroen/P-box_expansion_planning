@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import hashlib
 import json
@@ -2530,7 +2530,6 @@ def test_future_layer_screen_preflight_rejects_invalid_config_and_blocker_metada
             [artifact for artifact in _executable_input_artifacts() if artifact.kind != "ev"],
             missing_artifact_blockers={"ev": ()},
         )
-
 
 
 def test_real_artifact_readiness_report_labels_source_checksum_states() -> None:

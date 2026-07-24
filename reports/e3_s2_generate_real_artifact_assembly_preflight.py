@@ -1,4 +1,4 @@
-﻿"""Generate the E3.S2 current-main real-artifact assembly preflight packet.
+"""Generate the E3.S2 current-main real-artifact assembly preflight packet.
 
 This generator is metadata-only. It instantiates the Agent A-owned
 ``build_real_artifact_assembly_preflight`` helper from committed metadata packet
