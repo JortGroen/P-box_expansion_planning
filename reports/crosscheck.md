@@ -49,6 +49,12 @@ The executable test compares the existing vertex p-box pathway against these clo
 
 The random variable is only `Z`. The executable scaffold uses deterministic normal quantiles indexed by canonical `sample_seed(root_seed, sample_index)` identities. The same sample identities are replayed for every alpha level and rho endpoint. The closed-form values remain the oracle.
 
+### Manifestable Analytic Certificate
+
+The executable scaffold now emits a JSON-stable synthetic certificate for this analytic toy. Each row records the alpha cut, rho endpoints, closed-form lower/upper oracle probabilities, estimated lower/upper p-box probabilities, and absolute errors against a predeclared tolerance. The manifest records the root seed, sample count, tolerance, pass/fail flag, and explicit non-claims: it is synthetic-only, reports alpha-indexed lower/upper probabilities only, makes no G3 paper-facing vertex claim, and contains no real `P(E)`, capacity-screen, or manuscript result.
+
+This certificate is a runner/report readiness surface rather than a scientific result. It is intended to fail closed if the analytic p-box path drifts outside tolerance or if the payload is relabeled as paper-facing.
+
 ## Cross-Check 2: Finite Hybrid P-Box Toy
 
 The qualitative Baudrit-style hybrid propagation check is executable as a finite hybrid toy, while remaining synthetic and not a published-example reproduction. A finite aleatory state list carries explicit probability masses, and epistemic uncertainty enters only through the fuzzy `rho` alpha-cuts.
@@ -90,6 +96,7 @@ The E5.S4 package lives in `src/pbox_crosscheck.py` with tests in `tests/test_pb
 
 - `GaussianToyParameters`, `gaussian_tail_probability`, and `gaussian_closed_form_bounds` provide the analytic oracle.
 - `estimate_gaussian_toy_pbox` routes the Gaussian toy through the existing p-box endpoint pathway using canonical RNG sample identities and `PRE_G3_SYNTHETIC` mode.
+- `build_gaussian_crosscheck_manifest` emits a JSON-stable analytic certificate with alpha-indexed oracle/estimate rows, absolute errors, a tolerance guard, and explicit synthetic-only non-claims.
 - `FiniteHybridState` and `finite_hybrid_bounds` provide a small qualitative hybrid/p-box fixture with exact hand-summed lower/upper event probabilities.
 - `OutputErrorToyTrajectory` and `output_error_alpha_crosscheck_records` provide a synthetic output-error ordering check with manifest-ready endpoint counts and alpha-level CRN identity.
 - `bootstrap_probability_interval` and `monotonicity_sweep_from_events` provide synthetic fixed-CRN rho-sweep diagnostics with deterministic rank-bootstrap intervals and explicit violation reporting.
@@ -101,6 +108,7 @@ This executable synthetic package does not use real net-load data, the project o
 | Check | Synthetic Fixture | Expected Outcome | Blocks Paper Results If Failing |
 |---|---|---|---|
 | Closed-form Gaussian endpoint values | `L(rho)=mu_0-beta*rho+sigma Z` and single-step `E_toy` | Endpoint p-box probabilities match closed form within 0.01 absolute error | yes |
+| Manifestable Gaussian certificate | Same Gaussian fixture serialized through `build_gaussian_crosscheck_manifest` | JSON-stable alpha rows record oracle/estimate errors, pass/fail tolerance, sample metadata, and synthetic-only non-claims | yes |
 | Monotone endpoint selection | Same Gaussian fixture with `beta > 0` | Lower endpoint uses `rho_up`; upper endpoint uses `rho_lo` | yes |
 | Nested alpha intervals | Trapezoidal fuzzy `rho` with multiple alpha levels | Probability intervals contract as alpha increases | yes |
 | CRN identity | Seeded executable Gaussian fixture | Same sample identities across alpha levels and endpoints | yes |
