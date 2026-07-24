@@ -1216,16 +1216,11 @@ to expose possible ASHP defrost or COP stress, winter/top-load overlap, and
 paired plots and tables linking temperature, HP load, COP, and PV irradiance.
 Including the near-freezing diagnostic prevents the source check from assuming
 that the coldest absolute temperature is always the hardest heat-pump operating
-condition. This paragraph and
-the design packet do not approve D-004, do not set numerical acceptance
+condition. The current HP-owned scaffold implements a fixture-scale fail-closed runner and PI-facing tolerance decision packet: `src.hp_model.evaluate_hp001_cold_spell_acceptance` first requires exact WEATHER-001 HP/PV identity equality, then requires a non-empty `cold_spell_tolerances` approval ID before producing pass/fail diagnostics. This paragraph, the decision packet, and the scaffold do not approve D-004, do not set numerical acceptance
 tolerances, do not run the check, and do not authorize net-load integration,
 event analysis, `P(E)`, capacity-screen evidence, manuscript claims, or any
 probability result. Final integrated D-003/D-004 acceptance remains pending
-until WEATHER-001 is implemented, real D-004 weather members and checksums
-exist, PI-signed tolerances and the exact near-freezing band are recorded before
-inspection, the predeclared acceptance report is generated from committed code
-and source metadata, and the PI explicitly accepts or escalates the resulting
-evidence.
+until real paired HP/PV WEATHER-001 identity evidence is generated over the accepted D-004 members, PI-signed tolerances and the exact near-freezing band are recorded before inspection, the predeclared acceptance report is generated from committed code and source metadata, and the PI explicitly accepts or escalates the resulting evidence.
 
 <!-- methods-id: E2-S3-HP-TECH-SCALING-DECISION-PACKET -->
 ### E2-S3-HP-TECH-SCALING-DECISION-PACKET - Heat-Pump Technology And Scaling Decision Packet

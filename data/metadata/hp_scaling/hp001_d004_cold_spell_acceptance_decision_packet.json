@@ -1,0 +1,101 @@
+{
+  "approved_foundation": {
+    "cold_spell_design": "E2-S3-COLD-SPELL-ACCEPTANCE-DESIGN approves the diagnostic families but leaves numerical tolerances unsigned.",
+    "d003_shape_cop_boundary": "HP-001 approves Dutch residential SFH/MFH space and DHW When2Heat shape/COP columns for internal source use.",
+    "d004_source_member_use": "D004-SOURCE-MEMBER-ACCEPTANCE approves D-004 source/member use for internal first-screen work only.",
+    "weather_contract": "WEATHER-001 requires HP and PV profiles to carry the same member_id, shared_weather_driver_id, source/provenance, content hash, and UTC/local calendar identity."
+  },
+  "created_utc": "2026-07-24T08:13:17Z",
+  "data_ids": [
+    "D-003",
+    "D-004"
+  ],
+  "decision_packet_id": "E2-S3-HP001-COLD-SPELL-ACCEPTANCE-READINESS",
+  "design_id": "E2-S3-COLD-SPELL-ACCEPTANCE-DESIGN",
+  "diagnostics_to_report_before_final_acceptance": {
+    "calendar_traceability": "report UTC/local first/last timestamp, timestep count, cadence, and WEATHER-001 identity records for HP and PV",
+    "coldest_windows": [
+      "coldest rolling 3-day mean temperature window with HP peak, max inside/outside load, mean/min COP",
+      "coldest rolling 7-day mean temperature window with HP peak, max inside/outside load, mean/min COP"
+    ],
+    "component_traceability": "report SFH/MFH and space/DHW source/COP columns separately before aggregation",
+    "near_freezing_defrost_risk": [
+      "number of 15-minute steps inside the signed near-freezing temperature band around 0 degrees C",
+      "mean/max HP load and mean/min COP inside that band",
+      "maximum adjacent-step HP load change touching that band, normalized by annual HP peak load"
+    ]
+  },
+  "fail_closed_runner": {
+    "fixture_scope": "unit tests use synthetic profiles and fixture approval IDs only; no real D-004 acceptance result is produced",
+    "identity_check": "src.weather_model.assert_same_weather_realization",
+    "mismatch_behavior": "raises before tolerance evaluation if HP and PV WEATHER-001 identity records differ",
+    "runner": "src.hp_model.evaluate_hp001_cold_spell_acceptance",
+    "tolerance_config": "src.hp_model.ColdSpellAcceptanceTolerances",
+    "unsigned_behavior": "raises before pass/fail diagnostics if cold_spell_tolerances approval_id is blank"
+  },
+  "gate_separation": [
+    {
+      "gate": "source/member identity",
+      "question": "Does the accepted D-004 member artifact preserve KNMI/PVGIS provenance and member checksums?",
+      "status": "approved for internal first-screen use only by D004-SOURCE-MEMBER-ACCEPTANCE"
+    },
+    {
+      "gate": "paired HP/PV weather equality",
+      "question": "Do HP and PV outputs report the exact same WEATHER-001 realization before diagnostics are inspected?",
+      "required_fields": [
+        "member_id",
+        "shared_weather_driver_id",
+        "source",
+        "first_timestamp_utc",
+        "last_timestamp_utc",
+        "n_timesteps",
+        "cadence_seconds",
+        "content_sha256"
+      ],
+      "status": "unsigned for final paired acceptance"
+    },
+    {
+      "gate": "cold-spell numerical tolerances",
+      "question": "Which explicit tolerances convert cold-window and near-freezing diagnostics into pass/fail evidence?",
+      "status": "unsigned; this packet asks for PI decision only"
+    }
+  ],
+  "non_claims": [
+    "No annual HP TWh values are executable.",
+    "No 2035 HP adoption/electrification value is signed.",
+    "No D-004 paired-weather or cold-spell acceptance is signed or run.",
+    "No net-load, event, P(E), threshold, capacity-screen, manuscript, or probability analysis is run."
+  ],
+  "pi_approval_options": [
+    {
+      "effect": "keeps code fail-closed and defers all numerical pass/fail tolerances; not enough for final D-004/HP acceptance",
+      "label": "approve fixture-runner structure only",
+      "option": "A"
+    },
+    {
+      "effect": "allows a later real paired D-004/When2Heat acceptance run after annual/profile prerequisites are also met",
+      "fields_to_sign": [
+        "cold_window_days, proposed diagnostic windows: [3, 7]",
+        "near_freezing_band_c around 0 degrees C, for example [-1, 1] or [-2, 2]",
+        "max_outside_to_inside_peak_ratio for coldest-window load concentration",
+        "max_near_freezing_step_change_fraction_of_peak for defrost-risk discontinuity screening",
+        "whether coldest-window mean COP must be no higher than near-freezing mean COP"
+      ],
+      "label": "sign explicit numerical tolerance set",
+      "option": "B"
+    },
+    {
+      "effect": "requires a new methods/register update before real acceptance can run",
+      "label": "amend or escalate tolerance design",
+      "option": "C"
+    }
+  ],
+  "remaining_blockers_before_integrated_hp_use": [
+    "signed annual HP value binding and 2035 adoption/electrification",
+    "A-016 scenario-source consistency approval for the integrated EV/HP/PV 2035 case",
+    "real paired HP/PV WEATHER-001 identity equality evidence over accepted D-004 members",
+    "PI-signed cold-spell numerical tolerances",
+    "real acceptance run and manifest after the above are signed"
+  ],
+  "status": "proposed tolerance decision packet; no real paired acceptance run"
+}

@@ -16,6 +16,8 @@ from typing import Any, Protocol
 import numpy as np
 import pandas as pd
 
+from src.weather_model import assert_same_weather_realization
+
 
 HOURLY_STEP_MINUTES = 60
 QUARTER_HOUR_STEP_MINUTES = 15
@@ -54,6 +56,7 @@ HP001_WEATHER_ACCEPTANCE_REQUIRED_APPROVAL_KEYS = (
     "d004_paired_weather_acceptance",
     "cold_spell_tolerances",
 )
+HP001_COLD_SPELL_ACCEPTANCE_DESIGN_ID = "E2-S3-COLD-SPELL-ACCEPTANCE-DESIGN"
 HP001_SCENARIO_CONSISTENCY_REQUIRED_APPROVAL_KEYS = (
     "scenario_source_consistency",
 )
@@ -515,6 +518,94 @@ class ColdWeekSanity:
     max_load_inside_cold_week_kw: float
     max_load_outside_cold_week_kw: float
     peak_inside_cold_week: bool
+
+
+@dataclass(frozen=True)
+class ColdSpellAcceptanceTolerances:
+    """Signed tolerance inputs required before HP cold-spell acceptance."""
+
+    tolerance_set_id: str
+    approval_id: str
+    cold_window_days: Sequence[int]
+    near_freezing_band_c: tuple[float, float]
+    max_outside_to_inside_peak_ratio: float
+    max_near_freezing_step_change_fraction_of_peak: float
+    require_cold_cop_not_above_near_freezing_mean: bool = True
+    provenance: Mapping[str, Any] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        tolerance_set_id = str(self.tolerance_set_id).strip()
+        approval_id = str(self.approval_id).strip()
+        if not tolerance_set_id:
+            raise ValueError("tolerance_set_id must be non-empty")
+        windows = tuple(int(value) for value in self.cold_window_days)
+        if not windows or any(value <= 0 for value in windows):
+            raise ValueError("cold_window_days must contain positive day counts")
+        band = tuple(float(value) for value in self.near_freezing_band_c)
+        if len(band) != 2 or not np.isfinite(band).all() or band[0] > band[1]:
+            raise ValueError("near_freezing_band_c must be an ordered finite two-value band")
+        if self.max_outside_to_inside_peak_ratio <= 0:
+            raise ValueError("max_outside_to_inside_peak_ratio must be positive")
+        if self.max_near_freezing_step_change_fraction_of_peak < 0:
+            raise ValueError("max_near_freezing_step_change_fraction_of_peak must be non-negative")
+        object.__setattr__(self, "tolerance_set_id", tolerance_set_id)
+        object.__setattr__(self, "approval_id", approval_id)
+        object.__setattr__(self, "cold_window_days", windows)
+        object.__setattr__(self, "near_freezing_band_c", band)
+        object.__setattr__(self, "provenance", _as_provenance_mapping(self.provenance, "tolerance provenance"))
+
+    def missing_approval_keys(self) -> tuple[str, ...]:
+        """Return unsigned tolerance approvals blocking final acceptance."""
+        if self.approval_id:
+            return ()
+        return ("cold_spell_tolerances",)
+
+    def as_record(self) -> dict[str, object]:
+        """Return JSON-serializable tolerance metadata."""
+        return {
+            "tolerance_set_id": self.tolerance_set_id,
+            "approval_id": self.approval_id,
+            "missing_approval_keys": self.missing_approval_keys(),
+            "cold_window_days": self.cold_window_days,
+            "near_freezing_band_c": self.near_freezing_band_c,
+            "max_outside_to_inside_peak_ratio": self.max_outside_to_inside_peak_ratio,
+            "max_near_freezing_step_change_fraction_of_peak": self.max_near_freezing_step_change_fraction_of_peak,
+            "require_cold_cop_not_above_near_freezing_mean": self.require_cold_cop_not_above_near_freezing_mean,
+            "provenance": dict(self.provenance),
+        }
+
+
+@dataclass(frozen=True)
+class ColdSpellAcceptanceResult:
+    """Fixture-scale HP cold-spell/paired-weather acceptance diagnostics."""
+
+    status: str
+    accepted: bool
+    weather_identity_checked: bool
+    tolerance_set_id: str
+    tolerance_approval_id: str
+    profile_weather_identity: Mapping[str, object]
+    pv_weather_identity: Mapping[str, object]
+    cold_window_diagnostics: tuple[dict[str, object], ...]
+    near_freezing_diagnostics: Mapping[str, object]
+    checks: Mapping[str, bool]
+    non_claims: tuple[str, ...]
+
+    def as_record(self) -> dict[str, object]:
+        """Return JSON-serializable acceptance diagnostics."""
+        return {
+            "status": self.status,
+            "accepted": self.accepted,
+            "weather_identity_checked": self.weather_identity_checked,
+            "tolerance_set_id": self.tolerance_set_id,
+            "tolerance_approval_id": self.tolerance_approval_id,
+            "profile_weather_identity": dict(self.profile_weather_identity),
+            "pv_weather_identity": dict(self.pv_weather_identity),
+            "cold_window_diagnostics": self.cold_window_diagnostics,
+            "near_freezing_diagnostics": dict(self.near_freezing_diagnostics),
+            "checks": dict(self.checks),
+            "non_claims": self.non_claims,
+        }
 
 
 def default_when2heat_components(
@@ -1050,6 +1141,145 @@ def cold_week_sanity_check(profile: HeatPumpProfile, *, window_days: int = 7) ->
         peak_inside_cold_week=bool(inside_peak_indices),
     )
 
+
+def require_signed_cold_spell_tolerances(tolerances: ColdSpellAcceptanceTolerances) -> None:
+    """Raise until the PI signs numerical HP cold-spell tolerances."""
+    missing = tolerances.missing_approval_keys()
+    if missing:
+        raise ValueError(
+            "HP cold-spell acceptance requires signed numerical tolerances; "
+            f"missing={missing}"
+        )
+
+
+def evaluate_hp001_cold_spell_acceptance(
+    profile: HeatPumpProfile,
+    *,
+    pv_weather_identity_record: Mapping[str, object],
+    tolerances: ColdSpellAcceptanceTolerances,
+) -> ColdSpellAcceptanceResult:
+    """Evaluate fixture-scale HP cold-spell diagnostics after gate checks.
+
+    This runner is intentionally fail-closed: paired-weather identity and PI-
+    signed tolerance metadata are prerequisites before any pass/fail judgement
+    can be produced. Real D-004 use remains blocked until the signed approvals
+    are recorded by the PI.
+    """
+    hp_identity = profile.weather_identity_record()
+    assert_same_weather_realization(hp_identity, pv_weather_identity_record)
+    require_signed_cold_spell_tolerances(tolerances)
+
+    cold_windows = tuple(_cold_window_diagnostic(profile, days=days) for days in tolerances.cold_window_days)
+    near_freezing = _near_freezing_diagnostic(profile, band_c=tolerances.near_freezing_band_c)
+    cold_window_peak_ok = all(
+        float(item["outside_to_inside_peak_ratio"]) <= tolerances.max_outside_to_inside_peak_ratio
+        for item in cold_windows
+    )
+    step_ok = bool(
+        float(near_freezing["max_step_change_fraction_of_peak_load"])
+        <= tolerances.max_near_freezing_step_change_fraction_of_peak
+    )
+    coldest_window = min(cold_windows, key=lambda item: float(item["mean_temperature_c"]))
+    near_mean_cop = near_freezing.get("mean_cop")
+    if tolerances.require_cold_cop_not_above_near_freezing_mean and near_mean_cop is not None:
+        cop_order_ok = float(coldest_window["mean_cop"]) <= float(near_mean_cop)
+    else:
+        cop_order_ok = True
+    checks = {
+        "paired_weather_identity_equal": True,
+        "signed_cold_spell_tolerances_present": True,
+        "cold_window_peak_ratio_within_tolerance": bool(cold_window_peak_ok),
+        "near_freezing_step_change_within_tolerance": bool(step_ok),
+        "cold_window_cop_not_above_near_freezing_mean": bool(cop_order_ok),
+    }
+    return ColdSpellAcceptanceResult(
+        status="fixture_or_signed_tolerance_acceptance_result",
+        accepted=all(checks.values()),
+        weather_identity_checked=True,
+        tolerance_set_id=tolerances.tolerance_set_id,
+        tolerance_approval_id=tolerances.approval_id,
+        profile_weather_identity=hp_identity,
+        pv_weather_identity=pv_weather_identity_record,
+        cold_window_diagnostics=cold_windows,
+        near_freezing_diagnostics=near_freezing,
+        checks=checks,
+        non_claims=(
+            "This runner does not by itself sign D-004 paired-weather acceptance.",
+            "This runner does not approve annual HP TWh values or 2035 adoption/electrification.",
+            "This runner does not run net-load, event, P(E), capacity-screen, threshold, or manuscript-result analysis.",
+        ),
+    )
+
+
+def _cold_window_diagnostic(profile: HeatPumpProfile, *, days: int) -> dict[str, object]:
+    if days <= 0:
+        raise ValueError("cold-window days must be positive")
+    steps_per_day = _steps_per_day(profile.timestamps_utc)
+    window_steps = steps_per_day * days
+    if len(profile.timestamps_utc) < window_steps:
+        raise ValueError("profile is shorter than the requested cold window")
+    rolling = np.convolve(
+        profile.temperature_c,
+        np.ones(window_steps, dtype=np.float64) / window_steps,
+        mode="valid",
+    )
+    start = int(np.argmin(rolling))
+    stop = start + window_steps
+    inside_peak = float(np.max(profile.electric_kw[start:stop]))
+    outside_mask = np.ones_like(profile.electric_kw, dtype=bool)
+    outside_mask[start:stop] = False
+    outside_peak = float(np.max(profile.electric_kw[outside_mask])) if outside_mask.any() else 0.0
+    ratio = outside_peak / inside_peak if inside_peak > 0 else float("inf")
+    return {
+        "window_days": int(days),
+        "start_utc": profile.timestamps_utc[start].isoformat(),
+        "end_utc": (profile.timestamps_utc[stop - 1] + timedelta(minutes=QUARTER_HOUR_STEP_MINUTES)).isoformat(),
+        "mean_temperature_c": float(rolling[start]),
+        "min_temperature_c": float(np.min(profile.temperature_c[start:stop])),
+        "max_load_inside_kw": inside_peak,
+        "max_load_outside_kw": outside_peak,
+        "outside_to_inside_peak_ratio": float(ratio),
+        "mean_cop": float(np.mean(profile.cop[start:stop])),
+        "min_cop": float(np.min(profile.cop[start:stop])),
+    }
+
+
+def _near_freezing_diagnostic(profile: HeatPumpProfile, *, band_c: tuple[float, float]) -> dict[str, object]:
+    lower, upper = band_c
+    mask = (profile.temperature_c >= lower) & (profile.temperature_c <= upper)
+    peak_load = float(np.max(profile.electric_kw))
+    if not mask.any():
+        return {
+            "band_c": band_c,
+            "n_timesteps": 0,
+            "mean_load_kw": None,
+            "max_load_kw": None,
+            "mean_cop": None,
+            "min_cop": None,
+            "max_step_change_kw": 0.0,
+            "max_step_change_fraction_of_peak_load": 0.0,
+        }
+    indices = np.flatnonzero(mask)
+    step_changes = np.abs(np.diff(profile.electric_kw))
+    boundary_changes: list[float] = []
+    for index in indices:
+        if index > 0:
+            boundary_changes.append(float(step_changes[index - 1]))
+        if index < len(step_changes):
+            boundary_changes.append(float(step_changes[index]))
+    max_change = max(boundary_changes) if boundary_changes else 0.0
+    return {
+        "band_c": band_c,
+        "n_timesteps": int(mask.sum()),
+        "first_timestamp_utc": profile.timestamps_utc[int(indices[0])].isoformat(),
+        "last_timestamp_utc": profile.timestamps_utc[int(indices[-1])].isoformat(),
+        "mean_load_kw": float(np.mean(profile.electric_kw[mask])),
+        "max_load_kw": float(np.max(profile.electric_kw[mask])),
+        "mean_cop": float(np.mean(profile.cop[mask])),
+        "min_cop": float(np.min(profile.cop[mask])),
+        "max_step_change_kw": float(max_change),
+        "max_step_change_fraction_of_peak_load": float(max_change / peak_load) if peak_load > 0 else 0.0,
+    }
 
 def _downscale_component_series(component: HeatPumpComponentSeries) -> HeatPumpComponentSeries:
     return HeatPumpComponentSeries(
