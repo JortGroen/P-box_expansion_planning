@@ -574,6 +574,139 @@ def _coerce_event_tuple(events: Sequence[bool]) -> tuple[bool, ...]:
     return event_tuple
 
 
+HYBRID_REPRODUCTION_READINESS_PROTOCOL = "e5s4-hybrid-reproduction-readiness-v1"
+
+
+@dataclass(frozen=True)
+class HybridReproductionReadiness:
+    """Fail-closed readiness packet for the published hybrid cross-check."""
+
+    source_id: str
+    source_status: str
+    published_example_id: str
+    example_reproduced: bool
+    qualitative_behavior_checked: bool
+    blockers: tuple[str, ...]
+    use_status: str = "source-readiness-only"
+    protocol: str = HYBRID_REPRODUCTION_READINESS_PROTOCOL
+
+    def __post_init__(self) -> None:
+        if self.protocol != HYBRID_REPRODUCTION_READINESS_PROTOCOL:
+            raise ValueError(
+                f"protocol must be {HYBRID_REPRODUCTION_READINESS_PROTOCOL!r}"
+            )
+        if self.use_status != "source-readiness-only":
+            raise ValueError("hybrid reproduction readiness is source-readiness only")
+        if self.source_status not in {"pending-source", "verified-approved"}:
+            raise ValueError("source_status must be pending-source or verified-approved")
+        for name, value in (
+            ("source_id", self.source_id),
+            ("published_example_id", self.published_example_id),
+        ):
+            if not isinstance(value, str) or not value.strip():
+                raise ValueError(f"{name} must be a nonempty string")
+        if not isinstance(self.example_reproduced, bool):
+            raise TypeError("example_reproduced must be boolean")
+        if not isinstance(self.qualitative_behavior_checked, bool):
+            raise TypeError("qualitative_behavior_checked must be boolean")
+        if any(not isinstance(blocker, str) or not blocker.strip() for blocker in self.blockers):
+            raise ValueError("blockers must contain only nonempty strings")
+        if self.ready and self.blockers:
+            raise ValueError("ready hybrid reproduction must not carry blockers")
+        if not self.ready and not self.blockers:
+            raise ValueError("blocked hybrid reproduction must name at least one blocker")
+
+    @property
+    def ready(self) -> bool:
+        return (
+            self.source_status == "verified-approved"
+            and self.example_reproduced
+            and self.qualitative_behavior_checked
+            and not self.blockers
+        )
+
+    def to_mapping(self) -> dict[str, object]:
+        return {
+            "blockers": list(self.blockers),
+            "example_reproduced": self.example_reproduced,
+            "published_example_id": self.published_example_id,
+            "qualitative_behavior_checked": self.qualitative_behavior_checked,
+            "ready": self.ready,
+            "source_id": self.source_id,
+            "source_status": self.source_status,
+            "synthetic_non_claims": [
+                "no published reproduction unless ready is true",
+                "no real trajectories",
+                "no real P(E)",
+                "no manuscript number",
+            ],
+            "protocol": self.protocol,
+            "use_status": self.use_status,
+        }
+
+
+def assert_hybrid_reproduction_ready_payload(payload: Mapping[str, object]) -> None:
+    """Reject a serialized hybrid-reproduction packet until provenance is complete."""
+
+    readiness = _coerce_hybrid_reproduction_readiness(payload)
+    if "defuzzified_probability" in payload:
+        raise ValueError("hybrid reproduction readiness must not be defuzzified")
+    if not readiness.ready:
+        blockers = "; ".join(readiness.blockers)
+        raise RuntimeError(f"hybrid reproduction is not ready: {blockers}")
+
+
+def _coerce_hybrid_reproduction_readiness(
+    payload: Mapping[str, object],
+) -> HybridReproductionReadiness:
+    required = {
+        "blockers",
+        "example_reproduced",
+        "published_example_id",
+        "qualitative_behavior_checked",
+        "protocol",
+        "source_id",
+        "source_status",
+        "use_status",
+    }
+    missing = sorted(required.difference(payload))
+    if missing:
+        raise ValueError(f"hybrid reproduction readiness missing fields: {missing}")
+    blockers_obj = payload["blockers"]
+    if not isinstance(blockers_obj, Sequence) or isinstance(blockers_obj, (str, bytes)):
+        raise TypeError("blockers must be a sequence of strings")
+    return HybridReproductionReadiness(
+        source_id=_expect_string(payload["source_id"], name="source_id"),
+        source_status=_expect_string(payload["source_status"], name="source_status"),
+        published_example_id=_expect_string(
+            payload["published_example_id"], name="published_example_id"
+        ),
+        example_reproduced=_expect_bool(
+            payload["example_reproduced"], name="example_reproduced"
+        ),
+        qualitative_behavior_checked=_expect_bool(
+            payload["qualitative_behavior_checked"],
+            name="qualitative_behavior_checked",
+        ),
+        blockers=tuple(
+            _expect_string(blocker, name="blocker") for blocker in blockers_obj
+        ),
+        use_status=_expect_string(payload["use_status"], name="use_status"),
+        protocol=_expect_string(payload["protocol"], name="protocol"),
+    )
+
+
+def _expect_string(value: object, *, name: str) -> str:
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError(f"{name} must be a nonempty string")
+    return value
+
+
+def _expect_bool(value: object, *, name: str) -> bool:
+    if not isinstance(value, bool):
+        raise TypeError(f"{name} must be boolean")
+    return value
+
 @dataclass(frozen=True)
 class FiniteHybridState:
     """One aleatory state in a finite synthetic hybrid propagation fixture."""

@@ -18,6 +18,7 @@ from src.pv_model import (
     PVCapacitySourcePacket,
     PVCapacityValueChoicePacket,
     PVCBSAnchorEvidencePacket,
+    PVExecutableReadinessBlockersPacket,
     PVGISReference,
     PVII3050GrowthEvidencePacket,
     PVOrientationTiltSourceChoicePacket,
@@ -40,6 +41,7 @@ from src.pv_model import (
     load_pv_capacity_source_packet,
     load_pv_capacity_value_choice_packet,
     load_pv_cbs_anchor_evidence_packet,
+    load_pv_executable_readiness_blockers_packet,
     load_pv_ii3050_growth_evidence_packet,
     load_pv_orientation_tilt_source_choice_packet,
     load_pv_orientation_tilt_value_choice_packet,
@@ -1989,5 +1991,45 @@ def test_capacity_approval_template_rejects_silent_executable_use() -> None:
             required_signed_artifact_fields=payload["required_signed_artifact_fields"],
             executable_gate=payload["executable_gate"],
             recommended_pi_path=payload["recommended_pi_path"],
+            non_claims=payload["non_claims"],
+        )
+
+
+def test_committed_d014_pv_executable_readiness_blockers_are_fail_closed() -> None:
+    packet = load_pv_executable_readiness_blockers_packet(
+        "data/metadata/weather_pv/d014_pv_executable_readiness_blockers.json"
+    )
+    record = packet.identity_record()
+
+    assert packet.packet_id == "D014-PV-EXECUTABLE-READINESS-BLOCKERS"
+    assert record["component_source_member_artifact_available"] is True
+    assert record["executable_pv_generation_authorized"] is False
+    assert record["input_packet_ids"]["capacity_approval_template"] == "D014-PV-CAPACITY-APPROVAL-TEMPLATE"
+    assert "D014-PV-CAPACITY-APPROVAL-TEMPLATE" in packet.blocking_register_ids
+    assert "A-016" in packet.blocking_register_ids
+    assert "PV-ORIENT-001" in packet.blocking_register_ids
+    assert "PV-PARAM-001" in packet.blocking_register_ids
+    with pytest.raises(ValueError, match="remain unresolved"):
+        packet.require_executable_pv_generation_authorization()
+
+
+def test_pv_executable_readiness_blockers_reject_silent_authorization() -> None:
+    payload = json.loads(
+        Path("data/metadata/weather_pv/d014_pv_executable_readiness_blockers.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    payload["executable_gate"]["executable_pv_generation_authorized"] = True
+
+    with pytest.raises(ValueError, match="must not authorize"):
+        PVExecutableReadinessBlockersPacket(
+            packet_id=payload["packet_id"],
+            data_id=payload["data_id"],
+            status=payload["status"],
+            download_performed=payload["download_performed"],
+            raw_data_committed=payload["raw_data_committed"],
+            input_metadata=payload["input_metadata"],
+            readiness_layers=payload["readiness_layers"],
+            executable_gate=payload["executable_gate"],
             non_claims=payload["non_claims"],
         )
