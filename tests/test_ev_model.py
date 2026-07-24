@@ -886,6 +886,7 @@ def _synthetic_selection_manifest_set(processed_path: str, sha256: str) -> dict[
 def _synthetic_component_output_inputs(tmp_path: Path) -> tuple[dict[str, object], dict[str, object], dict[str, object], np.ndarray]:
     batch = parse_elaad_profile_response(_payload(n_profiles=2), batch_seed=140001, expected_n_profiles=2)
     processed_path = tmp_path / "data" / "processed" / "elaad_profiles" / "synthetic_candidate.npz"
+    processed_path.parent.mkdir(parents=True, exist_ok=True)
     save_processed_batch_npz(batch, processed_path)
     digest = ev_model._sha256_file(processed_path)
     rel_path = processed_path.relative_to(tmp_path).as_posix()
