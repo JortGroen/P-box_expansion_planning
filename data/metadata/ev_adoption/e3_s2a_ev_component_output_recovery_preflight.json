@@ -1,0 +1,381 @@
+{
+  "already_present_candidate_processed_profile_count": 0,
+  "already_present_candidate_processed_profiles": [],
+  "artifact_id": "e3_s2a_ev_component_output_recovery_preflight",
+  "artifact_type": "ev_component_output_recovery_preflight",
+  "candidate_source_root": {
+    "absolute_path_committed": false,
+    "argument_supplied": true,
+    "description": "User-supplied local ignored artifact root; verify hashes before copying."
+  },
+  "checkpoint": {
+    "complete": true,
+    "resume_command": ".\\.venv\\Scripts\\python.exe data\\get_ev_component_outputs.py rebuild --candidate-source-root <verified-local-artifact-root> --checkpoint-path data\\metadata\\ev_adoption\\e3_s2a_ev_component_output_recovery_preflight.json",
+    "safe_resume_behavior": "Existing target candidate NPZs are rehashed and skipped only when their SHA-256 matches the committed checksum preflight; mismatched targets fail closed."
+  },
+  "expected_component_outputs": [
+    {
+      "array_shape": [
+        115,
+        35040
+      ],
+      "byte_size": 10421479,
+      "path": "data/processed/elaad_profiles/component_outputs/ev_ic1_candidate_component_output_high.npz",
+      "scenario": "high",
+      "sha256": "dd95f30d74da00b6fb87c2ced8f402b4d612c59a28e7d1d33e9e82fcd7a805d5"
+    },
+    {
+      "array_shape": [
+        115,
+        35040
+      ],
+      "byte_size": 9198011,
+      "path": "data/processed/elaad_profiles/component_outputs/ev_ic1_candidate_component_output_low.npz",
+      "scenario": "low",
+      "sha256": "a896794ddd9f004fe945c62a5b84b2b1b6e9381cbecd80b17ca7c749de68ce65"
+    },
+    {
+      "array_shape": [
+        115,
+        35040
+      ],
+      "byte_size": 9885919,
+      "path": "data/processed/elaad_profiles/component_outputs/ev_ic1_candidate_component_output_middle.npz",
+      "scenario": "middle",
+      "sha256": "38081c7f849bb679a19560d1a7f7fd6d8428e35ef6cad2087e4d82a46c1e568d"
+    }
+  ],
+  "missing_candidate_processed_profiles": [],
+  "mode": "restore_candidate_processed_profiles",
+  "policy": {
+    "candidate_only": true,
+    "elaad_api_calls": false,
+    "held_out_access": false,
+    "integrated_analysis_performed": false,
+    "m_sufficiency_claim": false,
+    "profile_arrays_loaded_during_candidate_restore": false,
+    "quarantined_access": false
+  },
+  "rebuilt_component_outputs": [
+    {
+      "byte_size": 10421479,
+      "path": "data/processed/elaad_profiles/component_outputs/ev_ic1_candidate_component_output_high.npz",
+      "scenario": "high",
+      "sha256": "dd95f30d74da00b6fb87c2ced8f402b4d612c59a28e7d1d33e9e82fcd7a805d5"
+    },
+    {
+      "byte_size": 9198011,
+      "path": "data/processed/elaad_profiles/component_outputs/ev_ic1_candidate_component_output_low.npz",
+      "scenario": "low",
+      "sha256": "a896794ddd9f004fe945c62a5b84b2b1b6e9381cbecd80b17ca7c749de68ce65"
+    },
+    {
+      "byte_size": 9885919,
+      "path": "data/processed/elaad_profiles/component_outputs/ev_ic1_candidate_component_output_middle.npz",
+      "scenario": "middle",
+      "sha256": "38081c7f849bb679a19560d1a7f7fd6d8428e35ef6cad2087e4d82a46c1e568d"
+    }
+  ],
+  "required_candidate_processed_profile_count": 22,
+  "restored_candidate_processed_profile_count": 22,
+  "restored_candidate_processed_profiles": [
+    {
+      "byte_size": 394116,
+      "capacity_class": null,
+      "component_id": "ev_home",
+      "cp_capacity_kw": null,
+      "expected_sha256": "e550931ead774e7a9c42a4ff06f221eb1d2c3337bc4f43e57e0ff00bd63a0f2c",
+      "library_id": "A_home_vancar_cp_y2030",
+      "n_profiles": 100,
+      "n_timesteps": 35040,
+      "observed_sha256": "e550931ead774e7a9c42a4ff06f221eb1d2c3337bc4f43e57e0ff00bd63a0f2c",
+      "processed_path": "data/processed/elaad_profiles/A_home_vancar_cp_y2030_batchseed140001_n100.npz",
+      "seed": 140001
+    },
+    {
+      "byte_size": 394021,
+      "capacity_class": null,
+      "component_id": "ev_home",
+      "cp_capacity_kw": null,
+      "expected_sha256": "59efcf0fb3823874f513e05268f504261ab6a835568a973f37d43acea7bb4f38",
+      "library_id": "A_home_vancar_cp_y2030",
+      "n_profiles": 100,
+      "n_timesteps": 35040,
+      "observed_sha256": "59efcf0fb3823874f513e05268f504261ab6a835568a973f37d43acea7bb4f38",
+      "processed_path": "data/processed/elaad_profiles/A_home_vancar_cp_y2030_batchseed140101_n100.npz",
+      "seed": 140101
+    },
+    {
+      "byte_size": 394077,
+      "capacity_class": null,
+      "component_id": "ev_home",
+      "cp_capacity_kw": null,
+      "expected_sha256": "9d0e1282810fd9c233d95cbe6e7c93db6f2a8c55d8524b2ed95d7b7e500dd8c3",
+      "library_id": "A_home_vancar_cp_y2030",
+      "n_profiles": 100,
+      "n_timesteps": 35040,
+      "observed_sha256": "9d0e1282810fd9c233d95cbe6e7c93db6f2a8c55d8524b2ed95d7b7e500dd8c3",
+      "processed_path": "data/processed/elaad_profiles/A_home_vancar_cp_y2030_batchseed140201_n100.npz",
+      "seed": 140201
+    },
+    {
+      "byte_size": 393494,
+      "capacity_class": null,
+      "component_id": "ev_home",
+      "cp_capacity_kw": null,
+      "expected_sha256": "709e28efffabc10b5514d39cbcfc577576ee3f4b9bb288324b097ea3dbaddda5",
+      "library_id": "A_home_vancar_cp_y2030",
+      "n_profiles": 100,
+      "n_timesteps": 35040,
+      "observed_sha256": "709e28efffabc10b5514d39cbcfc577576ee3f4b9bb288324b097ea3dbaddda5",
+      "processed_path": "data/processed/elaad_profiles/A_home_vancar_cp_y2030_batchseed140301_n100.npz",
+      "seed": 140301
+    },
+    {
+      "byte_size": 393615,
+      "capacity_class": null,
+      "component_id": "ev_home",
+      "cp_capacity_kw": null,
+      "expected_sha256": "ec00d29fdbcec28a78620d688bfb583ec73265f23a29272883ae7036957645a1",
+      "library_id": "A_home_vancar_cp_y2030",
+      "n_profiles": 100,
+      "n_timesteps": 35040,
+      "observed_sha256": "ec00d29fdbcec28a78620d688bfb583ec73265f23a29272883ae7036957645a1",
+      "processed_path": "data/processed/elaad_profiles/A_home_vancar_cp_y2030_batchseed140401_n100.npz",
+      "seed": 140401
+    },
+    {
+      "byte_size": 393573,
+      "capacity_class": null,
+      "component_id": "ev_home",
+      "cp_capacity_kw": null,
+      "expected_sha256": "41594ea943a7a3596d538e357715962f21b19300f5c22afdab684a8f527e606d",
+      "library_id": "A_home_vancar_cp_y2030",
+      "n_profiles": 100,
+      "n_timesteps": 35040,
+      "observed_sha256": "41594ea943a7a3596d538e357715962f21b19300f5c22afdab684a8f527e606d",
+      "processed_path": "data/processed/elaad_profiles/A_home_vancar_cp_y2030_batchseed140501_n100.npz",
+      "seed": 140501
+    },
+    {
+      "byte_size": 394746,
+      "capacity_class": null,
+      "component_id": "ev_home",
+      "cp_capacity_kw": null,
+      "expected_sha256": "4259c8fd913da7ced072b564c357c4b1d18d6e1849791e63e5f5e6b1c55d5230",
+      "library_id": "A_home_vancar_cp_y2030",
+      "n_profiles": 100,
+      "n_timesteps": 35040,
+      "observed_sha256": "4259c8fd913da7ced072b564c357c4b1d18d6e1849791e63e5f5e6b1c55d5230",
+      "processed_path": "data/processed/elaad_profiles/A_home_vancar_cp_y2030_batchseed140601_n100.npz",
+      "seed": 140601
+    },
+    {
+      "byte_size": 393364,
+      "capacity_class": null,
+      "component_id": "ev_home",
+      "cp_capacity_kw": null,
+      "expected_sha256": "245a578e4365d4f92c34dd8f42fe174ca348759fae7754d2b175ca8a0081cf46",
+      "library_id": "A_home_vancar_cp_y2030",
+      "n_profiles": 100,
+      "n_timesteps": 35040,
+      "observed_sha256": "245a578e4365d4f92c34dd8f42fe174ca348759fae7754d2b175ca8a0081cf46",
+      "processed_path": "data/processed/elaad_profiles/A_home_vancar_cp_y2030_batchseed140701_n100.npz",
+      "seed": 140701
+    },
+    {
+      "byte_size": 393870,
+      "capacity_class": null,
+      "component_id": "ev_home",
+      "cp_capacity_kw": null,
+      "expected_sha256": "0afcaae4bae6084b2e1d18dd684741c5e7e368d12f52c99b613e064add191ac4",
+      "library_id": "A_home_vancar_cp_y2030",
+      "n_profiles": 100,
+      "n_timesteps": 35040,
+      "observed_sha256": "0afcaae4bae6084b2e1d18dd684741c5e7e368d12f52c99b613e064add191ac4",
+      "processed_path": "data/processed/elaad_profiles/A_home_vancar_cp_y2030_batchseed140801_n100.npz",
+      "seed": 140801
+    },
+    {
+      "byte_size": 394145,
+      "capacity_class": null,
+      "component_id": "ev_home",
+      "cp_capacity_kw": null,
+      "expected_sha256": "f355f90d31628af38850069ffec4413513f949d0b30c363e3204e14a7d99a231",
+      "library_id": "A_home_vancar_cp_y2030",
+      "n_profiles": 100,
+      "n_timesteps": 35040,
+      "observed_sha256": "f355f90d31628af38850069ffec4413513f949d0b30c363e3204e14a7d99a231",
+      "processed_path": "data/processed/elaad_profiles/A_home_vancar_cp_y2030_batchseed140901_n100.npz",
+      "seed": 140901
+    },
+    {
+      "byte_size": 587871,
+      "capacity_class": "public_11kw",
+      "component_id": "ev_public",
+      "cp_capacity_kw": 11,
+      "expected_sha256": "3e6a59a852ca720afd7501c5e24d1d10c961effba4595c47686fdba7c9d4b70b",
+      "library_id": "B_public_vancar_cp_y2030_equal_mix",
+      "n_profiles": 100,
+      "n_timesteps": 35040,
+      "observed_sha256": "3e6a59a852ca720afd7501c5e24d1d10c961effba4595c47686fdba7c9d4b70b",
+      "processed_path": "data/processed/elaad_profiles/B_public_11kw_vancar_cp_y2030_batchseed152001_n100.npz",
+      "seed": 152001
+    },
+    {
+      "byte_size": 588561,
+      "capacity_class": "public_11kw",
+      "component_id": "ev_public",
+      "cp_capacity_kw": 11,
+      "expected_sha256": "355dc279aaaae3951ca6f1b12998e271fd0af00cda4bbaaf73f5899492715273",
+      "library_id": "B_public_vancar_cp_y2030_equal_mix",
+      "n_profiles": 100,
+      "n_timesteps": 35040,
+      "observed_sha256": "355dc279aaaae3951ca6f1b12998e271fd0af00cda4bbaaf73f5899492715273",
+      "processed_path": "data/processed/elaad_profiles/B_public_11kw_vancar_cp_y2030_batchseed152101_n100.npz",
+      "seed": 152101
+    },
+    {
+      "byte_size": 590418,
+      "capacity_class": "public_11kw",
+      "component_id": "ev_public",
+      "cp_capacity_kw": 11,
+      "expected_sha256": "d6af85428f4e34b8a7b1a87a5f661317e3ee61d370a57e91450a28fdfd48ea22",
+      "library_id": "B_public_vancar_cp_y2030_equal_mix",
+      "n_profiles": 100,
+      "n_timesteps": 35040,
+      "observed_sha256": "d6af85428f4e34b8a7b1a87a5f661317e3ee61d370a57e91450a28fdfd48ea22",
+      "processed_path": "data/processed/elaad_profiles/B_public_11kw_vancar_cp_y2030_batchseed152201_n100.npz",
+      "seed": 152201
+    },
+    {
+      "byte_size": 950749,
+      "capacity_class": "public_13kw",
+      "component_id": "ev_public",
+      "cp_capacity_kw": 13,
+      "expected_sha256": "5d69d13adda8b1ffa7019a756d63cb68a38019fb60c92b32da2cf64d209565f9",
+      "library_id": "B_public_vancar_cp_y2030_equal_mix",
+      "n_profiles": 100,
+      "n_timesteps": 35040,
+      "observed_sha256": "5d69d13adda8b1ffa7019a756d63cb68a38019fb60c92b32da2cf64d209565f9",
+      "processed_path": "data/processed/elaad_profiles/B_public_13kw_vancar_cp_y2030_batchseed152301_n100.npz",
+      "seed": 152301
+    },
+    {
+      "byte_size": 949461,
+      "capacity_class": "public_13kw",
+      "component_id": "ev_public",
+      "cp_capacity_kw": 13,
+      "expected_sha256": "3c3b4c60fde7c3fc22c03aa88c025f8bdb4c63cd55ace3af92cd7f39c2f4221f",
+      "library_id": "B_public_vancar_cp_y2030_equal_mix",
+      "n_profiles": 100,
+      "n_timesteps": 35040,
+      "observed_sha256": "3c3b4c60fde7c3fc22c03aa88c025f8bdb4c63cd55ace3af92cd7f39c2f4221f",
+      "processed_path": "data/processed/elaad_profiles/B_public_13kw_vancar_cp_y2030_batchseed152401_n100.npz",
+      "seed": 152401
+    },
+    {
+      "byte_size": 950446,
+      "capacity_class": "public_13kw",
+      "component_id": "ev_public",
+      "cp_capacity_kw": 13,
+      "expected_sha256": "fc3ab1ef7eefd60bc8b65c0176d8123ec5467379203621841bddaac2b370c1df",
+      "library_id": "B_public_vancar_cp_y2030_equal_mix",
+      "n_profiles": 100,
+      "n_timesteps": 35040,
+      "observed_sha256": "fc3ab1ef7eefd60bc8b65c0176d8123ec5467379203621841bddaac2b370c1df",
+      "processed_path": "data/processed/elaad_profiles/B_public_13kw_vancar_cp_y2030_batchseed152501_n100.npz",
+      "seed": 152501
+    },
+    {
+      "byte_size": 905910,
+      "capacity_class": "public_15kw",
+      "component_id": "ev_public",
+      "cp_capacity_kw": 15,
+      "expected_sha256": "5dd5651cded0974e23b6d0934c7ba467b42d74b62b643ee8ed83b80aed108f9c",
+      "library_id": "B_public_vancar_cp_y2030_equal_mix",
+      "n_profiles": 100,
+      "n_timesteps": 35040,
+      "observed_sha256": "5dd5651cded0974e23b6d0934c7ba467b42d74b62b643ee8ed83b80aed108f9c",
+      "processed_path": "data/processed/elaad_profiles/B_public_15kw_vancar_cp_y2030_batchseed152601_n100.npz",
+      "seed": 152601
+    },
+    {
+      "byte_size": 904798,
+      "capacity_class": "public_15kw",
+      "component_id": "ev_public",
+      "cp_capacity_kw": 15,
+      "expected_sha256": "00035179b1012e9f0ce32ba98aedcffe6e050214838d70eab581fd811b94050f",
+      "library_id": "B_public_vancar_cp_y2030_equal_mix",
+      "n_profiles": 100,
+      "n_timesteps": 35040,
+      "observed_sha256": "00035179b1012e9f0ce32ba98aedcffe6e050214838d70eab581fd811b94050f",
+      "processed_path": "data/processed/elaad_profiles/B_public_15kw_vancar_cp_y2030_batchseed152701_n100.npz",
+      "seed": 152701
+    },
+    {
+      "byte_size": 905768,
+      "capacity_class": "public_15kw",
+      "component_id": "ev_public",
+      "cp_capacity_kw": 15,
+      "expected_sha256": "274bf965e6f0c07d8c33c86f62b2febb7ff8fe21026884aae89213b89735a7ac",
+      "library_id": "B_public_vancar_cp_y2030_equal_mix",
+      "n_profiles": 100,
+      "n_timesteps": 35040,
+      "observed_sha256": "274bf965e6f0c07d8c33c86f62b2febb7ff8fe21026884aae89213b89735a7ac",
+      "processed_path": "data/processed/elaad_profiles/B_public_15kw_vancar_cp_y2030_batchseed152801_n100.npz",
+      "seed": 152801
+    },
+    {
+      "byte_size": 740877,
+      "capacity_class": "public_22kw",
+      "component_id": "ev_public",
+      "cp_capacity_kw": 22,
+      "expected_sha256": "21476f45e867b37be0dc9e78c4d17faa41fd6eeb58acc1d971e3449ce61b8437",
+      "library_id": "B_public_vancar_cp_y2030_equal_mix",
+      "n_profiles": 100,
+      "n_timesteps": 35040,
+      "observed_sha256": "21476f45e867b37be0dc9e78c4d17faa41fd6eeb58acc1d971e3449ce61b8437",
+      "processed_path": "data/processed/elaad_profiles/B_public_22kw_vancar_cp_y2030_batchseed152901_n100.npz",
+      "seed": 152901
+    },
+    {
+      "byte_size": 738609,
+      "capacity_class": "public_22kw",
+      "component_id": "ev_public",
+      "cp_capacity_kw": 22,
+      "expected_sha256": "f28f83f190b8c0c8d66f7eee7efa6e27009743403bbb27a88a35695f5c49a377",
+      "library_id": "B_public_vancar_cp_y2030_equal_mix",
+      "n_profiles": 100,
+      "n_timesteps": 35040,
+      "observed_sha256": "f28f83f190b8c0c8d66f7eee7efa6e27009743403bbb27a88a35695f5c49a377",
+      "processed_path": "data/processed/elaad_profiles/B_public_22kw_vancar_cp_y2030_batchseed153001_n100.npz",
+      "seed": 153001
+    },
+    {
+      "byte_size": 740611,
+      "capacity_class": "public_22kw",
+      "component_id": "ev_public",
+      "cp_capacity_kw": 22,
+      "expected_sha256": "ce6558b4ed9a12f0f8fa36d9a69a46f560f6f9297464c4d3052dad869e059737",
+      "library_id": "B_public_vancar_cp_y2030_equal_mix",
+      "n_profiles": 100,
+      "n_timesteps": 35040,
+      "observed_sha256": "ce6558b4ed9a12f0f8fa36d9a69a46f560f6f9297464c4d3052dad869e059737",
+      "processed_path": "data/processed/elaad_profiles/B_public_22kw_vancar_cp_y2030_batchseed153101_n100.npz",
+      "seed": 153101
+    }
+  ],
+  "schema_version": 1,
+  "source_artifacts": {
+    "checksum_preflight": "data/metadata/ev_adoption/e2_s2_ev_candidate_profile_checksum_preflight.json",
+    "component_input_scaffold": "data/metadata/ev_adoption/e2_s2_ev_ic1_component_input_scaffold.json",
+    "component_output_manifest": "data/metadata/ev_adoption/e2_s2_ev_ic1_candidate_component_output_manifest.json",
+    "selection_manifest_set": "data/metadata/ev_adoption/e2_s2_ev005b_candidate_selection_manifests.json.gz"
+  },
+  "source_checksum_mismatches": [],
+  "status": "component_outputs_rebuilt_and_verified",
+  "target_checksum_mismatches": [],
+  "task_id": "E3.S2a",
+  "timestamp_utc": "2026-07-24T15:15:00Z"
+}

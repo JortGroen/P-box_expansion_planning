@@ -1213,6 +1213,131 @@ def test_ev_component_output_rebuild_fails_before_loading_when_candidate_files_m
     assert "data/processed/elaad_profiles/synthetic_candidate.npz" in str(excinfo.value)
     assert "ask the PI before regenerating ElaadNL source batches" in str(excinfo.value)
 
+
+def test_ev_component_output_rebuild_checkpoints_missing_candidate_profiles_without_source_root(
+    tmp_path: Path,
+) -> None:
+    source_root = tmp_path / "source_artifacts"
+    target_root = tmp_path / "clean_consumer"
+    scaffold, preflight, selection_manifest, _expected_sum = _synthetic_component_output_inputs(source_root)
+    source_output_dir = source_root / "outputs"
+    source_output_dir.mkdir(parents=True, exist_ok=True)
+    committed_manifest = materialize_ev_ic1_candidate_component_outputs(
+        scaffold,
+        preflight,
+        selection_manifest,
+        base_dir=source_root,
+        output_dir=source_output_dir,
+        materialized_timestamp_utc="2026-07-24T12:30:00Z",
+    )
+    rel_path = selection_manifest["scenarios"][0]["node_manifests"][0]["selections"][0]["candidate_processed_path"]
+    checkpoint = Path("metadata") / "ev_component_output_recovery.json"
+
+    with pytest.raises(EVComponentOutputVerificationError, match="Missing candidate processed-profile NPZ files"):
+        rebuild_and_verify_ev_component_outputs(
+            component_input_scaffold=scaffold,
+            checksum_preflight=preflight,
+            selection_manifest_set=selection_manifest,
+            committed_component_output_manifest=committed_manifest,
+            base_dir=target_root,
+            output_dir=target_root / "outputs",
+            timestamp_utc="2026-07-24T12:45:00Z",
+            checkpoint_path=checkpoint,
+        )
+
+    checkpoint_payload = json.loads((target_root / checkpoint).read_text(encoding="utf-8"))
+    assert checkpoint_payload["status"] == "blocked_missing_candidate_processed_profiles"
+    assert checkpoint_payload["candidate_source_root"]["argument_supplied"] is False
+    assert checkpoint_payload["missing_candidate_processed_profiles"][0]["processed_path"] == rel_path
+    assert checkpoint_payload["checkpoint"]["complete"] is True
+
+
+def test_ev_component_output_rebuild_restores_candidate_profiles_from_verified_source_root(
+    tmp_path: Path,
+) -> None:
+    source_root = tmp_path / "source_artifacts"
+    target_root = tmp_path / "clean_consumer"
+    scaffold, preflight, selection_manifest, _expected_sum = _synthetic_component_output_inputs(source_root)
+    source_output_dir = source_root / "outputs"
+    source_output_dir.mkdir(parents=True, exist_ok=True)
+    committed_manifest = materialize_ev_ic1_candidate_component_outputs(
+        scaffold,
+        preflight,
+        selection_manifest,
+        base_dir=source_root,
+        output_dir=source_output_dir,
+        materialized_timestamp_utc="2026-07-24T12:30:00Z",
+    )
+    rel_path = selection_manifest["scenarios"][0]["node_manifests"][0]["selections"][0]["candidate_processed_path"]
+    checkpoint = Path("metadata") / "ev_component_output_recovery.json"
+
+    result = rebuild_and_verify_ev_component_outputs(
+        component_input_scaffold=scaffold,
+        checksum_preflight=preflight,
+        selection_manifest_set=selection_manifest,
+        committed_component_output_manifest=committed_manifest,
+        base_dir=target_root,
+        output_dir=target_root / "outputs",
+        timestamp_utc="2026-07-24T12:45:00Z",
+        candidate_source_root=source_root,
+        checkpoint_path=checkpoint,
+    )
+
+    assert result["status"] == "verified"
+    recovery = result["candidate_processed_profile_recovery"]
+    assert recovery["status"] == "candidate_processed_profiles_ready_for_component_output_rebuild"
+    assert recovery["restored_candidate_processed_profile_count"] == 1
+    assert recovery["policy"]["held_out_access"] is False
+    assert recovery["policy"]["profile_arrays_loaded_during_candidate_restore"] is False
+    copied_path = target_root / rel_path
+    assert copied_path.is_file()
+    assert ev_model._sha256_file(copied_path) == recovery["restored_candidate_processed_profiles"][0]["expected_sha256"]
+    checkpoint_payload = json.loads((target_root / checkpoint).read_text(encoding="utf-8"))
+    assert checkpoint_payload["status"] == "component_outputs_rebuilt_and_verified"
+    assert checkpoint_payload["candidate_source_root"]["absolute_path_committed"] is False
+    assert len(checkpoint_payload["rebuilt_component_outputs"]) == 1
+    verify_existing_ev_component_outputs(committed_manifest, base_dir=target_root)
+
+
+def test_ev_component_output_rebuild_rejects_source_profile_checksum_mismatch(
+    tmp_path: Path,
+) -> None:
+    source_root = tmp_path / "source_artifacts"
+    target_root = tmp_path / "clean_consumer"
+    scaffold, preflight, selection_manifest, _expected_sum = _synthetic_component_output_inputs(source_root)
+    source_output_dir = source_root / "outputs"
+    source_output_dir.mkdir(parents=True, exist_ok=True)
+    committed_manifest = materialize_ev_ic1_candidate_component_outputs(
+        scaffold,
+        preflight,
+        selection_manifest,
+        base_dir=source_root,
+        output_dir=source_output_dir,
+        materialized_timestamp_utc="2026-07-24T12:30:00Z",
+    )
+    rel_path = selection_manifest["scenarios"][0]["node_manifests"][0]["selections"][0]["candidate_processed_path"]
+    (source_root / rel_path).write_bytes(b"not the committed candidate profile")
+    checkpoint = Path("metadata") / "ev_component_output_recovery.json"
+
+    with pytest.raises(EVComponentOutputVerificationError, match="recovery failed before EV array loading"):
+        rebuild_and_verify_ev_component_outputs(
+            component_input_scaffold=scaffold,
+            checksum_preflight=preflight,
+            selection_manifest_set=selection_manifest,
+            committed_component_output_manifest=committed_manifest,
+            base_dir=target_root,
+            output_dir=target_root / "outputs",
+            timestamp_utc="2026-07-24T12:45:00Z",
+            candidate_source_root=source_root,
+            checkpoint_path=checkpoint,
+        )
+
+    checkpoint_payload = json.loads((target_root / checkpoint).read_text(encoding="utf-8"))
+    assert checkpoint_payload["status"] == "blocked_missing_or_mismatched_candidate_processed_profiles"
+    assert checkpoint_payload["source_checksum_mismatches"][0]["processed_path"] == rel_path
+    assert not (target_root / rel_path).exists()
+
+
 def test_committed_ev_ic1_candidate_component_output_manifest_records_fast_provenance() -> None:
     manifest = json.loads(
         Path(
