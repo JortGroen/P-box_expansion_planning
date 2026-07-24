@@ -2717,6 +2717,37 @@ def test_accepted_artifact_loader_blocker_preflight_rejects_component_manifest_c
     )
 
 
+def test_accepted_artifact_loader_blocker_preflight_reports_register_backing_errors(tmp_path) -> None:
+    artifacts = _safe_executable_input_artifacts()
+    artifacts[1] = _executable_input_artifact(
+        "ev",
+        version_id="v1",
+        signed_register_ids=("EV-003", "RNG-001"),
+    )
+    source_sha = _write_synthetic_manifest_files(tmp_path, artifacts)
+    component_paths, component_sha = _write_loader_component_manifests(tmp_path, artifacts)
+
+    preflight = build_accepted_artifact_loader_blocker_preflight(
+        _screen_preflight_config(),
+        artifacts,
+        _trajectory_prerun_config(),
+        capacity_provenance=_synthetic_capacity_provenance(),
+        artifact_sha256_by_path=source_sha,
+        component_output_manifest_paths_by_kind=component_paths,
+        component_output_manifest_sha256_by_path=component_sha,
+        repo_root=tmp_path,
+        downstream_blocker_ids=(),
+    )
+
+    assert preflight["ready_for_artifact_loader_execution"] is False
+    assert any(
+        item["code"] == "component_artifact_register_backing_invalid"
+        and item["kind"] == "ev"
+        and item["blocker_ids"] == ("RNG-001 (not valid for ev)",)
+        for item in preflight["blocker_manifest"]["items"]
+    )
+
+
 def test_real_artifact_assembly_preflight_validates_source_paths_and_checksums(tmp_path) -> None:
     artifacts = _executable_input_artifacts()
     expected = _write_synthetic_manifest_files(tmp_path, artifacts)

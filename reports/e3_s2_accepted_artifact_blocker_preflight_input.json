@@ -82,8 +82,7 @@
         "EV-007",
         "EV-007A",
         "EV-008A",
-        "EV-CAL-001",
-        "RNG-001"
+        "EV-CAL-001"
       ],
       "blocking_register_ids": [],
       "timestep_seconds": 900,

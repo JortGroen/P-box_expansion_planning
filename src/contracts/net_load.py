@@ -2706,6 +2706,14 @@ def _append_bridge_blockers(items: list[dict[str, object]], preflight: Mapping[s
             kind=kind,
             blocker_ids=blocker_ids,
         )
+    for kind, errors in blockers.get("register_backing_errors_by_kind", {}).items():
+        _append_loader_blocker(
+            items,
+            "component_artifact_register_backing_invalid",
+            "component executable-input signed IDs are not accepted for this artifact boundary",
+            kind=kind,
+            blocker_ids=tuple(str(error) for error in errors),
+        )
     if blockers.get("capacity_provenance_missing"):
         _append_loader_blocker(
             items,
