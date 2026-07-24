@@ -24,6 +24,7 @@ from src.ev_model import (
     EVProfileBootstrapSampler,
     EVProfileLibrary,
     EXPECTED_FULL_YEAR_STEPS,
+    a014_executable_adoption_artifact,
     a014_node_weights_from_load_table,
     adoption_node_allocations,
     adoption_scenarios,
@@ -45,6 +46,7 @@ from src.ev_model import (
     ev_ic1_candidate_adapter_artifact,
     ev_ic1_candidate_member_reference_artifact,
     ev_ic1_component_input_scaffold_artifact,
+    ev_ic1_component_output_consumption_packet,
     ev_candidate_profile_checksum_preflight_artifact,
     materialize_ev_ic1_candidate_component_outputs,
     ev_library_integration_artifact_from_manifest,
@@ -1269,6 +1271,88 @@ def test_committed_ev_ic1_candidate_component_output_manifest_records_fast_prove
         "m_sufficiency_claimed": False,
         "manuscript_numbers_produced": False,
     }
+
+
+def _committed_ev_component_output_consumption_inputs() -> tuple[dict[str, object], dict[str, object], str]:
+    base = Path("data/metadata/ev_adoption")
+    scaffold = json.loads((base / "e2_s2_ev_ic1_component_input_scaffold.json").read_text(encoding="utf-8"))
+    component_output_manifest_path = base / "e2_s2_ev_ic1_candidate_component_output_manifest.json"
+    component_output_manifest = json.loads(component_output_manifest_path.read_text(encoding="utf-8"))
+    return scaffold, component_output_manifest, _git_blob_sha256(component_output_manifest_path)
+
+
+def test_committed_ev_ic1_component_output_consumption_packet_matches_builder() -> None:
+    scaffold, component_output_manifest, manifest_sha = _committed_ev_component_output_consumption_inputs()
+
+    expected = ev_ic1_component_output_consumption_packet(
+        scaffold,
+        component_output_manifest,
+        component_output_manifest_sha256=manifest_sha,
+    )
+    committed = json.loads(
+        Path(
+            "data/metadata/ev_adoption/e2_s2_ev_ic1_component_output_consumption_packet.json"
+        ).read_text(encoding="utf-8")
+    )
+
+    assert committed == expected
+    assert committed["artifact_type"] == "ev_ic1_component_output_consumption_packet"
+    assert committed["status"] == "candidate_only_component_outputs_ready_for_future_ic1_loader_preflight"
+    assert committed["allowed_consumer"] == {
+        "agent_a_generic_loader_may_consume_after_sha256_verification": True,
+        "agent_a_must_verify_each_output_npz_sha256_before_loading": True,
+        "agent_a_must_keep_scenario_branch_explicit": True,
+        "ic1_preflight_or_real_artifact_assembly_only": True,
+        "paper_facing_integrated_adequacy_use_allowed": False,
+    }
+    assert committed["source_artifacts"]["component_output_manifest_sha256"] == manifest_sha
+    assert committed["node_axis"]["node_count"] == 115
+    assert committed["calendar_mapping"]["rule_id"] == EV_CALENDAR_MAPPING_RULE_ID
+    outputs = committed["component_output_contract"]["scenario_outputs"]
+    assert {row["scenario"] for row in outputs} == {"low", "middle", "high"}
+    assert all(row["output_npz_path"].endswith(f"_{row['scenario']}.npz") for row in outputs)
+    assert all(row["array_shape"] == [115, EXPECTED_FULL_YEAR_STEPS] for row in outputs)
+    assert committed["source_profile_libraries"][EV_HOME_COMPONENT]["candidate_member_count"] == 1000
+    assert committed["source_profile_libraries"][EV_PUBLIC_COMPONENT]["candidate_member_count"] == 1200
+    assert committed["policy"] == {
+        "candidate_libraries_only": True,
+        "held_out_access": False,
+        "quarantined_access": False,
+        "profile_arrays_loaded_in_this_packet": False,
+        "integrated_analysis_performed": False,
+        "event_or_p_e_analysis_performed": False,
+        "capacity_screen_performed": False,
+        "final_low_middle_high_branch_selected": False,
+        "m_sufficiency_claimed": False,
+        "manuscript_numbers_produced": False,
+    }
+
+
+def test_ev_component_output_consumption_packet_rejects_missing_scenario() -> None:
+    scaffold, component_output_manifest, _manifest_sha = _committed_ev_component_output_consumption_inputs()
+    broken = json.loads(json.dumps(component_output_manifest))
+    broken["materialization"]["output_files"] = broken["materialization"]["output_files"][:-1]
+
+    with pytest.raises(ValueError, match="identical scenario coverage"):
+        ev_ic1_component_output_consumption_packet(scaffold, broken)
+
+
+def test_ev_component_output_consumption_packet_rejects_duplicate_scenario() -> None:
+    scaffold, component_output_manifest, _manifest_sha = _committed_ev_component_output_consumption_inputs()
+    broken = json.loads(json.dumps(component_output_manifest))
+    broken["materialization"]["output_files"].append(broken["materialization"]["output_files"][0])
+
+    with pytest.raises(ValueError, match="duplicate output files scenarios"):
+        ev_ic1_component_output_consumption_packet(scaffold, broken)
+
+
+def test_ev_component_output_consumption_packet_rejects_unsafe_policy() -> None:
+    scaffold, component_output_manifest, _manifest_sha = _committed_ev_component_output_consumption_inputs()
+    broken = json.loads(json.dumps(component_output_manifest))
+    broken["policy"]["held_out_access"] = True
+
+    with pytest.raises(ValueError, match="held-out access"):
+        ev_ic1_component_output_consumption_packet(scaffold, broken)
 
 
 def test_committed_ev_candidate_profile_checksum_preflight_records_fast_provenance() -> None:
@@ -2761,6 +2845,74 @@ def test_committed_local_scenarios_materialize_a014_node_weights() -> None:
         "middle": (9386, 5127),
         "high": (10343, 6138),
     }
+
+
+def test_committed_a014_executable_adoption_artifact_matches_builder() -> None:
+    config_path = Path("configs/scenarios.yaml")
+    preview_path = Path("data/metadata/ev_adoption/e2_s6_a014_alkmaar_allocation_preview.json")
+    config = load_adoption_scenarios_config(config_path)
+
+    expected = a014_executable_adoption_artifact(
+        config,
+        source_config_path=config_path.as_posix(),
+        source_config_sha256=_git_blob_sha256(config_path),
+        preview_artifact_path=preview_path.as_posix(),
+        preview_artifact_sha256=_git_blob_sha256(preview_path),
+    )
+    committed = json.loads(
+        Path(
+            "data/metadata/ev_adoption/e2_s6_a014_alkmaar_executable_adoption_artifact.json"
+        ).read_text(encoding="utf-8")
+    )
+
+    assert committed == expected
+    assert committed["artifact_type"] == "a014_executable_ev_adoption_allocation_artifact"
+    assert committed["status"] == "accepted_executable_per_node_ev_adoption_allocation"
+    assert committed["decision_ids"] == ["EV-007", "EV-007A", "A-014"]
+    assert committed["scenario_totals"] == {
+        "high": {"home": 10343, "public": 6138},
+        "low": {"home": 7992, "public": 4183},
+        "middle": {"home": 9386, "public": 5127},
+    }
+    assert committed["node_axis"]["node_count"] == 115
+    assert committed["scenario_selection"]["final_low_middle_high_branch_selected"] is False
+    assert committed["policy"] == {
+        "executable_adoption_counts": True,
+        "candidate_profile_arrays_loaded": False,
+        "held_out_access": False,
+        "quarantined_access": False,
+        "integrated_analysis_performed": False,
+        "event_or_p_e_analysis_performed": False,
+        "capacity_screen_performed": False,
+        "final_low_middle_high_branch_selected": False,
+        "m_sufficiency_claimed": False,
+        "manuscript_numbers_produced": False,
+    }
+
+
+def test_a014_executable_adoption_artifact_conserves_all_node_totals() -> None:
+    artifact = a014_executable_adoption_artifact(load_adoption_scenarios_config(Path("configs/scenarios.yaml")))
+
+    assert len(artifact["node_axis"]["node_ids"]) == 115
+    for record in artifact["scenario_allocations"]:
+        node_rows = record["node_allocations"]
+        assert len(node_rows) == 115
+        assert sum(row["home_charge_points"] for row in node_rows) == record["home_charge_points"]
+        assert sum(row["public_charge_points"] for row in node_rows) == record["public_charge_points"]
+        assert all(row["home_charge_points"] >= 0 and row["public_charge_points"] >= 0 for row in node_rows)
+
+
+def test_a014_executable_adoption_artifact_rejects_unapproved_statuses() -> None:
+    config = load_adoption_scenarios_config(Path("configs/scenarios.yaml"))
+    config["local_grid_scenarios"]["status"] = "proposed"
+    config["local_grid_scenarios"]["scenarios"] = []
+    with pytest.raises(ValueError, match="approved EV-007A"):
+        a014_executable_adoption_artifact(config)
+
+    config = load_adoption_scenarios_config(Path("configs/scenarios.yaml"))
+    config["allocation"]["status"] = "proposed"
+    with pytest.raises(ValueError, match="approved A-014"):
+        a014_executable_adoption_artifact(config)
 
 
 def test_unapproved_allocation_status_cannot_allocate() -> None:

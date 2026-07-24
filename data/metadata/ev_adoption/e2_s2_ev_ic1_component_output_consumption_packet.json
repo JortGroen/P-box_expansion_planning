@@ -1,0 +1,480 @@
+{
+  "a014_allocation_provenance": {
+    "allocation_rule": "static_p_mw_weights_largest_remainder",
+    "decision_id": "A-014",
+    "final_low_middle_high_branch_selected": false,
+    "local_count_decision_id": "EV-007A",
+    "scenario_input_pointer": "data/metadata/ev_adoption/e2_s2_ev_ic1_component_input_scaffold.json#/scenario_inputs"
+  },
+  "allowed_consumer": {
+    "agent_a_generic_loader_may_consume_after_sha256_verification": true,
+    "agent_a_must_keep_scenario_branch_explicit": true,
+    "agent_a_must_verify_each_output_npz_sha256_before_loading": true,
+    "ic1_preflight_or_real_artifact_assembly_only": true,
+    "paper_facing_integrated_adequacy_use_allowed": false
+  },
+  "artifact_id": "e2_s2_ev_ic1_component_output_consumption_packet",
+  "artifact_type": "ev_ic1_component_output_consumption_packet",
+  "calendar_mapping": {
+    "n_timesteps": 35040,
+    "rule_id": "EV-CAL-001",
+    "rule_version": "ordinal-v1",
+    "source_calendar_id": "elaad-2025-europe-amsterdam-15min",
+    "source_timestep_i_maps_to_target_timestep_i": true,
+    "target_calendar_id": "planning-2035-europe-amsterdam-15min",
+    "timestep_seconds": 900,
+    "weekday_mismatch_recorded_as_limitation": true
+  },
+  "component_ids": [
+    "ev_home",
+    "ev_public"
+  ],
+  "component_kind": "ev",
+  "component_output_contract": {
+    "arrays": {
+      "node_ids": {
+        "length": 115,
+        "order": "row order for p_kw_by_node/q_kvar_by_node"
+      },
+      "p_kw_by_node": {
+        "shape": [
+          "node",
+          "timestep"
+        ],
+        "unit": "kW"
+      },
+      "q_kvar_by_node": {
+        "shape": [
+          "node",
+          "timestep"
+        ],
+        "unit": "kvar"
+      },
+      "timestamps_utc": {
+        "length": 35040,
+        "timezone": "UTC"
+      }
+    },
+    "file_format": "npz",
+    "scenario_outputs": [
+      {
+        "array_shape": [
+          115,
+          35040
+        ],
+        "byte_size": 10421479,
+        "duplicate_selected_row_count": 16436,
+        "home_charge_points": 10343,
+        "n_timesteps": 35040,
+        "node_count": 115,
+        "output_npz_path": "data/processed/elaad_profiles/component_outputs/ev_ic1_candidate_component_output_high.npz",
+        "output_sha256": "dd95f30d74da00b6fb87c2ced8f402b4d612c59a28e7d1d33e9e82fcd7a805d5",
+        "planning_year": 2035,
+        "public_charge_points": 6138,
+        "public_selected_member_count_by_capacity_class": {
+          "public_11kw": 1535,
+          "public_13kw": 1535,
+          "public_15kw": 1534,
+          "public_22kw": 1534
+        },
+        "scenario": "high",
+        "selected_member_count_by_component": {
+          "ev_home": 10343,
+          "ev_public": 6138
+        }
+      },
+      {
+        "array_shape": [
+          115,
+          35040
+        ],
+        "byte_size": 9198011,
+        "duplicate_selected_row_count": 12041,
+        "home_charge_points": 7992,
+        "n_timesteps": 35040,
+        "node_count": 115,
+        "output_npz_path": "data/processed/elaad_profiles/component_outputs/ev_ic1_candidate_component_output_low.npz",
+        "output_sha256": "a896794ddd9f004fe945c62a5b84b2b1b6e9381cbecd80b17ca7c749de68ce65",
+        "planning_year": 2035,
+        "public_charge_points": 4183,
+        "public_selected_member_count_by_capacity_class": {
+          "public_11kw": 1046,
+          "public_13kw": 1046,
+          "public_15kw": 1046,
+          "public_22kw": 1045
+        },
+        "scenario": "low",
+        "selected_member_count_by_component": {
+          "ev_home": 7992,
+          "ev_public": 4183
+        }
+      },
+      {
+        "array_shape": [
+          115,
+          35040
+        ],
+        "byte_size": 9885919,
+        "duplicate_selected_row_count": 14435,
+        "home_charge_points": 9386,
+        "n_timesteps": 35040,
+        "node_count": 115,
+        "output_npz_path": "data/processed/elaad_profiles/component_outputs/ev_ic1_candidate_component_output_middle.npz",
+        "output_sha256": "38081c7f849bb679a19560d1a7f7fd6d8428e35ef6cad2087e4d82a46c1e568d",
+        "planning_year": 2035,
+        "public_charge_points": 5127,
+        "public_selected_member_count_by_capacity_class": {
+          "public_11kw": 1282,
+          "public_13kw": 1282,
+          "public_15kw": 1282,
+          "public_22kw": 1281
+        },
+        "scenario": "middle",
+        "selected_member_count_by_component": {
+          "ev_home": 9386,
+          "ev_public": 5127
+        }
+      }
+    ]
+  },
+  "decision_ids": [
+    "EV-003",
+    "EV-005",
+    "EV-005B",
+    "EV-007A",
+    "A-014",
+    "EV-008A",
+    "EV-CAL-001",
+    "RNG-001"
+  ],
+  "node_axis": {
+    "node_axis_index_order": "matches_npz_node_ids_array_and_this_packet",
+    "node_count": 115,
+    "node_ids": [
+      "load_000",
+      "load_001",
+      "load_002",
+      "load_003",
+      "load_004",
+      "load_005",
+      "load_006",
+      "load_007",
+      "load_008",
+      "load_009",
+      "load_010",
+      "load_011",
+      "load_012",
+      "load_013",
+      "load_014",
+      "load_015",
+      "load_016",
+      "load_017",
+      "load_018",
+      "load_019",
+      "load_020",
+      "load_021",
+      "load_022",
+      "load_023",
+      "load_024",
+      "load_025",
+      "load_026",
+      "load_027",
+      "load_028",
+      "load_029",
+      "load_030",
+      "load_031",
+      "load_032",
+      "load_033",
+      "load_034",
+      "load_035",
+      "load_036",
+      "load_037",
+      "load_038",
+      "load_039",
+      "load_040",
+      "load_041",
+      "load_042",
+      "load_043",
+      "load_044",
+      "load_045",
+      "load_046",
+      "load_047",
+      "load_048",
+      "load_049",
+      "load_050",
+      "load_051",
+      "load_052",
+      "load_053",
+      "load_054",
+      "load_055",
+      "load_056",
+      "load_057",
+      "load_058",
+      "load_059",
+      "load_060",
+      "load_061",
+      "load_062",
+      "load_063",
+      "load_064",
+      "load_065",
+      "load_066",
+      "load_067",
+      "load_068",
+      "load_069",
+      "load_070",
+      "load_071",
+      "load_072",
+      "load_073",
+      "load_074",
+      "load_075",
+      "load_076",
+      "load_077",
+      "load_078",
+      "load_079",
+      "load_080",
+      "load_081",
+      "load_082",
+      "load_083",
+      "load_084",
+      "load_085",
+      "load_086",
+      "load_087",
+      "load_088",
+      "load_089",
+      "load_090",
+      "load_091",
+      "load_092",
+      "load_093",
+      "load_094",
+      "load_095",
+      "load_096",
+      "load_097",
+      "load_098",
+      "load_099",
+      "load_100",
+      "load_101",
+      "load_102",
+      "load_103",
+      "load_104",
+      "load_105",
+      "load_106",
+      "load_107",
+      "load_108",
+      "load_109",
+      "load_110",
+      "load_111",
+      "load_112",
+      "load_113",
+      "load_114"
+    ]
+  },
+  "planning_year": 2035,
+  "policy": {
+    "candidate_libraries_only": true,
+    "capacity_screen_performed": false,
+    "event_or_p_e_analysis_performed": false,
+    "final_low_middle_high_branch_selected": false,
+    "held_out_access": false,
+    "integrated_analysis_performed": false,
+    "m_sufficiency_claimed": false,
+    "manuscript_numbers_produced": false,
+    "profile_arrays_loaded_in_this_packet": false,
+    "quarantined_access": false
+  },
+  "required_status_fields": {
+    "component_input_scaffold.status": "accepted_metadata_only_for_ic1_component_input_scaffold",
+    "component_output_manifest.ic1_boundary.component_adapter_output_ready_for_agent_a_preflight": true,
+    "component_output_manifest.ic1_boundary.contains_ev_component_outputs_only": true,
+    "component_output_manifest.ic1_boundary.not_a_net_load_result": true,
+    "component_output_manifest.status": "candidate_only_ev_component_outputs_materialized_for_ic1_preflight"
+  },
+  "schema_version": 1,
+  "selection_manifest_provenance": {
+    "decision_id": "EV-005B",
+    "duplicate_summary": [
+      {
+        "capacity_class": null,
+        "component_id": "ev_home",
+        "duplicate_source_member_count": 1000,
+        "max_duplicate_multiplicity": 23,
+        "scenario": "high",
+        "selected_count": 10343,
+        "unique_source_member_count": 1000
+      },
+      {
+        "capacity_class": "public_11kw",
+        "component_id": "ev_public",
+        "duplicate_source_member_count": 287,
+        "max_duplicate_multiplicity": 13,
+        "scenario": "high",
+        "selected_count": 1535,
+        "unique_source_member_count": 299
+      },
+      {
+        "capacity_class": "public_13kw",
+        "component_id": "ev_public",
+        "duplicate_source_member_count": 287,
+        "max_duplicate_multiplicity": 14,
+        "scenario": "high",
+        "selected_count": 1535,
+        "unique_source_member_count": 298
+      },
+      {
+        "capacity_class": "public_15kw",
+        "component_id": "ev_public",
+        "duplicate_source_member_count": 290,
+        "max_duplicate_multiplicity": 13,
+        "scenario": "high",
+        "selected_count": 1534,
+        "unique_source_member_count": 299
+      },
+      {
+        "capacity_class": "public_22kw",
+        "component_id": "ev_public",
+        "duplicate_source_member_count": 284,
+        "max_duplicate_multiplicity": 13,
+        "scenario": "high",
+        "selected_count": 1534,
+        "unique_source_member_count": 297
+      },
+      {
+        "capacity_class": null,
+        "component_id": "ev_home",
+        "duplicate_source_member_count": 999,
+        "max_duplicate_multiplicity": 20,
+        "scenario": "low",
+        "selected_count": 7992,
+        "unique_source_member_count": 1000
+      },
+      {
+        "capacity_class": "public_11kw",
+        "component_id": "ev_public",
+        "duplicate_source_member_count": 260,
+        "max_duplicate_multiplicity": 11,
+        "scenario": "low",
+        "selected_count": 1046,
+        "unique_source_member_count": 294
+      },
+      {
+        "capacity_class": "public_13kw",
+        "component_id": "ev_public",
+        "duplicate_source_member_count": 265,
+        "max_duplicate_multiplicity": 10,
+        "scenario": "low",
+        "selected_count": 1046,
+        "unique_source_member_count": 292
+      },
+      {
+        "capacity_class": "public_15kw",
+        "component_id": "ev_public",
+        "duplicate_source_member_count": 256,
+        "max_duplicate_multiplicity": 10,
+        "scenario": "low",
+        "selected_count": 1046,
+        "unique_source_member_count": 292
+      },
+      {
+        "capacity_class": "public_22kw",
+        "component_id": "ev_public",
+        "duplicate_source_member_count": 255,
+        "max_duplicate_multiplicity": 11,
+        "scenario": "low",
+        "selected_count": 1045,
+        "unique_source_member_count": 291
+      },
+      {
+        "capacity_class": null,
+        "component_id": "ev_home",
+        "duplicate_source_member_count": 1000,
+        "max_duplicate_multiplicity": 22,
+        "scenario": "middle",
+        "selected_count": 9386,
+        "unique_source_member_count": 1000
+      },
+      {
+        "capacity_class": "public_11kw",
+        "component_id": "ev_public",
+        "duplicate_source_member_count": 274,
+        "max_duplicate_multiplicity": 12,
+        "scenario": "middle",
+        "selected_count": 1282,
+        "unique_source_member_count": 299
+      },
+      {
+        "capacity_class": "public_13kw",
+        "component_id": "ev_public",
+        "duplicate_source_member_count": 278,
+        "max_duplicate_multiplicity": 11,
+        "scenario": "middle",
+        "selected_count": 1282,
+        "unique_source_member_count": 296
+      },
+      {
+        "capacity_class": "public_15kw",
+        "component_id": "ev_public",
+        "duplicate_source_member_count": 277,
+        "max_duplicate_multiplicity": 10,
+        "scenario": "middle",
+        "selected_count": 1282,
+        "unique_source_member_count": 294
+      },
+      {
+        "capacity_class": "public_22kw",
+        "component_id": "ev_public",
+        "duplicate_source_member_count": 275,
+        "max_duplicate_multiplicity": 10,
+        "scenario": "middle",
+        "selected_count": 1281,
+        "unique_source_member_count": 293
+      }
+    ],
+    "replacement": "with_replacement_charge_point_level_candidate_only",
+    "root_seed": 20260722,
+    "sample_index": 0,
+    "selection_manifest_set_path": "data/metadata/ev_adoption/e2_s2_ev005b_candidate_selection_manifests.json.gz",
+    "selection_manifest_set_sha256": "da4231595d5a3f66faba1157e10fff17fee936c495b821d20e1b1cd3e0ae6071"
+  },
+  "source_artifacts": {
+    "candidate_adapter_artifact": "data/metadata/ev_adoption/e2_s2_ev_ic1_candidate_adapter_artifact.json",
+    "candidate_member_reference": "data/metadata/ev_adoption/e2_s2_ev_ic1_candidate_member_reference.json",
+    "candidate_selection_manifest_set": "data/metadata/ev_adoption/e2_s2_ev005b_candidate_selection_manifests.json.gz",
+    "candidate_selection_manifest_set_sha256": "da4231595d5a3f66faba1157e10fff17fee936c495b821d20e1b1cd3e0ae6071",
+    "checksum_preflight": "data/metadata/ev_adoption/e2_s2_ev_candidate_profile_checksum_preflight.json",
+    "component_input_scaffold": "data/metadata/ev_adoption/e2_s2_ev_ic1_component_input_scaffold.json",
+    "component_output_manifest": "data/metadata/ev_adoption/e2_s2_ev_ic1_candidate_component_output_manifest.json",
+    "component_output_manifest_sha256": "2be1c52eca050ee0dd97028d1787a51a4920ee89465328c24032f4e81b56b4fd"
+  },
+  "source_ids": [
+    "D-002",
+    "D-010",
+    "D-012"
+  ],
+  "source_profile_libraries": {
+    "ev_home": {
+      "candidate_member_count": 1000,
+      "cp_capacity_kw": 11,
+      "library_id": "A_home_vancar_cp_y2030",
+      "location_type": "home",
+      "profile_type": "cp",
+      "simulated_year": 2030,
+      "source_id": "D-002"
+    },
+    "ev_public": {
+      "candidate_member_count": 1200,
+      "capacity_class_member_counts": {
+        "public_11kw": 300,
+        "public_13kw": 300,
+        "public_15kw": 300,
+        "public_22kw": 300
+      },
+      "context_source_id": "D-012",
+      "library_id": "B_public_vancar_cp_y2030_equal_mix",
+      "location_type": "public",
+      "profile_type": "cp",
+      "simulated_year": 2030,
+      "source_id": "D-002"
+    }
+  },
+  "status": "candidate_only_component_outputs_ready_for_future_ic1_loader_preflight",
+  "task_id": "E2.S2"
+}

@@ -22,8 +22,10 @@ from src.contracts.net_load import (
     NetLoadProvider,
     NetLoadResult,
     REAL_COMPONENT_WIRING_KINDS,
+    REQUIRED_INTEGRATION_COMPONENT_KINDS,
     assemble_net_load_from_adapter_outputs,
     assemble_net_load_from_components,
+    assemble_net_load_from_npz_artifacts,
     assemble_net_load_from_real_component_outputs,
     assemble_net_load_from_registry_outputs,
     build_ic1_assembly_plan_from_registry,
@@ -33,6 +35,7 @@ from src.contracts.net_load import (
     build_net_load_result,
     build_real_artifact_assembly_preflight,
     load_component_adapter_output_from_npz_artifact,
+    load_component_adapter_outputs_from_npz_artifacts,
     load_net_load_component_from_npz_artifact,
     dry_run_integrated_input_preflight,
     net_load_component_from_adapter_output,
@@ -577,6 +580,122 @@ def test_npz_artifact_loader_returns_adapter_output_and_component(tmp_path) -> N
     assert "overload" not in output.metadata
     assert component.provenance.component_id == "ev-component"
     assert np.allclose(component.p_kw, [1.0, 2.0, 3.0, 4.0])
+
+
+
+def test_npz_artifact_sequence_loader_assembles_tiny_synthetic_ic1_result(tmp_path) -> None:
+    context = _realization_context()
+    manifests = [
+        _write_component_output_npz_artifact(
+            tmp_path,
+            context,
+            kind="baseline",
+            node_id="node-a",
+            p_kw=np.array([10.0, 10.0, 10.0, 10.0]),
+            q_kvar=np.array([1.0, 1.0, 1.0, 1.0]),
+        ),
+        _write_component_output_npz_artifact(
+            tmp_path,
+            context,
+            kind="ev",
+            node_id="node-a",
+            p_kw=np.array([1.0, 1.0, 1.0, 1.0]),
+            q_kvar=np.array([0.1, 0.1, 0.1, 0.1]),
+        ),
+        _write_component_output_npz_artifact(
+            tmp_path,
+            context,
+            kind="hp",
+            node_id="node-b",
+            p_kw=np.array([4.0, 4.0, 4.0, 4.0]),
+            q_kvar=np.array([0.4, 0.4, 0.4, 0.4]),
+        ),
+        _write_component_output_npz_artifact(
+            tmp_path,
+            context,
+            kind="pv",
+            node_id="node-b",
+            p_kw=np.array([-2.0, -2.0, -2.0, -2.0]),
+            q_kvar=np.array([-0.2, -0.2, -0.2, -0.2]),
+        ),
+        _write_component_output_npz_artifact(
+            tmp_path,
+            context,
+            kind="adoption",
+            node_id="node-a",
+            p_kw=np.array([0.5, 0.5, 0.5, 0.5]),
+            q_kvar=np.zeros(4),
+        ),
+        _write_component_output_npz_artifact(
+            tmp_path,
+            context,
+            kind="flexibility",
+            node_id="node-a",
+            p_kw=np.array([-0.2, -0.2, -0.2, -0.2]),
+            q_kvar=np.zeros(4),
+        ),
+    ]
+    outputs = load_component_adapter_outputs_from_npz_artifacts(
+        manifests,
+        context,
+        repo_root=tmp_path,
+        expected_calendar_id="calendar-2035-15min",
+        expected_node_ids=("node-a", "node-b"),
+    )
+    plan = NetLoadAssemblyPlan(
+        node_ids=("node-a", "node-b"),
+        required_component_kinds=REQUIRED_INTEGRATION_COMPONENT_KINDS,
+        metadata={"assembly_plan": "synthetic-loader-smoke"},
+    )
+
+    result = assemble_net_load_from_npz_artifacts(
+        plan,
+        context,
+        manifests,
+        repo_root=tmp_path,
+        expected_calendar_id="calendar-2035-15min",
+    )
+
+    assert len(outputs) == 6
+    assert result.metadata["assembly"] == "accepted_npz_artifact_loader_smoke"
+    assert result.metadata["no_event_detection"] is True
+    assert result.metadata["no_probability_estimate"] is True
+    assert result.shared_weather_driver_ids == (context.shared_weather_driver_id,)
+    assert np.allclose(result.p_net_kw[0], [11.3, 11.3, 11.3, 11.3])
+    assert np.allclose(result.q_net_kvar[0], [1.1, 1.1, 1.1, 1.1])
+    assert np.allclose(result.p_net_kw[1], [2.0, 2.0, 2.0, 2.0])
+    assert np.allclose(result.q_net_kvar[1], [0.2, 0.2, 0.2, 0.2])
+
+
+def test_npz_artifact_sequence_loader_rejects_calendar_drift(tmp_path) -> None:
+    context = _realization_context()
+    drifted_calendar = np.array(
+        [
+            "2035-01-01T00:15:00",
+            "2035-01-01T00:30:00",
+            "2035-01-01T00:45:00",
+            "2035-01-01T01:00:00",
+        ],
+        dtype="datetime64[s]",
+    )
+    manifests = [
+        _write_component_output_npz_artifact(tmp_path, context, kind="baseline"),
+        _write_component_output_npz_artifact(
+            tmp_path,
+            context,
+            kind="ev",
+            timestamps=drifted_calendar,
+        ),
+    ]
+
+    with pytest.raises(ValueError, match="share one 15-minute calendar"):
+        load_component_adapter_outputs_from_npz_artifacts(
+            manifests,
+            context,
+            repo_root=tmp_path,
+            expected_calendar_id="calendar-2035-15min",
+            expected_node_ids=("node-a",),
+        )
 
 
 def test_npz_artifact_loader_requires_explicit_synthetic_fixture_opt_in(tmp_path) -> None:

@@ -2266,6 +2266,84 @@ def load_net_load_component_from_npz_artifact(
     return net_load_component_from_adapter_output(adapter_output, context)
 
 
+
+def load_component_adapter_outputs_from_npz_artifacts(
+    manifests: Sequence[Mapping[str, object]],
+    context: NetLoadRealizationContext,
+    *,
+    repo_root: Path | str | None = None,
+    expected_calendar_id: str | None = None,
+    expected_node_ids: Sequence[str] | None = None,
+    allow_synthetic_fixture: bool = False,
+) -> tuple[ComponentAdapterOutput, ...]:
+    """Load a sequence of accepted NPZ artifacts for IC-1 assembly."""
+
+    if not manifests:
+        raise ValueError("component output artifact manifests must not be empty")
+    outputs = tuple(
+        load_component_adapter_output_from_npz_artifact(
+            manifest,
+            context,
+            repo_root=repo_root,
+            expected_calendar_id=expected_calendar_id,
+            expected_node_ids=expected_node_ids,
+            allow_synthetic_fixture=allow_synthetic_fixture,
+        )
+        for manifest in manifests
+    )
+    component_ids = [output.component_id for output in outputs]
+    if len(set(component_ids)) != len(component_ids):
+        raise ValueError("component output artifact component_id values must be unique")
+    reference_calendar = outputs[0].timestamps
+    for output in outputs[1:]:
+        if not np.array_equal(output.timestamps, reference_calendar):
+            raise ValueError("component output artifacts must share one 15-minute calendar")
+    return outputs
+
+
+def assemble_net_load_from_npz_artifacts(
+    plan: NetLoadAssemblyPlan,
+    context: NetLoadRealizationContext,
+    manifests: Sequence[Mapping[str, object]],
+    *,
+    repo_root: Path | str | None = None,
+    expected_calendar_id: str | None = None,
+    allow_synthetic_fixture: bool = False,
+    metadata: Mapping[str, object] | None = None,
+) -> NetLoadResult:
+    """Load guarded component artifacts and assemble a scaffold-only IC-1 result."""
+
+    adapter_outputs = load_component_adapter_outputs_from_npz_artifacts(
+        manifests,
+        context,
+        repo_root=repo_root,
+        expected_calendar_id=expected_calendar_id,
+        expected_node_ids=plan.node_ids,
+        allow_synthetic_fixture=allow_synthetic_fixture,
+    )
+    artifact_metadata = {
+        "assembly": "accepted_npz_artifact_loader_smoke",
+        "scaffold_only": True,
+        "no_event_detection": True,
+        "no_probability_estimate": True,
+        "no_capacity_screen_result": True,
+        "artifact_ids": tuple(output.metadata["artifact_id"] for output in adapter_outputs),
+        "array_paths": tuple(output.metadata["array_path"] for output in adapter_outputs),
+        "artifact_status_by_component_id": {
+            output.component_id: output.metadata["artifact_status"]
+            for output in adapter_outputs
+        },
+    }
+    if metadata is not None:
+        artifact_metadata.update(metadata)
+    return assemble_net_load_from_adapter_outputs(
+        plan,
+        context,
+        adapter_outputs,
+        metadata=artifact_metadata,
+    )
+
+
 def validate_net_load_result(result: NetLoadResult) -> None:
     """Validate an IC-1 result and raise on contract violations."""
 
