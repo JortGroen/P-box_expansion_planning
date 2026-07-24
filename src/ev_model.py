@@ -1413,9 +1413,12 @@ def ev_ic1_candidate_member_reference_artifact(
             "weekday_weekend_preserved": False,
         },
         "selection_boundary": {
-            "replacement_rule_chosen": False,
+            "replacement_policy_id": "EV-005B",
+            "replacement_rule_chosen": True,
+            "replacement_policy_scope": "candidate_member_selection_only",
             "component_stream_required": True,
-            "sample_rows_materialized": False,
+            "sample_rows_materialized_in_reference": False,
+            "candidate_selection_manifest_set": "data/metadata/ev_adoption/e2_s2_ev005b_candidate_selection_manifests.json.gz",
             "realization_selection_performed": False,
         },
         "policy": {
@@ -1860,6 +1863,7 @@ def ev_candidate_member_selection_manifest_set(
     sample_index: int,
     scenarios: Sequence[str] | None = None,
     materialized_timestamp_utc: str | None = None,
+    source_candidate_member_reference_sha256: str | None = None,
 ) -> dict[str, object]:
     """Materialize candidate-only EV-005B member-selection manifests.
 
@@ -1901,6 +1905,11 @@ def ev_candidate_member_selection_manifest_set(
         for capacity_class, _capacity_kw, _share in EV_PUBLIC_SET_B_CAPACITY_MIX
     }
     timestamp = materialized_timestamp_utc or datetime.now(UTC).isoformat().replace("+00:00", "Z")
+    source_reference_sha = (
+        None
+        if source_candidate_member_reference_sha256 is None
+        else _require_sha256(source_candidate_member_reference_sha256, "source_candidate_member_reference_sha256")
+    )
     scenario_manifests: list[dict[str, object]] = []
     all_duplicate_summaries: list[dict[str, object]] = []
 
@@ -2047,6 +2056,7 @@ def ev_candidate_member_selection_manifest_set(
         "task_id": "E2.S2",
         "decision_id": "EV-005B",
         "source_candidate_member_reference": "data/metadata/ev_adoption/e2_s2_ev_ic1_candidate_member_reference.json",
+        "source_candidate_member_reference_sha256": source_reference_sha,
         "materialized_timestamp_utc": timestamp,
         "root_seed": seed_tree.root_seed,
         "sample_index": sample,
