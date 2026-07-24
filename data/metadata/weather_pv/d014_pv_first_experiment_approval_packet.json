@@ -1,0 +1,121 @@
+{
+  "created_utc": "2026-07-24T13:57:38+00:00",
+  "data_id": "D-014",
+  "download_performed": false,
+  "executable_gate": {
+    "blocking_register_ids": [
+      "D014-PV-CAPACITY-APPROVAL-TEMPLATE_successor",
+      "PV-ORIENT-001_values",
+      "PV-PARAM-001_or_signed_amendment",
+      "A-016",
+      "future_node_allocation_rule",
+      "FINAL-PAIRED-HP-PV-ACCEPTANCE"
+    ],
+    "executable_pv_generation_authorized": false,
+    "result_if_invoked": "abort_until_first_experiment_pv_approvals_signed"
+  },
+  "first_experiment_scope": {
+    "building_roof_location_level_geometry_allowed": false,
+    "deferred_improvement": "post-first-experiment roof/building/PV-map geometry may be revisited only by a later signed scope change",
+    "orientation_tilt_route": "typical/statistical distribution only",
+    "specific_3dbag_or_pv_map_workflow_allowed": false
+  },
+  "input_metadata": {
+    "capacity_approval_template": {
+      "packet_id": "D014-PV-CAPACITY-APPROVAL-TEMPLATE",
+      "path": "data/metadata/weather_pv/d014_pv_capacity_approval_template.json",
+      "sha256": "f4124256525f9004d4a12dce5150bc9ad73935661586884f1ff781073a07a6f7",
+      "size_bytes": 5042,
+      "status": "proposed_signed_capacity_artifact_template_no_values"
+    },
+    "executable_preflight_guard": {
+      "packet_id": "D014-PV-EXECUTABLE-PREFLIGHT-GUARD",
+      "path": "data/metadata/weather_pv/d014_pv_executable_preflight_guard.json",
+      "sha256": "9a1df205142f29853b3250f7aa9af882ca818817a7b488a402ef036aee14a5c5",
+      "size_bytes": 2404,
+      "status": "proposed_fail_closed_preflight_no_generation"
+    },
+    "orientation_tilt_source_choice": {
+      "packet_id": "D014-PV-ORIENTATION-TILT-SOURCE-CHOICE-PACKET",
+      "path": "data/metadata/weather_pv/d014_pv_orientation_tilt_source_choice_packet.json",
+      "sha256": "86af3b7b61358270b6c9a15a230fdaec3e18edbe5e9e57b8d7c145d51b78bb81",
+      "size_bytes": 10456,
+      "status": "proposed_source_choice_packet_no_raw_download_no_executable_values"
+    },
+    "orientation_tilt_value_choice": {
+      "packet_id": "D014-PV-ORIENTATION-TILT-VALUE-CHOICE-PACKET",
+      "path": "data/metadata/weather_pv/d014_pv_orientation_tilt_value_choice_packet.json",
+      "sha256": "7d786ce0978c09cdaad2c24b339f0b84d94eb4f13c2c1333202b8223bfd86ba4",
+      "size_bytes": 7734,
+      "status": "proposed_value_choice_packet_no_raw_download_no_executable_values"
+    },
+    "pv_param_conversion_source_choice": {
+      "packet_id": "D014-PV-PARAM-CONVERSION-SOURCE-CHOICE-PACKET",
+      "path": "data/metadata/weather_pv/d014_pv_param_conversion_source_choice_packet.json",
+      "sha256": "28b66b80bf9b009f105656c7bfc855e9f466b23e9585463659b332e2436471b3",
+      "size_bytes": 6452,
+      "status": "proposed_conversion_source_choice_no_raw_download_no_executable_formula"
+    }
+  },
+  "non_claims": [
+    "No PV capacity value, II3050 growth factor, DC/AC convention, orientation/tilt bins, orientation/tilt weights, PR value, efficiency, conversion formula, or allocation number is approved.",
+    "No PV generation, net-load, event detection, P(E), threshold run, capacity screen, manuscript result, or final paired HP/PV acceptance is produced.",
+    "No building, roof, location-level, 3DBAG, or PV-map geometry workflow is implemented before the first experiment.",
+    "PVGIS remains qualitative sanity/provenance context and is not a realized sampled WEATHER-001 path."
+  ],
+  "packet_id": "D014-PV-FIRST-EXPERIMENT-APPROVAL-PACKET",
+  "pi_approval_keys_before_executable_use": [
+    "signed_d014_capacity_artifact",
+    "signed_capacity_unit_and_dc_ac_convention",
+    "signed_ii3050_scenario_growth_factor_and_a016_mapping",
+    "signed_statistical_orientation_tilt_source",
+    "signed_statistical_orientation_tilt_bins_representative_angles_and_weights",
+    "signed_orientation_tilt_weighting_convention",
+    "signed_pv_param_conversion_formula_or_amendment",
+    "signed_irradiance_transposition_or_direct_ghi_treatment",
+    "signed_loss_temperature_clipping_and_capacity_convention",
+    "signed_node_allocation_rule",
+    "signed_final_paired_hp_pv_acceptance_prerequisite"
+  ],
+  "raw_data_committed": false,
+  "separated_decision_layers": {
+    "installed_capacity_route": {
+      "governing_decision": "PV-CAP-001/D-014",
+      "must_not_decide_here": [
+        "CBS row/value",
+        "II3050 scenario/growth factor",
+        "DC/AC convention"
+      ],
+      "status": "route approved; executable value unsigned"
+    },
+    "irradiance_to_power_conversion": {
+      "governing_decision": "PV-PARAM-001_or_signed_amendment",
+      "must_not_decide_here": [
+        "PR=0.86",
+        "pvlib/POA model",
+        "temperature model",
+        "clipping rule"
+      ],
+      "status": "formula unsigned; direct-GHI/PR route disputed until explicitly signed"
+    },
+    "node_allocation": {
+      "governing_decision": "future_node_allocation_rule",
+      "must_not_decide_here": [
+        "per-node capacity shares",
+        "allocation denominator",
+        "building/roof allocation"
+      ],
+      "status": "unsigned and separate from capacity total and PV-PARAM conversion"
+    },
+    "orientation_tilt_distribution": {
+      "governing_decision": "PV-ORIENT-001",
+      "must_not_decide_here": [
+        "final class weights",
+        "final representative angles",
+        "roof/building extraction"
+      ],
+      "status": "scope approved; source, bins, angles, weights, and weighting convention unsigned"
+    }
+  },
+  "status": "proposed_first_experiment_pv_approval_packet_no_executable_values"
+}

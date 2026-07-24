@@ -20,6 +20,7 @@ from src.pv_model import (
     PVCBSAnchorEvidencePacket,
     PVExecutablePreflightGuardPacket,
     PVExecutableReadinessBlockersPacket,
+    PVFirstExperimentApprovalPacket,
     PVGISReference,
     PVII3050GrowthEvidencePacket,
     PVOrientationTiltSourceChoicePacket,
@@ -45,6 +46,7 @@ from src.pv_model import (
     load_pv_cbs_anchor_evidence_packet,
     load_pv_executable_preflight_guard_packet,
     load_pv_executable_readiness_blockers_packet,
+    load_pv_first_experiment_approval_packet,
     load_pv_ii3050_growth_evidence_packet,
     load_pv_orientation_tilt_source_choice_packet,
     load_pv_orientation_tilt_value_choice_packet,
@@ -1939,6 +1941,58 @@ def test_pv_param_conversion_source_choice_packet_rejects_executable_claim() -> 
             recommendation_for_pi_review=payload["recommendation_for_pi_review"],
             executable_gate=payload["executable_gate"],
             pi_approval_keys_before_executable_use=payload["pi_approval_keys_before_executable_use"],
+            non_claims=payload["non_claims"],
+        )
+
+
+def test_committed_d014_first_experiment_approval_packet_is_fail_closed() -> None:
+    packet = load_pv_first_experiment_approval_packet(
+        "data/metadata/weather_pv/d014_pv_first_experiment_approval_packet.json"
+    )
+    record = packet.identity_record()
+
+    assert packet.packet_id == "D014-PV-FIRST-EXPERIMENT-APPROVAL-PACKET"
+    assert packet.download_performed is False
+    assert packet.raw_data_committed is False
+    assert record["executable_pv_generation_authorized"] is False
+    assert record["input_packet_ids"]["capacity_approval_template"] == "D014-PV-CAPACITY-APPROVAL-TEMPLATE"
+    assert record["input_packet_ids"]["orientation_tilt_value_choice"] == "D014-PV-ORIENTATION-TILT-VALUE-CHOICE-PACKET"
+    assert record["input_packet_ids"]["pv_param_conversion_source_choice"] == "D014-PV-PARAM-CONVERSION-SOURCE-CHOICE-PACKET"
+    assert record["input_packet_ids"]["executable_preflight_guard"] == "D014-PV-EXECUTABLE-PREFLIGHT-GUARD"
+    assert "PV-PARAM-001_or_signed_amendment" in record["blocking_register_ids"]
+    assert "signed_d014_capacity_artifact" in packet.missing_approval_keys
+    assert "signed_node_allocation_rule" in packet.missing_approval_keys
+    assert packet.first_experiment_scope["building_roof_location_level_geometry_allowed"] is False
+    assert set(packet.separated_decision_layers) == {
+        "installed_capacity_route",
+        "orientation_tilt_distribution",
+        "irradiance_to_power_conversion",
+        "node_allocation",
+    }
+    with pytest.raises(ValueError, match="First-experiment PV approval packet is unsigned"):
+        packet.require_executable_first_experiment_pv_approval()
+
+
+def test_first_experiment_approval_packet_rejects_executable_claim() -> None:
+    payload = json.loads(
+        Path("data/metadata/weather_pv/d014_pv_first_experiment_approval_packet.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    payload["executable_gate"]["executable_pv_generation_authorized"] = True
+
+    with pytest.raises(ValueError, match="must not authorize executable PV generation"):
+        PVFirstExperimentApprovalPacket(
+            packet_id=payload["packet_id"],
+            data_id=payload["data_id"],
+            status=payload["status"],
+            download_performed=payload["download_performed"],
+            raw_data_committed=payload["raw_data_committed"],
+            input_metadata=payload["input_metadata"],
+            first_experiment_scope=payload["first_experiment_scope"],
+            separated_decision_layers=payload["separated_decision_layers"],
+            pi_approval_keys_before_executable_use=payload["pi_approval_keys_before_executable_use"],
+            executable_gate=payload["executable_gate"],
             non_claims=payload["non_claims"],
         )
 

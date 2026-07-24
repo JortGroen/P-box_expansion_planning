@@ -20,4 +20,4 @@ The packet lists approval keys for the conversion formula, irradiance basis, sig
 
 ## Validation
 
-Completed on this branch before PR: focused PV/data-source/methods tests passed with 123 passed; `scripts/task.ps1 ownership` passed; `git diff --check` passed; `scripts/task.ps1 test-fast` passed with 665 passed, 1 skipped, and 7 deselected.
+Completed on this branch before PR: focused PV/data-source/methods tests passed with 130 passed; `scripts/task.ps1 ownership` passed; `git diff --check` passed; `scripts/task.ps1 test-fast` passed with 688 passed, 1 skipped, and 7 deselected.

@@ -30,6 +30,8 @@ D014_ORIENTATION_TILT_VALUE_CHOICE_NAME = "d014_pv_orientation_tilt_value_choice
 D014_ORIENTATION_TILT_VALUE_CHOICE_ID = "D014-PV-ORIENTATION-TILT-VALUE-CHOICE-PACKET"
 D014_PV_PARAM_CONVERSION_SOURCE_CHOICE_NAME = "d014_pv_param_conversion_source_choice_packet.json"
 D014_PV_PARAM_CONVERSION_SOURCE_CHOICE_ID = "D014-PV-PARAM-CONVERSION-SOURCE-CHOICE-PACKET"
+D014_PV_FIRST_EXPERIMENT_APPROVAL_NAME = "d014_pv_first_experiment_approval_packet.json"
+D014_PV_FIRST_EXPERIMENT_APPROVAL_ID = "D014-PV-FIRST-EXPERIMENT-APPROVAL-PACKET"
 D014_DATA_ID = "D-014"
 CBS_TABLE_ID = "85005NED"
 CBS_ODATA_BASE = f"https://opendata.cbs.nl/ODataApi/OData/{CBS_TABLE_ID}"
@@ -1754,6 +1756,97 @@ def build_d014_pv_param_conversion_source_choice_packet() -> dict[str, Any]:
         ],
     }
 
+
+
+def build_d014_pv_first_experiment_approval_packet(
+    *,
+    capacity_template_path: str | Path = "data/metadata/weather_pv/d014_pv_capacity_approval_template.json",
+    orientation_source_choice_path: str | Path = "data/metadata/weather_pv/d014_pv_orientation_tilt_source_choice_packet.json",
+    orientation_value_choice_path: str | Path = "data/metadata/weather_pv/d014_pv_orientation_tilt_value_choice_packet.json",
+    conversion_source_choice_path: str | Path = "data/metadata/weather_pv/d014_pv_param_conversion_source_choice_packet.json",
+    executable_preflight_guard_path: str | Path = "data/metadata/weather_pv/d014_pv_executable_preflight_guard.json",
+) -> dict[str, Any]:
+    """Return the fail-closed first-experiment PV approval packet for PI review."""
+    capacity = _metadata_input_record(capacity_template_path, D014_CAPACITY_APPROVAL_TEMPLATE_ID)
+    orientation_source = _metadata_input_record(orientation_source_choice_path, D014_ORIENTATION_TILT_SOURCE_CHOICE_ID)
+    orientation_values = _metadata_input_record(orientation_value_choice_path, D014_ORIENTATION_TILT_VALUE_CHOICE_ID)
+    conversion = _metadata_input_record(conversion_source_choice_path, D014_PV_PARAM_CONVERSION_SOURCE_CHOICE_ID)
+    preflight = _metadata_input_record(executable_preflight_guard_path, D014_PV_EXECUTABLE_PREFLIGHT_GUARD_ID)
+    approval_keys = [
+        "signed_d014_capacity_artifact",
+        "signed_capacity_unit_and_dc_ac_convention",
+        "signed_ii3050_scenario_growth_factor_and_a016_mapping",
+        "signed_statistical_orientation_tilt_source",
+        "signed_statistical_orientation_tilt_bins_representative_angles_and_weights",
+        "signed_orientation_tilt_weighting_convention",
+        "signed_pv_param_conversion_formula_or_amendment",
+        "signed_irradiance_transposition_or_direct_ghi_treatment",
+        "signed_loss_temperature_clipping_and_capacity_convention",
+        "signed_node_allocation_rule",
+        "signed_final_paired_hp_pv_acceptance_prerequisite",
+    ]
+    return {
+        "packet_id": D014_PV_FIRST_EXPERIMENT_APPROVAL_ID,
+        "data_id": D014_DATA_ID,
+        "created_utc": _now_utc_iso(),
+        "status": "proposed_first_experiment_pv_approval_packet_no_executable_values",
+        "download_performed": False,
+        "raw_data_committed": False,
+        "input_metadata": {
+            "capacity_approval_template": capacity,
+            "orientation_tilt_source_choice": orientation_source,
+            "orientation_tilt_value_choice": orientation_values,
+            "pv_param_conversion_source_choice": conversion,
+            "executable_preflight_guard": preflight,
+        },
+        "first_experiment_scope": {
+            "orientation_tilt_route": "typical/statistical distribution only",
+            "building_roof_location_level_geometry_allowed": False,
+            "specific_3dbag_or_pv_map_workflow_allowed": False,
+            "deferred_improvement": "post-first-experiment roof/building/PV-map geometry may be revisited only by a later signed scope change",
+        },
+        "separated_decision_layers": {
+            "installed_capacity_route": {
+                "governing_decision": "PV-CAP-001/D-014",
+                "status": "route approved; executable value unsigned",
+                "must_not_decide_here": ["CBS row/value", "II3050 scenario/growth factor", "DC/AC convention"],
+            },
+            "orientation_tilt_distribution": {
+                "governing_decision": "PV-ORIENT-001",
+                "status": "scope approved; source, bins, angles, weights, and weighting convention unsigned",
+                "must_not_decide_here": ["final class weights", "final representative angles", "roof/building extraction"],
+            },
+            "irradiance_to_power_conversion": {
+                "governing_decision": "PV-PARAM-001_or_signed_amendment",
+                "status": "formula unsigned; direct-GHI/PR route disputed until explicitly signed",
+                "must_not_decide_here": ["PR=0.86", "pvlib/POA model", "temperature model", "clipping rule"],
+            },
+            "node_allocation": {
+                "governing_decision": "future_node_allocation_rule",
+                "status": "unsigned and separate from capacity total and PV-PARAM conversion",
+                "must_not_decide_here": ["per-node capacity shares", "allocation denominator", "building/roof allocation"],
+            },
+        },
+        "pi_approval_keys_before_executable_use": approval_keys,
+        "executable_gate": {
+            "executable_pv_generation_authorized": False,
+            "result_if_invoked": "abort_until_first_experiment_pv_approvals_signed",
+            "blocking_register_ids": [
+                "D014-PV-CAPACITY-APPROVAL-TEMPLATE_successor",
+                "PV-ORIENT-001_values",
+                "PV-PARAM-001_or_signed_amendment",
+                "A-016",
+                "future_node_allocation_rule",
+                "FINAL-PAIRED-HP-PV-ACCEPTANCE",
+            ],
+        },
+        "non_claims": [
+            "No PV capacity value, II3050 growth factor, DC/AC convention, orientation/tilt bins, orientation/tilt weights, PR value, efficiency, conversion formula, or allocation number is approved.",
+            "No PV generation, net-load, event detection, P(E), threshold run, capacity screen, manuscript result, or final paired HP/PV acceptance is produced.",
+            "No building, roof, location-level, 3DBAG, or PV-map geometry workflow is implemented before the first experiment.",
+            "PVGIS remains qualitative sanity/provenance context and is not a realized sampled WEATHER-001 path.",
+        ],
+    }
 def write_d014_pv_capacity_source_value_packet(metadata_dir: str | Path = "data/metadata") -> Path:
     """Write the proposed D-014 source/value packet and return its path."""
     directory = Path(metadata_dir) / "weather_pv"
@@ -1811,6 +1904,18 @@ def write_d014_pv_param_conversion_source_choice_packet(metadata_dir: str | Path
     return path
 
 
+
+def write_d014_pv_first_experiment_approval_packet(metadata_dir: str | Path = "data/metadata") -> Path:
+    """Write the proposed first-experiment PV approval packet and return its path."""
+    directory = Path(metadata_dir) / "weather_pv"
+    directory.mkdir(parents=True, exist_ok=True)
+    path = directory / D014_PV_FIRST_EXPERIMENT_APPROVAL_NAME
+    path.write_text(
+        json.dumps(build_d014_pv_first_experiment_approval_packet(), indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    return path
+
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Prepare D-014 PV capacity source/value metadata.")
     parser.add_argument("--metadata-dir", default="data/metadata")
@@ -1823,6 +1928,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--write-d014-orientation-tilt-source-choice", action="store_true")
     parser.add_argument("--write-d014-orientation-tilt-value-choice", action="store_true")
     parser.add_argument("--write-d014-pv-param-conversion-source-choice", action="store_true")
+    parser.add_argument("--write-d014-pv-first-experiment-approval", action="store_true")
     parser.add_argument("--retrieve-d014-cbs-anchor-evidence", action="store_true")
     parser.add_argument("--retrieve-d014-ii3050-growth-evidence", action="store_true")
     args = parser.parse_args(argv)
@@ -1839,6 +1945,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         path = retrieve_d014_ii3050_growth_evidence(metadata_dir=args.metadata_dir)
     elif args.retrieve_d014_cbs_anchor_evidence:
         path = retrieve_d014_cbs_capacity_anchor_evidence(metadata_dir=args.metadata_dir)
+    elif args.write_d014_pv_first_experiment_approval:
+        path = write_d014_pv_first_experiment_approval_packet(args.metadata_dir)
     elif args.write_d014_pv_param_conversion_source_choice:
         path = write_d014_pv_param_conversion_source_choice_packet(args.metadata_dir)
     elif args.write_d014_orientation_tilt_value_choice:
