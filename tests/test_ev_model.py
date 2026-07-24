@@ -38,6 +38,7 @@ from src.ev_model import (
     ev005_within_realization_replacement_policy_packet,
     ev_ic1_candidate_adapter_artifact,
     ev_ic1_candidate_member_reference_artifact,
+    ev_ic1_component_input_scaffold_artifact,
     ev_library_integration_artifact_from_manifest,
     ev_member_selection_implementation_plan,
     ev_planning_calendar_mapping_expectation,
@@ -54,6 +55,7 @@ from src.ev_model import (
     verify_ev_candidate_checksums,
     write_ev_integration_readiness_artifact,
 )
+from src.contracts.net_load import AcceptedComponentAdapterArtifact
 from src.rng import SeedTree
 
 
@@ -2415,4 +2417,127 @@ def test_charge_point_ranges_report_totals_and_per_node_kr() -> None:
         "home_max": 9,
         "public_min": 3,
         "public_max": 4,
+    }
+
+
+def _committed_ev_component_scaffold_inputs() -> tuple[dict[str, object], dict[str, object], dict[str, object], dict[str, object], str]:
+    base = Path("data/metadata/ev_adoption")
+    adapter = json.loads((base / "e2_s2_ev_ic1_candidate_adapter_artifact.json").read_text(encoding="utf-8"))
+    public_capacity = json.loads((base / "e2_s2_public_set_b_capacity_allocation_readiness.json").read_text(encoding="utf-8"))
+    member_reference = json.loads((base / "e2_s2_ev_ic1_candidate_member_reference.json").read_text(encoding="utf-8"))
+    selection_bytes = (base / "e2_s2_ev005b_candidate_selection_manifests.json.gz").read_bytes()
+    selection_manifest = json.loads(gzip.decompress(selection_bytes))
+    import hashlib
+
+    return adapter, public_capacity, member_reference, selection_manifest, hashlib.sha256(selection_bytes).hexdigest()
+
+
+def test_ev_ic1_component_input_scaffold_bridges_to_ic1_accepted_artifact() -> None:
+    adapter, public_capacity, member_reference, selection_manifest, selection_sha = _committed_ev_component_scaffold_inputs()
+
+    artifact = ev_ic1_component_input_scaffold_artifact(
+        adapter,
+        public_capacity,
+        member_reference,
+        selection_manifest,
+        candidate_selection_manifest_sha256=selection_sha,
+    )
+
+    assert artifact["artifact_type"] == "ev_ic1_component_input_scaffold"
+    assert artifact["status"] == "accepted_metadata_only_for_ic1_component_input_scaffold"
+    assert artifact["source_ids"] == ["D-002", "D-010"]
+    assert artifact["policy"] == {
+        "candidate_libraries_only": True,
+        "held_out_access": False,
+        "quarantined_access": False,
+        "profile_arrays_loaded": False,
+        "integrated_analysis_performed": False,
+        "event_or_p_e_analysis_performed": False,
+        "capacity_screen_performed": False,
+        "manuscript_numbers_produced": False,
+        "m_sufficiency_claimed": False,
+        "final_low_middle_high_branch_selected": False,
+    }
+    assert artifact["calendar_mapping"]["rule_id"] == "EV-CAL-001"
+    assert artifact["calendar_mapping"]["n_timesteps"] == EXPECTED_FULL_YEAR_STEPS
+    assert len(artifact["ic1_accepted_component_adapter_artifact"]["node_ids"]) == 115
+
+    bridge = AcceptedComponentAdapterArtifact(**artifact["ic1_accepted_component_adapter_artifact"])
+    assert bridge.kind == "ev"
+    assert bridge.calendar_id == "planning-2035-europe-amsterdam-15min"
+    assert bridge.timestep_seconds == 900
+
+    totals = {
+        row["scenario"]: (row["home_charge_points"], row["public_charge_points"])
+        for row in artifact["scenario_inputs"]
+    }
+    assert totals == {"high": (10343, 6138), "low": (7992, 4183), "middle": (9386, 5127)}
+    for scenario in artifact["scenario_inputs"]:
+        assert scenario["node_count"] == 115
+        assert sum(row["home_charge_points"] for row in scenario["node_inputs"]) == scenario["home_charge_points"]
+        assert sum(row["public_charge_points"] for row in scenario["node_inputs"]) == scenario["public_charge_points"]
+        assert all(
+            sum(row["public_charge_points_by_capacity_class"].values()) == row["public_charge_points"]
+            for row in scenario["node_inputs"]
+        )
+
+
+def test_ev_ic1_component_input_scaffold_rejects_unsafe_inputs() -> None:
+    adapter, public_capacity, member_reference, selection_manifest, selection_sha = _committed_ev_component_scaffold_inputs()
+
+    unsafe_adapter = json.loads(json.dumps(adapter))
+    unsafe_adapter["policy"]["held_out_access"] = True
+    with pytest.raises(ValueError, match="held-out access"):
+        ev_ic1_component_input_scaffold_artifact(
+            unsafe_adapter,
+            public_capacity,
+            member_reference,
+            selection_manifest,
+            candidate_selection_manifest_sha256=selection_sha,
+        )
+
+    unsafe_selection = json.loads(json.dumps(selection_manifest))
+    unsafe_selection["policy"]["profile_arrays_loaded"] = True
+    with pytest.raises(ValueError, match="profile_arrays_loaded"):
+        ev_ic1_component_input_scaffold_artifact(
+            adapter,
+            public_capacity,
+            member_reference,
+            unsafe_selection,
+            candidate_selection_manifest_sha256=selection_sha,
+        )
+
+    mismatched = json.loads(json.dumps(selection_manifest))
+    mismatched["scenarios"][0]["home_required_members"] += 1
+    with pytest.raises(ValueError, match="selection totals"):
+        ev_ic1_component_input_scaffold_artifact(
+            adapter,
+            public_capacity,
+            member_reference,
+            mismatched,
+            candidate_selection_manifest_sha256=selection_sha,
+        )
+
+
+def test_committed_ev_ic1_component_input_scaffold_matches_builder() -> None:
+    adapter, public_capacity, member_reference, selection_manifest, selection_sha = _committed_ev_component_scaffold_inputs()
+    expected = ev_ic1_component_input_scaffold_artifact(
+        adapter,
+        public_capacity,
+        member_reference,
+        selection_manifest,
+        candidate_selection_manifest_sha256=selection_sha,
+    )
+    committed = json.loads(
+        Path("data/metadata/ev_adoption/e2_s2_ev_ic1_component_input_scaffold.json").read_text(
+            encoding="utf-8"
+        )
+    )
+
+    assert committed == expected
+    assert committed["loading_preconditions"] == {
+        "verify_candidate_selection_manifest_set_sha256_before_use": True,
+        "verify_candidate_processed_file_checksums_before_profile_loading": True,
+        "load_only_candidate_processed_profile_arrays": True,
+        "apply_ev_cal001_ordinal_mapping_before_ic1_aggregation": True,
     }

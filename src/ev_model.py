@@ -2770,6 +2770,295 @@ def public_set_b_capacity_allocation_readiness_artifact(
         },
     }
 
+
+
+def ev_ic1_component_input_scaffold_artifact(
+    candidate_adapter_artifact: Mapping[str, Any],
+    public_capacity_artifact: Mapping[str, Any],
+    candidate_member_reference: Mapping[str, Any],
+    selection_manifest_set: Mapping[str, Any],
+    *,
+    candidate_selection_manifest_sha256: str | None = None,
+) -> dict[str, object]:
+    """Build an array-free EV component-input scaffold for IC-1.
+
+    The scaffold is intentionally a manifest bridge: it proves that approved
+    EV-007A/A-014 counts, EV-008A capacity strata, EV-005B selections, and
+    EV-CAL-001 calendar metadata agree before any generated profile arrays are
+    loaded by a future Agent A adapter.
+    """
+
+    if candidate_adapter_artifact.get("artifact_type") != "ev_to_ic1_candidate_adapter_artifact":
+        raise ValueError("Expected an EV-to-IC-1 candidate adapter artifact")
+    if public_capacity_artifact.get("artifact_type") != "ev_public_set_b_capacity_allocation_readiness":
+        raise ValueError("Expected EV public Set B capacity allocation readiness metadata")
+    if candidate_member_reference.get("artifact_type") != "ev_ic1_candidate_member_reference":
+        raise ValueError("Expected EV candidate member reference metadata")
+    if selection_manifest_set.get("artifact_type") != "ev_candidate_member_selection_manifest_set":
+        raise ValueError("Expected EV-005B candidate member-selection manifest set")
+
+    for label, artifact in (
+        ("candidate adapter", candidate_adapter_artifact),
+        ("public capacity", public_capacity_artifact),
+        ("candidate member reference", candidate_member_reference),
+    ):
+        policy = artifact.get("policy")
+        if not isinstance(policy, dict):
+            raise ValueError(f"{label} artifact must include policy flags")
+        if policy.get("held_out_access") is not False:
+            raise ValueError(f"{label} artifact must block held-out access")
+        if policy.get("profile_arrays_loaded") not in {False, None} and policy.get("profile_arrays_opened") not in {False, None}:
+            raise ValueError(f"{label} artifact must not load EV profile arrays")
+        if policy.get("m_sufficiency_claimed") is not False:
+            raise ValueError(f"{label} artifact must not claim EV library sufficiency")
+        if policy.get("integrated_analysis_performed") is not False:
+            raise ValueError(f"{label} artifact must not include integrated analysis")
+
+    selection_policy = selection_manifest_set.get("policy")
+    if not isinstance(selection_policy, dict):
+        raise ValueError("EV selection manifest set must include policy flags")
+    if selection_policy.get("candidate_only") is not True:
+        raise ValueError("EV component-input scaffold requires candidate-only selections")
+    blocked_selection_flags = {
+        "held_out_access": False,
+        "quarantined_access": False,
+        "profile_arrays_loaded": False,
+        "integrated_analysis_performed": False,
+        "event_or_p_e_analysis_performed": False,
+        "capacity_screen_performed": False,
+        "manuscript_numbers_produced": False,
+        "m_sufficiency_claimed": False,
+    }
+    for key, expected in blocked_selection_flags.items():
+        if selection_policy.get(key) is not expected:
+            raise ValueError(f"EV selection manifest policy {key} must be {expected!r}")
+    if selection_policy.get("replacement_policy_id") != "EV-005B" or selection_policy.get("replacement_enabled") is not True:
+        raise ValueError("EV component-input scaffold requires approved EV-005B replacement selections")
+
+    source_ref_sha = _require_sha256(
+        selection_manifest_set.get("source_candidate_member_reference_sha256"),
+        "source_candidate_member_reference_sha256",
+    )
+    if candidate_selection_manifest_sha256 is not None:
+        candidate_selection_manifest_sha256 = _require_sha256(
+            candidate_selection_manifest_sha256,
+            "candidate_selection_manifest_sha256",
+        )
+
+    adapter_totals = candidate_adapter_artifact.get("scenario_totals")
+    if not isinstance(adapter_totals, dict):
+        raise ValueError("Candidate adapter artifact must include scenario_totals")
+    public_totals = public_capacity_artifact.get("scenario_totals")
+    if not isinstance(public_totals, dict):
+        raise ValueError("Public capacity artifact must include scenario_totals")
+    member_counts = candidate_member_reference.get("candidate_member_count_by_component")
+    if member_counts != {EV_HOME_COMPONENT: 1000, EV_PUBLIC_COMPONENT: 1200}:
+        raise ValueError("EV component-input scaffold requires verified Set A/B candidate member counts")
+
+    allocation_rows = candidate_adapter_artifact.get("node_allocations")
+    if not isinstance(allocation_rows, list):
+        raise ValueError("Candidate adapter artifact must include node_allocations")
+    selection_scenarios = selection_manifest_set.get("scenarios")
+    if not isinstance(selection_scenarios, list):
+        raise ValueError("EV selection manifest set must include scenarios")
+    public_scenarios = public_capacity_artifact.get("scenario_allocations")
+    if not isinstance(public_scenarios, list):
+        raise ValueError("Public capacity artifact must include scenario_allocations")
+
+    allocation_by_scenario = {
+        _require_non_empty_string(row.get("scenario"), "scenario"): row
+        for row in allocation_rows
+        if isinstance(row, dict)
+    }
+    selection_by_scenario = {
+        _require_non_empty_string(row.get("scenario"), "scenario"): row
+        for row in selection_scenarios
+        if isinstance(row, dict)
+    }
+    public_by_scenario = {
+        _require_non_empty_string(row.get("scenario"), "scenario"): row
+        for row in public_scenarios
+        if isinstance(row, dict)
+    }
+    if set(allocation_by_scenario) != set(selection_by_scenario) or set(allocation_by_scenario) != set(public_by_scenario):
+        raise ValueError("EV scenario coverage must match across allocation, public capacity, and selection metadata")
+
+    node_ids: set[str] | None = None
+    scenario_records: list[dict[str, object]] = []
+    for scenario in sorted(allocation_by_scenario):
+        allocation = allocation_by_scenario[scenario]
+        selection = selection_by_scenario[scenario]
+        public_record = public_by_scenario[scenario]
+        home_by_node = _require_int_mapping(allocation.get("home_by_node"), f"{scenario} home_by_node")
+        public_by_node = _require_int_mapping(allocation.get("public_by_node"), f"{scenario} public_by_node")
+        public_by_class = public_record.get("public_by_node_by_capacity_class")
+        if not isinstance(public_by_class, dict):
+            raise ValueError("Public capacity artifact must include node capacity-class allocations")
+        current_nodes = set(home_by_node)
+        if current_nodes != set(public_by_node) or current_nodes != set(public_by_class):
+            raise ValueError("EV home/public/capacity allocations must cover the same nodes")
+        if node_ids is None:
+            node_ids = current_nodes
+        elif node_ids != current_nodes:
+            raise ValueError("EV component-input scenarios must cover one stable node set")
+
+        expected_home = sum(home_by_node.values())
+        expected_public = sum(public_by_node.values())
+        totals = adapter_totals.get(scenario)
+        if totals != {"home": expected_home, "public": expected_public}:
+            raise ValueError("EV scenario totals do not match node allocations")
+        if public_totals.get(scenario, {}).get("public") != expected_public:
+            raise ValueError("EV public capacity totals do not match public node allocation")
+        if selection.get("home_required_members") != expected_home or selection.get("public_required_members") != expected_public:
+            raise ValueError("EV-005B selection totals do not match EV adoption requirements")
+
+        node_manifests = selection.get("node_manifests")
+        if not isinstance(node_manifests, list):
+            raise ValueError("EV selection scenarios must include node manifests")
+        selection_nodes = {
+            _require_non_empty_string(row.get("node_id"), "selection node_id"): row
+            for row in node_manifests
+            if isinstance(row, dict)
+        }
+        if set(selection_nodes) != current_nodes:
+            raise ValueError("EV selection manifest nodes must match A-014 allocation nodes")
+
+        scenario_node_records: list[dict[str, object]] = []
+        for node_id in sorted(current_nodes):
+            class_row = public_by_class[node_id]
+            if not isinstance(class_row, dict):
+                raise ValueError("EV public capacity node allocation rows must be mappings")
+            class_counts = _require_int_mapping(class_row, f"{scenario} {node_id} public_by_capacity_class")
+            if sum(class_counts.values()) != public_by_node[node_id]:
+                raise ValueError("EV public capacity-class counts must conserve each node total")
+            node_selection = selection_nodes[node_id]
+            if node_selection.get("home_required_members") != home_by_node[node_id]:
+                raise ValueError("EV home selection count does not match node allocation")
+            if node_selection.get("public_required_members") != public_by_node[node_id]:
+                raise ValueError("EV public selection count does not match node allocation")
+            selections = node_selection.get("selections")
+            if not isinstance(selections, list):
+                raise ValueError("EV selection node manifest must include selections")
+            if len(selections) != home_by_node[node_id] + public_by_node[node_id]:
+                raise ValueError("EV selection row count must match node charge-point count")
+            scenario_node_records.append(
+                {
+                    "node_id": node_id,
+                    "home_charge_points": home_by_node[node_id],
+                    "public_charge_points": public_by_node[node_id],
+                    "public_charge_points_by_capacity_class": dict(sorted(class_counts.items())),
+                    "selection_manifest_pointer": {
+                        "scenario": scenario,
+                        "node_id": node_id,
+                        "selection_row_count": len(selections),
+                        "selection_rows_are_in_source_manifest": True,
+                    },
+                }
+            )
+
+        scenario_records.append(
+            {
+                "scenario": scenario,
+                "planning_year": _require_int(allocation.get("year"), "planning_year"),
+                "node_count": len(current_nodes),
+                "home_charge_points": expected_home,
+                "public_charge_points": expected_public,
+                "public_charge_points_by_capacity_class": public_record.get("capacity_class_totals"),
+                "component_streams": selection.get("component_streams"),
+                "node_inputs": scenario_node_records,
+                "total_conservation_verified": True,
+                "selection_counts_verified": True,
+            }
+        )
+
+    stable_node_ids = tuple(sorted(node_ids or ()))
+    if len(stable_node_ids) != 115:
+        raise ValueError("EV IC-1 component-input scaffold currently requires 115 SimBench load nodes")
+    calendar = candidate_member_reference.get("calendar_mapping")
+    if not isinstance(calendar, dict) or calendar.get("rule_id") != EV_CALENDAR_MAPPING_RULE_ID:
+        raise ValueError("EV component-input scaffold requires EV-CAL-001 calendar metadata")
+    if calendar.get("n_timesteps") != EXPECTED_FULL_YEAR_STEPS:
+        raise ValueError("EV component-input scaffold requires complete 35,040-step profiles")
+
+    return {
+        "schema_version": 1,
+        "artifact_type": "ev_ic1_component_input_scaffold",
+        "artifact_id": "e2_s2_ev_ic1_component_input_scaffold",
+        "status": "accepted_metadata_only_for_ic1_component_input_scaffold",
+        "task_id": "E2.S2",
+        "planning_year": 2035,
+        "component_kind": "ev",
+        "component_ids": [EV_HOME_COMPONENT, EV_PUBLIC_COMPONENT],
+        "source_ids": ["D-002", "D-010"],
+        "decision_ids": ["EV-003", "EV-004", "EV-005", "EV-005B", "EV-007A", "EV-008A", "EV-CAL-001", "RNG-001", "A-014"],
+        "source_artifacts": {
+            "candidate_adapter_artifact": "data/metadata/ev_adoption/e2_s2_ev_ic1_candidate_adapter_artifact.json",
+            "public_capacity_artifact": "data/metadata/ev_adoption/e2_s2_public_set_b_capacity_allocation_readiness.json",
+            "candidate_member_reference": "data/metadata/ev_adoption/e2_s2_ev_ic1_candidate_member_reference.json",
+            "candidate_member_reference_sha256": source_ref_sha,
+            "candidate_selection_manifest_set": "data/metadata/ev_adoption/e2_s2_ev005b_candidate_selection_manifests.json.gz",
+            "candidate_selection_manifest_set_sha256": candidate_selection_manifest_sha256,
+        },
+        "ic1_accepted_component_adapter_artifact": {
+            "artifact_id": "e2_s2_ev_ic1_component_input_scaffold",
+            "kind": "ev",
+            "source_id": "elaadnl_ev_candidate_component_input_scaffold",
+            "member_id": "ev005b_candidate_selection_manifest_set_root20260722_sample0",
+            "node_ids": list(stable_node_ids),
+            "calendar_id": EV_TARGET_CALENDAR_ID,
+            "timestep_seconds": 900,
+            "shared_weather_driver_id": None,
+            "provenance": {
+                "source_selection_manifest": "data/metadata/ev_adoption/e2_s2_ev005b_candidate_selection_manifests.json.gz",
+                "candidate_member_reference_sha256": source_ref_sha,
+                "calendar_mapping_rule_id": EV_CALENDAR_MAPPING_RULE_ID,
+                "calendar_mapping_rule_version": EV_CALENDAR_MAPPING_RULE_VERSION,
+                "replacement_policy_id": "EV-005B",
+            },
+        },
+        "calendar_mapping": {
+            "status": "approved",
+            "rule_id": EV_CALENDAR_MAPPING_RULE_ID,
+            "rule_version": EV_CALENDAR_MAPPING_RULE_VERSION,
+            "source_calendar_id": EV_SOURCE_CALENDAR_ID,
+            "target_calendar_id": EV_TARGET_CALENDAR_ID,
+            "source_timestamp_index_policy": "target_index_i_uses_source_index_i",
+            "n_timesteps": EXPECTED_FULL_YEAR_STEPS,
+            "weekday_weekend_preserved": False,
+        },
+        "scenario_inputs": scenario_records,
+        "candidate_member_counts": {
+            "home": 1000,
+            "public": 1200,
+            "public_by_capacity_class": candidate_member_reference.get("public_candidate_member_count_by_capacity_class"),
+        },
+        "selection_manifest_summary": {
+            "root_seed": selection_manifest_set.get("root_seed"),
+            "sample_index": selection_manifest_set.get("sample_index"),
+            "seed_tree": selection_manifest_set.get("seed_tree"),
+            "duplicate_summary": selection_manifest_set.get("duplicate_summary"),
+            "scenario_count": selection_manifest_set.get("scenario_count"),
+        },
+        "loading_preconditions": {
+            "verify_candidate_selection_manifest_set_sha256_before_use": True,
+            "verify_candidate_processed_file_checksums_before_profile_loading": True,
+            "load_only_candidate_processed_profile_arrays": True,
+            "apply_ev_cal001_ordinal_mapping_before_ic1_aggregation": True,
+        },
+        "policy": {
+            "candidate_libraries_only": True,
+            "held_out_access": False,
+            "quarantined_access": False,
+            "profile_arrays_loaded": False,
+            "integrated_analysis_performed": False,
+            "event_or_p_e_analysis_performed": False,
+            "capacity_screen_performed": False,
+            "manuscript_numbers_produced": False,
+            "m_sufficiency_claimed": False,
+            "final_low_middle_high_branch_selected": False,
+        },
+    }
+
 def adoption_node_allocations(config: dict[str, Any]) -> tuple[NodeChargePointAllocation, ...]:
     """Derive deterministic per-node home/public charge-point allocations."""
 
