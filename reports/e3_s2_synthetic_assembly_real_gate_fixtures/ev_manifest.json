@@ -1,0 +1,19 @@
+{
+  "array_path": "reports/e3_s2_synthetic_assembly_real_gate_fixtures/ev.npz",
+  "array_sha256": "189a450569bc225cb3fc2690433d24568e82935bb02f45ad2f61d3a0347f61bd",
+  "artifact_id": "ev-synthetic-a-synthetic-array",
+  "artifact_status": "synthetic_fixture",
+  "calendar_id": "synthetic_window_2035_15min_4step",
+  "component_id": "ev-synthetic-a",
+  "kind": "ev",
+  "member_id": "ev-synthetic-member",
+  "node_id": "node-a",
+  "provenance": {
+    "fixture_id": "e3_s2_two_node_four_step_synthetic_ic1_fixture_v1",
+    "not_a_scientific_result": true,
+    "synthetic_fixture_only": true
+  },
+  "source_id": "synthetic-ev-source",
+  "timestep_count": 4,
+  "timestep_seconds": 900
+}

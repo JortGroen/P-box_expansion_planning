@@ -1,0 +1,19 @@
+{
+  "array_path": "reports/e3_s2_synthetic_assembly_real_gate_fixtures/flexibility.npz",
+  "array_sha256": "395c43491db39c21746b491541aa06fff98f74072bb5738f92f67943c28e2dec",
+  "artifact_id": "flexibility-synthetic-a-synthetic-array",
+  "artifact_status": "synthetic_fixture",
+  "calendar_id": "synthetic_window_2035_15min_4step",
+  "component_id": "flexibility-synthetic-a",
+  "kind": "flexibility",
+  "member_id": "flexibility-synthetic-member",
+  "node_id": "node-a",
+  "provenance": {
+    "fixture_id": "e3_s2_two_node_four_step_synthetic_ic1_fixture_v1",
+    "not_a_scientific_result": true,
+    "synthetic_fixture_only": true
+  },
+  "source_id": "synthetic-flexibility-source",
+  "timestep_count": 4,
+  "timestep_seconds": 900
+}
