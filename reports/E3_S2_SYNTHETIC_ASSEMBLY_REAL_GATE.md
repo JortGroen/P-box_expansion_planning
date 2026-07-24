@@ -70,5 +70,5 @@ Input: `reports/e3_s2_synthetic_assembly_real_gate_input.json`
 Input SHA-256: `6f9eaf8d2f6a1fb2086cb539ddb7b43a9f602a79006c360de4cbaebc749a7170`
 Base real-gate input: `reports/e3_s2_accepted_artifact_blocker_preflight_input.json`
 Base real-gate input SHA-256: `e01eb4476780ee81133fb7d03a9ffd288df8ba0ab191024103d3328c009a59f8`
-Generated from git commit: `712025a6dc6b5ea35a6c705b522c5d56cfd95b18`
+Generated from git commit: `906607ec6ef48ec87deedade0db2b60bfcc06cb8`
 Standard claim-source manifest: `reports/e3_s2_synthetic_assembly_real_gate_manifest.json`

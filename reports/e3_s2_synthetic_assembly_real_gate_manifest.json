@@ -4,9 +4,9 @@
     "sha256": "e01eb4476780ee81133fb7d03a9ffd288df8ba0ab191024103d3328c009a59f8"
   },
   "command": ".\\.venv\\Scripts\\python.exe reports\\e3_s2_generate_synthetic_assembly_real_gate.py",
-  "generated_at_utc": "2026-07-24T14:04:39Z",
-  "git_commit": "712025a6dc6b5ea35a6c705b522c5d56cfd95b18",
-  "git_status_short_before_generation": "?? reports/E3_S2_SYNTHETIC_ASSEMBLY_REAL_GATE.md\n?? reports/agent_logs/agent-a/E3.S2-synthetic-assembly-real-gate.md\n?? reports/e3_s2_synthetic_assembly_real_gate_fixtures/\n?? reports/e3_s2_synthetic_assembly_real_gate_manifest.json",
+  "generated_at_utc": "2026-07-24T14:07:43Z",
+  "git_commit": "906607ec6ef48ec87deedade0db2b60bfcc06cb8",
+  "git_status_short_before_generation": "",
   "input": {
     "path": "reports/e3_s2_synthetic_assembly_real_gate_input.json",
     "schema_version": "e3_s2_synthetic_assembly_real_gate_input_v1",
@@ -70,7 +70,7 @@
       }
     ],
     "report_path": "reports/E3_S2_SYNTHETIC_ASSEMBLY_REAL_GATE.md",
-    "report_sha256": "fc82b3b49de611262665bd966875a90fa1bc4dd1bdd88a0cadfb068f2f2ffd8d"
+    "report_sha256": "f7f2c362ec8ae63a207bc6032ae8af174d21d3002f8b166368e3c22a3e566dab"
   },
   "preflight": {
     "blocker_manifest": {
