@@ -159,5 +159,5 @@ The E3.S2b design also records that the future screen must be a predeclared 2030
 
 Command: `.\.venv\Scripts\python.exe reports\e3_s2b_generate_integrated_prerun_readiness.py`
 Input SHA-256: `266182509f6184d6347855fe4a045db1c138375a1eb63c7dff13ae78b935e909`
-Generated from git commit: `ed8e1947570f9432d70166aed63456876c415140`
+Generated from git commit: `0becf60985702e5833e5311bbcc29c1c1d744008`
 Refresh basis: origin/main through PR #268; #263 PV component-output scaffold, #265 EV generic multi-node manifests, #266 B hybrid provenance guard, #267 HP profile rebuild runner scaffold, and #268 B alpha event-count scaffold consumed as metadata only; #264 capacity provenance consumed by path and checksum

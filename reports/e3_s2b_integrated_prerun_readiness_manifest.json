@@ -1,8 +1,8 @@
 {
   "command": ".\\.venv\\Scripts\\python.exe reports\\e3_s2b_generate_integrated_prerun_readiness.py",
-  "generated_at_utc": "2026-07-24T17:24:58Z",
-  "git_commit": "ed8e1947570f9432d70166aed63456876c415140",
-  "git_status_short_before_generation": "M  data/get_ev_component_outputs.py\nM  data/get_hp_scaling.py\nM  data/get_pv_capacity.py\nA  data/metadata/ev_adoption/e3_s2a_ev_ic1_generic_component_output_manifest_packet.json\nA  data/metadata/ev_adoption/generic_component_output_manifests/ev_2035_high.json\nA  data/metadata/ev_adoption/generic_component_output_manifests/ev_2035_low.json\nA  data/metadata/ev_adoption/generic_component_output_manifests/ev_2035_middle.json\nA  data/metadata/hp_scaling/hp001_profile_rebuild_runner_blocker_manifest.json\nA  data/metadata/weather_pv/d014_pv_component_output_artifact_scaffold.json\nUU paper/methods_decisions_and_assumptions.md\nM  registers/DATA_REGISTER.md\nM  registers/DECISIONS.md\n M reports/agent_logs/agent-a/E3.S2b-prerun-gate-and-screen-runner.md\nA  reports/agent_logs/agent-b/E5.S4-trust-certificate-analytic-gate.md\nA  reports/agent_logs/agent-c/E2.S3-hp001-profile-rebuild-runner-scaffold.md\nA  reports/agent_logs/agent-c/E3.S2a-ev-generic-loader-manifest.md\nA  reports/agent_logs/agent-c/e2_s4_d014_pv_component_output_artifact_scaffold.md\nM  reports/crosscheck.md\nM  reports/e2_s3_hp001_profile_rebuild_preflight.md\nA  reports/e2_s4_d014_pv_component_output_artifact_scaffold.md\nA  reports/e3_s2a_ev_generic_loader_manifest.md\n M reports/e3_s2b_generate_integrated_prerun_readiness.py\n M reports/e3_s2b_integrated_prerun_readiness_input.json\nM  src/ev_model.py\nM  src/pbox_crosscheck.py\nM  src/pv_model.py\nM  tests/test_data_sources.py\nM  tests/test_ev_model.py\nM  tests/test_pbox_crosscheck.py\nM  tests/test_pv_model.py",
+  "generated_at_utc": "2026-07-24T17:26:20Z",
+  "git_commit": "0becf60985702e5833e5311bbcc29c1c1d744008",
+  "git_status_short_before_generation": "",
   "input": {
     "path": "reports/e3_s2b_integrated_prerun_readiness_input.json",
     "schema_version": "e3_s2b_integrated_prerun_readiness_input_v1",
@@ -10,7 +10,7 @@
   },
   "outputs": {
     "report_path": "reports/E3_S2B_INTEGRATED_PRERUN_READINESS.md",
-    "report_sha256": "6f3e5452e9f7157f45e707c6eaf31708e381dcf025111a48d9b1d3f75ed4fc1d"
+    "report_sha256": "cca58230b0ebb9a0e268fd571159ddd107d466b8ddb52305af37ac17ace5b1eb"
   },
   "preflight": {
     "accepted_artifact_preflight": {
