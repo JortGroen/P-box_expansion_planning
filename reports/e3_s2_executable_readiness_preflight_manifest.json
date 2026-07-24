@@ -1,16 +1,16 @@
 {
   "command": ".\\.venv\\Scripts\\python.exe reports\\e3_s2_generate_executable_readiness_preflight.py",
-  "generated_at_utc": "2026-07-24T09:29:43Z",
-  "git_commit": "bf1d7b990b2e36cea206d582a78aa2bcb1247acf",
+  "generated_at_utc": "2026-07-24T10:12:40Z",
+  "git_commit": "a8b31567acb5714abf34c3644251087d98478a6d",
   "git_status_short_before_generation": "",
   "input": {
     "path": "reports/e3_s2_executable_readiness_preflight_input.json",
-    "schema_version": "e3_s2_executable_readiness_preflight_input_v4",
-    "sha256": "f19991aa495d9857403f882e67a35e18e7f2825424a839c978b0a0b2d4811438"
+    "schema_version": "e3_s2_executable_readiness_preflight_input_v5",
+    "sha256": "bd560b23aff38ab47ddb9625fe2ae4dbb9662516e1b3373edd85f635d85914d7"
   },
   "outputs": {
     "report_path": "reports/E3_S2_EXECUTABLE_READINESS_PREFLIGHT.md",
-    "report_sha256": "d7d84e346dce94a8e6f44aa40814b0b4cafd90511ed08c451edfe9b5b0adce56"
+    "report_sha256": "c1ef4825047a6143efdab0e60ef7cf9b6e39cc60c1becd7c15f3e29a679cc5a7"
   },
   "preflight": {
     "accepted_component_kinds": [
@@ -110,46 +110,57 @@
       "ev": {
         "accepted_for_gate": true,
         "artifact": {
-          "artifact_id": "e2_s2_ev_ic1_candidate_adapter_artifact",
+          "artifact_id": "e2_s2_ev_ic1_component_input_scaffold",
           "artifact_status": "accepted",
           "blocking_register_ids": [],
-          "calendar_id": "calendar_2035_15min_full_year_35040",
+          "calendar_id": "planning-2035-europe-amsterdam-15min",
           "kind": "ev",
-          "manifest_path": "data/metadata/ev_adoption/e2_s2_ev_ic1_candidate_adapter_artifact.json",
-          "member_id": "candidate_member_reference_unselected",
+          "manifest_path": "data/metadata/ev_adoption/e2_s2_ev_ic1_component_input_scaffold.json",
+          "member_id": "ev005b_candidate_selection_manifest_set_root20260722_sample0",
           "node_ids": [
-            "simbench_1_mv_semiurb_0_sw_all_in_service_load_nodes"
+            "load_000_to_load_114"
           ],
           "provenance": {
-            "boundary_note": "candidate metadata only; no held-out data opened and no member trajectories loaded",
-            "discovered_path": "data/metadata/ev_adoption/e2_s2_ev_ic1_candidate_adapter_artifact.json",
+            "boundary_note": "accepted metadata-only IC-1 component input scaffold; candidate processed file checksums were verified by SHA-256, but no held-out data opened and no member trajectories loaded",
+            "candidate_member_reference_sha256": "bea4d66834fbb43df9a65ea8405b0d8ead252d1f617cbbf1826388ae822b86d7",
+            "candidate_selection_manifest_set": "data/metadata/ev_adoption/e2_s2_ev005b_candidate_selection_manifests.json.gz",
+            "candidate_selection_manifest_set_sha256": "da4231595d5a3f66faba1157e10fff17fee936c495b821d20e1b1cd3e0ae6071",
+            "checksum_preflight_status": "candidate_processed_checksums_verified_array_loading_still_blocked",
+            "discovered_path": "data/metadata/ev_adoption/e2_s2_ev_ic1_component_input_scaffold.json",
+            "rng_protocol_id": "RNG-001",
+            "supporting_candidate_adapter_artifact": "data/metadata/ev_adoption/e2_s2_ev_ic1_candidate_adapter_artifact.json",
+            "supporting_checksum_preflight": "data/metadata/ev_adoption/e2_s2_ev_candidate_profile_checksum_preflight.json",
             "supporting_member_reference": "data/metadata/ev_adoption/e2_s2_ev_ic1_candidate_member_reference.json"
           },
           "shared_weather_driver_id": null,
           "signed_register_ids": [
             "EV-003",
             "EV-004",
+            "EV-005",
             "EV-005B",
             "EV-007A",
             "EV-008A",
-            "EV-CAL-001"
+            "EV-CAL-001",
+            "A-014"
           ],
-          "source_id": "elaadnl_candidate_ev_ic1_adapter_metadata",
+          "source_id": "elaadnl_ev_candidate_component_input_scaffold",
           "timestep_seconds": 900,
-          "version_id": "e2_s2_ev_ic1_candidate_adapter_artifact_v1"
+          "version_id": "e2_s2_ev_ic1_component_input_scaffold_v1"
         },
-        "artifact_id": "e2_s2_ev_ic1_candidate_adapter_artifact",
+        "artifact_id": "e2_s2_ev_ic1_component_input_scaffold",
         "artifact_status": "accepted",
         "blocking_register_ids": [],
         "kind": "ev",
-        "manifest_path": "data/metadata/ev_adoption/e2_s2_ev_ic1_candidate_adapter_artifact.json",
+        "manifest_path": "data/metadata/ev_adoption/e2_s2_ev_ic1_component_input_scaffold.json",
         "signed_register_ids": [
           "EV-003",
           "EV-004",
+          "EV-005",
           "EV-005B",
           "EV-007A",
           "EV-008A",
-          "EV-CAL-001"
+          "EV-CAL-001",
+          "A-014"
         ],
         "state": "accepted"
       },
@@ -329,16 +340,18 @@
       }
     },
     "config_manifest": {
-      "config_id": "e3_s2_current_packet_executable_readiness_preflight_v4",
+      "config_id": "e3_s2_current_packet_executable_readiness_preflight_v5",
       "metadata": {
         "calendar_id": "calendar_2035_15min_full_year_35040",
         "gate": "register_backed_executable_input_gate",
+        "ic2_bridge_preflight_path": "reports/E3_S2_EXECUTABLE_BRIDGE_PREFLIGHT.md",
         "no_capacity_screen_result": true,
         "no_event_detection": true,
         "no_probability_estimate": true,
         "no_real_net_load_arrays": true,
         "planning_year_basis": "G0-A4",
-        "refresh_basis": "origin/main after PRs #200, #204, #205, #206, #208, and #209 merged",
+        "primary_threshold_metadata": "G0-A3: strict L_import > 1.0 p.u. for four consecutive 15-minute import steps over the full year; 1.1 and 1.2 are sensitivities only",
+        "refresh_basis": "origin/main after PRs #200, #204, #205, #206, #208, #209, #210, #211, #212, #213, and #214 merged",
         "threshold_basis": "G0-A3 resolved but not evaluated in this preflight"
       },
       "node_ids": [
