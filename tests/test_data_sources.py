@@ -1165,6 +1165,47 @@ def test_committed_d014_cbs_anchor_evidence_metadata_records_unsigned_rows() -> 
     assert any("No executable PV installed-capacity value" in item for item in payload["non_claims"])
 
 
+def test_d014_ii3050_query_urls_are_public_and_pdf_pinned() -> None:
+    urls = pv_capacity.build_d014_ii3050_query_urls()
+
+    assert set(urls) == {
+        "appendices_publication_page",
+        "appendices_pdf",
+        "main_report_publication_page",
+    }
+    assert parse.urlparse(urls["appendices_publication_page"]).netloc == "www.netbeheernederland.nl"
+    parsed_pdf = parse.urlparse(urls["appendices_pdf"])
+    assert parsed_pdf.netloc == "www.netbeheernederland.nl"
+    assert parsed_pdf.path.endswith("/Bijlagen_II3050_eindrapport__285.pdf")
+
+
+def test_committed_d014_ii3050_growth_evidence_metadata_records_unsigned_candidates() -> None:
+    payload = json.loads(
+        Path("data/metadata/weather_pv/d014_ii3050_pv_growth_evidence.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    candidates = payload["table_evidence"]["planning_year_2035_candidates"]
+
+    assert payload["packet_id"] == "D014-II3050-PV-GROWTH-EVIDENCE"
+    assert payload["download_performed"] is True
+    assert payload["raw_data_committed"] is False
+    assert payload["approved_route_decision"] == "PV-CAP-001"
+    assert payload["cbs_anchor_evidence_id"] == "D014-CBS-PV-CAPACITY-ANCHOR-EVIDENCE"
+    assert payload["source"]["owner"] == "Netbeheer Nederland"
+    assert payload["raw_bundle"]["path"].startswith("data/raw/pv_capacity/")
+    assert len(payload["raw_bundle"]["sha256"]) == 64
+    assert payload["raw_bundle"]["size_bytes"] > 1_000_000
+    assert payload["table_evidence"]["table_label"] == "Tabel A.1"
+    assert payload["table_evidence"]["row_label"] == "Zon PV*"
+    assert payload["table_evidence"]["unit"] == "GW"
+    assert {item["scenario"] for item in candidates} == {"KA", "ND", "IA"}
+    assert {item["year"] for item in candidates} == {2035}
+    assert all(item["executable_status"] == "candidate_only_unsigned" for item in candidates)
+    assert "ii3050_growth_factor_value" in payload["pi_approval_keys_before_executable_use"]
+    assert any("No II3050 growth denominator" in item for item in payload["non_claims"])
+
+
 def test_d014_statistical_orientation_tilt_packet_is_lightweight_and_metadata_only(tmp_path: Path) -> None:
     packet = pv_capacity.build_d014_pv_statistical_orientation_tilt_packet()
 
