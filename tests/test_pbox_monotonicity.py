@@ -5,6 +5,9 @@ import math
 import pytest
 
 from src.pbox_monotonicity import (
+    RHO_SWEEP_G3_STATUS,
+    RHO_SWEEP_MANIFEST_PROTOCOL,
+    RHO_SWEEP_NON_CLAIMS,
     assert_synthetic_rho_sweep_payload,
     estimate_dense_rho_sweep,
 )
@@ -26,12 +29,16 @@ def test_dense_rho_sweep_reports_monotone_synthetic_curve() -> None:
     )
 
     probabilities = [point.estimate.probability for point in result.points]
+    payload = result.to_mapping()
 
     assert probabilities == sorted(probabilities, reverse=True)
     assert result.monotone_nonincreasing is True
     assert result.max_upward_violation == 0.0
     assert result.use_status == "synthetic-only"
-    assert_synthetic_rho_sweep_payload(result.to_mapping())
+    assert payload["manifest_protocol"] == RHO_SWEEP_MANIFEST_PROTOCOL
+    assert payload["g3_status"] == RHO_SWEEP_G3_STATUS
+    assert tuple(payload["non_claims"]) == RHO_SWEEP_NON_CLAIMS
+    assert_synthetic_rho_sweep_payload(payload)
 
 
 def test_dense_rho_sweep_flags_nonmonotone_synthetic_curve() -> None:
@@ -123,6 +130,12 @@ def test_rho_sweep_payload_validator_rejects_paper_facing_or_tampered_payload() 
 
     with pytest.raises(ValueError, match="synthetic-only"):
         assert_synthetic_rho_sweep_payload({**payload, "use_status": "paper-facing"})
+    with pytest.raises(ValueError, match="manifest_protocol"):
+        assert_synthetic_rho_sweep_payload({**payload, "manifest_protocol": "old"})
+    with pytest.raises(ValueError, match="G3"):
+        assert_synthetic_rho_sweep_payload({**payload, "g3_status": "G3_APPROVED"})
+    with pytest.raises(ValueError, match="non_claims"):
+        assert_synthetic_rho_sweep_payload({**payload, "non_claims": ["no real P(E)"]})
 
     bad_points = [dict(point) for point in payload["points"]]
     bad_points.reverse()
@@ -137,3 +150,24 @@ def test_rho_sweep_payload_validator_rejects_paper_facing_or_tampered_payload() 
         assert_synthetic_rho_sweep_payload(
             {**payload, "monotone_nonincreasing": not payload["monotone_nonincreasing"]}
         )
+
+
+def test_rho_sweep_payload_validator_rejects_collapsed_or_paper_facing_fields() -> None:
+    result = estimate_dense_rho_sweep(
+        rho_grid=[0.0, 1.0],
+        sample_count=3,
+        root_seed=5,
+        evaluator=_monotone_evaluator,
+    )
+    payload = result.to_mapping()
+
+    with pytest.raises(ValueError, match="collapsed result fields"):
+        assert_synthetic_rho_sweep_payload({**payload, "defuzzified_probability": 0.5})
+
+    bad_points = [dict(point) for point in payload["points"]]
+    bad_points[0]["p_hat"] = bad_points[0]["probability"]
+    with pytest.raises(ValueError, match="collapsed result fields"):
+        assert_synthetic_rho_sweep_payload({**payload, "points": bad_points})
+
+    with pytest.raises(ValueError, match="paper-facing"):
+        assert_synthetic_rho_sweep_payload({**payload, "paper_facing_result": True})
