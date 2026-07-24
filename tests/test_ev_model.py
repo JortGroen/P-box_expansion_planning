@@ -40,6 +40,7 @@ from src.ev_model import (
     ev_ic1_candidate_member_reference_artifact,
     ev_ic1_component_input_scaffold_artifact,
     ev_candidate_profile_checksum_preflight_artifact,
+    materialize_ev_ic1_candidate_component_outputs,
     ev_library_integration_artifact_from_manifest,
     ev_member_selection_implementation_plan,
     ev_planning_calendar_mapping_expectation,
@@ -819,6 +820,234 @@ def test_ev_candidate_profile_checksum_preflight_does_not_load_arrays() -> None:
 
     assert "load_processed_batch_npz" not in source
     assert "np.load" not in source
+
+
+def _synthetic_selection_manifest_set(processed_path: str, sha256: str) -> dict[str, object]:
+    return {
+        "artifact_type": "ev_candidate_member_selection_manifest_set",
+        "policy": {
+            "candidate_only": True,
+            "held_out_access": False,
+            "quarantined_access": False,
+            "profile_arrays_loaded": False,
+            "integrated_analysis_performed": False,
+            "event_or_p_e_analysis_performed": False,
+            "capacity_screen_performed": False,
+            "manuscript_numbers_produced": False,
+            "m_sufficiency_claimed": False,
+            "replacement_policy_id": "EV-005B",
+            "replacement_enabled": True,
+        },
+        "scenarios": [
+            {
+                "scenario": "low",
+                "planning_year": 2035,
+                "component_streams": {EV_HOME_COMPONENT: {"stream_id": "stream-home"}},
+                "node_manifests": [
+                    {
+                        "node_id": "load_000",
+                        "selections": [
+                            {
+                                "partition": "candidate",
+                                "component_id": EV_HOME_COMPONENT,
+                                "candidate_processed_path": processed_path,
+                                "candidate_processed_sha256_file": sha256,
+                                "returned_profile_index": 0,
+                                "source_member_id": "profile_140001_000",
+                                "batch_seed": 140001,
+                                "library_id": "synthetic_home",
+                                "duplicate_within_realization": False,
+                            },
+                            {
+                                "partition": "candidate",
+                                "component_id": EV_HOME_COMPONENT,
+                                "candidate_processed_path": processed_path,
+                                "candidate_processed_sha256_file": sha256,
+                                "returned_profile_index": 1,
+                                "source_member_id": "profile_140001_001",
+                                "batch_seed": 140001,
+                                "library_id": "synthetic_home",
+                                "duplicate_within_realization": True,
+                            },
+                        ],
+                    }
+                ],
+            }
+        ],
+    }
+
+
+def _synthetic_component_output_inputs(tmp_path: Path) -> tuple[dict[str, object], dict[str, object], dict[str, object], np.ndarray]:
+    batch = parse_elaad_profile_response(_payload(n_profiles=2), batch_seed=140001, expected_n_profiles=2)
+    processed_path = tmp_path / "data" / "processed" / "elaad_profiles" / "synthetic_candidate.npz"
+    save_processed_batch_npz(batch, processed_path)
+    digest = ev_model._sha256_file(processed_path)
+    rel_path = processed_path.relative_to(tmp_path).as_posix()
+    readiness = {
+        "libraries": [
+            {
+                "library_id": "synthetic_home",
+                "component_id": EV_HOME_COMPONENT,
+                "candidate_member_count": 2,
+                "candidate_batches": [
+                    {
+                        "seed": 140001,
+                        "processed_path": rel_path,
+                        "processed_sha256_file": digest,
+                        "n_profiles": 2,
+                        "n_timesteps": EXPECTED_FULL_YEAR_STEPS,
+                        "capacity_class": None,
+                        "cp_capacity_kw": 11,
+                    }
+                ],
+            }
+        ]
+    }
+    scaffold = _synthetic_ev_component_input_scaffold()
+    scaffold["scenario_inputs"] = [
+        {
+            "scenario": "low",
+            "planning_year": 2035,
+            "node_inputs": [{"node_id": "load_000"}],
+        }
+    ]
+    preflight = ev_candidate_profile_checksum_preflight_artifact(
+        scaffold,
+        readiness,
+        verify_ev_candidate_checksums(readiness, base_dir=tmp_path),
+        verification_timestamp_utc="2026-07-24T12:00:00Z",
+    )
+    selection_manifest = _synthetic_selection_manifest_set(rel_path, digest)
+    return scaffold, preflight, selection_manifest, batch.demands_kw[:, 0] + batch.demands_kw[:, 1]
+
+
+def test_materialize_ev_ic1_candidate_component_outputs_reverifies_and_sums_profiles(
+    tmp_path: Path,
+) -> None:
+    scaffold, preflight, selection_manifest, expected_sum = _synthetic_component_output_inputs(tmp_path)
+
+    manifest = materialize_ev_ic1_candidate_component_outputs(
+        scaffold,
+        preflight,
+        selection_manifest,
+        base_dir=tmp_path,
+        output_dir=Path("data") / "processed" / "elaad_profiles" / "component_outputs",
+        materialized_timestamp_utc="2026-07-24T12:30:00Z",
+    )
+
+    assert manifest["artifact_type"] == "ev_ic1_candidate_component_output_manifest"
+    assert manifest["ic1_boundary"]["not_a_net_load_result"] is True
+    assert manifest["policy"]["candidate_profile_arrays_loaded_for_ev_component_output_only"] is True
+    assert manifest["policy"]["integrated_analysis_performed"] is False
+    assert manifest["materialization"]["candidate_files_reverified_before_array_loading"] is True
+    scenario = manifest["scenario_outputs"][0]
+    assert scenario["selected_member_count"] == 2
+    assert scenario["duplicate_selected_row_count"] == 1
+    output_path = tmp_path / scenario["output_file"]["path"]
+    with np.load(output_path, allow_pickle=False) as data:
+        np.testing.assert_allclose(data["p_kw_by_node"][0], expected_sum)
+        np.testing.assert_allclose(data["q_kvar_by_node"], 0.0)
+        assert data["p_kw_by_node"].shape == (1, EXPECTED_FULL_YEAR_STEPS)
+        assert data["timestamps_utc"].shape == (EXPECTED_FULL_YEAR_STEPS,)
+
+
+def test_materialize_ev_ic1_candidate_component_outputs_blocks_non_candidate_partition(
+    tmp_path: Path,
+) -> None:
+    scaffold, preflight, selection_manifest, _expected_sum = _synthetic_component_output_inputs(tmp_path)
+    selection_manifest["scenarios"][0]["node_manifests"][0]["selections"][0]["partition"] = "held_out"
+
+    with pytest.raises(PermissionError, match="candidate selections"):
+        materialize_ev_ic1_candidate_component_outputs(
+            scaffold,
+            preflight,
+            selection_manifest,
+            base_dir=tmp_path,
+            output_dir=tmp_path / "data" / "processed" / "elaad_profiles" / "component_outputs",
+            materialized_timestamp_utc="2026-07-24T12:30:00Z",
+        )
+
+
+def test_materialize_ev_ic1_candidate_component_outputs_rejects_checksum_drift(
+    tmp_path: Path,
+) -> None:
+    scaffold, preflight, selection_manifest, _expected_sum = _synthetic_component_output_inputs(tmp_path)
+    processed_path = tmp_path / selection_manifest["scenarios"][0]["node_manifests"][0]["selections"][0]["candidate_processed_path"]
+    processed_path.write_bytes(b"drifted")
+
+    with pytest.raises(ValueError, match="checksum mismatch before array loading"):
+        materialize_ev_ic1_candidate_component_outputs(
+            scaffold,
+            preflight,
+            selection_manifest,
+            base_dir=tmp_path,
+            output_dir=tmp_path / "data" / "processed" / "elaad_profiles" / "component_outputs",
+            materialized_timestamp_utc="2026-07-24T12:30:00Z",
+        )
+
+
+def test_committed_ev_ic1_candidate_component_output_manifest_records_fast_provenance() -> None:
+    manifest = json.loads(
+        Path(
+            "data/metadata/ev_adoption/e2_s2_ev_ic1_candidate_component_output_manifest.json"
+        ).read_text(encoding="utf-8")
+    )
+
+    assert manifest["artifact_type"] == "ev_ic1_candidate_component_output_manifest"
+    assert manifest["status"] == "candidate_only_ev_component_outputs_materialized_for_ic1_preflight"
+    assert manifest["decision_ids"] == [
+        "EV-003",
+        "EV-005",
+        "EV-005B",
+        "EV-007A",
+        "A-014",
+        "EV-008A",
+        "EV-CAL-001",
+        "RNG-001",
+    ]
+    materialization = manifest["materialization"]
+    assert materialization["candidate_files_reverified_before_array_loading"] is True
+    assert materialization["candidate_processed_file_count"] == 22
+    assert materialization["loaded_candidate_profile_batches"] == 22
+    assert materialization["output_directory"] == "data/processed/elaad_profiles/component_outputs"
+    assert len(materialization["output_files"]) == 3
+    assert all(output["path"].startswith("data/processed/elaad_profiles/component_outputs/") for output in materialization["output_files"])
+    assert all(output["array_shape"] == [115, EXPECTED_FULL_YEAR_STEPS] for output in materialization["output_files"])
+    assert all(output["byte_size"] > 0 for output in materialization["output_files"])
+    assert all(len(output["sha256"]) == 64 for output in materialization["output_files"])
+    scenarios = {row["scenario"]: row for row in manifest["scenario_outputs"]}
+    assert set(scenarios) == {"low", "middle", "high"}
+    assert scenarios["low"]["selected_member_count_by_component"] == {
+        EV_HOME_COMPONENT: 7992,
+        EV_PUBLIC_COMPONENT: 4183,
+    }
+    assert scenarios["middle"]["selected_member_count_by_component"] == {
+        EV_HOME_COMPONENT: 9386,
+        EV_PUBLIC_COMPONENT: 5127,
+    }
+    assert scenarios["high"]["selected_member_count_by_component"] == {
+        EV_HOME_COMPONENT: 10343,
+        EV_PUBLIC_COMPONENT: 6138,
+    }
+    assert manifest["calendar_mapping"]["rule_id"] == EV_CALENDAR_MAPPING_RULE_ID
+    assert manifest["ic1_boundary"] == {
+        "component_adapter_output_ready_for_agent_a_preflight": True,
+        "contains_ev_component_outputs_only": True,
+        "agent_a_must_load_ignored_output_files_by_manifest_checksum": True,
+        "not_a_net_load_result": True,
+    }
+    assert manifest["policy"] == {
+        "candidate_libraries_only": True,
+        "held_out_access": False,
+        "quarantined_access": False,
+        "candidate_profile_arrays_loaded_for_ev_component_output_only": True,
+        "integrated_analysis_performed": False,
+        "event_or_p_e_analysis_performed": False,
+        "capacity_screen_performed": False,
+        "final_low_middle_high_branch_selected": False,
+        "m_sufficiency_claimed": False,
+        "manuscript_numbers_produced": False,
+    }
 
 
 def test_committed_ev_candidate_profile_checksum_preflight_records_fast_provenance() -> None:
