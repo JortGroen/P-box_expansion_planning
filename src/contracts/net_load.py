@@ -1263,6 +1263,99 @@ def assemble_net_load_from_registry_outputs(
     )
 
 
+def prepare_executable_net_load_assembly_from_artifacts(
+    *,
+    assembly_id: str,
+    executable_input_artifacts: Sequence[ExecutableInputArtifact],
+    context: NetLoadRealizationContext,
+    adapter_outputs: Sequence[ComponentAdapterOutput],
+    required_component_kinds: Sequence[ComponentKind] = REQUIRED_INTEGRATION_COMPONENT_KINDS,
+    intended_use: str = "ic1_real_component_integration",
+    planning_year: int = 2035,
+    time_domain: TimeDomain = "full_year",
+    metadata: Mapping[str, object] | None = None,
+) -> NetLoadLoadingInputReadiness:
+    """Validate accepted executable artifacts through the IC-1 assembly boundary.
+
+    This is the dry join point for future real E2 artifacts. It builds the
+    registry from artifact metadata, assembles only caller-supplied fixture or
+    adapter outputs, and stops at the loading-input contract before any IC-2
+    loading, threshold, event, probability, or capacity-screen step.
+    """
+
+    assembly_id = _require_nonempty(assembly_id, name="assembly_id")
+    required = tuple(required_component_kinds)
+    gate_manifest = validate_executable_input_gate(
+        executable_input_artifacts,
+        required_component_kinds=required,
+        intended_use=intended_use,
+    )
+    artifact_by_kind = {artifact.kind: artifact for artifact in executable_input_artifacts}
+    accepted_artifacts = tuple(
+        AcceptedComponentAdapterArtifact(
+            artifact_id=artifact_by_kind[kind].artifact_id,
+            kind=kind,
+            source_id=artifact_by_kind[kind].source_id,
+            member_id=artifact_by_kind[kind].member_id,
+            node_ids=artifact_by_kind[kind].node_ids,
+            calendar_id=artifact_by_kind[kind].calendar_id,
+            timestep_seconds=artifact_by_kind[kind].timestep_seconds,
+            shared_weather_driver_id=artifact_by_kind[kind].shared_weather_driver_id,
+            provenance={
+                "executable_manifest_path": artifact_by_kind[kind].manifest_path,
+                "executable_version_id": artifact_by_kind[kind].version_id,
+                "signed_register_ids": artifact_by_kind[kind].signed_register_ids,
+                "source_provenance": dict(artifact_by_kind[kind].provenance),
+            },
+        )
+        for kind in required
+    )
+    registry = build_component_adapter_registry_from_artifacts(
+        registry_id=f"{assembly_id}:adapter-registry",
+        node_ids=tuple(
+            dict.fromkeys(
+                node_id
+                for kind in required
+                for node_id in artifact_by_kind[kind].node_ids
+            )
+        ),
+        artifacts=accepted_artifacts,
+        required_component_kinds=required,
+        metadata={
+            "assembly_id": assembly_id,
+            "executable_input_gate": gate_manifest,
+            "governed_event_metadata": {
+                "basis": "G0-A3",
+                "primary_threshold_pu": 1.0,
+                "strict_import_loading_gt_threshold": True,
+                "min_consecutive_15_minute_steps": 4,
+                "not_evaluated_here": True,
+            },
+        },
+    )
+    readiness_metadata = {
+        "source": "executable_artifact_assembly_scaffold",
+        "assembly_id": assembly_id,
+        "scaffold_only": True,
+        "no_event_detection": True,
+        "no_probability_estimate": True,
+        "no_capacity_screen_result": True,
+    }
+    if metadata is not None:
+        readiness_metadata.update(metadata)
+    # Fail-closed before loading inputs: unsigned or register-mismatched
+    # artifacts never reach this point, and the returned payload is still only
+    # a validated loading-input scaffold for future IC-2 calls.
+    return prepare_loading_input_from_registry_outputs(
+        registry,
+        context,
+        adapter_outputs,
+        planning_year=planning_year,
+        time_domain=time_domain,
+        metadata=readiness_metadata,
+    )
+
+
 def validate_registry_adapter_output_readiness(
     registry: ComponentAdapterRegistry,
     context: NetLoadRealizationContext,
@@ -1312,6 +1405,8 @@ def validate_registry_adapter_output_readiness(
         "component_outputs": tuple(output_records),
         "real_component_readiness": real_component_readiness,
     }
+
+
 def prepare_loading_input_from_registry_outputs(
     registry: ComponentAdapterRegistry,
     context: NetLoadRealizationContext,
