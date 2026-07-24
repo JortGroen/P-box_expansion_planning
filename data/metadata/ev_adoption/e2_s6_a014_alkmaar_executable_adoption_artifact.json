@@ -1,0 +1,2694 @@
+{
+  "allocation_method": {
+    "integer_rounding": "largest_remainder_ties_by_node_id",
+    "method_id": "A-014",
+    "node_weight_source": {
+      "grid_code": "1-MV-semiurb--0-sw",
+      "grid_key": "simbench_semiurb",
+      "include_rows": "in_service == true",
+      "materialization_status": "approved_config_input",
+      "materialized_from_preview": "data/metadata/ev_adoption/e2_s6_a014_alkmaar_allocation_preview.json",
+      "method_id": "A-014",
+      "node_count": 115,
+      "node_id_template": "load_{source_load_index:03d}",
+      "node_weight_count": 115,
+      "table": "net.load",
+      "total_weight_p_mw": 31.64,
+      "weight_column": "p_mw"
+    },
+    "stage": "second_stage_after_ev007_local_totals",
+    "status": "approved",
+    "weight_column": "p_mw"
+  },
+  "artifact_id": "e2_s6_a014_alkmaar_executable_adoption_artifact",
+  "artifact_type": "a014_executable_ev_adoption_allocation_artifact",
+  "decision_ids": [
+    "EV-007",
+    "EV-007A",
+    "A-014"
+  ],
+  "node_axis": {
+    "node_axis_order": "sorted_node_id",
+    "node_count": 115,
+    "node_ids": [
+      "load_000",
+      "load_001",
+      "load_002",
+      "load_003",
+      "load_004",
+      "load_005",
+      "load_006",
+      "load_007",
+      "load_008",
+      "load_009",
+      "load_010",
+      "load_011",
+      "load_012",
+      "load_013",
+      "load_014",
+      "load_015",
+      "load_016",
+      "load_017",
+      "load_018",
+      "load_019",
+      "load_020",
+      "load_021",
+      "load_022",
+      "load_023",
+      "load_024",
+      "load_025",
+      "load_026",
+      "load_027",
+      "load_028",
+      "load_029",
+      "load_030",
+      "load_031",
+      "load_032",
+      "load_033",
+      "load_034",
+      "load_035",
+      "load_036",
+      "load_037",
+      "load_038",
+      "load_039",
+      "load_040",
+      "load_041",
+      "load_042",
+      "load_043",
+      "load_044",
+      "load_045",
+      "load_046",
+      "load_047",
+      "load_048",
+      "load_049",
+      "load_050",
+      "load_051",
+      "load_052",
+      "load_053",
+      "load_054",
+      "load_055",
+      "load_056",
+      "load_057",
+      "load_058",
+      "load_059",
+      "load_060",
+      "load_061",
+      "load_062",
+      "load_063",
+      "load_064",
+      "load_065",
+      "load_066",
+      "load_067",
+      "load_068",
+      "load_069",
+      "load_070",
+      "load_071",
+      "load_072",
+      "load_073",
+      "load_074",
+      "load_075",
+      "load_076",
+      "load_077",
+      "load_078",
+      "load_079",
+      "load_080",
+      "load_081",
+      "load_082",
+      "load_083",
+      "load_084",
+      "load_085",
+      "load_086",
+      "load_087",
+      "load_088",
+      "load_089",
+      "load_090",
+      "load_091",
+      "load_092",
+      "load_093",
+      "load_094",
+      "load_095",
+      "load_096",
+      "load_097",
+      "load_098",
+      "load_099",
+      "load_100",
+      "load_101",
+      "load_102",
+      "load_103",
+      "load_104",
+      "load_105",
+      "load_106",
+      "load_107",
+      "load_108",
+      "load_109",
+      "load_110",
+      "load_111",
+      "load_112",
+      "load_113",
+      "load_114"
+    ]
+  },
+  "node_weights": [
+    {
+      "node_id": "load_000",
+      "source_load_index": 0,
+      "weight": 0.34,
+      "weight_share": 0.01074589127686473
+    },
+    {
+      "node_id": "load_001",
+      "source_load_index": 1,
+      "weight": 0.441,
+      "weight_share": 0.013938053097345133
+    },
+    {
+      "node_id": "load_002",
+      "source_load_index": 2,
+      "weight": 0.409,
+      "weight_share": 0.012926675094816686
+    },
+    {
+      "node_id": "load_003",
+      "source_load_index": 3,
+      "weight": 0.409,
+      "weight_share": 0.012926675094816686
+    },
+    {
+      "node_id": "load_004",
+      "source_load_index": 4,
+      "weight": 0.243,
+      "weight_share": 0.007680151706700379
+    },
+    {
+      "node_id": "load_005",
+      "source_load_index": 5,
+      "weight": 0.243,
+      "weight_share": 0.007680151706700379
+    },
+    {
+      "node_id": "load_006",
+      "source_load_index": 6,
+      "weight": 0.409,
+      "weight_share": 0.012926675094816686
+    },
+    {
+      "node_id": "load_007",
+      "source_load_index": 7,
+      "weight": 0.202,
+      "weight_share": 0.0063843236409608095
+    },
+    {
+      "node_id": "load_008",
+      "source_load_index": 8,
+      "weight": 0.243,
+      "weight_share": 0.007680151706700379
+    },
+    {
+      "node_id": "load_009",
+      "source_load_index": 9,
+      "weight": 0.331,
+      "weight_share": 0.010461441213653604
+    },
+    {
+      "node_id": "load_010",
+      "source_load_index": 10,
+      "weight": 0.243,
+      "weight_share": 0.007680151706700379
+    },
+    {
+      "node_id": "load_011",
+      "source_load_index": 11,
+      "weight": 0.409,
+      "weight_share": 0.012926675094816686
+    },
+    {
+      "node_id": "load_012",
+      "source_load_index": 12,
+      "weight": 0.409,
+      "weight_share": 0.012926675094816686
+    },
+    {
+      "node_id": "load_013",
+      "source_load_index": 13,
+      "weight": 0.409,
+      "weight_share": 0.012926675094816686
+    },
+    {
+      "node_id": "load_014",
+      "source_load_index": 14,
+      "weight": 0.409,
+      "weight_share": 0.012926675094816686
+    },
+    {
+      "node_id": "load_015",
+      "source_load_index": 15,
+      "weight": 0.409,
+      "weight_share": 0.012926675094816686
+    },
+    {
+      "node_id": "load_016",
+      "source_load_index": 16,
+      "weight": 0.243,
+      "weight_share": 0.007680151706700379
+    },
+    {
+      "node_id": "load_017",
+      "source_load_index": 17,
+      "weight": 0.243,
+      "weight_share": 0.007680151706700379
+    },
+    {
+      "node_id": "load_018",
+      "source_load_index": 18,
+      "weight": 0.409,
+      "weight_share": 0.012926675094816686
+    },
+    {
+      "node_id": "load_019",
+      "source_load_index": 19,
+      "weight": 0.409,
+      "weight_share": 0.012926675094816686
+    },
+    {
+      "node_id": "load_020",
+      "source_load_index": 20,
+      "weight": 0.243,
+      "weight_share": 0.007680151706700379
+    },
+    {
+      "node_id": "load_021",
+      "source_load_index": 21,
+      "weight": 0.331,
+      "weight_share": 0.010461441213653604
+    },
+    {
+      "node_id": "load_022",
+      "source_load_index": 22,
+      "weight": 0.331,
+      "weight_share": 0.010461441213653604
+    },
+    {
+      "node_id": "load_023",
+      "source_load_index": 23,
+      "weight": 0.243,
+      "weight_share": 0.007680151706700379
+    },
+    {
+      "node_id": "load_024",
+      "source_load_index": 24,
+      "weight": 0.243,
+      "weight_share": 0.007680151706700379
+    },
+    {
+      "node_id": "load_025",
+      "source_load_index": 25,
+      "weight": 0.243,
+      "weight_share": 0.007680151706700379
+    },
+    {
+      "node_id": "load_026",
+      "source_load_index": 26,
+      "weight": 0.331,
+      "weight_share": 0.010461441213653604
+    },
+    {
+      "node_id": "load_027",
+      "source_load_index": 27,
+      "weight": 0.202,
+      "weight_share": 0.0063843236409608095
+    },
+    {
+      "node_id": "load_028",
+      "source_load_index": 28,
+      "weight": 0.202,
+      "weight_share": 0.0063843236409608095
+    },
+    {
+      "node_id": "load_029",
+      "source_load_index": 29,
+      "weight": 0.331,
+      "weight_share": 0.010461441213653604
+    },
+    {
+      "node_id": "load_030",
+      "source_load_index": 30,
+      "weight": 0.243,
+      "weight_share": 0.007680151706700379
+    },
+    {
+      "node_id": "load_031",
+      "source_load_index": 31,
+      "weight": 0.243,
+      "weight_share": 0.007680151706700379
+    },
+    {
+      "node_id": "load_032",
+      "source_load_index": 32,
+      "weight": 0.331,
+      "weight_share": 0.010461441213653604
+    },
+    {
+      "node_id": "load_033",
+      "source_load_index": 33,
+      "weight": 0.202,
+      "weight_share": 0.0063843236409608095
+    },
+    {
+      "node_id": "load_034",
+      "source_load_index": 34,
+      "weight": 0.202,
+      "weight_share": 0.0063843236409608095
+    },
+    {
+      "node_id": "load_035",
+      "source_load_index": 35,
+      "weight": 0.202,
+      "weight_share": 0.0063843236409608095
+    },
+    {
+      "node_id": "load_036",
+      "source_load_index": 36,
+      "weight": 0.202,
+      "weight_share": 0.0063843236409608095
+    },
+    {
+      "node_id": "load_037",
+      "source_load_index": 37,
+      "weight": 0.202,
+      "weight_share": 0.0063843236409608095
+    },
+    {
+      "node_id": "load_038",
+      "source_load_index": 38,
+      "weight": 0.202,
+      "weight_share": 0.0063843236409608095
+    },
+    {
+      "node_id": "load_039",
+      "source_load_index": 39,
+      "weight": 0.243,
+      "weight_share": 0.007680151706700379
+    },
+    {
+      "node_id": "load_040",
+      "source_load_index": 40,
+      "weight": 0.331,
+      "weight_share": 0.010461441213653604
+    },
+    {
+      "node_id": "load_041",
+      "source_load_index": 41,
+      "weight": 0.243,
+      "weight_share": 0.007680151706700379
+    },
+    {
+      "node_id": "load_042",
+      "source_load_index": 42,
+      "weight": 0.331,
+      "weight_share": 0.010461441213653604
+    },
+    {
+      "node_id": "load_043",
+      "source_load_index": 43,
+      "weight": 0.202,
+      "weight_share": 0.0063843236409608095
+    },
+    {
+      "node_id": "load_044",
+      "source_load_index": 44,
+      "weight": 0.243,
+      "weight_share": 0.007680151706700379
+    },
+    {
+      "node_id": "load_045",
+      "source_load_index": 45,
+      "weight": 0.202,
+      "weight_share": 0.0063843236409608095
+    },
+    {
+      "node_id": "load_046",
+      "source_load_index": 46,
+      "weight": 0.243,
+      "weight_share": 0.007680151706700379
+    },
+    {
+      "node_id": "load_047",
+      "source_load_index": 47,
+      "weight": 0.243,
+      "weight_share": 0.007680151706700379
+    },
+    {
+      "node_id": "load_048",
+      "source_load_index": 48,
+      "weight": 0.243,
+      "weight_share": 0.007680151706700379
+    },
+    {
+      "node_id": "load_049",
+      "source_load_index": 49,
+      "weight": 0.243,
+      "weight_share": 0.007680151706700379
+    },
+    {
+      "node_id": "load_050",
+      "source_load_index": 50,
+      "weight": 0.243,
+      "weight_share": 0.007680151706700379
+    },
+    {
+      "node_id": "load_051",
+      "source_load_index": 51,
+      "weight": 0.202,
+      "weight_share": 0.0063843236409608095
+    },
+    {
+      "node_id": "load_052",
+      "source_load_index": 52,
+      "weight": 0.202,
+      "weight_share": 0.0063843236409608095
+    },
+    {
+      "node_id": "load_053",
+      "source_load_index": 53,
+      "weight": 0.202,
+      "weight_share": 0.0063843236409608095
+    },
+    {
+      "node_id": "load_054",
+      "source_load_index": 54,
+      "weight": 0.243,
+      "weight_share": 0.007680151706700379
+    },
+    {
+      "node_id": "load_055",
+      "source_load_index": 55,
+      "weight": 0.331,
+      "weight_share": 0.010461441213653604
+    },
+    {
+      "node_id": "load_056",
+      "source_load_index": 56,
+      "weight": 0.243,
+      "weight_share": 0.007680151706700379
+    },
+    {
+      "node_id": "load_057",
+      "source_load_index": 57,
+      "weight": 0.243,
+      "weight_share": 0.007680151706700379
+    },
+    {
+      "node_id": "load_058",
+      "source_load_index": 58,
+      "weight": 0.243,
+      "weight_share": 0.007680151706700379
+    },
+    {
+      "node_id": "load_059",
+      "source_load_index": 59,
+      "weight": 0.331,
+      "weight_share": 0.010461441213653604
+    },
+    {
+      "node_id": "load_060",
+      "source_load_index": 60,
+      "weight": 0.202,
+      "weight_share": 0.0063843236409608095
+    },
+    {
+      "node_id": "load_061",
+      "source_load_index": 61,
+      "weight": 0.08,
+      "weight_share": 0.0025284450063211127
+    },
+    {
+      "node_id": "load_062",
+      "source_load_index": 62,
+      "weight": 0.08,
+      "weight_share": 0.0025284450063211127
+    },
+    {
+      "node_id": "load_063",
+      "source_load_index": 63,
+      "weight": 0.08,
+      "weight_share": 0.0025284450063211127
+    },
+    {
+      "node_id": "load_064",
+      "source_load_index": 64,
+      "weight": 0.202,
+      "weight_share": 0.0063843236409608095
+    },
+    {
+      "node_id": "load_065",
+      "source_load_index": 65,
+      "weight": 0.08,
+      "weight_share": 0.0025284450063211127
+    },
+    {
+      "node_id": "load_066",
+      "source_load_index": 66,
+      "weight": 0.409,
+      "weight_share": 0.012926675094816686
+    },
+    {
+      "node_id": "load_067",
+      "source_load_index": 67,
+      "weight": 0.243,
+      "weight_share": 0.007680151706700379
+    },
+    {
+      "node_id": "load_068",
+      "source_load_index": 68,
+      "weight": 0.331,
+      "weight_share": 0.010461441213653604
+    },
+    {
+      "node_id": "load_069",
+      "source_load_index": 69,
+      "weight": 0.331,
+      "weight_share": 0.010461441213653604
+    },
+    {
+      "node_id": "load_070",
+      "source_load_index": 70,
+      "weight": 0.08,
+      "weight_share": 0.0025284450063211127
+    },
+    {
+      "node_id": "load_071",
+      "source_load_index": 71,
+      "weight": 0.202,
+      "weight_share": 0.0063843236409608095
+    },
+    {
+      "node_id": "load_072",
+      "source_load_index": 72,
+      "weight": 0.202,
+      "weight_share": 0.0063843236409608095
+    },
+    {
+      "node_id": "load_073",
+      "source_load_index": 73,
+      "weight": 0.202,
+      "weight_share": 0.0063843236409608095
+    },
+    {
+      "node_id": "load_074",
+      "source_load_index": 74,
+      "weight": 0.202,
+      "weight_share": 0.0063843236409608095
+    },
+    {
+      "node_id": "load_075",
+      "source_load_index": 75,
+      "weight": 0.243,
+      "weight_share": 0.007680151706700379
+    },
+    {
+      "node_id": "load_076",
+      "source_load_index": 76,
+      "weight": 0.409,
+      "weight_share": 0.012926675094816686
+    },
+    {
+      "node_id": "load_077",
+      "source_load_index": 77,
+      "weight": 0.409,
+      "weight_share": 0.012926675094816686
+    },
+    {
+      "node_id": "load_078",
+      "source_load_index": 78,
+      "weight": 0.202,
+      "weight_share": 0.0063843236409608095
+    },
+    {
+      "node_id": "load_079",
+      "source_load_index": 79,
+      "weight": 0.202,
+      "weight_share": 0.0063843236409608095
+    },
+    {
+      "node_id": "load_080",
+      "source_load_index": 80,
+      "weight": 0.331,
+      "weight_share": 0.010461441213653604
+    },
+    {
+      "node_id": "load_081",
+      "source_load_index": 81,
+      "weight": 0.331,
+      "weight_share": 0.010461441213653604
+    },
+    {
+      "node_id": "load_082",
+      "source_load_index": 82,
+      "weight": 0.243,
+      "weight_share": 0.007680151706700379
+    },
+    {
+      "node_id": "load_083",
+      "source_load_index": 83,
+      "weight": 0.441,
+      "weight_share": 0.013938053097345133
+    },
+    {
+      "node_id": "load_084",
+      "source_load_index": 84,
+      "weight": 0.409,
+      "weight_share": 0.012926675094816686
+    },
+    {
+      "node_id": "load_085",
+      "source_load_index": 85,
+      "weight": 0.409,
+      "weight_share": 0.012926675094816686
+    },
+    {
+      "node_id": "load_086",
+      "source_load_index": 86,
+      "weight": 0.409,
+      "weight_share": 0.012926675094816686
+    },
+    {
+      "node_id": "load_087",
+      "source_load_index": 87,
+      "weight": 0.409,
+      "weight_share": 0.012926675094816686
+    },
+    {
+      "node_id": "load_088",
+      "source_load_index": 88,
+      "weight": 0.409,
+      "weight_share": 0.012926675094816686
+    },
+    {
+      "node_id": "load_089",
+      "source_load_index": 89,
+      "weight": 0.409,
+      "weight_share": 0.012926675094816686
+    },
+    {
+      "node_id": "load_090",
+      "source_load_index": 90,
+      "weight": 0.243,
+      "weight_share": 0.007680151706700379
+    },
+    {
+      "node_id": "load_091",
+      "source_load_index": 91,
+      "weight": 0.409,
+      "weight_share": 0.012926675094816686
+    },
+    {
+      "node_id": "load_092",
+      "source_load_index": 92,
+      "weight": 0.243,
+      "weight_share": 0.007680151706700379
+    },
+    {
+      "node_id": "load_093",
+      "source_load_index": 93,
+      "weight": 0.243,
+      "weight_share": 0.007680151706700379
+    },
+    {
+      "node_id": "load_094",
+      "source_load_index": 94,
+      "weight": 0.409,
+      "weight_share": 0.012926675094816686
+    },
+    {
+      "node_id": "load_095",
+      "source_load_index": 95,
+      "weight": 0.243,
+      "weight_share": 0.007680151706700379
+    },
+    {
+      "node_id": "load_096",
+      "source_load_index": 96,
+      "weight": 0.331,
+      "weight_share": 0.010461441213653604
+    },
+    {
+      "node_id": "load_097",
+      "source_load_index": 97,
+      "weight": 0.409,
+      "weight_share": 0.012926675094816686
+    },
+    {
+      "node_id": "load_098",
+      "source_load_index": 98,
+      "weight": 0.243,
+      "weight_share": 0.007680151706700379
+    },
+    {
+      "node_id": "load_099",
+      "source_load_index": 99,
+      "weight": 0.243,
+      "weight_share": 0.007680151706700379
+    },
+    {
+      "node_id": "load_100",
+      "source_load_index": 100,
+      "weight": 0.409,
+      "weight_share": 0.012926675094816686
+    },
+    {
+      "node_id": "load_101",
+      "source_load_index": 101,
+      "weight": 0.243,
+      "weight_share": 0.007680151706700379
+    },
+    {
+      "node_id": "load_102",
+      "source_load_index": 102,
+      "weight": 0.202,
+      "weight_share": 0.0063843236409608095
+    },
+    {
+      "node_id": "load_103",
+      "source_load_index": 103,
+      "weight": 0.202,
+      "weight_share": 0.0063843236409608095
+    },
+    {
+      "node_id": "load_104",
+      "source_load_index": 104,
+      "weight": 0.243,
+      "weight_share": 0.007680151706700379
+    },
+    {
+      "node_id": "load_105",
+      "source_load_index": 105,
+      "weight": 0.331,
+      "weight_share": 0.010461441213653604
+    },
+    {
+      "node_id": "load_106",
+      "source_load_index": 106,
+      "weight": 0.243,
+      "weight_share": 0.007680151706700379
+    },
+    {
+      "node_id": "load_107",
+      "source_load_index": 107,
+      "weight": 0.202,
+      "weight_share": 0.0063843236409608095
+    },
+    {
+      "node_id": "load_108",
+      "source_load_index": 108,
+      "weight": 0.08,
+      "weight_share": 0.0025284450063211127
+    },
+    {
+      "node_id": "load_109",
+      "source_load_index": 109,
+      "weight": 0.331,
+      "weight_share": 0.010461441213653604
+    },
+    {
+      "node_id": "load_110",
+      "source_load_index": 110,
+      "weight": 0.331,
+      "weight_share": 0.010461441213653604
+    },
+    {
+      "node_id": "load_111",
+      "source_load_index": 111,
+      "weight": 0.21,
+      "weight_share": 0.00663716814159292
+    },
+    {
+      "node_id": "load_112",
+      "source_load_index": 112,
+      "weight": 0.085,
+      "weight_share": 0.0026864728192161824
+    },
+    {
+      "node_id": "load_113",
+      "source_load_index": 113,
+      "weight": 0.235,
+      "weight_share": 0.007427307206068268
+    },
+    {
+      "node_id": "load_114",
+      "source_load_index": 114,
+      "weight": 0.245,
+      "weight_share": 0.007743362831858407
+    }
+  ],
+  "planning_year": 2035,
+  "policy": {
+    "candidate_profile_arrays_loaded": false,
+    "capacity_screen_performed": false,
+    "event_or_p_e_analysis_performed": false,
+    "executable_adoption_counts": true,
+    "final_low_middle_high_branch_selected": false,
+    "held_out_access": false,
+    "integrated_analysis_performed": false,
+    "m_sufficiency_claimed": false,
+    "manuscript_numbers_produced": false,
+    "quarantined_access": false
+  },
+  "scenario_allocations": [
+    {
+      "home_charge_points": 10343,
+      "node_allocations": [
+        {
+          "home_charge_points": 111,
+          "node_id": "load_000",
+          "public_charge_points": 66
+        },
+        {
+          "home_charge_points": 144,
+          "node_id": "load_001",
+          "public_charge_points": 86
+        },
+        {
+          "home_charge_points": 134,
+          "node_id": "load_002",
+          "public_charge_points": 80
+        },
+        {
+          "home_charge_points": 134,
+          "node_id": "load_003",
+          "public_charge_points": 80
+        },
+        {
+          "home_charge_points": 80,
+          "node_id": "load_004",
+          "public_charge_points": 47
+        },
+        {
+          "home_charge_points": 80,
+          "node_id": "load_005",
+          "public_charge_points": 47
+        },
+        {
+          "home_charge_points": 134,
+          "node_id": "load_006",
+          "public_charge_points": 80
+        },
+        {
+          "home_charge_points": 66,
+          "node_id": "load_007",
+          "public_charge_points": 39
+        },
+        {
+          "home_charge_points": 80,
+          "node_id": "load_008",
+          "public_charge_points": 47
+        },
+        {
+          "home_charge_points": 108,
+          "node_id": "load_009",
+          "public_charge_points": 64
+        },
+        {
+          "home_charge_points": 80,
+          "node_id": "load_010",
+          "public_charge_points": 47
+        },
+        {
+          "home_charge_points": 134,
+          "node_id": "load_011",
+          "public_charge_points": 80
+        },
+        {
+          "home_charge_points": 134,
+          "node_id": "load_012",
+          "public_charge_points": 80
+        },
+        {
+          "home_charge_points": 134,
+          "node_id": "load_013",
+          "public_charge_points": 80
+        },
+        {
+          "home_charge_points": 134,
+          "node_id": "load_014",
+          "public_charge_points": 80
+        },
+        {
+          "home_charge_points": 134,
+          "node_id": "load_015",
+          "public_charge_points": 80
+        },
+        {
+          "home_charge_points": 80,
+          "node_id": "load_016",
+          "public_charge_points": 47
+        },
+        {
+          "home_charge_points": 80,
+          "node_id": "load_017",
+          "public_charge_points": 47
+        },
+        {
+          "home_charge_points": 134,
+          "node_id": "load_018",
+          "public_charge_points": 80
+        },
+        {
+          "home_charge_points": 134,
+          "node_id": "load_019",
+          "public_charge_points": 80
+        },
+        {
+          "home_charge_points": 80,
+          "node_id": "load_020",
+          "public_charge_points": 47
+        },
+        {
+          "home_charge_points": 108,
+          "node_id": "load_021",
+          "public_charge_points": 64
+        },
+        {
+          "home_charge_points": 108,
+          "node_id": "load_022",
+          "public_charge_points": 64
+        },
+        {
+          "home_charge_points": 80,
+          "node_id": "load_023",
+          "public_charge_points": 47
+        },
+        {
+          "home_charge_points": 80,
+          "node_id": "load_024",
+          "public_charge_points": 47
+        },
+        {
+          "home_charge_points": 80,
+          "node_id": "load_025",
+          "public_charge_points": 47
+        },
+        {
+          "home_charge_points": 108,
+          "node_id": "load_026",
+          "public_charge_points": 64
+        },
+        {
+          "home_charge_points": 66,
+          "node_id": "load_027",
+          "public_charge_points": 39
+        },
+        {
+          "home_charge_points": 66,
+          "node_id": "load_028",
+          "public_charge_points": 39
+        },
+        {
+          "home_charge_points": 108,
+          "node_id": "load_029",
+          "public_charge_points": 64
+        },
+        {
+          "home_charge_points": 80,
+          "node_id": "load_030",
+          "public_charge_points": 47
+        },
+        {
+          "home_charge_points": 80,
+          "node_id": "load_031",
+          "public_charge_points": 47
+        },
+        {
+          "home_charge_points": 108,
+          "node_id": "load_032",
+          "public_charge_points": 64
+        },
+        {
+          "home_charge_points": 66,
+          "node_id": "load_033",
+          "public_charge_points": 39
+        },
+        {
+          "home_charge_points": 66,
+          "node_id": "load_034",
+          "public_charge_points": 39
+        },
+        {
+          "home_charge_points": 66,
+          "node_id": "load_035",
+          "public_charge_points": 39
+        },
+        {
+          "home_charge_points": 66,
+          "node_id": "load_036",
+          "public_charge_points": 39
+        },
+        {
+          "home_charge_points": 66,
+          "node_id": "load_037",
+          "public_charge_points": 39
+        },
+        {
+          "home_charge_points": 66,
+          "node_id": "load_038",
+          "public_charge_points": 39
+        },
+        {
+          "home_charge_points": 80,
+          "node_id": "load_039",
+          "public_charge_points": 47
+        },
+        {
+          "home_charge_points": 108,
+          "node_id": "load_040",
+          "public_charge_points": 64
+        },
+        {
+          "home_charge_points": 80,
+          "node_id": "load_041",
+          "public_charge_points": 47
+        },
+        {
+          "home_charge_points": 108,
+          "node_id": "load_042",
+          "public_charge_points": 64
+        },
+        {
+          "home_charge_points": 66,
+          "node_id": "load_043",
+          "public_charge_points": 39
+        },
+        {
+          "home_charge_points": 79,
+          "node_id": "load_044",
+          "public_charge_points": 47
+        },
+        {
+          "home_charge_points": 66,
+          "node_id": "load_045",
+          "public_charge_points": 39
+        },
+        {
+          "home_charge_points": 79,
+          "node_id": "load_046",
+          "public_charge_points": 47
+        },
+        {
+          "home_charge_points": 79,
+          "node_id": "load_047",
+          "public_charge_points": 47
+        },
+        {
+          "home_charge_points": 79,
+          "node_id": "load_048",
+          "public_charge_points": 47
+        },
+        {
+          "home_charge_points": 79,
+          "node_id": "load_049",
+          "public_charge_points": 47
+        },
+        {
+          "home_charge_points": 79,
+          "node_id": "load_050",
+          "public_charge_points": 47
+        },
+        {
+          "home_charge_points": 66,
+          "node_id": "load_051",
+          "public_charge_points": 39
+        },
+        {
+          "home_charge_points": 66,
+          "node_id": "load_052",
+          "public_charge_points": 39
+        },
+        {
+          "home_charge_points": 66,
+          "node_id": "load_053",
+          "public_charge_points": 39
+        },
+        {
+          "home_charge_points": 79,
+          "node_id": "load_054",
+          "public_charge_points": 47
+        },
+        {
+          "home_charge_points": 108,
+          "node_id": "load_055",
+          "public_charge_points": 64
+        },
+        {
+          "home_charge_points": 79,
+          "node_id": "load_056",
+          "public_charge_points": 47
+        },
+        {
+          "home_charge_points": 79,
+          "node_id": "load_057",
+          "public_charge_points": 47
+        },
+        {
+          "home_charge_points": 79,
+          "node_id": "load_058",
+          "public_charge_points": 47
+        },
+        {
+          "home_charge_points": 108,
+          "node_id": "load_059",
+          "public_charge_points": 64
+        },
+        {
+          "home_charge_points": 66,
+          "node_id": "load_060",
+          "public_charge_points": 39
+        },
+        {
+          "home_charge_points": 26,
+          "node_id": "load_061",
+          "public_charge_points": 16
+        },
+        {
+          "home_charge_points": 26,
+          "node_id": "load_062",
+          "public_charge_points": 16
+        },
+        {
+          "home_charge_points": 26,
+          "node_id": "load_063",
+          "public_charge_points": 16
+        },
+        {
+          "home_charge_points": 66,
+          "node_id": "load_064",
+          "public_charge_points": 39
+        },
+        {
+          "home_charge_points": 26,
+          "node_id": "load_065",
+          "public_charge_points": 16
+        },
+        {
+          "home_charge_points": 134,
+          "node_id": "load_066",
+          "public_charge_points": 80
+        },
+        {
+          "home_charge_points": 79,
+          "node_id": "load_067",
+          "public_charge_points": 47
+        },
+        {
+          "home_charge_points": 108,
+          "node_id": "load_068",
+          "public_charge_points": 64
+        },
+        {
+          "home_charge_points": 108,
+          "node_id": "load_069",
+          "public_charge_points": 64
+        },
+        {
+          "home_charge_points": 26,
+          "node_id": "load_070",
+          "public_charge_points": 16
+        },
+        {
+          "home_charge_points": 66,
+          "node_id": "load_071",
+          "public_charge_points": 39
+        },
+        {
+          "home_charge_points": 66,
+          "node_id": "load_072",
+          "public_charge_points": 39
+        },
+        {
+          "home_charge_points": 66,
+          "node_id": "load_073",
+          "public_charge_points": 39
+        },
+        {
+          "home_charge_points": 66,
+          "node_id": "load_074",
+          "public_charge_points": 39
+        },
+        {
+          "home_charge_points": 79,
+          "node_id": "load_075",
+          "public_charge_points": 47
+        },
+        {
+          "home_charge_points": 134,
+          "node_id": "load_076",
+          "public_charge_points": 80
+        },
+        {
+          "home_charge_points": 134,
+          "node_id": "load_077",
+          "public_charge_points": 80
+        },
+        {
+          "home_charge_points": 66,
+          "node_id": "load_078",
+          "public_charge_points": 39
+        },
+        {
+          "home_charge_points": 66,
+          "node_id": "load_079",
+          "public_charge_points": 39
+        },
+        {
+          "home_charge_points": 108,
+          "node_id": "load_080",
+          "public_charge_points": 64
+        },
+        {
+          "home_charge_points": 108,
+          "node_id": "load_081",
+          "public_charge_points": 64
+        },
+        {
+          "home_charge_points": 79,
+          "node_id": "load_082",
+          "public_charge_points": 47
+        },
+        {
+          "home_charge_points": 144,
+          "node_id": "load_083",
+          "public_charge_points": 86
+        },
+        {
+          "home_charge_points": 134,
+          "node_id": "load_084",
+          "public_charge_points": 80
+        },
+        {
+          "home_charge_points": 134,
+          "node_id": "load_085",
+          "public_charge_points": 80
+        },
+        {
+          "home_charge_points": 134,
+          "node_id": "load_086",
+          "public_charge_points": 80
+        },
+        {
+          "home_charge_points": 134,
+          "node_id": "load_087",
+          "public_charge_points": 79
+        },
+        {
+          "home_charge_points": 134,
+          "node_id": "load_088",
+          "public_charge_points": 79
+        },
+        {
+          "home_charge_points": 134,
+          "node_id": "load_089",
+          "public_charge_points": 79
+        },
+        {
+          "home_charge_points": 79,
+          "node_id": "load_090",
+          "public_charge_points": 47
+        },
+        {
+          "home_charge_points": 134,
+          "node_id": "load_091",
+          "public_charge_points": 79
+        },
+        {
+          "home_charge_points": 79,
+          "node_id": "load_092",
+          "public_charge_points": 47
+        },
+        {
+          "home_charge_points": 79,
+          "node_id": "load_093",
+          "public_charge_points": 47
+        },
+        {
+          "home_charge_points": 134,
+          "node_id": "load_094",
+          "public_charge_points": 79
+        },
+        {
+          "home_charge_points": 79,
+          "node_id": "load_095",
+          "public_charge_points": 47
+        },
+        {
+          "home_charge_points": 108,
+          "node_id": "load_096",
+          "public_charge_points": 64
+        },
+        {
+          "home_charge_points": 134,
+          "node_id": "load_097",
+          "public_charge_points": 79
+        },
+        {
+          "home_charge_points": 79,
+          "node_id": "load_098",
+          "public_charge_points": 47
+        },
+        {
+          "home_charge_points": 79,
+          "node_id": "load_099",
+          "public_charge_points": 47
+        },
+        {
+          "home_charge_points": 134,
+          "node_id": "load_100",
+          "public_charge_points": 79
+        },
+        {
+          "home_charge_points": 79,
+          "node_id": "load_101",
+          "public_charge_points": 47
+        },
+        {
+          "home_charge_points": 66,
+          "node_id": "load_102",
+          "public_charge_points": 39
+        },
+        {
+          "home_charge_points": 66,
+          "node_id": "load_103",
+          "public_charge_points": 39
+        },
+        {
+          "home_charge_points": 79,
+          "node_id": "load_104",
+          "public_charge_points": 47
+        },
+        {
+          "home_charge_points": 108,
+          "node_id": "load_105",
+          "public_charge_points": 64
+        },
+        {
+          "home_charge_points": 79,
+          "node_id": "load_106",
+          "public_charge_points": 47
+        },
+        {
+          "home_charge_points": 66,
+          "node_id": "load_107",
+          "public_charge_points": 39
+        },
+        {
+          "home_charge_points": 26,
+          "node_id": "load_108",
+          "public_charge_points": 16
+        },
+        {
+          "home_charge_points": 108,
+          "node_id": "load_109",
+          "public_charge_points": 64
+        },
+        {
+          "home_charge_points": 108,
+          "node_id": "load_110",
+          "public_charge_points": 64
+        },
+        {
+          "home_charge_points": 69,
+          "node_id": "load_111",
+          "public_charge_points": 41
+        },
+        {
+          "home_charge_points": 28,
+          "node_id": "load_112",
+          "public_charge_points": 17
+        },
+        {
+          "home_charge_points": 77,
+          "node_id": "load_113",
+          "public_charge_points": 46
+        },
+        {
+          "home_charge_points": 80,
+          "node_id": "load_114",
+          "public_charge_points": 48
+        }
+      ],
+      "node_count": 115,
+      "nonnegative_integer_counts_verified": true,
+      "planning_year": 2035,
+      "provenance": {
+        "area_identifier": "GM0361",
+        "area_type": "municipalities",
+        "governing_decision": "EV-007A",
+        "home_charge_points": "D-010-local-GM0361-home-high-2035",
+        "home_response_sha256": "3f16acac00eb389bca0105ed1b7ecc899c4cf5a0983d76450ab4bcf8dd519224",
+        "public_charge_points": "D-010-local-GM0361-public-high-2035",
+        "public_response_sha256": "b6c2d52a8baf9f41719fbe4449554a12f06fa292d5ab716781aac5ee15ad0b07",
+        "rounding_rule": "nearest_integer_api_number",
+        "source_id": "D-010",
+        "source_type": "local_grid"
+      },
+      "public_charge_points": 6138,
+      "scenario": "high",
+      "total_conservation_verified": true
+    },
+    {
+      "home_charge_points": 7992,
+      "node_allocations": [
+        {
+          "home_charge_points": 86,
+          "node_id": "load_000",
+          "public_charge_points": 45
+        },
+        {
+          "home_charge_points": 112,
+          "node_id": "load_001",
+          "public_charge_points": 58
+        },
+        {
+          "home_charge_points": 103,
+          "node_id": "load_002",
+          "public_charge_points": 54
+        },
+        {
+          "home_charge_points": 103,
+          "node_id": "load_003",
+          "public_charge_points": 54
+        },
+        {
+          "home_charge_points": 62,
+          "node_id": "load_004",
+          "public_charge_points": 32
+        },
+        {
+          "home_charge_points": 62,
+          "node_id": "load_005",
+          "public_charge_points": 32
+        },
+        {
+          "home_charge_points": 103,
+          "node_id": "load_006",
+          "public_charge_points": 54
+        },
+        {
+          "home_charge_points": 51,
+          "node_id": "load_007",
+          "public_charge_points": 27
+        },
+        {
+          "home_charge_points": 62,
+          "node_id": "load_008",
+          "public_charge_points": 32
+        },
+        {
+          "home_charge_points": 84,
+          "node_id": "load_009",
+          "public_charge_points": 44
+        },
+        {
+          "home_charge_points": 62,
+          "node_id": "load_010",
+          "public_charge_points": 32
+        },
+        {
+          "home_charge_points": 103,
+          "node_id": "load_011",
+          "public_charge_points": 54
+        },
+        {
+          "home_charge_points": 103,
+          "node_id": "load_012",
+          "public_charge_points": 54
+        },
+        {
+          "home_charge_points": 103,
+          "node_id": "load_013",
+          "public_charge_points": 54
+        },
+        {
+          "home_charge_points": 103,
+          "node_id": "load_014",
+          "public_charge_points": 54
+        },
+        {
+          "home_charge_points": 103,
+          "node_id": "load_015",
+          "public_charge_points": 54
+        },
+        {
+          "home_charge_points": 62,
+          "node_id": "load_016",
+          "public_charge_points": 32
+        },
+        {
+          "home_charge_points": 62,
+          "node_id": "load_017",
+          "public_charge_points": 32
+        },
+        {
+          "home_charge_points": 103,
+          "node_id": "load_018",
+          "public_charge_points": 54
+        },
+        {
+          "home_charge_points": 103,
+          "node_id": "load_019",
+          "public_charge_points": 54
+        },
+        {
+          "home_charge_points": 62,
+          "node_id": "load_020",
+          "public_charge_points": 32
+        },
+        {
+          "home_charge_points": 84,
+          "node_id": "load_021",
+          "public_charge_points": 44
+        },
+        {
+          "home_charge_points": 84,
+          "node_id": "load_022",
+          "public_charge_points": 44
+        },
+        {
+          "home_charge_points": 62,
+          "node_id": "load_023",
+          "public_charge_points": 32
+        },
+        {
+          "home_charge_points": 62,
+          "node_id": "load_024",
+          "public_charge_points": 32
+        },
+        {
+          "home_charge_points": 62,
+          "node_id": "load_025",
+          "public_charge_points": 32
+        },
+        {
+          "home_charge_points": 84,
+          "node_id": "load_026",
+          "public_charge_points": 44
+        },
+        {
+          "home_charge_points": 51,
+          "node_id": "load_027",
+          "public_charge_points": 27
+        },
+        {
+          "home_charge_points": 51,
+          "node_id": "load_028",
+          "public_charge_points": 27
+        },
+        {
+          "home_charge_points": 84,
+          "node_id": "load_029",
+          "public_charge_points": 44
+        },
+        {
+          "home_charge_points": 62,
+          "node_id": "load_030",
+          "public_charge_points": 32
+        },
+        {
+          "home_charge_points": 62,
+          "node_id": "load_031",
+          "public_charge_points": 32
+        },
+        {
+          "home_charge_points": 84,
+          "node_id": "load_032",
+          "public_charge_points": 44
+        },
+        {
+          "home_charge_points": 51,
+          "node_id": "load_033",
+          "public_charge_points": 27
+        },
+        {
+          "home_charge_points": 51,
+          "node_id": "load_034",
+          "public_charge_points": 27
+        },
+        {
+          "home_charge_points": 51,
+          "node_id": "load_035",
+          "public_charge_points": 27
+        },
+        {
+          "home_charge_points": 51,
+          "node_id": "load_036",
+          "public_charge_points": 27
+        },
+        {
+          "home_charge_points": 51,
+          "node_id": "load_037",
+          "public_charge_points": 27
+        },
+        {
+          "home_charge_points": 51,
+          "node_id": "load_038",
+          "public_charge_points": 27
+        },
+        {
+          "home_charge_points": 62,
+          "node_id": "load_039",
+          "public_charge_points": 32
+        },
+        {
+          "home_charge_points": 84,
+          "node_id": "load_040",
+          "public_charge_points": 44
+        },
+        {
+          "home_charge_points": 62,
+          "node_id": "load_041",
+          "public_charge_points": 32
+        },
+        {
+          "home_charge_points": 84,
+          "node_id": "load_042",
+          "public_charge_points": 44
+        },
+        {
+          "home_charge_points": 51,
+          "node_id": "load_043",
+          "public_charge_points": 27
+        },
+        {
+          "home_charge_points": 61,
+          "node_id": "load_044",
+          "public_charge_points": 32
+        },
+        {
+          "home_charge_points": 51,
+          "node_id": "load_045",
+          "public_charge_points": 27
+        },
+        {
+          "home_charge_points": 61,
+          "node_id": "load_046",
+          "public_charge_points": 32
+        },
+        {
+          "home_charge_points": 61,
+          "node_id": "load_047",
+          "public_charge_points": 32
+        },
+        {
+          "home_charge_points": 61,
+          "node_id": "load_048",
+          "public_charge_points": 32
+        },
+        {
+          "home_charge_points": 61,
+          "node_id": "load_049",
+          "public_charge_points": 32
+        },
+        {
+          "home_charge_points": 61,
+          "node_id": "load_050",
+          "public_charge_points": 32
+        },
+        {
+          "home_charge_points": 51,
+          "node_id": "load_051",
+          "public_charge_points": 27
+        },
+        {
+          "home_charge_points": 51,
+          "node_id": "load_052",
+          "public_charge_points": 27
+        },
+        {
+          "home_charge_points": 51,
+          "node_id": "load_053",
+          "public_charge_points": 27
+        },
+        {
+          "home_charge_points": 61,
+          "node_id": "load_054",
+          "public_charge_points": 32
+        },
+        {
+          "home_charge_points": 84,
+          "node_id": "load_055",
+          "public_charge_points": 44
+        },
+        {
+          "home_charge_points": 61,
+          "node_id": "load_056",
+          "public_charge_points": 32
+        },
+        {
+          "home_charge_points": 61,
+          "node_id": "load_057",
+          "public_charge_points": 32
+        },
+        {
+          "home_charge_points": 61,
+          "node_id": "load_058",
+          "public_charge_points": 32
+        },
+        {
+          "home_charge_points": 84,
+          "node_id": "load_059",
+          "public_charge_points": 44
+        },
+        {
+          "home_charge_points": 51,
+          "node_id": "load_060",
+          "public_charge_points": 27
+        },
+        {
+          "home_charge_points": 20,
+          "node_id": "load_061",
+          "public_charge_points": 10
+        },
+        {
+          "home_charge_points": 20,
+          "node_id": "load_062",
+          "public_charge_points": 10
+        },
+        {
+          "home_charge_points": 20,
+          "node_id": "load_063",
+          "public_charge_points": 10
+        },
+        {
+          "home_charge_points": 51,
+          "node_id": "load_064",
+          "public_charge_points": 27
+        },
+        {
+          "home_charge_points": 20,
+          "node_id": "load_065",
+          "public_charge_points": 10
+        },
+        {
+          "home_charge_points": 103,
+          "node_id": "load_066",
+          "public_charge_points": 54
+        },
+        {
+          "home_charge_points": 61,
+          "node_id": "load_067",
+          "public_charge_points": 32
+        },
+        {
+          "home_charge_points": 84,
+          "node_id": "load_068",
+          "public_charge_points": 44
+        },
+        {
+          "home_charge_points": 84,
+          "node_id": "load_069",
+          "public_charge_points": 44
+        },
+        {
+          "home_charge_points": 20,
+          "node_id": "load_070",
+          "public_charge_points": 10
+        },
+        {
+          "home_charge_points": 51,
+          "node_id": "load_071",
+          "public_charge_points": 27
+        },
+        {
+          "home_charge_points": 51,
+          "node_id": "load_072",
+          "public_charge_points": 27
+        },
+        {
+          "home_charge_points": 51,
+          "node_id": "load_073",
+          "public_charge_points": 27
+        },
+        {
+          "home_charge_points": 51,
+          "node_id": "load_074",
+          "public_charge_points": 27
+        },
+        {
+          "home_charge_points": 61,
+          "node_id": "load_075",
+          "public_charge_points": 32
+        },
+        {
+          "home_charge_points": 103,
+          "node_id": "load_076",
+          "public_charge_points": 54
+        },
+        {
+          "home_charge_points": 103,
+          "node_id": "load_077",
+          "public_charge_points": 54
+        },
+        {
+          "home_charge_points": 51,
+          "node_id": "load_078",
+          "public_charge_points": 27
+        },
+        {
+          "home_charge_points": 51,
+          "node_id": "load_079",
+          "public_charge_points": 27
+        },
+        {
+          "home_charge_points": 84,
+          "node_id": "load_080",
+          "public_charge_points": 44
+        },
+        {
+          "home_charge_points": 84,
+          "node_id": "load_081",
+          "public_charge_points": 44
+        },
+        {
+          "home_charge_points": 61,
+          "node_id": "load_082",
+          "public_charge_points": 32
+        },
+        {
+          "home_charge_points": 112,
+          "node_id": "load_083",
+          "public_charge_points": 58
+        },
+        {
+          "home_charge_points": 103,
+          "node_id": "load_084",
+          "public_charge_points": 54
+        },
+        {
+          "home_charge_points": 103,
+          "node_id": "load_085",
+          "public_charge_points": 54
+        },
+        {
+          "home_charge_points": 103,
+          "node_id": "load_086",
+          "public_charge_points": 54
+        },
+        {
+          "home_charge_points": 103,
+          "node_id": "load_087",
+          "public_charge_points": 54
+        },
+        {
+          "home_charge_points": 103,
+          "node_id": "load_088",
+          "public_charge_points": 54
+        },
+        {
+          "home_charge_points": 103,
+          "node_id": "load_089",
+          "public_charge_points": 54
+        },
+        {
+          "home_charge_points": 61,
+          "node_id": "load_090",
+          "public_charge_points": 32
+        },
+        {
+          "home_charge_points": 103,
+          "node_id": "load_091",
+          "public_charge_points": 54
+        },
+        {
+          "home_charge_points": 61,
+          "node_id": "load_092",
+          "public_charge_points": 32
+        },
+        {
+          "home_charge_points": 61,
+          "node_id": "load_093",
+          "public_charge_points": 32
+        },
+        {
+          "home_charge_points": 103,
+          "node_id": "load_094",
+          "public_charge_points": 54
+        },
+        {
+          "home_charge_points": 61,
+          "node_id": "load_095",
+          "public_charge_points": 32
+        },
+        {
+          "home_charge_points": 84,
+          "node_id": "load_096",
+          "public_charge_points": 44
+        },
+        {
+          "home_charge_points": 103,
+          "node_id": "load_097",
+          "public_charge_points": 54
+        },
+        {
+          "home_charge_points": 61,
+          "node_id": "load_098",
+          "public_charge_points": 32
+        },
+        {
+          "home_charge_points": 61,
+          "node_id": "load_099",
+          "public_charge_points": 32
+        },
+        {
+          "home_charge_points": 103,
+          "node_id": "load_100",
+          "public_charge_points": 54
+        },
+        {
+          "home_charge_points": 61,
+          "node_id": "load_101",
+          "public_charge_points": 32
+        },
+        {
+          "home_charge_points": 51,
+          "node_id": "load_102",
+          "public_charge_points": 27
+        },
+        {
+          "home_charge_points": 51,
+          "node_id": "load_103",
+          "public_charge_points": 27
+        },
+        {
+          "home_charge_points": 61,
+          "node_id": "load_104",
+          "public_charge_points": 32
+        },
+        {
+          "home_charge_points": 84,
+          "node_id": "load_105",
+          "public_charge_points": 44
+        },
+        {
+          "home_charge_points": 61,
+          "node_id": "load_106",
+          "public_charge_points": 32
+        },
+        {
+          "home_charge_points": 51,
+          "node_id": "load_107",
+          "public_charge_points": 26
+        },
+        {
+          "home_charge_points": 20,
+          "node_id": "load_108",
+          "public_charge_points": 10
+        },
+        {
+          "home_charge_points": 84,
+          "node_id": "load_109",
+          "public_charge_points": 44
+        },
+        {
+          "home_charge_points": 84,
+          "node_id": "load_110",
+          "public_charge_points": 44
+        },
+        {
+          "home_charge_points": 53,
+          "node_id": "load_111",
+          "public_charge_points": 28
+        },
+        {
+          "home_charge_points": 22,
+          "node_id": "load_112",
+          "public_charge_points": 11
+        },
+        {
+          "home_charge_points": 59,
+          "node_id": "load_113",
+          "public_charge_points": 31
+        },
+        {
+          "home_charge_points": 62,
+          "node_id": "load_114",
+          "public_charge_points": 32
+        }
+      ],
+      "node_count": 115,
+      "nonnegative_integer_counts_verified": true,
+      "planning_year": 2035,
+      "provenance": {
+        "area_identifier": "GM0361",
+        "area_type": "municipalities",
+        "governing_decision": "EV-007A",
+        "home_charge_points": "D-010-local-GM0361-home-low-2035",
+        "home_response_sha256": "2b91de9e67c0ccddffa5c11293571391886b7a59414ae4549f5a0aad868e9bd4",
+        "public_charge_points": "D-010-local-GM0361-public-low-2035",
+        "public_response_sha256": "b97e7883c719e726b349ae16f8438d16308762125684d6b871772fac1dcef169",
+        "rounding_rule": "nearest_integer_api_number",
+        "source_id": "D-010",
+        "source_type": "local_grid"
+      },
+      "public_charge_points": 4183,
+      "scenario": "low",
+      "total_conservation_verified": true
+    },
+    {
+      "home_charge_points": 9386,
+      "node_allocations": [
+        {
+          "home_charge_points": 101,
+          "node_id": "load_000",
+          "public_charge_points": 55
+        },
+        {
+          "home_charge_points": 131,
+          "node_id": "load_001",
+          "public_charge_points": 72
+        },
+        {
+          "home_charge_points": 122,
+          "node_id": "load_002",
+          "public_charge_points": 66
+        },
+        {
+          "home_charge_points": 122,
+          "node_id": "load_003",
+          "public_charge_points": 66
+        },
+        {
+          "home_charge_points": 72,
+          "node_id": "load_004",
+          "public_charge_points": 40
+        },
+        {
+          "home_charge_points": 72,
+          "node_id": "load_005",
+          "public_charge_points": 40
+        },
+        {
+          "home_charge_points": 122,
+          "node_id": "load_006",
+          "public_charge_points": 66
+        },
+        {
+          "home_charge_points": 60,
+          "node_id": "load_007",
+          "public_charge_points": 33
+        },
+        {
+          "home_charge_points": 72,
+          "node_id": "load_008",
+          "public_charge_points": 40
+        },
+        {
+          "home_charge_points": 98,
+          "node_id": "load_009",
+          "public_charge_points": 54
+        },
+        {
+          "home_charge_points": 72,
+          "node_id": "load_010",
+          "public_charge_points": 40
+        },
+        {
+          "home_charge_points": 122,
+          "node_id": "load_011",
+          "public_charge_points": 66
+        },
+        {
+          "home_charge_points": 122,
+          "node_id": "load_012",
+          "public_charge_points": 66
+        },
+        {
+          "home_charge_points": 122,
+          "node_id": "load_013",
+          "public_charge_points": 66
+        },
+        {
+          "home_charge_points": 122,
+          "node_id": "load_014",
+          "public_charge_points": 66
+        },
+        {
+          "home_charge_points": 122,
+          "node_id": "load_015",
+          "public_charge_points": 66
+        },
+        {
+          "home_charge_points": 72,
+          "node_id": "load_016",
+          "public_charge_points": 40
+        },
+        {
+          "home_charge_points": 72,
+          "node_id": "load_017",
+          "public_charge_points": 39
+        },
+        {
+          "home_charge_points": 122,
+          "node_id": "load_018",
+          "public_charge_points": 66
+        },
+        {
+          "home_charge_points": 122,
+          "node_id": "load_019",
+          "public_charge_points": 66
+        },
+        {
+          "home_charge_points": 72,
+          "node_id": "load_020",
+          "public_charge_points": 39
+        },
+        {
+          "home_charge_points": 98,
+          "node_id": "load_021",
+          "public_charge_points": 54
+        },
+        {
+          "home_charge_points": 98,
+          "node_id": "load_022",
+          "public_charge_points": 54
+        },
+        {
+          "home_charge_points": 72,
+          "node_id": "load_023",
+          "public_charge_points": 39
+        },
+        {
+          "home_charge_points": 72,
+          "node_id": "load_024",
+          "public_charge_points": 39
+        },
+        {
+          "home_charge_points": 72,
+          "node_id": "load_025",
+          "public_charge_points": 39
+        },
+        {
+          "home_charge_points": 98,
+          "node_id": "load_026",
+          "public_charge_points": 54
+        },
+        {
+          "home_charge_points": 60,
+          "node_id": "load_027",
+          "public_charge_points": 33
+        },
+        {
+          "home_charge_points": 60,
+          "node_id": "load_028",
+          "public_charge_points": 33
+        },
+        {
+          "home_charge_points": 98,
+          "node_id": "load_029",
+          "public_charge_points": 54
+        },
+        {
+          "home_charge_points": 72,
+          "node_id": "load_030",
+          "public_charge_points": 39
+        },
+        {
+          "home_charge_points": 72,
+          "node_id": "load_031",
+          "public_charge_points": 39
+        },
+        {
+          "home_charge_points": 98,
+          "node_id": "load_032",
+          "public_charge_points": 54
+        },
+        {
+          "home_charge_points": 60,
+          "node_id": "load_033",
+          "public_charge_points": 33
+        },
+        {
+          "home_charge_points": 60,
+          "node_id": "load_034",
+          "public_charge_points": 33
+        },
+        {
+          "home_charge_points": 60,
+          "node_id": "load_035",
+          "public_charge_points": 33
+        },
+        {
+          "home_charge_points": 60,
+          "node_id": "load_036",
+          "public_charge_points": 33
+        },
+        {
+          "home_charge_points": 60,
+          "node_id": "load_037",
+          "public_charge_points": 33
+        },
+        {
+          "home_charge_points": 60,
+          "node_id": "load_038",
+          "public_charge_points": 33
+        },
+        {
+          "home_charge_points": 72,
+          "node_id": "load_039",
+          "public_charge_points": 39
+        },
+        {
+          "home_charge_points": 98,
+          "node_id": "load_040",
+          "public_charge_points": 54
+        },
+        {
+          "home_charge_points": 72,
+          "node_id": "load_041",
+          "public_charge_points": 39
+        },
+        {
+          "home_charge_points": 98,
+          "node_id": "load_042",
+          "public_charge_points": 54
+        },
+        {
+          "home_charge_points": 60,
+          "node_id": "load_043",
+          "public_charge_points": 33
+        },
+        {
+          "home_charge_points": 72,
+          "node_id": "load_044",
+          "public_charge_points": 39
+        },
+        {
+          "home_charge_points": 60,
+          "node_id": "load_045",
+          "public_charge_points": 33
+        },
+        {
+          "home_charge_points": 72,
+          "node_id": "load_046",
+          "public_charge_points": 39
+        },
+        {
+          "home_charge_points": 72,
+          "node_id": "load_047",
+          "public_charge_points": 39
+        },
+        {
+          "home_charge_points": 72,
+          "node_id": "load_048",
+          "public_charge_points": 39
+        },
+        {
+          "home_charge_points": 72,
+          "node_id": "load_049",
+          "public_charge_points": 39
+        },
+        {
+          "home_charge_points": 72,
+          "node_id": "load_050",
+          "public_charge_points": 39
+        },
+        {
+          "home_charge_points": 60,
+          "node_id": "load_051",
+          "public_charge_points": 33
+        },
+        {
+          "home_charge_points": 60,
+          "node_id": "load_052",
+          "public_charge_points": 33
+        },
+        {
+          "home_charge_points": 60,
+          "node_id": "load_053",
+          "public_charge_points": 33
+        },
+        {
+          "home_charge_points": 72,
+          "node_id": "load_054",
+          "public_charge_points": 39
+        },
+        {
+          "home_charge_points": 98,
+          "node_id": "load_055",
+          "public_charge_points": 54
+        },
+        {
+          "home_charge_points": 72,
+          "node_id": "load_056",
+          "public_charge_points": 39
+        },
+        {
+          "home_charge_points": 72,
+          "node_id": "load_057",
+          "public_charge_points": 39
+        },
+        {
+          "home_charge_points": 72,
+          "node_id": "load_058",
+          "public_charge_points": 39
+        },
+        {
+          "home_charge_points": 98,
+          "node_id": "load_059",
+          "public_charge_points": 54
+        },
+        {
+          "home_charge_points": 60,
+          "node_id": "load_060",
+          "public_charge_points": 33
+        },
+        {
+          "home_charge_points": 24,
+          "node_id": "load_061",
+          "public_charge_points": 13
+        },
+        {
+          "home_charge_points": 24,
+          "node_id": "load_062",
+          "public_charge_points": 13
+        },
+        {
+          "home_charge_points": 24,
+          "node_id": "load_063",
+          "public_charge_points": 13
+        },
+        {
+          "home_charge_points": 60,
+          "node_id": "load_064",
+          "public_charge_points": 33
+        },
+        {
+          "home_charge_points": 24,
+          "node_id": "load_065",
+          "public_charge_points": 13
+        },
+        {
+          "home_charge_points": 121,
+          "node_id": "load_066",
+          "public_charge_points": 66
+        },
+        {
+          "home_charge_points": 72,
+          "node_id": "load_067",
+          "public_charge_points": 39
+        },
+        {
+          "home_charge_points": 98,
+          "node_id": "load_068",
+          "public_charge_points": 54
+        },
+        {
+          "home_charge_points": 98,
+          "node_id": "load_069",
+          "public_charge_points": 54
+        },
+        {
+          "home_charge_points": 24,
+          "node_id": "load_070",
+          "public_charge_points": 13
+        },
+        {
+          "home_charge_points": 60,
+          "node_id": "load_071",
+          "public_charge_points": 33
+        },
+        {
+          "home_charge_points": 60,
+          "node_id": "load_072",
+          "public_charge_points": 33
+        },
+        {
+          "home_charge_points": 60,
+          "node_id": "load_073",
+          "public_charge_points": 33
+        },
+        {
+          "home_charge_points": 60,
+          "node_id": "load_074",
+          "public_charge_points": 33
+        },
+        {
+          "home_charge_points": 72,
+          "node_id": "load_075",
+          "public_charge_points": 39
+        },
+        {
+          "home_charge_points": 121,
+          "node_id": "load_076",
+          "public_charge_points": 66
+        },
+        {
+          "home_charge_points": 121,
+          "node_id": "load_077",
+          "public_charge_points": 66
+        },
+        {
+          "home_charge_points": 60,
+          "node_id": "load_078",
+          "public_charge_points": 33
+        },
+        {
+          "home_charge_points": 60,
+          "node_id": "load_079",
+          "public_charge_points": 33
+        },
+        {
+          "home_charge_points": 98,
+          "node_id": "load_080",
+          "public_charge_points": 54
+        },
+        {
+          "home_charge_points": 98,
+          "node_id": "load_081",
+          "public_charge_points": 54
+        },
+        {
+          "home_charge_points": 72,
+          "node_id": "load_082",
+          "public_charge_points": 39
+        },
+        {
+          "home_charge_points": 131,
+          "node_id": "load_083",
+          "public_charge_points": 72
+        },
+        {
+          "home_charge_points": 121,
+          "node_id": "load_084",
+          "public_charge_points": 66
+        },
+        {
+          "home_charge_points": 121,
+          "node_id": "load_085",
+          "public_charge_points": 66
+        },
+        {
+          "home_charge_points": 121,
+          "node_id": "load_086",
+          "public_charge_points": 66
+        },
+        {
+          "home_charge_points": 121,
+          "node_id": "load_087",
+          "public_charge_points": 66
+        },
+        {
+          "home_charge_points": 121,
+          "node_id": "load_088",
+          "public_charge_points": 66
+        },
+        {
+          "home_charge_points": 121,
+          "node_id": "load_089",
+          "public_charge_points": 66
+        },
+        {
+          "home_charge_points": 72,
+          "node_id": "load_090",
+          "public_charge_points": 39
+        },
+        {
+          "home_charge_points": 121,
+          "node_id": "load_091",
+          "public_charge_points": 66
+        },
+        {
+          "home_charge_points": 72,
+          "node_id": "load_092",
+          "public_charge_points": 39
+        },
+        {
+          "home_charge_points": 72,
+          "node_id": "load_093",
+          "public_charge_points": 39
+        },
+        {
+          "home_charge_points": 121,
+          "node_id": "load_094",
+          "public_charge_points": 66
+        },
+        {
+          "home_charge_points": 72,
+          "node_id": "load_095",
+          "public_charge_points": 39
+        },
+        {
+          "home_charge_points": 98,
+          "node_id": "load_096",
+          "public_charge_points": 54
+        },
+        {
+          "home_charge_points": 121,
+          "node_id": "load_097",
+          "public_charge_points": 66
+        },
+        {
+          "home_charge_points": 72,
+          "node_id": "load_098",
+          "public_charge_points": 39
+        },
+        {
+          "home_charge_points": 72,
+          "node_id": "load_099",
+          "public_charge_points": 39
+        },
+        {
+          "home_charge_points": 121,
+          "node_id": "load_100",
+          "public_charge_points": 66
+        },
+        {
+          "home_charge_points": 72,
+          "node_id": "load_101",
+          "public_charge_points": 39
+        },
+        {
+          "home_charge_points": 60,
+          "node_id": "load_102",
+          "public_charge_points": 33
+        },
+        {
+          "home_charge_points": 60,
+          "node_id": "load_103",
+          "public_charge_points": 33
+        },
+        {
+          "home_charge_points": 72,
+          "node_id": "load_104",
+          "public_charge_points": 39
+        },
+        {
+          "home_charge_points": 98,
+          "node_id": "load_105",
+          "public_charge_points": 54
+        },
+        {
+          "home_charge_points": 72,
+          "node_id": "load_106",
+          "public_charge_points": 39
+        },
+        {
+          "home_charge_points": 60,
+          "node_id": "load_107",
+          "public_charge_points": 33
+        },
+        {
+          "home_charge_points": 24,
+          "node_id": "load_108",
+          "public_charge_points": 13
+        },
+        {
+          "home_charge_points": 98,
+          "node_id": "load_109",
+          "public_charge_points": 54
+        },
+        {
+          "home_charge_points": 98,
+          "node_id": "load_110",
+          "public_charge_points": 54
+        },
+        {
+          "home_charge_points": 62,
+          "node_id": "load_111",
+          "public_charge_points": 34
+        },
+        {
+          "home_charge_points": 25,
+          "node_id": "load_112",
+          "public_charge_points": 14
+        },
+        {
+          "home_charge_points": 70,
+          "node_id": "load_113",
+          "public_charge_points": 38
+        },
+        {
+          "home_charge_points": 73,
+          "node_id": "load_114",
+          "public_charge_points": 40
+        }
+      ],
+      "node_count": 115,
+      "nonnegative_integer_counts_verified": true,
+      "planning_year": 2035,
+      "provenance": {
+        "area_identifier": "GM0361",
+        "area_type": "municipalities",
+        "governing_decision": "EV-007A",
+        "home_charge_points": "D-010-local-GM0361-home-middle-2035",
+        "home_response_sha256": "7f5e22504bdf98a36b407c2e861d4583dec040ead7d93e29958b625f3b48de46",
+        "public_charge_points": "D-010-local-GM0361-public-middle-2035",
+        "public_response_sha256": "108956322a7a9ef6872aa02bcd6605bbc2aacfc0840c1a4d07974c44364b9243",
+        "rounding_rule": "nearest_integer_api_number",
+        "source_id": "D-010",
+        "source_type": "local_grid"
+      },
+      "public_charge_points": 5127,
+      "scenario": "middle",
+      "total_conservation_verified": true
+    }
+  ],
+  "scenario_selection": {
+    "declared_branches": [
+      "low",
+      "middle",
+      "high"
+    ],
+    "final_low_middle_high_branch_selected": false,
+    "selection_status": "low/middle/high are executable declared branches; final paper branch selection is deferred to G5 after the predeclared capacity screen"
+  },
+  "scenario_totals": {
+    "high": {
+      "home": 10343,
+      "public": 6138
+    },
+    "low": {
+      "home": 7992,
+      "public": 4183
+    },
+    "middle": {
+      "home": 9386,
+      "public": 5127
+    }
+  },
+  "schema_version": 1,
+  "selected_local_proxy": {
+    "area_identifier": "GM0361",
+    "area_type": "municipalities",
+    "governing_decision": "EV-007A",
+    "name": "Alkmaar"
+  },
+  "source_artifacts": {
+    "historical_preview_artifact": "data/metadata/ev_adoption/e2_s6_a014_alkmaar_allocation_preview.json",
+    "historical_preview_artifact_sha256": "4f68ce69d1d76e67577c52efa698de2044764b7c746dd8e81cea4d7d5ef48a25",
+    "local_count_metadata": "data/metadata/ev_adoption/e2_s6_local_adoption_counts_metadata.json",
+    "scenario_config": "configs/scenarios.yaml",
+    "scenario_config_sha256": "839e6c4c3430cc5d0e257d112ca3ff2783fe362d0a8a54789a1941c3718cbfd6"
+  },
+  "source_ids": [
+    "D-010"
+  ],
+  "status": "accepted_executable_per_node_ev_adoption_allocation",
+  "task_id": "E2.S6"
+}
