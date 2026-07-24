@@ -15,6 +15,17 @@ from typing import Mapping, Sequence
 from src.pbox_reporting import assert_runner_report_boundary_payload
 
 DECISION_REPORT_PROTOCOL = "guarded-decision-report-v1"
+_FORBIDDEN_COLLAPSED_DECISION_FIELDS = frozenset(
+    {
+        "defuzzified_probability",
+        "expected_probability",
+        "mean_probability",
+        "p_hat",
+        "p_mid",
+        "probability",
+        "scalar_decision_probability",
+    }
+)
 
 
 @dataclass(frozen=True)
@@ -148,20 +159,25 @@ def assert_guarded_decision_report_payload(payload: Mapping[str, object]) -> Non
 def _validate_decision_rows(rows: Sequence[DecisionReportRow]) -> None:
     if not rows:
         raise ValueError("decision_rows must not be empty")
-    seen: set[tuple[float, str]] = set()
+    previous_key: tuple[float, str] | None = None
     for row in rows:
         key = (row.alpha, row.metric_name)
-        if key in seen:
-            raise ValueError("decision rows must be unique by alpha and metric_name")
-        seen.add(key)
+        # Stable alpha/metric ordering keeps decision tables auditable and
+        # prevents duplicate rows from masquerading as separate lower/upper evidence.
+        if previous_key is not None and key <= previous_key:
+            raise ValueError(
+                "decision rows must be strictly increasing by alpha and metric_name"
+            )
+        previous_key = key
 
 
 def _row_from_mapping(row: object) -> DecisionReportRow:
     mapping = _expect_mapping(row, name="decision row")
-    forbidden = {"defuzzified_probability", "p_hat", "scalar_decision_probability"}
-    present_forbidden = forbidden.intersection(mapping)
+    present_forbidden = _FORBIDDEN_COLLAPSED_DECISION_FIELDS.intersection(mapping)
     if present_forbidden:
-        raise ValueError(f"decision rows must not contain collapsed fields: {sorted(present_forbidden)}")
+        raise ValueError(
+            f"decision rows must not contain collapsed fields: {sorted(present_forbidden)}"
+        )
     required = {"alpha", "classification", "lower_value", "metric_name", "unit", "upper_value"}
     missing = required.difference(mapping)
     if missing:

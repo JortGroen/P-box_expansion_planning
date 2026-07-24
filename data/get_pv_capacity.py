@@ -13,6 +13,8 @@ D014_STATISTICAL_ORIENTATION_TILT_NAME = "d014_pv_statistical_orientation_tilt_p
 D014_STATISTICAL_ORIENTATION_TILT_ID = "D014-PV-STATISTICAL-ORIENTATION-TILT-PACKET"
 D014_ORIENTATION_TILT_SOURCE_CHOICE_NAME = "d014_pv_orientation_tilt_source_choice_packet.json"
 D014_ORIENTATION_TILT_SOURCE_CHOICE_ID = "D014-PV-ORIENTATION-TILT-SOURCE-CHOICE-PACKET"
+D014_ORIENTATION_TILT_VALUE_CHOICE_NAME = "d014_pv_orientation_tilt_value_choice_packet.json"
+D014_ORIENTATION_TILT_VALUE_CHOICE_ID = "D014-PV-ORIENTATION-TILT-VALUE-CHOICE-PACKET"
 D014_DATA_ID = "D-014"
 CBS_TABLE_ID = "85005NED"
 CBS_ODATA_BASE = f"https://opendata.cbs.nl/ODataApi/OData/{CBS_TABLE_ID}"
@@ -596,6 +598,119 @@ def build_d014_pv_orientation_tilt_source_choice_packet() -> dict[str, Any]:
     }
 
 
+def build_d014_pv_orientation_tilt_value_choice_packet() -> dict[str, Any]:
+    """Return proposed unsigned class values for first-experiment PV geometry.
+
+    Public context supports a statistical route and broad tilt/azimuth ranges,
+    but the executable class table still needs PI signoff. The concrete fallback
+    below is therefore labelled as an assumption-only candidate, not source
+    evidence or an approved PV parameter.
+    """
+    approval_keys = [
+        "orientation_tilt_distribution_source_id",
+        "source_value_trace_or_approved_assumption_id",
+        "azimuth_angle_convention",
+        "tilt_angle_convention",
+        "orientation_class_bin_definitions",
+        "tilt_class_bin_definitions",
+        "representative_angle_values",
+        "class_weight_values",
+        "class_weight_basis_capacity_installation_area_or_assumption",
+        "class_weight_sum_tolerance",
+        "pv_conversion_treatment_for_classes",
+        "pv_param_001_or_amended_conversion_decision",
+        "d014_capacity_value_artifact",
+        "capacity_unit_and_dc_ac_convention",
+        "node_allocation_rule",
+    ]
+    return {
+        "packet_id": D014_ORIENTATION_TILT_VALUE_CHOICE_ID,
+        "data_id": D014_DATA_ID,
+        "created_utc": _now_utc_iso(),
+        "status": "proposed_value_choice_packet_no_raw_download_no_executable_values",
+        "download_performed": False,
+        "raw_data_committed": False,
+        "approved_scope_decision": "PV-ORIENT-001",
+        "source_choice_packet_id": D014_ORIENTATION_TILT_SOURCE_CHOICE_ID,
+        "capacity_route_boundary": "PV-CAP-001/D-014 capacity remains separate from orientation/tilt values",
+        "pv_param_boundary": "PV-PARAM-001 remains proposed/fail-closed; this packet does not approve PR=0.86, direct-GHI, or plane-of-array conversion",
+        "first_experiment_scope": {
+            "statistical_orientation_tilt_classes_only": True,
+            "heavy_building_level_pv_map_deferred": True,
+            "roof_or_location_level_extraction_allowed_now": False,
+            "specific_3dbag_per_roof_workflow_allowed_now": False,
+        },
+        "angle_conventions_for_review": {
+            "azimuth_basis": "degrees_from_south_positive_west_candidate",
+            "azimuth_examples": {"south": 0.0, "east": -90.0, "west": 90.0},
+            "tilt_basis": "degrees_from_horizontal_candidate",
+            "weight_basis_recommendation": "capacity_weight_fraction_candidate",
+            "executable_status": "unsigned_pi_choice_required",
+        },
+        "source_backing_summary": {
+            "source_backed_now": [
+                "PV-ORIENT-001 approves statistical orientation/tilt classes only for the first experiment",
+                "Killinger et al. 2018 is a primary empirical source candidate and reports PV-system tilt/azimuth metadata distribution analysis",
+                "public source snippets support typical tilt ranges and equator-facing azimuth tendency, but do not by themselves approve a Dutch class-weight table",
+                "Dutch PV Portal context supports south-facing 37 degree as a Netherlands optimum/reference point, not a fleet distribution",
+            ],
+            "not_source_backed_yet": [
+                "exact Netherlands or Alkmaar class weights",
+                "capacity-weighted versus installation-count-weighted convention",
+                "class-wise conversion treatment: direct GHI scalar versus transposed plane-of-array/pvlib route",
+            ],
+            "assumption_only_values_in_this_packet": ["pi_prior_5_class_symmetric_rooftop_candidate_v1"],
+        },
+        "candidate_class_sets": [
+            {
+                "class_set_id": "killinger_empirical_extraction_pending_v1",
+                "source_id": "killinger_2018_pv_system_characteristics",
+                "value_status": "source_candidate_values_not_extracted_not_executable",
+                "source_backing_status": "peer_reviewed_distribution_source_candidate",
+                "recommendation": "preferred if the Netherlands-relevant distribution parameters can be extracted/cited before PI signoff",
+                "class_table": [],
+                "blocked_until": [
+                    "extract exact class bins/representative values/weights from source table or figure",
+                    "record citation/page/table trace",
+                    "PI signs weight basis and conversion treatment",
+                ],
+            },
+            {
+                "class_set_id": "pi_prior_5_class_symmetric_rooftop_candidate_v1",
+                "source_id": "pi_declared_simple_class_prior",
+                "value_status": "assumption_only_unsigned_not_executable",
+                "source_backing_status": "assumption_only_fallback_informed_by_common_rooftop_geometry_and_source_candidate_ranges",
+                "weight_basis": "capacity_weight_fraction_candidate",
+                "azimuth_angle_convention": "degrees_from_south_positive_west_candidate",
+                "tilt_angle_convention": "degrees_from_horizontal_candidate",
+                "class_weight_sum": 1.0,
+                "recommendation": "fallback only if the PI prefers a transparent expert prior over additional empirical extraction before the first experiment",
+                "class_table": [
+                    {"class_id": "south_mid_tilt", "orientation_bin_label": "south-facing", "tilt_bin_label": "mid tilt", "representative_azimuth_degrees_from_south": 0.0, "representative_tilt_degrees": 35.0, "capacity_weight_fraction": 0.40, "source_value_trace": "assumption-only candidate; not extracted from a Dutch class table"},
+                    {"class_id": "southeast_low_mid_tilt", "orientation_bin_label": "southeast-facing", "tilt_bin_label": "low-mid tilt", "representative_azimuth_degrees_from_south": -60.0, "representative_tilt_degrees": 25.0, "capacity_weight_fraction": 0.15, "source_value_trace": "assumption-only candidate; not extracted from a Dutch class table"},
+                    {"class_id": "southwest_low_mid_tilt", "orientation_bin_label": "southwest-facing", "tilt_bin_label": "low-mid tilt", "representative_azimuth_degrees_from_south": 60.0, "representative_tilt_degrees": 25.0, "capacity_weight_fraction": 0.15, "source_value_trace": "assumption-only candidate; not extracted from a Dutch class table"},
+                    {"class_id": "east_west_low_tilt", "orientation_bin_label": "east/west split", "tilt_bin_label": "low tilt", "representative_azimuth_degrees_from_south": [-90.0, 90.0], "representative_tilt_degrees": 15.0, "capacity_weight_fraction": 0.20, "source_value_trace": "assumption-only candidate split equally between east and west if PI signs it"},
+                    {"class_id": "flat_low_tilt", "orientation_bin_label": "flat or weakly oriented", "tilt_bin_label": "near-flat", "representative_azimuth_degrees_from_south": 0.0, "representative_tilt_degrees": 10.0, "capacity_weight_fraction": 0.10, "source_value_trace": "assumption-only candidate; azimuth is placeholder because near-flat output is weakly azimuth-sensitive"},
+                ],
+            },
+        ],
+        "pi_recommendation_for_review": {
+            "preferred_path": "extract and sign Killinger/Netherlands-relevant distribution values if accessible quickly enough for first experiment",
+            "fallback_path": "sign pi_prior_5_class_symmetric_rooftop_candidate_v1 explicitly as a first-screen expert prior",
+            "do_not_use_as_final_without_signature": True,
+        },
+        "pi_approval_keys_before_executable_use": approval_keys,
+        "non_claims": [
+            "No statistical orientation/tilt class set is approved as final.",
+            "Numeric class weights and representative angles in this packet are unsigned candidate review values only.",
+            "No raw source, PV-map, roof, building, or location-level geometry data was downloaded.",
+            "No 3DBAG per-roof or heavy building-level workflow is implemented before the first real experiment.",
+            "No PV capacity, growth factor, capacity convention, per-node allocation, PR=0.86, direct-GHI formula, or plane-of-array conversion is approved.",
+            "No net-load, event detection, P(E), threshold run, capacity screen, manuscript result, or final paired HP/PV acceptance is produced.",
+        ],
+    }
+
+
 def write_d014_pv_capacity_source_value_packet(metadata_dir: str | Path = "data/metadata") -> Path:
     """Write the proposed D-014 source/value packet and return its path."""
     directory = Path(metadata_dir) / "weather_pv"
@@ -629,15 +744,30 @@ def write_d014_pv_orientation_tilt_source_choice_packet(metadata_dir: str | Path
     return path
 
 
+def write_d014_pv_orientation_tilt_value_choice_packet(metadata_dir: str | Path = "data/metadata") -> Path:
+    """Write the proposed orientation/tilt value-choice packet and return its path."""
+    directory = Path(metadata_dir) / "weather_pv"
+    directory.mkdir(parents=True, exist_ok=True)
+    path = directory / D014_ORIENTATION_TILT_VALUE_CHOICE_NAME
+    path.write_text(
+        json.dumps(build_d014_pv_orientation_tilt_value_choice_packet(), indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    return path
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Prepare D-014 PV capacity source/value metadata.")
     parser.add_argument("--metadata-dir", default="data/metadata")
     parser.add_argument("--write-d014-source-value-packet", action="store_true")
     parser.add_argument("--write-d014-statistical-orientation-tilt", action="store_true")
     parser.add_argument("--write-d014-orientation-tilt-source-choice", action="store_true")
+    parser.add_argument("--write-d014-orientation-tilt-value-choice", action="store_true")
     args = parser.parse_args(argv)
 
-    if args.write_d014_orientation_tilt_source_choice:
+    if args.write_d014_orientation_tilt_value_choice:
+        path = write_d014_pv_orientation_tilt_value_choice_packet(args.metadata_dir)
+    elif args.write_d014_orientation_tilt_source_choice:
         path = write_d014_pv_orientation_tilt_source_choice_packet(args.metadata_dir)
     elif args.write_d014_statistical_orientation_tilt:
         path = write_d014_pv_statistical_orientation_tilt_packet(args.metadata_dir)

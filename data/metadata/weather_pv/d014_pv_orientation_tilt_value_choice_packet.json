@@ -1,0 +1,151 @@
+{
+  "angle_conventions_for_review": {
+    "azimuth_basis": "degrees_from_south_positive_west_candidate",
+    "azimuth_examples": {
+      "east": -90.0,
+      "south": 0.0,
+      "west": 90.0
+    },
+    "executable_status": "unsigned_pi_choice_required",
+    "tilt_basis": "degrees_from_horizontal_candidate",
+    "weight_basis_recommendation": "capacity_weight_fraction_candidate"
+  },
+  "approved_scope_decision": "PV-ORIENT-001",
+  "candidate_class_sets": [
+    {
+      "blocked_until": [
+        "extract exact class bins/representative values/weights from source table or figure",
+        "record citation/page/table trace",
+        "PI signs weight basis and conversion treatment"
+      ],
+      "class_set_id": "killinger_empirical_extraction_pending_v1",
+      "class_table": [],
+      "recommendation": "preferred if the Netherlands-relevant distribution parameters can be extracted/cited before PI signoff",
+      "source_backing_status": "peer_reviewed_distribution_source_candidate",
+      "source_id": "killinger_2018_pv_system_characteristics",
+      "value_status": "source_candidate_values_not_extracted_not_executable"
+    },
+    {
+      "azimuth_angle_convention": "degrees_from_south_positive_west_candidate",
+      "class_set_id": "pi_prior_5_class_symmetric_rooftop_candidate_v1",
+      "class_table": [
+        {
+          "capacity_weight_fraction": 0.4,
+          "class_id": "south_mid_tilt",
+          "orientation_bin_label": "south-facing",
+          "representative_azimuth_degrees_from_south": 0.0,
+          "representative_tilt_degrees": 35.0,
+          "source_value_trace": "assumption-only candidate; not extracted from a Dutch class table",
+          "tilt_bin_label": "mid tilt"
+        },
+        {
+          "capacity_weight_fraction": 0.15,
+          "class_id": "southeast_low_mid_tilt",
+          "orientation_bin_label": "southeast-facing",
+          "representative_azimuth_degrees_from_south": -60.0,
+          "representative_tilt_degrees": 25.0,
+          "source_value_trace": "assumption-only candidate; not extracted from a Dutch class table",
+          "tilt_bin_label": "low-mid tilt"
+        },
+        {
+          "capacity_weight_fraction": 0.15,
+          "class_id": "southwest_low_mid_tilt",
+          "orientation_bin_label": "southwest-facing",
+          "representative_azimuth_degrees_from_south": 60.0,
+          "representative_tilt_degrees": 25.0,
+          "source_value_trace": "assumption-only candidate; not extracted from a Dutch class table",
+          "tilt_bin_label": "low-mid tilt"
+        },
+        {
+          "capacity_weight_fraction": 0.2,
+          "class_id": "east_west_low_tilt",
+          "orientation_bin_label": "east/west split",
+          "representative_azimuth_degrees_from_south": [
+            -90.0,
+            90.0
+          ],
+          "representative_tilt_degrees": 15.0,
+          "source_value_trace": "assumption-only candidate split equally between east and west if PI signs it",
+          "tilt_bin_label": "low tilt"
+        },
+        {
+          "capacity_weight_fraction": 0.1,
+          "class_id": "flat_low_tilt",
+          "orientation_bin_label": "flat or weakly oriented",
+          "representative_azimuth_degrees_from_south": 0.0,
+          "representative_tilt_degrees": 10.0,
+          "source_value_trace": "assumption-only candidate; azimuth is placeholder because near-flat output is weakly azimuth-sensitive",
+          "tilt_bin_label": "near-flat"
+        }
+      ],
+      "class_weight_sum": 1.0,
+      "recommendation": "fallback only if the PI prefers a transparent expert prior over additional empirical extraction before the first experiment",
+      "source_backing_status": "assumption_only_fallback_informed_by_common_rooftop_geometry_and_source_candidate_ranges",
+      "source_id": "pi_declared_simple_class_prior",
+      "tilt_angle_convention": "degrees_from_horizontal_candidate",
+      "value_status": "assumption_only_unsigned_not_executable",
+      "weight_basis": "capacity_weight_fraction_candidate"
+    }
+  ],
+  "capacity_route_boundary": "PV-CAP-001/D-014 capacity remains separate from orientation/tilt values",
+  "created_utc": "2026-07-24T10:09:58+00:00",
+  "data_id": "D-014",
+  "download_performed": false,
+  "first_experiment_scope": {
+    "heavy_building_level_pv_map_deferred": true,
+    "roof_or_location_level_extraction_allowed_now": false,
+    "specific_3dbag_per_roof_workflow_allowed_now": false,
+    "statistical_orientation_tilt_classes_only": true
+  },
+  "non_claims": [
+    "No statistical orientation/tilt class set is approved as final.",
+    "Numeric class weights and representative angles in this packet are unsigned candidate review values only.",
+    "No raw source, PV-map, roof, building, or location-level geometry data was downloaded.",
+    "No 3DBAG per-roof or heavy building-level workflow is implemented before the first real experiment.",
+    "No PV capacity, growth factor, capacity convention, per-node allocation, PR=0.86, direct-GHI formula, or plane-of-array conversion is approved.",
+    "No net-load, event detection, P(E), threshold run, capacity screen, manuscript result, or final paired HP/PV acceptance is produced."
+  ],
+  "packet_id": "D014-PV-ORIENTATION-TILT-VALUE-CHOICE-PACKET",
+  "pi_approval_keys_before_executable_use": [
+    "orientation_tilt_distribution_source_id",
+    "source_value_trace_or_approved_assumption_id",
+    "azimuth_angle_convention",
+    "tilt_angle_convention",
+    "orientation_class_bin_definitions",
+    "tilt_class_bin_definitions",
+    "representative_angle_values",
+    "class_weight_values",
+    "class_weight_basis_capacity_installation_area_or_assumption",
+    "class_weight_sum_tolerance",
+    "pv_conversion_treatment_for_classes",
+    "pv_param_001_or_amended_conversion_decision",
+    "d014_capacity_value_artifact",
+    "capacity_unit_and_dc_ac_convention",
+    "node_allocation_rule"
+  ],
+  "pi_recommendation_for_review": {
+    "do_not_use_as_final_without_signature": true,
+    "fallback_path": "sign pi_prior_5_class_symmetric_rooftop_candidate_v1 explicitly as a first-screen expert prior",
+    "preferred_path": "extract and sign Killinger/Netherlands-relevant distribution values if accessible quickly enough for first experiment"
+  },
+  "pv_param_boundary": "PV-PARAM-001 remains proposed/fail-closed; this packet does not approve PR=0.86, direct-GHI, or plane-of-array conversion",
+  "raw_data_committed": false,
+  "source_backing_summary": {
+    "assumption_only_values_in_this_packet": [
+      "pi_prior_5_class_symmetric_rooftop_candidate_v1"
+    ],
+    "not_source_backed_yet": [
+      "exact Netherlands or Alkmaar class weights",
+      "capacity-weighted versus installation-count-weighted convention",
+      "class-wise conversion treatment: direct GHI scalar versus transposed plane-of-array/pvlib route"
+    ],
+    "source_backed_now": [
+      "PV-ORIENT-001 approves statistical orientation/tilt classes only for the first experiment",
+      "Killinger et al. 2018 is a primary empirical source candidate and reports PV-system tilt/azimuth metadata distribution analysis",
+      "public source snippets support typical tilt ranges and equator-facing azimuth tendency, but do not by themselves approve a Dutch class-weight table",
+      "Dutch PV Portal context supports south-facing 37 degree as a Netherlands optimum/reference point, not a fleet distribution"
+    ]
+  },
+  "source_choice_packet_id": "D014-PV-ORIENTATION-TILT-SOURCE-CHOICE-PACKET",
+  "status": "proposed_value_choice_packet_no_raw_download_no_executable_values"
+}
