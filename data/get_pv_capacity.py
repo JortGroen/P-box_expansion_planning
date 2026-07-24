@@ -68,9 +68,10 @@ def build_d014_pv_capacity_source_value_packet() -> dict[str, Any]:
                 "then scale to the frozen 2035 planning layer with a signed II3050/scenario growth factor."
             ),
             "pv_param_boundary": (
-                "PV-PARAM-001 decides only the irradiance-to-kW conversion once signed installed_capacity_kw "
-                "is supplied; it does not decide the CBS source year, II3050 growth factor, capacity convention, "
-                "or node allocation."
+                "PV-PARAM-001 decides the irradiance-to-kW conversion once signed installed_capacity_kw "
+                "is supplied; per PV-ORIENT-001, first-experiment orientation/tilt must come from a "
+                "signed typical/statistical distribution rather than per-roof geometry. It does not decide "
+                "the CBS source year, II3050 growth factor, capacity convention, or node allocation."
             ),
         },
         "primary_cbs_anchor_source": {
@@ -177,8 +178,8 @@ def build_d014_pv_capacity_source_value_packet() -> dict[str, Any]:
             ],
             "allocation_candidates": [
                 "uniform or load-proportional allocation across eligible load nodes, unsigned and not recommended without spatial evidence",
-                "CBS/DEGO/Zonnedakje or building-roof evidence for spatial allocation if concrete data and license are registered",
-                "3DBAG roof-plane distribution to derive tilt/aspect/orientation classes for later pvlib/PVGIS-style conversion, not for capacity totals by itself",
+                "CBS/DEGO/Zonnedakje or building evidence for later spatial allocation only if concrete data and license are registered",
+                "typical/statistical orientation-and-tilt distribution for first-experiment PV conversion under PV-ORIENT-001; source, bins, weights, and formula treatment remain unsigned",
             ],
             "approval_keys_required_before_executable_use": [
                 "cbs_source_file_checksum",
@@ -190,16 +191,19 @@ def build_d014_pv_capacity_source_value_packet() -> dict[str, Any]:
                 "ii3050_scenario_column",
                 "ii3050_growth_factor_value",
                 "node_allocation_rule",
+                "statistical_orientation_tilt_distribution_source",
+                "statistical_orientation_tilt_distribution_weights",
                 "PV-PARAM-001_or_amended_conversion_decision",
             ],
         },
         "optional_geometry_allocation_workflow": {
-            "primary_status": "source_discovery_only_not_executable",
-            "recommended_next_packet": "3DBAG/PVGIS-pvlib geometry workflow packet after D-014 source retrieval is approved",
+            "primary_status": "deferred_until_after_first_real_experiment",
+            "first_experiment_scope": "use signed typical/statistical orientation-and-tilt distribution only; no per-building or per-roof geometry",
+            "recommended_next_packet": "statistical orientation/tilt distribution packet before executable PV-PARAM-001 use",
             "sources": [
                 {
                     "source_id": "3dbag_roof_geometry",
-                    "role": "derive Alkmaar roof-plane tilt/aspect/orientation area distribution for later conversion or allocation",
+                    "role": "future post-first-experiment roof-plane tilt/aspect/orientation workflow only; not the first-experiment route",
                     "url": THREEDBAG_API_DOCS_URL,
                     "license": "CC BY 4.0 per 3DBAG documentation; credit required",
                     "boundary": "does not provide installed PV capacity totals or approve PV-PARAM conversion",
@@ -222,7 +226,7 @@ def build_d014_pv_capacity_source_value_packet() -> dict[str, Any]:
                 "./.venv/Scripts/python.exe data/get_pv_capacity.py --write-d014-source-value-packet",
                 "future after PI approval: ./.venv/Scripts/python.exe data/get_pv_capacity.py --retrieve-approved-d014-sources --resume",
             ],
-            "long_run_notice_if_scope_expands": "LONG-RUN NOTICE\nTask: E2.S4 D-014 PV capacity source retrieval\nProcess: retrieve CBS 85005NED Alkmaar records, II3050 appendices, and optional geometry source metadata\nEstimated wall time: <estimate from pilot; send before launch if above 15 minutes>\nResource impact: network plus small local JSON/PDF writes; no raw files committed\nCheckpoint plan: data/metadata/weather_pv/d014_pv_capacity_retrieval_checkpoint.json after each source\nResume procedure: rerun data/get_pv_capacity.py --retrieve-approved-d014-sources --resume; verified checksums are skipped",
+            "long_run_notice_if_scope_expands": "LONG-RUN NOTICE\nTask: E2.S4 D-014 PV capacity source retrieval\nProcess: retrieve CBS 85005NED Alkmaar records, II3050 appendices, and approved statistical orientation/tilt source metadata; do not retrieve per-roof geometry before the first real experiment\nEstimated wall time: <estimate from pilot; send before launch if above 15 minutes>\nResource impact: network plus small local JSON/PDF writes; no raw files committed\nCheckpoint plan: data/metadata/weather_pv/d014_pv_capacity_retrieval_checkpoint.json after each source\nResume procedure: rerun data/get_pv_capacity.py --retrieve-approved-d014-sources --resume; verified checksums are skipped",
         },
         "fail_closed_non_claims": [
             "No raw D-014 data has been downloaded by this packet.",
@@ -230,6 +234,7 @@ def build_d014_pv_capacity_source_value_packet() -> dict[str, Any]:
             "No CBS period, field, unit, or DC/AC convention is approved.",
             "No II3050 scenario column or growth factor value is approved.",
             "No per-node PV allocation is approved.",
+            "No statistical orientation/tilt source, bins, weights, or conversion treatment are approved.",
             "PV-PARAM-001 remains proposed and the simple PR=0.86/direct-GHI route is not approved by this packet.",
             "No net-load, event detection, P(E), threshold analysis, capacity screen, or manuscript result is run.",
         ],

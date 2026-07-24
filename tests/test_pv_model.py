@@ -1099,6 +1099,8 @@ def test_committed_d004_pv_parameter_decision_packet_is_unsigned_fail_closed() -
     assert payload["parameter_config_status"] == "unsigned_fail_closed_scaffold"
     assert payload["blocks_signed_executable_pv_generation"] is True
     assert "PV-CAP-001" in payload["governing_inputs"]
+    assert "PV-ORIENT-001" in payload["governing_inputs"]
+    assert "statistical orientation/tilt" in payload["source_traceability"]["orientation_tilt_scope"]
     assert "outside PV-PARAM-001" in payload["source_traceability"]["capacity_source_status"]
     assert "CBS Alkmaar" in payload["source_traceability"]["capacity_source_status"]
     assert {item["field"] for item in payload["recommended_decisions"]} == {
@@ -1112,7 +1114,7 @@ def test_committed_d004_pv_parameter_decision_packet_is_unsigned_fail_closed() -
     assert payload["scaffold_contract"]["guard_method"] == "PVSystemConfig.require_signed_parameters()"
     assert payload["scaffold_contract"]["required_signed_value"] == "PV-PARAM-001"
     proposed = payload["proposed_primary_first_pass_config_template"]
-    assert proposed["config_id"] == "pv_param_001_first_pass_ghi_pr086_no_temp_clipped_v1"
+    assert proposed["config_id"] == "pv_param_001_first_pass_statistical_geometry_ghi_pr086_no_temp_clipped_v1"
     assert proposed["installed_capacity_kw"]["default"] is None
     assert proposed["installed_capacity_kw"]["value"] == "caller_supplied_per_node_or_fleet"
     assert "PV-CAP-001" in proposed["installed_capacity_kw"]["source"]
@@ -1121,8 +1123,9 @@ def test_committed_d004_pv_parameter_decision_packet_is_unsigned_fail_closed() -
     assert "PVGIS reference request loss_percent=14.0" in proposed["performance_ratio"]["source"]
     assert proposed["temperature_adjustment"]["temperature_coefficient_per_c"] == pytest.approx(0.0)
     assert proposed["irradiance_input_basis"]["value"] == "weather_member_ghi_w_per_m2"
-    assert proposed["tilt_aspect"]["primary_first_pass_use"] == "provenance_only_not_applied_to_knmi_ghi"
-    assert payload["proposed_formula_for_pi_review"]["formula"].startswith("pv_kw[t] = min")
+    assert proposed["tilt_aspect"]["primary_first_pass_use"] == "statistical_distribution_required_before_executable_use"
+    assert proposed["tilt_aspect"]["location_specific_geometry"] == "deferred_until_after_first_real_experiment"
+    assert payload["proposed_formula_for_pi_review"]["formula"].startswith("pv_kw[t] = sum_bins")
     assert "no net-load/event/P(E)/threshold/capacity-screen/manuscript results" in payload["out_of_scope_guards"]
 
 
@@ -1596,6 +1599,8 @@ def test_committed_d014_pv_capacity_source_packet_is_fail_closed() -> None:
     assert packet.raw_data_committed is False
     assert "ii3050_growth_factor_value" in packet.missing_approval_keys
     assert "PV-PARAM-001_or_amended_conversion_decision" in packet.missing_approval_keys
+    assert "statistical_orientation_tilt_distribution_source" in packet.missing_approval_keys
+    assert "statistical_orientation_tilt_distribution_weights" in packet.missing_approval_keys
     assert record["cbs_table_id"] == "85005NED"
     assert record["download_performed"] is False
     with pytest.raises(ValueError, match="D-014 PV capacity values are unsigned"):
