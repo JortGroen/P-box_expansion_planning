@@ -81,7 +81,6 @@
         "EV-007A",
         "EV-008A",
         "EV-CAL-001",
-        "RNG-001",
         "A-014"
       ],
       "blocking_register_ids": [],
@@ -96,7 +95,8 @@
         "candidate_selection_manifest_set": "data/metadata/ev_adoption/e2_s2_ev005b_candidate_selection_manifests.json.gz",
         "candidate_member_reference_sha256": "bea4d66834fbb43df9a65ea8405b0d8ead252d1f617cbbf1826388ae822b86d7",
         "candidate_selection_manifest_set_sha256": "da4231595d5a3f66faba1157e10fff17fee936c495b821d20e1b1cd3e0ae6071",
-        "checksum_preflight_status": "candidate_processed_checksums_verified_array_loading_still_blocked"
+        "checksum_preflight_status": "candidate_processed_checksums_verified_array_loading_still_blocked",
+        "rng_protocol_id": "RNG-001"
       }
     },
     {
