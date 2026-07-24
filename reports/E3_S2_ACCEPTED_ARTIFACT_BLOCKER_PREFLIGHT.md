@@ -1,13 +1,13 @@
 # E3.S2 Accepted-Artifact Loader Blocker Preflight
 
 Task: E3.S2 IC-1 NetLoadProvider readiness.
-Status: metadata/preflight only. This packet instantiates `build_accepted_artifact_loader_blocker_preflight(...)` from the current committed metadata surface on `origin/main` through PR #243. The merged EV accepted-artifact index and adoption artifact are consumed as metadata only; remaining gaps are reported as blockers.
+Status: metadata/preflight only. This packet instantiates `build_accepted_artifact_loader_blocker_preflight(...)` from the current committed metadata surface on `origin/main` through PR #248 (with PR #249 methods cleanup on main). The merged EV accepted-artifact index, EV held-out blocker, PV executable guard, and adoption artifact are consumed as metadata only; remaining gaps are reported as blockers.
 
 ## Boundary
 
 This is not a real IC-1 integration run. It does not load EV, HP, PV, baseline, adoption, or flexibility trajectories; does not aggregate net load; does not execute IC-2; does not detect or count events; does not compute `P(E)`; does not produce a capacity/domain conclusion; and does not add manuscript numbers.
 
-The dry run used the version-controlled input `reports/e3_s2_accepted_artifact_blocker_preflight_input.json` at commit `d9d96bb727a8`. The claim-source manifest for this preflight packet is `reports/e3_s2_accepted_artifact_blocker_preflight_manifest.json`.
+The dry run used the version-controlled input `reports/e3_s2_accepted_artifact_blocker_preflight_input.json` at commit `1aa1b759cafb`. The claim-source manifest for this preflight packet is `reports/e3_s2_accepted_artifact_blocker_preflight_manifest.json`.
 
 ## Result
 
@@ -61,14 +61,14 @@ Source metadata packet checksums are verified before component-output manifests 
 
 ## Interpretation
 
-The current metadata surface is intentionally not accepted for loader execution. EV now has the merged PR #243 accepted-artifact index and a checksum-pinned candidate component-output manifest path, but that manifest is not yet the accepted generic loader schema. Adoption now has the merged PR #235 accepted per-node allocation artifact, but no component-output loader manifest is present for the IC-1 assembly boundary. PV/weather now has the merged PR #241 executable-readiness blocker packet, which confirms weather source/member readiness while keeping PV generation blocked. Flexibility has the approved FLEX-001 scaffold protocol, but no real flexibility values or results are signed. Baseline, HP, PV/weather, adoption, and flexibility still lack accepted component-output manifests for the loader boundary.
+The current metadata surface is intentionally not accepted for loader execution. EV now has the merged PR #243 accepted-artifact index, the PR #248 held-out adequacy blocker packet, and a checksum-pinned candidate component-output manifest path, but that manifest is not yet the accepted generic loader schema and held-out data remain closed. Adoption now has the merged PR #235 accepted per-node allocation artifact, but no component-output loader manifest is present for the IC-1 assembly boundary. PV/weather now has the merged PR #241 executable-readiness blocker packet and PR #246 executable preflight guard, which confirm weather source/member readiness while keeping PV generation blocked. Flexibility has the approved FLEX-001 scaffold protocol, but no real flexibility values or results are signed. Baseline, HP, PV/weather, adoption, and flexibility still lack accepted component-output manifests for the loader boundary.
 
 The preflight also preserves downstream blockers for A-013, G2, G1-A2 capacity/domain provenance, A-016 scenario consistency, and the capacity convention. G0-A3 is recorded only as governed metadata: strict `L_import > 1.0 p.u.` for four consecutive 15-minute import steps over the full year, with `1.1` and `1.2` only as explicit sensitivities. No threshold is evaluated here.
 
 ## Reproduction
 
 Command: `.\.venv\Scripts\python.exe reports\e3_s2_generate_accepted_artifact_blocker_preflight.py`
-Input SHA-256: `e01eb4476780ee81133fb7d03a9ffd288df8ba0ab191024103d3328c009a59f8`
-Generated from git commit: `d9d96bb727a82a0df3ee333b6f1cfcb37c75d914`
+Input SHA-256: `374de84d5899286c28f0f36a6a7d11a60483804c35726e762e6cb4f34346da30`
+Generated from git commit: `1aa1b759cafb4e07e0493b49206f4f22ce1d6cd9`
 
 Verification for this PR should use focused `tests/test_evaluator_net_load.py`, `./scripts/task.ps1 ownership`, `./scripts/task.ps1 test-fast`, and `git diff --check`.

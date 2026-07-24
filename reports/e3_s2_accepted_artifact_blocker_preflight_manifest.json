@@ -1,16 +1,16 @@
 {
   "command": ".\\.venv\\Scripts\\python.exe reports\\e3_s2_generate_accepted_artifact_blocker_preflight.py",
-  "generated_at_utc": "2026-07-24T13:34:24Z",
-  "git_commit": "d9d96bb727a82a0df3ee333b6f1cfcb37c75d914",
-  "git_status_short_before_generation": "M reports/E3_S2_ACCEPTED_ARTIFACT_BLOCKER_PREFLIGHT.md\n M reports/e3_s2_accepted_artifact_blocker_preflight_manifest.json",
+  "generated_at_utc": "2026-07-24T14:14:59Z",
+  "git_commit": "1aa1b759cafb4e07e0493b49206f4f22ce1d6cd9",
+  "git_status_short_before_generation": "",
   "input": {
     "path": "reports/e3_s2_accepted_artifact_blocker_preflight_input.json",
     "schema_version": "e3_s2_accepted_artifact_blocker_preflight_input_v1",
-    "sha256": "e01eb4476780ee81133fb7d03a9ffd288df8ba0ab191024103d3328c009a59f8"
+    "sha256": "374de84d5899286c28f0f36a6a7d11a60483804c35726e762e6cb4f34346da30"
   },
   "outputs": {
     "report_path": "reports/E3_S2_ACCEPTED_ARTIFACT_BLOCKER_PREFLIGHT.md",
-    "report_sha256": "c6cdf5fa76f666124d88c0081f028805d68a5b55ed5fb6a9b6b8cca7f382c992"
+    "report_sha256": "26994d0b025a07887f0fd17f71cd21ecb78f15601cdf17671e487569e64e2d86"
   },
   "preflight": {
     "blocker_manifest": {
@@ -234,7 +234,7 @@
         "state": "missing"
       }
     ],
-    "intended_use": "e3_s2_accepted_artifact_loader_blocker_preflight_through_pr243",
+    "intended_use": "e3_s2_accepted_artifact_loader_blocker_preflight_through_pr248_current_main",
     "metadata_preflight_only": true,
     "no_capacity_screen_result": true,
     "no_component_array_loading": true,
@@ -428,16 +428,18 @@
                   "load_000_to_load_114"
                 ],
                 "provenance": {
-                  "boundary_note": "merged PR #243 EV index is available and consumed as metadata only; no held-out data opened and no EV component arrays loaded",
+                  "boundary_note": "merged PR #243 EV accepted-artifact index is available and consumed as metadata only; merged PR #248 EV held-out blocker is also recorded, no held-out data opened, and no EV component arrays loaded",
                   "component_output_manifest_sha256": "01dcac20e7369a5997bb2a7584cac98e3a62a9ebaff4f44cfc4e6969c3bc4e39",
                   "discovered_path": "data/metadata/ev_adoption/e2_s2_ev_ic1_accepted_artifact_index_preflight.json",
-                  "ev_output_verifier_status": "merged_pr_243_accepted_artifact_index_available_metadata_only",
+                  "ev_output_verifier_status": "merged_pr_243_accepted_artifact_index_available; merged_pr_248_heldout_blocker_available_metadata_only",
                   "packet_status": "accepted EV metadata index for Agent A preflight; blocked for integrated results",
                   "readiness_bucket": "accepted_metadata_only",
                   "rng_protocol_id": "RNG-001",
                   "supporting_adoption_artifact": "data/metadata/ev_adoption/e2_s6_a014_alkmaar_executable_adoption_artifact.json",
                   "supporting_component_output_consumption_packet": "data/metadata/ev_adoption/e2_s2_ev_ic1_component_output_consumption_packet.json",
                   "supporting_component_output_manifest": "data/metadata/ev_adoption/e2_s2_ev_ic1_candidate_component_output_manifest.json",
+                  "supporting_heldout_adequacy_preflight_blockers": "data/metadata/ev_adoption/e3_s2a_ev_heldout_adequacy_preflight_blockers.json",
+                  "supporting_heldout_adequacy_preflight_blockers_sha256": "8bafdcd8c2a55efc03fbf34f634e84bd00f9194aac14437e95b7acb69613543f",
                   "supporting_report": "reports/e2_s2_ev_ic1_accepted_artifact_index_preflight.md"
                 },
                 "shared_weather_driver_id": null,
@@ -599,12 +601,14 @@
                   "simbench_1_mv_semiurb_0_sw_all_in_service_load_nodes"
                 ],
                 "provenance": {
-                  "classification_note": "Merged PR #241 records accepted weather source/member readiness but keeps executable PV generation blocked until D-014 capacity, A-016 scenario consistency, PV-ORIENT/PV-PARAM, node allocation, and final paired HP/PV/cold-spell gates are signed.",
+                  "classification_note": "Merged PR #241 records accepted weather source/member readiness and PR #246 adds the executable PV preflight guard, but executable PV generation remains blocked until D-014 capacity, A-016 scenario consistency, PV-ORIENT/PV-PARAM, node allocation, and final paired HP/PV/cold-spell gates are signed.",
                   "discovered_path": "data/metadata/weather_pv/d014_pv_executable_readiness_blockers.json",
                   "packet_status": "proposed fail-closed executable PV readiness blockers; executable values unsigned",
                   "readiness_bucket": "proposed_blocked",
                   "supporting_capacity_approval_template": "data/metadata/weather_pv/d014_pv_capacity_approval_template.json",
                   "supporting_capacity_approval_template_sha256": "f4124256525f9004d4a12dce5150bc9ad73935661586884f1ff781073a07a6f7",
+                  "supporting_executable_preflight_guard": "data/metadata/weather_pv/d014_pv_executable_preflight_guard.json",
+                  "supporting_executable_preflight_guard_sha256": "9a1df205142f29853b3250f7aa9af882ca818817a7b488a402ef036aee14a5c5",
                   "supporting_report": "reports/e2_s4_d014_pv_executable_readiness_blockers.md",
                   "supporting_weather_input_artifact": "data/metadata/weather_pv/d004_alkmaar_berkhout_2014_2023_v1_weather_input_artifact.json"
                 },
@@ -656,7 +660,7 @@
               "no_real_net_load_arrays": true,
               "planning_year_basis": "G0-A4",
               "primary_threshold_metadata": "G0-A3: strict L_import > 1.0 p.u. for four consecutive 15-minute import steps over the full year; 1.1 and 1.2 are sensitivities only",
-              "refresh_basis": "origin/main through PR #243 after EV accepted-artifact index preflight merged",
+              "refresh_basis": "origin/main through PR #248 EV held-out blocker and PR #249 methods cleanup; no real arrays opened",
               "threshold_basis": "G0-A3 resolved but not evaluated in this preflight"
             },
             "node_ids": [
@@ -681,7 +685,7 @@
           "dry_run_only": true,
           "executable_input_gate": null,
           "gate_error": null,
-          "intended_use": "e3_s2_accepted_artifact_loader_blocker_preflight_through_pr243",
+          "intended_use": "e3_s2_accepted_artifact_loader_blocker_preflight_through_pr248_current_main",
           "missing_component_kinds": [],
           "no_capacity_screen_result": true,
           "no_event_detection": true,
@@ -706,7 +710,7 @@
           ],
           "screen_prerequisite_only": true
         },
-        "intended_use": "e3_s2_accepted_artifact_loader_blocker_preflight_through_pr243",
+        "intended_use": "e3_s2_accepted_artifact_loader_blocker_preflight_through_pr248_current_main",
         "manifest_fields": {
           "calendar_id": "calendar_2035_15min_full_year_35040",
           "capacity_provenance": null,
@@ -774,7 +778,7 @@
         }
       },
       "dry_run_only": true,
-      "intended_use": "e3_s2_accepted_artifact_loader_blocker_preflight_through_pr243",
+      "intended_use": "e3_s2_accepted_artifact_loader_blocker_preflight_through_pr248_current_main",
       "metadata_preflight_only": true,
       "no_capacity_screen_result": true,
       "no_event_counts": true,
