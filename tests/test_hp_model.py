@@ -23,6 +23,7 @@ from data.get_when2heat import (
 )
 from src.hp_model import (
     HP001_FINAL_READINESS_REQUIRED_APPROVAL_KEYS,
+    HP001_PROFILE_ARTIFACT_CONSUMPTION_APPROVED_STATUS,
     HP001LocalScalingConfig,
     HeatPumpProfile,
     HeatPumpComponentSeries,
@@ -35,10 +36,13 @@ from src.hp_model import (
     default_when2heat_components,
     downscale_hourly_to_15min,
     hp001_components_from_local_scaling_config,
+    hp001_profile_artifact_consumption_manifest_from_profile,
+    hp001_profile_artifact_consumption_missing_approval_keys,
     hp001_final_readiness_missing_approval_keys,
     hp001_local_scaling_config_from_value_binding_record,
     hp001_residential_when2heat_components,
     require_hp001_final_readiness_approvals,
+    require_hp001_profile_artifact_consumption_manifest,
     require_signed_hp001_local_scaling_config,
     load_when2heat_hourly_csv,
     require_signed_annual_scaling,
@@ -924,4 +928,131 @@ def test_hp001_executable_value_binding_template_stays_fail_closed() -> None:
         hp001_local_scaling_config_from_value_binding_record(
             packet["unsigned_candidate_binding_record"]
         )
+
+
+def _signed_hp001_fixture_profile() -> HeatPumpProfile:
+    timestamps = tuple(
+        datetime(2035, 1, 1, tzinfo=UTC) + timedelta(minutes=15 * index)
+        for index in range(4)
+    )
+    components = []
+    for building_class, end_use, heat_column, cop_column, annual_twh in (
+        ("SFH", "space", "NL_heat_profile_space_SFH", "NL_COP_ASHP_radiator", 0.1),
+        ("MFH", "space", "NL_heat_profile_space_MFH", "NL_COP_ASHP_radiator", 0.2),
+        ("SFH", "water", "NL_heat_profile_water_SFH", "NL_COP_ASHP_water", 0.03),
+        ("MFH", "water", "NL_heat_profile_water_MFH", "NL_COP_ASHP_water", 0.04),
+    ):
+        thermal_kw = np.full(4, annual_twh * 100.0)
+        cop = np.full(4, 2.5 if end_use == "space" else 2.0)
+        components.append(
+            HeatPumpComponentSeries(
+                heat_column=heat_column,
+                cop_column=cop_column,
+                annual_heat_demand_twh=annual_twh,
+                end_use=end_use,
+                building_class=building_class,
+                thermal_demand_kw=thermal_kw,
+                electric_kw=thermal_kw / cop,
+                cop=cop,
+                interval_hours=0.25,
+                provenance={
+                    "annual_scaling_status": "signed",
+                    "annual_scaling_approval_id": "HP-SCALING-FIXTURE",
+                },
+            )
+        )
+    electric_kw = sum(component.electric_kw for component in components)
+    thermal_kw = sum(component.thermal_demand_kw for component in components)
+    return HeatPumpProfile(
+        shared_weather_driver_id="d004_alkmaar_berkhout_2014_2023_v1:2035-fixture",
+        weather_member_id="d004_fixture_2035",
+        weather_source="D-004 fixture",
+        timestamps_utc=timestamps,
+        electric_kw=electric_kw,
+        thermal_demand_kw=thermal_kw,
+        cop=thermal_kw / electric_kw,
+        temperature_c=np.linspace(-2.0, 1.0, 4),
+        source_columns=(
+            "NL_heat_profile_space_SFH",
+            "NL_COP_ASHP_radiator",
+            "NL_heat_profile_space_MFH",
+            "NL_COP_ASHP_radiator",
+            "NL_heat_profile_water_SFH",
+            "NL_COP_ASHP_water",
+            "NL_heat_profile_water_MFH",
+            "NL_COP_ASHP_water",
+        ),
+        source_path="data/raw/when2heat/when2heat.csv",
+        downscaling_method="hourly_zero_order_hold_to_15min_energy_preserving",
+        pv_weather_field_names=("ghi_w_per_m2",),
+        component_series=tuple(components),
+        weather_content_sha256="0" * 64,
+        weather_provenance={"data_id": "D-004", "acceptance_status": "fixture_only"},
+    )
+
+
+def _signed_final_hp001_approvals() -> dict[str, str]:
+    return {
+        "value_column": "HP-VALUE-COLUMN-FIXTURE",
+        "denominator": "HP-DENOMINATOR-FIXTURE",
+        "unit_conversion": "HP-CONVERSION-FIXTURE",
+        "sfh_mfh_split": "HP-SPLIT-FIXTURE",
+        "adoption_electrification": "HP-ADOPTION-FIXTURE",
+        "scenario_source_consistency": "A016-FIXTURE",
+        "d004_paired_weather_acceptance": "D004-PAIRED-FIXTURE",
+        "cold_spell_tolerances": "HP-COLD-SPELL-FIXTURE",
+    }
+
+
+def test_hp001_profile_consumption_manifest_fails_closed_without_final_approvals() -> None:
+    profile = _signed_hp001_fixture_profile()
+    manifest = hp001_profile_artifact_consumption_manifest_from_profile(
+        profile,
+        profile_artifact_path="data/processed/hp_profiles/hp001_fixture.npz",
+        profile_artifact_sha256="1" * 64,
+        approval_ids={"value_column": "HP-VALUE-COLUMN-FIXTURE"},
+    )
+
+    assert hp001_profile_artifact_consumption_missing_approval_keys(manifest) == (
+        "denominator",
+        "unit_conversion",
+        "sfh_mfh_split",
+        "adoption_electrification",
+        "scenario_source_consistency",
+        "d004_paired_weather_acceptance",
+        "cold_spell_tolerances",
+    )
+    with pytest.raises(ValueError, match="not approved for integrated consumption"):
+        require_hp001_profile_artifact_consumption_manifest(manifest)
+
+
+def test_hp001_profile_consumption_manifest_validates_signed_fixture_manifest() -> None:
+    profile = _signed_hp001_fixture_profile()
+    manifest = hp001_profile_artifact_consumption_manifest_from_profile(
+        profile,
+        profile_artifact_path="data/processed/hp_profiles/hp001_fixture.npz",
+        profile_artifact_sha256="1" * 64,
+        approval_ids=_signed_final_hp001_approvals(),
+        status=HP001_PROFILE_ARTIFACT_CONSUMPTION_APPROVED_STATUS,
+    )
+
+    require_hp001_profile_artifact_consumption_manifest(manifest)
+    assert manifest["missing_approval_keys"] == ()
+    assert {item["end_use"] for item in manifest["component_traceability"]} == {"space", "water"}
+    assert manifest["weather_identity"]["shared_weather_driver_id"].startswith("d004_")
+
+
+def test_hp001_profile_consumption_manifest_rejects_missing_component_trace() -> None:
+    profile = _signed_hp001_fixture_profile()
+    manifest = hp001_profile_artifact_consumption_manifest_from_profile(
+        profile,
+        profile_artifact_path="data/processed/hp_profiles/hp001_fixture.npz",
+        profile_artifact_sha256="1" * 64,
+        approval_ids=_signed_final_hp001_approvals(),
+        status=HP001_PROFILE_ARTIFACT_CONSUMPTION_APPROVED_STATUS,
+    )
+    manifest["component_traceability"] = manifest["component_traceability"][:-1]
+
+    with pytest.raises(ValueError, match="exactly the HP-001"):
+        require_hp001_profile_artifact_consumption_manifest(manifest)
 

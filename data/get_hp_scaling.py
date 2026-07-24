@@ -28,6 +28,7 @@ FORMULA_DECISION_PACKET_FILENAME = "hp001_alkmaar_gm0361_scaling_formula_config_
 VALUE_BINDING_READINESS_FILENAME = "hp001_alkmaar_gm0361_value_binding_readiness_packet.json"
 READINESS_APPROVAL_CHECKLIST_FILENAME = "hp001_alkmaar_gm0361_readiness_approval_checklist.json"
 EXECUTABLE_VALUE_BINDING_DECISION_PACKET_FILENAME = "hp001_alkmaar_gm0361_executable_value_binding_decision_packet.json"
+PROFILE_ARTIFACT_CONSUMPTION_MANIFEST_TEMPLATE_FILENAME = "hp001_profile_artifact_consumption_manifest_template.json"
 DOWNLOAD_TIMEOUT_S = 120.0
 PBL_HEAT_TERMS = ("warmte", "heat", "gas", "energie", "energy", "verbruik", "demand", "vraag")
 PBL_DHW_TERMS = ("tapwater", "warm_water", "dhw", "water")
@@ -492,6 +493,64 @@ def build_hp001_executable_value_binding_decision_packet() -> dict[str, Any]:
     }
 
 
+
+
+def build_hp001_profile_artifact_consumption_manifest_template() -> dict[str, Any]:
+    """Return a fail-closed template for future HP profile artifact consumption."""
+    annual_keys = [
+        "value_column",
+        "denominator",
+        "unit_conversion",
+        "sfh_mfh_split",
+        "adoption_electrification",
+    ]
+    final_keys = annual_keys + [
+        "scenario_source_consistency",
+        "d004_paired_weather_acceptance",
+        "cold_spell_tolerances",
+    ]
+    return {
+        "manifest_id": "E2-S3-HP001-PROFILE-ARTIFACT-CONSUMPTION-MANIFEST",
+        "created_utc": _utc_now(),
+        "status": "proposed_template_not_approved_for_integrated_consumption",
+        "purpose": "Define the metadata a future HP profile artifact must carry before any integrated consumer may use it.",
+        "future_required_status": "approved_for_integrated_hp_profile_consumption",
+        "profile_artifact": {
+            "path": "data/processed/hp_profiles/<future_signed_hp001_profile>.npz",
+            "sha256": "<future profile artifact SHA-256>",
+            "n_timesteps": 35040,
+            "cadence_seconds": 900,
+            "electric_power_unit": "kW",
+            "thermal_power_unit": "kW",
+            "first_timestamp_utc": "<future WEATHER-001 member first UTC timestamp>",
+            "last_timestamp_utc": "<future WEATHER-001 member last UTC timestamp>",
+        },
+        "weather_identity": {
+            "shared_weather_driver_id": "<future accepted D-004 shared_weather_driver_id>",
+            "member_id": "<future accepted D-004 member_id>",
+            "source": "<future accepted D-004 source/provenance label>",
+            "content_sha256": "<future WEATHER-001 member content SHA-256>",
+            "n_timesteps": 35040,
+            "cadence_seconds": 900,
+            "identity_rule": "Must match the PV profile member exactly before integrated use.",
+        },
+        "component_traceability": [
+            {"building_class": "SFH", "end_use": "space", "heat_column": "NL_heat_profile_space_SFH", "cop_column": "NL_COP_ASHP_radiator", "annual_heat_demand_twh": "<future signed value>", "provenance": {"annual_scaling_status": "signed", "annual_scaling_approval_id": "<future approval>"}},
+            {"building_class": "MFH", "end_use": "space", "heat_column": "NL_heat_profile_space_MFH", "cop_column": "NL_COP_ASHP_radiator", "annual_heat_demand_twh": "<future signed value>", "provenance": {"annual_scaling_status": "signed", "annual_scaling_approval_id": "<future approval>"}},
+            {"building_class": "SFH", "end_use": "water", "heat_column": "NL_heat_profile_water_SFH", "cop_column": "NL_COP_ASHP_water", "annual_heat_demand_twh": "<future signed value>", "provenance": {"annual_scaling_status": "signed", "annual_scaling_approval_id": "<future approval>"}},
+            {"building_class": "MFH", "end_use": "water", "heat_column": "NL_heat_profile_water_MFH", "cop_column": "NL_COP_ASHP_water", "annual_heat_demand_twh": "<future signed value>", "provenance": {"annual_scaling_status": "signed", "annual_scaling_approval_id": "<future approval>"}},
+        ],
+        "approval_ids": {},
+        "missing_approval_keys": final_keys,
+        "validator": "src.hp_model.require_hp001_profile_artifact_consumption_manifest",
+        "non_claims": [
+            "No annual HP TWh values are executable.",
+            "No 2035 HP adoption/electrification value is signed.",
+            "No D-004 paired-weather or cold-spell acceptance is signed or run.",
+            "No net-load, event, P(E), threshold, capacity-screen, manuscript, or probability analysis is run.",
+        ],
+    }
+
 def write_hp001_executable_value_binding_decision_packet(metadata_dir: Path) -> Path:
     """Write the proposed executable value-binding decision packet."""
     target_dir = metadata_dir / "hp_scaling"
@@ -501,6 +560,17 @@ def write_hp001_executable_value_binding_decision_packet(metadata_dir: Path) -> 
     path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     return path
 
+
+
+
+def write_hp001_profile_artifact_consumption_manifest_template(metadata_dir: Path) -> Path:
+    """Write the proposed future HP profile consumption manifest template."""
+    target_dir = metadata_dir / "hp_scaling"
+    target_dir.mkdir(parents=True, exist_ok=True)
+    path = target_dir / PROFILE_ARTIFACT_CONSUMPTION_MANIFEST_TEMPLATE_FILENAME
+    payload = build_hp001_profile_artifact_consumption_manifest_template()
+    path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    return path
 
 def write_hp001_readiness_approval_checklist_packet(metadata_dir: Path) -> Path:
     """Write the proposed HP-001 approval checklist for PI review."""
@@ -928,6 +998,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--write-value-binding-packet", action="store_true", help="Write the proposed HP-001 value-binding readiness packet without executable values.")
     parser.add_argument("--write-readiness-checklist", action="store_true", help="Write the proposed HP-001 final-readiness approval checklist without executable values.")
     parser.add_argument("--write-executable-value-binding-packet", action="store_true", help="Write the proposed HP-001 executable value-binding decision packet without approving values.")
+    parser.add_argument("--write-profile-consumption-template", action="store_true", help="Write the proposed HP-001 profile artifact consumption manifest template without approving values.")
     parser.add_argument("--download", action="store_true", help="Retrieve/checksum the approved D-013 public sources; no values are produced.")
     parser.add_argument("--inspect-existing", action="store_true", help="Refresh schema metadata from existing ignored D-013 raw files without network or values.")
     parser.add_argument("--resume", action="store_true", help="Skip completed sources whose raw files match checkpoint byte size and SHA-256.")
@@ -943,6 +1014,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         path = write_hp001_readiness_approval_checklist_packet(Path(args.metadata_dir))
     elif args.write_executable_value_binding_packet:
         path = write_hp001_executable_value_binding_decision_packet(Path(args.metadata_dir))
+    elif args.write_profile_consumption_template:
+        path = write_hp001_profile_artifact_consumption_manifest_template(Path(args.metadata_dir))
     elif args.write_formula_packet:
         path = write_hp001_scaling_formula_config_decision_packet(Path(args.metadata_dir))
     else:

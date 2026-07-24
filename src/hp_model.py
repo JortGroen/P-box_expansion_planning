@@ -62,6 +62,13 @@ HP001_FINAL_READINESS_REQUIRED_APPROVAL_KEYS = (
     *HP001_SCENARIO_CONSISTENCY_REQUIRED_APPROVAL_KEYS,
     *HP001_WEATHER_ACCEPTANCE_REQUIRED_APPROVAL_KEYS,
 )
+HP001_PROFILE_ARTIFACT_CONSUMPTION_APPROVED_STATUS = "approved_for_integrated_hp_profile_consumption"
+HP001_PROFILE_ARTIFACT_REQUIRED_COMPONENTS = (
+    ("SFH", "space", "NL_heat_profile_space_SFH", HP001_SPACE_COP_COLUMN),
+    ("MFH", "space", "NL_heat_profile_space_MFH", HP001_SPACE_COP_COLUMN),
+    ("SFH", "water", "NL_heat_profile_water_SFH", HP001_WATER_COP_COLUMN),
+    ("MFH", "water", "NL_heat_profile_water_MFH", HP001_WATER_COP_COLUMN),
+)
 
 
 class SharedWeatherMember(Protocol):
@@ -636,6 +643,121 @@ def require_hp001_final_readiness_approvals(approval_ids: Mapping[str, str]) -> 
             f"missing={missing}"
         )
 
+
+
+def hp001_profile_artifact_consumption_missing_approval_keys(
+    manifest: Mapping[str, Any],
+) -> tuple[str, ...]:
+    """Return approvals missing before consuming a future HP profile artifact."""
+    if not isinstance(manifest, Mapping):
+        raise ValueError("HP-001 profile artifact consumption manifest must be a mapping")
+    approval_ids = _require_mapping(manifest.get("approval_ids"), "approval_ids")
+    return hp001_final_readiness_missing_approval_keys(approval_ids)
+
+
+def require_hp001_profile_artifact_consumption_manifest(manifest: Mapping[str, Any]) -> None:
+    """Raise until a future HP profile artifact is auditable and fully signed.
+
+    This validates metadata only. It deliberately does not build annual HP loads
+    or recalculate an integrated profile; callers must provide a manifest that
+    already records the artifact checksum, WEATHER-001 identity, component
+    traces, and signed approval IDs.
+    """
+    if not isinstance(manifest, Mapping):
+        raise ValueError("HP-001 profile artifact consumption manifest must be a mapping")
+    status = str(manifest.get("status", "")).strip()
+    if status != HP001_PROFILE_ARTIFACT_CONSUMPTION_APPROVED_STATUS:
+        raise ValueError(
+            "HP-001 profile artifact is not approved for integrated consumption; "
+            f"status={status!r}"
+        )
+    missing = hp001_profile_artifact_consumption_missing_approval_keys(manifest)
+    if missing:
+        raise ValueError(
+            "HP-001 profile artifact consumption requires signed annual, "
+            "scenario-consistency, paired-weather, and cold-spell approvals; "
+            f"missing={missing}"
+        )
+
+    artifact = _require_mapping(manifest.get("profile_artifact"), "profile_artifact")
+    _require_non_empty_text(artifact, "path", label="profile_artifact")
+    _require_non_empty_text(artifact, "sha256", label="profile_artifact")
+    if int(artifact.get("n_timesteps", 0)) <= 0:
+        raise ValueError("profile_artifact n_timesteps must be positive")
+    if int(artifact.get("cadence_seconds", 0)) != QUARTER_HOUR_STEP_MINUTES * 60:
+        raise ValueError("profile_artifact cadence_seconds must be 900 for HP-001")
+    if str(artifact.get("electric_power_unit", "")).strip() != "kW":
+        raise ValueError("profile_artifact electric_power_unit must be 'kW'")
+
+    weather = _require_mapping(manifest.get("weather_identity"), "weather_identity")
+    for key in ("shared_weather_driver_id", "member_id", "source", "content_sha256"):
+        _require_non_empty_text(weather, key, label="weather_identity")
+    if int(weather.get("n_timesteps", 0)) != int(artifact["n_timesteps"]):
+        raise ValueError("weather_identity n_timesteps must match profile_artifact")
+    if int(weather.get("cadence_seconds", 0)) != QUARTER_HOUR_STEP_MINUTES * 60:
+        raise ValueError("weather_identity cadence_seconds must be 900 for HP-001")
+
+    components = manifest.get("component_traceability")
+    if not isinstance(components, Sequence) or isinstance(components, (str, bytes)):
+        raise ValueError("component_traceability must be a sequence")
+    seen: set[tuple[str, str, str, str]] = set()
+    for component in components:
+        record = _require_mapping(component, "component_traceability entry")
+        building_class = _require_non_empty_text(record, "building_class", label="component_traceability")
+        end_use = _require_non_empty_text(record, "end_use", label="component_traceability")
+        heat_column = _require_non_empty_text(record, "heat_column", label="component_traceability")
+        cop_column = _require_non_empty_text(record, "cop_column", label="component_traceability")
+        if float(record.get("annual_heat_demand_twh", 0.0)) <= 0:
+            raise ValueError("component_traceability annual_heat_demand_twh must be positive")
+        provenance = _require_mapping(record.get("provenance"), "component provenance")
+        if str(provenance.get("annual_scaling_status", "")).strip().lower() != "signed":
+            raise ValueError("component_traceability requires signed annual_scaling_status")
+        if not str(provenance.get("annual_scaling_approval_id", "")).strip():
+            raise ValueError("component_traceability requires annual_scaling_approval_id")
+        seen.add((building_class, end_use, heat_column, cop_column))
+    required = set(HP001_PROFILE_ARTIFACT_REQUIRED_COMPONENTS)
+    if seen != required:
+        raise ValueError(
+            "component_traceability must contain exactly the HP-001 SFH/MFH "
+            f"space/water components; missing={tuple(sorted(required - seen))}, "
+            f"extra={tuple(sorted(seen - required))}"
+        )
+
+
+def hp001_profile_artifact_consumption_manifest_from_profile(
+    profile: HeatPumpProfile,
+    *,
+    profile_artifact_path: str,
+    profile_artifact_sha256: str,
+    approval_ids: Mapping[str, str],
+    status: str = "proposed_template_values_unsigned",
+) -> dict[str, object]:
+    """Build metadata for a future HP profile artifact without signing it."""
+    manifest: dict[str, object] = {
+        "manifest_id": "E2-S3-HP001-PROFILE-ARTIFACT-CONSUMPTION-MANIFEST",
+        "status": status,
+        "profile_artifact": {
+            "path": str(profile_artifact_path).strip(),
+            "sha256": str(profile_artifact_sha256).strip(),
+            "n_timesteps": profile.n_timesteps,
+            "cadence_seconds": profile.cadence_seconds,
+            "electric_power_unit": "kW",
+            "thermal_power_unit": "kW",
+            "first_timestamp_utc": profile.timestamps_utc[0].isoformat(),
+            "last_timestamp_utc": profile.timestamps_utc[-1].isoformat(),
+        },
+        "weather_identity": profile.weather_identity_record(),
+        "component_traceability": profile.component_traceability_record(),
+        "approval_ids": dict(_as_provenance_mapping(approval_ids, "approval_ids")),
+        "missing_approval_keys": hp001_final_readiness_missing_approval_keys(approval_ids),
+        "non_claims": (
+            "No annual HP TWh values are approved by this manifest.",
+            "No D-004 paired-weather or cold-spell acceptance is signed by this manifest.",
+            "No net-load, event, P(E), capacity-screen, threshold, manuscript, or probability result is produced.",
+        ),
+    }
+    return manifest
+
 def require_signed_hp001_local_scaling_config(config: HP001LocalScalingConfig) -> None:
     """Raise unless every remaining HP-001 local-scaling choice is signed."""
     missing = config.missing_approval_keys()
@@ -1139,6 +1261,15 @@ def _when2heat_use_columns(
         columns.add(component.cop_column)
     return columns
 
+
+
+
+def _require_non_empty_text(record: Mapping[str, Any], key: str, *, label: str) -> str:
+    value = record.get(key)
+    text = str(value).strip() if value is not None else ""
+    if not text:
+        raise ValueError(f"{label} {key} must be non-empty")
+    return text
 
 def _require_exact_hp001_classes(values: Mapping[str, float], *, label: str) -> None:
     keys = tuple(values)

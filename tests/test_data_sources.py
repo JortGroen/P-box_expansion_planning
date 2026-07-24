@@ -1249,3 +1249,30 @@ def test_d014_orientation_tilt_value_choice_packet_lists_unsigned_candidate_valu
     payload = json.loads(path.read_text(encoding="utf-8"))
     assert path.name == "d014_pv_orientation_tilt_value_choice_packet.json"
     assert payload["status"].startswith("proposed_value_choice_packet")
+
+
+def test_hp001_profile_artifact_consumption_template_is_fail_closed(tmp_path: Path) -> None:
+    packet = hp_scaling.build_hp001_profile_artifact_consumption_manifest_template()
+
+    assert packet["manifest_id"] == "E2-S3-HP001-PROFILE-ARTIFACT-CONSUMPTION-MANIFEST"
+    assert packet["status"] == "proposed_template_not_approved_for_integrated_consumption"
+    assert packet["future_required_status"] == "approved_for_integrated_hp_profile_consumption"
+    assert packet["profile_artifact"]["cadence_seconds"] == 900
+    assert packet["weather_identity"]["identity_rule"].startswith("Must match the PV profile")
+    assert {component["end_use"] for component in packet["component_traceability"]} == {"space", "water"}
+    assert set(packet["missing_approval_keys"]) == {
+        "value_column",
+        "denominator",
+        "unit_conversion",
+        "sfh_mfh_split",
+        "adoption_electrification",
+        "scenario_source_consistency",
+        "d004_paired_weather_acceptance",
+        "cold_spell_tolerances",
+    }
+    assert "No annual HP TWh values are executable." in packet["non_claims"]
+
+    path = hp_scaling.write_hp001_profile_artifact_consumption_manifest_template(tmp_path)
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    assert path.name == "hp001_profile_artifact_consumption_manifest_template.json"
+    assert payload["validator"] == "src.hp_model.require_hp001_profile_artifact_consumption_manifest"
