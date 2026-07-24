@@ -870,6 +870,31 @@ def _expect_bool(value: object, *, name: str) -> bool:
     return value
 
 
+def _expect_float(value: object, *, name: str) -> float:
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise TypeError(f"{name} must be numeric")
+    result = float(value)
+    if not math.isfinite(result):
+        raise ValueError(f"{name} must be finite")
+    return result
+
+
+def _expect_positive_int(value: object, *, name: str) -> int:
+    if isinstance(value, bool) or not isinstance(value, int):
+        raise TypeError(f"{name} must be an integer")
+    if value <= 0:
+        raise ValueError(f"{name} must be positive")
+    return value
+
+
+def _expect_nonnegative_int(value: object, *, name: str) -> int:
+    if isinstance(value, bool) or not isinstance(value, int):
+        raise TypeError(f"{name} must be an integer")
+    if value < 0:
+        raise ValueError(f"{name} must be nonnegative")
+    return value
+
+
 MATH_CORE_TRUST_CERTIFICATE_PROTOCOL = "e5s4-math-core-trust-certificate-v1"
 _COLLAPSED_PROBABILITY_FIELDS = frozenset(
     {
@@ -1015,16 +1040,9 @@ def assert_math_core_trust_certificate_payload(payload: Mapping[str, object]) ->
     analytic = payload["analytic_gaussian"]
     if not isinstance(analytic, Mapping):
         raise TypeError("analytic_gaussian must be a mapping")
-    for name in (
-        "passed",
-        "alpha_rows_nested",
-        "closed_form_within_confidence_intervals",
-    ):
-        _expect_bool(analytic[name], name=f"analytic_gaussian.{name}")
-    if analytic["probability_reporting"] != "alpha-indexed-lower-upper-only":
-        raise ValueError(
-            "analytic Gaussian payload must preserve lower/upper reporting"
-        )
+    analytic_manifest = _coerce_gaussian_crosscheck_manifest(analytic)
+    if dict(analytic) != analytic_manifest.to_mapping():
+        raise ValueError("analytic_gaussian must match recomputed Gaussian manifest")
 
     hybrid = payload["hybrid_reproduction"]
     if not isinstance(hybrid, Mapping):
@@ -1044,12 +1062,126 @@ def assert_math_core_trust_certificate_payload(payload: Mapping[str, object]) ->
         payload["ready_for_paper_math_claims"],
         name="ready_for_paper_math_claims",
     )
-    if ready != (not blockers):
+    expected = MathCoreTrustCertificateManifest(
+        analytic_gaussian=analytic_manifest,
+        hybrid_reproduction=hybrid_readiness,
+    ).to_mapping()
+    if list(payload["green_checks"]) != expected["green_checks"]:
+        raise ValueError("green_checks must match recomputed trust checks")
+    if list(blockers) != expected["paper_facing_blockers"]:
+        raise ValueError("paper_facing_blockers must match recomputed blockers")
+    if ready != expected["ready_for_paper_math_claims"]:
         raise ValueError("ready_for_paper_math_claims must match blocker state")
-    if ready and (not analytic["passed"] or not hybrid_readiness.ready):
+    if ready and (not analytic_manifest.passed or not hybrid_readiness.ready):
         raise ValueError(
             "ready trust certificate must have green analytic and hybrid checks"
         )
+    if "synthetic_non_claims" not in payload:
+        raise ValueError("trust certificate must carry synthetic non-claims")
+    if list(payload["synthetic_non_claims"]) != expected["synthetic_non_claims"]:
+        raise ValueError("synthetic_non_claims must match the trust protocol")
+
+
+def _coerce_gaussian_crosscheck_manifest(
+    payload: Mapping[str, object],
+) -> GaussianCrosscheckManifest:
+    required = {
+        "alpha_rows",
+        "crosscheck_id",
+        "root_seed",
+        "sample_count",
+        "tolerance",
+        "use_status",
+    }
+    missing = sorted(required.difference(payload))
+    if missing:
+        raise ValueError(f"analytic Gaussian manifest missing fields: {missing}")
+    rows_obj = payload["alpha_rows"]
+    if not isinstance(rows_obj, Sequence) or isinstance(rows_obj, (str, bytes)):
+        raise TypeError("analytic Gaussian alpha_rows must be a sequence")
+    rows = tuple(_coerce_gaussian_crosscheck_alpha_record(row) for row in rows_obj)
+    return GaussianCrosscheckManifest(
+        rows=rows,
+        tolerance=_expect_float(
+            payload["tolerance"], name="analytic_gaussian.tolerance"
+        ),
+        sample_count=_expect_positive_int(
+            payload["sample_count"], name="analytic_gaussian.sample_count"
+        ),
+        root_seed=_expect_nonnegative_int(
+            payload["root_seed"], name="analytic_gaussian.root_seed"
+        ),
+        use_status=_expect_string(
+            payload["use_status"], name="analytic_gaussian.use_status"
+        ),
+        crosscheck_id=_expect_string(
+            payload["crosscheck_id"], name="analytic_gaussian.crosscheck_id"
+        ),
+    )
+
+
+def _coerce_gaussian_crosscheck_alpha_record(
+    payload: object,
+) -> GaussianCrosscheckAlphaRecord:
+    if not isinstance(payload, Mapping):
+        raise TypeError("analytic Gaussian alpha row must be a mapping")
+    required = {
+        "absolute_error_lower",
+        "absolute_error_upper",
+        "alpha",
+        "closed_form_lower",
+        "closed_form_lower_in_ci",
+        "closed_form_upper",
+        "closed_form_upper_in_ci",
+        "estimated_lower",
+        "estimated_lower_ci_lower",
+        "estimated_lower_ci_upper",
+        "estimated_upper",
+        "estimated_upper_ci_lower",
+        "estimated_upper_ci_upper",
+        "rho_lower",
+        "rho_upper",
+    }
+    missing = sorted(required.difference(payload))
+    if missing:
+        raise ValueError(f"analytic Gaussian alpha row missing fields: {missing}")
+    return GaussianCrosscheckAlphaRecord(
+        alpha=_expect_float(payload["alpha"], name="alpha"),
+        rho_lower=_expect_float(payload["rho_lower"], name="rho_lower"),
+        rho_upper=_expect_float(payload["rho_upper"], name="rho_upper"),
+        closed_form_lower=_expect_float(
+            payload["closed_form_lower"], name="closed_form_lower"
+        ),
+        closed_form_upper=_expect_float(
+            payload["closed_form_upper"], name="closed_form_upper"
+        ),
+        estimated_lower=_expect_float(payload["estimated_lower"], name="estimated_lower"),
+        estimated_upper=_expect_float(payload["estimated_upper"], name="estimated_upper"),
+        estimated_lower_ci_lower=_expect_float(
+            payload["estimated_lower_ci_lower"], name="estimated_lower_ci_lower"
+        ),
+        estimated_lower_ci_upper=_expect_float(
+            payload["estimated_lower_ci_upper"], name="estimated_lower_ci_upper"
+        ),
+        estimated_upper_ci_lower=_expect_float(
+            payload["estimated_upper_ci_lower"], name="estimated_upper_ci_lower"
+        ),
+        estimated_upper_ci_upper=_expect_float(
+            payload["estimated_upper_ci_upper"], name="estimated_upper_ci_upper"
+        ),
+        closed_form_lower_in_ci=_expect_bool(
+            payload["closed_form_lower_in_ci"], name="closed_form_lower_in_ci"
+        ),
+        closed_form_upper_in_ci=_expect_bool(
+            payload["closed_form_upper_in_ci"], name="closed_form_upper_in_ci"
+        ),
+        absolute_error_lower=_expect_float(
+            payload["absolute_error_lower"], name="absolute_error_lower"
+        ),
+        absolute_error_upper=_expect_float(
+            payload["absolute_error_upper"], name="absolute_error_upper"
+        ),
+    )
 
 
 def _validate_no_probability_collapse(payload: object) -> None:
