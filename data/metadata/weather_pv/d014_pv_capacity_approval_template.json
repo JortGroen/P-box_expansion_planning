@@ -1,0 +1,122 @@
+{
+  "approved_route_boundary": {
+    "capacity_route_decision": "PV-CAP-001",
+    "capacity_route_status": "approved route only; executable values pending",
+    "orientation_scope_boundary": "statistical orientation/tilt only; no building/roof/3DBAG/PV-map extraction before the first experiment",
+    "orientation_scope_decision": "PV-ORIENT-001",
+    "pv_parameter_decision": "PV-PARAM-001_or_signed_amendment",
+    "scenario_consistency_decision": "A-016"
+  },
+  "data_id": "D-014",
+  "download_performed": false,
+  "executable_gate": {
+    "accepted_for_executable_pv_capacity_input": false,
+    "blocking_approval_keys": [
+      "D014-PV-CAPACITY-VALUE-CHOICE-PACKET",
+      "cbs_anchor_evidence_packet_id_and_sha256",
+      "ii3050_growth_evidence_packet_id_and_sha256",
+      "alkmaar_geography_key",
+      "cbs_source_period_key",
+      "cbs_sector_category_key",
+      "cbs_capacity_field_key",
+      "capacity_unit_and_dc_ac_convention",
+      "ii3050_scenario_column",
+      "ii3050_growth_denominator",
+      "ii3050_growth_factor_formula",
+      "ii3050_growth_factor_value",
+      "scenario_source_consistency_with_ev_hp_inputs",
+      "node_allocation_rule",
+      "statistical_orientation_tilt_distribution_source",
+      "statistical_orientation_tilt_distribution_weights",
+      "PV-PARAM-001_or_amended_conversion_decision"
+    ],
+    "guard_message": "Unsigned D-014 capacity templates cannot provide executable PV installed capacity.",
+    "requires_pi_signed_decision": true,
+    "signed_capacity_value_approved": false
+  },
+  "non_claims": [
+    "No final PV installed-capacity value is approved or computed.",
+    "No CBS row, II3050 scenario, growth factor, or DC/AC convention is signed.",
+    "No node allocation, statistical orientation/tilt value, or PV-PARAM conversion treatment is signed.",
+    "No roof, building, 3DBAG, or PV-map geometry source is retrieved or used for the first experiment.",
+    "No PV generation, net-load, event detection, P(E), threshold analysis, capacity screen, manuscript result, or final PV output is produced."
+  ],
+  "packet_id": "D014-PV-CAPACITY-APPROVAL-TEMPLATE",
+  "raw_data_committed": false,
+  "recommended_pi_path": {
+    "not_approved_by_this_template": true,
+    "recommended_capacity_label_before_pv_param": "installed_capacity_kwp_dc",
+    "recommended_equation_id_for_review": "dc_kwp_source_year_matched_ii3050_ratio",
+    "recommended_template_use": "When PI approves the D-014 value choice, instantiate this template as a new signed artifact rather than mutating evidence packets."
+  },
+  "required_signed_artifact_fields": {
+    "a016_scenario_consistency": [
+      "scenario_consistency_mapping_id",
+      "ev_source_scenario_label",
+      "hp_source_scenario_label",
+      "pv_ii3050_scenario_label",
+      "consistency_check_status"
+    ],
+    "allocation_and_conversion_dependencies": [
+      "node_allocation_rule_id",
+      "node_allocation_status",
+      "statistical_orientation_tilt_distribution_id",
+      "statistical_orientation_tilt_status",
+      "pv_param_decision_id",
+      "pv_param_status"
+    ],
+    "artifact_identity": [
+      "capacity_artifact_id",
+      "signed_decision_id",
+      "signed_decision_date",
+      "approval_status",
+      "created_from_value_choice_packet_id"
+    ],
+    "audit_outputs": [
+      "content_sha256",
+      "source_metadata_paths",
+      "source_metadata_sha256",
+      "non_claims",
+      "blocked_until"
+    ],
+    "capacity_value": [
+      "installed_capacity_value",
+      "installed_capacity_unit",
+      "capacity_convention",
+      "capacity_scope",
+      "planning_year"
+    ],
+    "cbs_anchor_operand": [
+      "cbs_table_id",
+      "alkmaar_geography_key",
+      "cbs_source_period_key",
+      "cbs_sector_category_key",
+      "cbs_capacity_field_key",
+      "cbs_anchor_value",
+      "cbs_anchor_unit",
+      "cbs_evidence_packet_id",
+      "cbs_evidence_metadata_sha256",
+      "cbs_raw_bundle_sha256"
+    ],
+    "ii3050_growth_operand": [
+      "ii3050_evidence_packet_id",
+      "ii3050_evidence_metadata_sha256",
+      "ii3050_raw_bundle_sha256",
+      "ii3050_scenario_column",
+      "ii3050_numerator_year",
+      "ii3050_denominator_year_or_crosswalk_id",
+      "ii3050_growth_factor_formula",
+      "ii3050_growth_factor_value"
+    ]
+  },
+  "status": "proposed_signed_capacity_artifact_template_no_values",
+  "upstream_value_choice_packet": {
+    "metadata_path": "data/metadata/weather_pv/d014_pv_capacity_value_choice_packet.json",
+    "metadata_sha256": "99442e8fcea304bba9cf7af06b8626c0d6fc8de1888be97fd2cef2a38364d718",
+    "metadata_size_bytes": 10982,
+    "packet_id": "D014-PV-CAPACITY-VALUE-CHOICE-PACKET",
+    "recommendation_status": "proposed_unsigned_not_executable",
+    "recommended_capacity_convention": "DC kWp labelled as installed_capacity_kwp_dc before PV-PARAM-001",
+    "recommended_equation_id": "dc_kwp_source_year_matched_ii3050_ratio"
+  }
+}
