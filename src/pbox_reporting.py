@@ -66,6 +66,59 @@ OUTPUT_ERROR_ENDPOINT_COUNT_REAL_USE_BLOCKERS: tuple[str, ...] = (
     "missing_a016_scenario_consistency",
     "missing_g3_monotonicity_approval_if_vertex_shortcut_claimed",
 )
+REAL_OUTPUT_ERROR_ENDPOINT_COUNT_MANIFEST_PROTOCOL = (
+    "e5s3-real-output-error-endpoint-count-manifest-preflight-v1"
+)
+REAL_OUTPUT_ERROR_ENDPOINT_COUNT_USE_STATUS = (
+    "real-output-error-endpoint-count-manifest-preflight"
+)
+REAL_OUTPUT_ERROR_ENDPOINT_COUNT_BLOCKER_PROTOCOL = (
+    "e5s3-real-output-error-endpoint-count-blockers-v1"
+)
+REAL_OUTPUT_ERROR_ENDPOINT_COUNT_BLOCKERS: tuple[str, ...] = (
+    "missing_real_loading_trajectory_manifest",
+    "missing_real_output_error_endpoint_count_manifest",
+    "missing_signed_g2_tier1_endpoints",
+    "missing_signed_a013_grid_error",
+    "missing_capacity_convention_and_provenance",
+    "missing_a016_scenario_consistency",
+    "missing_g3_monotonicity_approval_if_vertex_shortcut_claimed",
+)
+_REAL_OUTPUT_ERROR_ENDPOINT_COUNT_REQUIRED_APPROVAL_IDS: dict[str, str] = {
+    "a013_grid_error_approval_id": "missing_signed_a013_grid_error",
+    "g2_tier1_envelope_approval_id": "missing_signed_g2_tier1_endpoints",
+    "capacity_convention_approval_id": "missing_capacity_convention_and_provenance",
+    "a016_scenario_consistency_id": "missing_a016_scenario_consistency",
+}
+_REAL_OUTPUT_ERROR_ENDPOINT_COUNT_REQUIRED_ARTIFACT_REFERENCES: dict[str, str] = {
+    "loading_trajectory_manifest_id": "missing_real_loading_trajectory_manifest",
+    "output_error_endpoint_count_manifest_id": (
+        "missing_real_output_error_endpoint_count_manifest"
+    ),
+    "capacity_convention_linkage": "missing_capacity_convention_and_provenance",
+    "capacity_denominator_provenance": "missing_capacity_convention_and_provenance",
+}
+_REAL_OUTPUT_ERROR_ENDPOINT_COUNT_NON_CLAIMS: tuple[str, ...] = (
+    "real-use preflight only",
+    "no probability accepted for paper-facing use by this scaffold",
+    "no real P(E)",
+    "no capacity-convention choice by Agent B",
+    "no A-013 or G2 numerical signoff by Agent B",
+    "no G3 vertex claim by Agent B",
+    "no manuscript number",
+)
+_REAL_OUTPUT_ERROR_ENDPOINT_COUNT_STALE_REFERENCE_TOKENS = (
+    "blocked",
+    "future",
+    "pending",
+    "placeholder",
+    "proposed",
+    "synthetic",
+    "tbd",
+    "todo",
+    "unsigned",
+    "not-approved",
+)
 _ALPHA_EVENT_COUNT_ENDPOINT_METADATA_FIELDS = {
     "a013_grid_error_approval_id",
     "a016_scenario_consistency_id",
@@ -120,6 +173,7 @@ _ALPHA_EVENT_COUNT_FORBIDDEN_FIELDS = frozenset(
         "probability_margin",
         "probability_margin_shift",
         "probability_margin_widening",
+        "scalar_probability",
     }
 )
 
@@ -401,6 +455,89 @@ class OutputErrorEndpointCountBridgePacket:
         }
 
 
+@dataclass(frozen=True)
+class RealOutputErrorEndpointCountManifestPreflight:
+    """Fail-closed preflight for future real E5.S3 endpoint-count manifests."""
+
+    manifest_id: str
+    alpha_grid: tuple[float, ...]
+    event_count_records: tuple[AlphaEventCountRecord, ...]
+    endpoint_metadata: Mapping[str, object]
+    approval_ids: Mapping[str, object]
+    artifact_references: Mapping[str, object]
+    threshold_semantics: Mapping[str, object]
+    alpha_probability_packet: AlphaProbabilityEstimatorPacket
+    use_status: str = REAL_OUTPUT_ERROR_ENDPOINT_COUNT_USE_STATUS
+    protocol: str = REAL_OUTPUT_ERROR_ENDPOINT_COUNT_MANIFEST_PROTOCOL
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.manifest_id, str) or not self.manifest_id.strip():
+            raise ValueError("manifest_id must be a nonempty string")
+        if self.protocol != REAL_OUTPUT_ERROR_ENDPOINT_COUNT_MANIFEST_PROTOCOL:
+            raise ValueError(
+                f"protocol must be {REAL_OUTPUT_ERROR_ENDPOINT_COUNT_MANIFEST_PROTOCOL!r}"
+            )
+        if self.use_status != REAL_OUTPUT_ERROR_ENDPOINT_COUNT_USE_STATUS:
+            raise ValueError("real endpoint-count manifest preflight cannot be relabeled")
+        _validate_real_output_error_endpoint_count_inputs(
+            alpha_grid=self.alpha_grid,
+            event_count_records=self.event_count_records,
+            endpoint_metadata=self.endpoint_metadata,
+            approval_ids=self.approval_ids,
+            artifact_references=self.artifact_references,
+            threshold_semantics=self.threshold_semantics,
+        )
+        if not isinstance(self.alpha_probability_packet, AlphaProbabilityEstimatorPacket):
+            raise TypeError(
+                "alpha_probability_packet must be an AlphaProbabilityEstimatorPacket"
+            )
+        if dict(self.alpha_probability_packet.endpoint_metadata) != dict(
+            self.endpoint_metadata
+        ):
+            raise ValueError(
+                "alpha_probability_packet endpoint metadata must match the manifest"
+            )
+        if self.alpha_probability_packet.event_count_records != self.event_count_records:
+            raise ValueError("alpha_probability_packet counts must match the manifest")
+
+    @property
+    def blocker_manifest(self) -> dict[str, object]:
+        return build_real_output_error_endpoint_count_blocker_manifest(
+            manifest_id=f"{self.manifest_id}:blockers"
+        )
+
+    def to_mapping(self) -> dict[str, object]:
+        probability_packet = self.alpha_probability_packet.to_mapping()
+        return {
+            "alpha_grid": list(self.alpha_grid),
+            "alpha_probability_estimator_packet": probability_packet,
+            "approval_ids": dict(self.approval_ids),
+            "artifact_references": dict(self.artifact_references),
+            "blocker_manifest": self.blocker_manifest,
+            "endpoint_metadata": dict(self.endpoint_metadata),
+            "event_count_records": [
+                record.to_mapping() for record in self.event_count_records
+            ],
+            "invariants": {
+                "alpha_indexed_lower_upper_reporting": True,
+                "crn_sample_identity": "same ordered sample_ids across alpha rows",
+                "defuzzification": "forbidden",
+                "endpoint_count_provenance": OUTPUT_ERROR_ENDPOINT_COUNT_PROVENANCE,
+                "endpoint_error_dependence": OUTPUT_ERROR_DEPENDENCE,
+                "loading_endpoint_application": OUTPUT_ERROR_APPLICATION,
+                "probability_widening": "forbidden",
+                "unwidened_direction_gate": "unwidened_p_net_import_mask",
+            },
+            "manifest_id": self.manifest_id,
+            "manifest_protocol": self.protocol,
+            "non_claims": list(_REAL_OUTPUT_ERROR_ENDPOINT_COUNT_NON_CLAIMS),
+            "probability_rows": list(probability_packet["probability_rows"]),
+            "ready_for_real_use": False,
+            "threshold_semantics": dict(self.threshold_semantics),
+            "use_status": self.use_status,
+        }
+
+
 def probability_rows_from_alpha_event_counts(
     event_count_records: Sequence[AlphaEventCountRecord | Mapping[str, object]],
     *,
@@ -461,7 +598,9 @@ def build_alpha_probability_estimator_packet(
 ) -> AlphaProbabilityEstimatorPacket:
     """Build the synthetic/fail-closed E4.S1 probability-estimator packet."""
 
-    records = tuple(_coerce_alpha_event_count_record(record) for record in event_count_records)
+    records = tuple(
+        _coerce_alpha_event_count_record(record) for record in event_count_records
+    )
     rows = probability_rows_from_alpha_event_counts(
         records,
         confidence_level=confidence_level,
@@ -545,6 +684,90 @@ def build_output_error_endpoint_count_real_use_blocker_manifest(
             "no G3 verdict",
             "no manuscript number",
         ],
+        "ready_for_real_use": False,
+        "use_status": "real-use-blocker",
+    }
+
+
+def build_real_output_error_endpoint_count_manifest_preflight(
+    *,
+    manifest_id: str,
+    alpha_grid: Sequence[float],
+    event_count_records: Sequence[AlphaEventCountRecord | Mapping[str, object]],
+    endpoint_metadata: Mapping[str, object],
+    approval_ids: Mapping[str, object],
+    artifact_references: Mapping[str, object],
+    threshold_semantics: Mapping[str, object],
+    confidence_level: float = 0.95,
+) -> RealOutputErrorEndpointCountManifestPreflight:
+    """Build a fail-closed preflight for future real endpoint-count manifests."""
+
+    grid = _coerce_alpha_grid(alpha_grid)
+    records = tuple(
+        _coerce_alpha_event_count_record(record) for record in event_count_records
+    )
+    _validate_real_output_error_endpoint_count_inputs(
+        alpha_grid=grid,
+        event_count_records=records,
+        endpoint_metadata=endpoint_metadata,
+        approval_ids=approval_ids,
+        artifact_references=artifact_references,
+        threshold_semantics=threshold_semantics,
+    )
+    probability_packet = build_alpha_probability_estimator_packet(
+        packet_id=f"{manifest_id}:alpha-probability-estimator",
+        event_count_records=records,
+        endpoint_metadata=endpoint_metadata,
+        confidence_level=confidence_level,
+        require_nested=True,
+    )
+    return RealOutputErrorEndpointCountManifestPreflight(
+        manifest_id=manifest_id,
+        alpha_grid=grid,
+        event_count_records=records,
+        endpoint_metadata=endpoint_metadata,
+        approval_ids=approval_ids,
+        artifact_references=artifact_references,
+        threshold_semantics=threshold_semantics,
+        alpha_probability_packet=probability_packet,
+    )
+
+
+def build_real_output_error_endpoint_count_blocker_manifest(
+    *, manifest_id: str
+) -> dict[str, object]:
+    """Return the fail-closed blocker packet for future real endpoint-count use."""
+
+    if not isinstance(manifest_id, str) or not manifest_id.strip():
+        raise ValueError("manifest_id must be a nonempty string")
+    return {
+        "blocker_keys": list(REAL_OUTPUT_ERROR_ENDPOINT_COUNT_BLOCKERS),
+        "blockers": {
+            "missing_real_loading_trajectory_manifest": (
+                "real LoadingTrajectoryResult manifest is missing"
+            ),
+            "missing_real_output_error_endpoint_count_manifest": (
+                "real output-error endpoint-count manifest is missing"
+            ),
+            "missing_signed_g2_tier1_endpoints": (
+                "signed G2 Tier-1 endpoint envelope is missing"
+            ),
+            "missing_signed_a013_grid_error": (
+                "signed A-013 grid-error value/form is missing"
+            ),
+            "missing_capacity_convention_and_provenance": (
+                "capacity convention and denominator provenance are missing"
+            ),
+            "missing_a016_scenario_consistency": (
+                "A-016 scenario consistency manifest is missing"
+            ),
+            "missing_g3_monotonicity_approval_if_vertex_shortcut_claimed": (
+                "G3 approval is missing if vertex shortcut output is claimed"
+            ),
+        },
+        "manifest_id": manifest_id,
+        "manifest_protocol": REAL_OUTPUT_ERROR_ENDPOINT_COUNT_BLOCKER_PROTOCOL,
+        "non_claims": list(_REAL_OUTPUT_ERROR_ENDPOINT_COUNT_NON_CLAIMS),
         "ready_for_real_use": False,
         "use_status": "real-use-blocker",
     }
@@ -680,6 +903,108 @@ def assert_output_error_endpoint_count_bridge_packet(
         raise ValueError("bridge invariants must match the E5.S3 protocol")
 
 
+
+def assert_real_output_error_endpoint_count_manifest_preflight(
+    payload: Mapping[str, object],
+) -> None:
+    """Validate a serialized real endpoint-count preflight payload."""
+
+    _reject_alpha_event_count_collapsed_fields(payload)
+    required = {
+        "alpha_grid",
+        "alpha_probability_estimator_packet",
+        "approval_ids",
+        "artifact_references",
+        "blocker_manifest",
+        "endpoint_metadata",
+        "event_count_records",
+        "invariants",
+        "manifest_id",
+        "manifest_protocol",
+        "non_claims",
+        "probability_rows",
+        "ready_for_real_use",
+        "threshold_semantics",
+        "use_status",
+    }
+    _require_mapping_fields(payload, required, name="real endpoint-count preflight")
+    if payload["manifest_protocol"] != REAL_OUTPUT_ERROR_ENDPOINT_COUNT_MANIFEST_PROTOCOL:
+        raise ValueError(
+            f"manifest_protocol must be {REAL_OUTPUT_ERROR_ENDPOINT_COUNT_MANIFEST_PROTOCOL!r}"
+        )
+    if payload["use_status"] != REAL_OUTPUT_ERROR_ENDPOINT_COUNT_USE_STATUS:
+        raise ValueError("real endpoint-count preflight cannot be relabeled")
+    if payload["ready_for_real_use"] is not False:
+        raise ValueError("real endpoint-count preflight must fail closed today")
+    if tuple(_expect_sequence(payload["non_claims"], name="non_claims")) != (
+        _REAL_OUTPUT_ERROR_ENDPOINT_COUNT_NON_CLAIMS
+    ):
+        raise ValueError("real endpoint-count non_claims must match the protocol")
+
+    alpha_grid = _coerce_alpha_grid(
+        _expect_sequence(payload["alpha_grid"], name="alpha_grid")
+    )
+    records = tuple(
+        _coerce_alpha_event_count_record(
+            _expect_mapping(record, name="event_count_record")
+        )
+        for record in _expect_sequence(
+            payload["event_count_records"], name="event_count_records"
+        )
+    )
+    endpoint_metadata = _expect_mapping(
+        payload["endpoint_metadata"], name="endpoint_metadata"
+    )
+    approval_ids = _expect_mapping(payload["approval_ids"], name="approval_ids")
+    artifact_references = _expect_mapping(
+        payload["artifact_references"], name="artifact_references"
+    )
+    threshold_semantics = _expect_mapping(
+        payload["threshold_semantics"], name="threshold_semantics"
+    )
+    _validate_real_output_error_endpoint_count_inputs(
+        alpha_grid=alpha_grid,
+        event_count_records=records,
+        endpoint_metadata=endpoint_metadata,
+        approval_ids=approval_ids,
+        artifact_references=artifact_references,
+        threshold_semantics=threshold_semantics,
+    )
+    alpha_packet = _expect_mapping(
+        payload["alpha_probability_estimator_packet"],
+        name="alpha_probability_estimator_packet",
+    )
+    assert_alpha_probability_estimator_packet(alpha_packet)
+    if dict(alpha_packet["endpoint_metadata"]) != dict(endpoint_metadata):
+        raise ValueError("alpha estimator endpoint metadata must match preflight")
+    rows = tuple(
+        dict(_expect_mapping(row, name="probability_row"))
+        for row in _expect_sequence(payload["probability_rows"], name="probability_rows")
+    )
+    if rows != tuple(dict(row) for row in alpha_packet["probability_rows"]):
+        raise ValueError("probability_rows must come from the alpha estimator packet")
+    expected_blockers = build_real_output_error_endpoint_count_blocker_manifest(
+        manifest_id=f"{payload['manifest_id']}:blockers"
+    )
+    if payload["blocker_manifest"] != expected_blockers:
+        raise ValueError("blocker_manifest must match the real endpoint-count protocol")
+    expected_invariants = {
+        "alpha_indexed_lower_upper_reporting": True,
+        "crn_sample_identity": "same ordered sample_ids across alpha rows",
+        "defuzzification": "forbidden",
+        "endpoint_count_provenance": OUTPUT_ERROR_ENDPOINT_COUNT_PROVENANCE,
+        "endpoint_error_dependence": OUTPUT_ERROR_DEPENDENCE,
+        "loading_endpoint_application": OUTPUT_ERROR_APPLICATION,
+        "probability_widening": "forbidden",
+        "unwidened_direction_gate": "unwidened_p_net_import_mask",
+    }
+    if (
+        dict(_expect_mapping(payload["invariants"], name="invariants"))
+        != expected_invariants
+    ):
+        raise ValueError("real endpoint-count invariants must match the protocol")
+
+
 def _coerce_alpha_event_count_record(
     record: AlphaEventCountRecord | Mapping[str, object],
 ) -> AlphaEventCountRecord:
@@ -711,6 +1036,187 @@ def _coerce_alpha_event_count_record(
         ),
     )
 
+
+def _coerce_alpha_grid(alpha_grid: Sequence[float]) -> tuple[float, ...]:
+    if isinstance(alpha_grid, (str, bytes)) or not isinstance(alpha_grid, Sequence):
+        raise TypeError("alpha_grid must be a sequence")
+    grid = tuple(float(alpha) for alpha in alpha_grid)
+    if not grid:
+        raise ValueError("alpha_grid must not be empty")
+    if any(not math.isfinite(alpha) or not 0.0 <= alpha <= 1.0 for alpha in grid):
+        raise ValueError("alpha_grid values must be finite and in [0, 1]")
+    if tuple(sorted(grid)) != grid or len(set(grid)) != len(grid):
+        raise ValueError("alpha_grid must be strictly increasing")
+    return grid
+
+
+def _validate_real_output_error_endpoint_count_inputs(
+    *,
+    alpha_grid: tuple[float, ...],
+    event_count_records: Sequence[AlphaEventCountRecord],
+    endpoint_metadata: Mapping[str, object],
+    approval_ids: Mapping[str, object],
+    artifact_references: Mapping[str, object],
+    threshold_semantics: Mapping[str, object],
+) -> None:
+    _validate_alpha_event_count_records(event_count_records, require_nested=True)
+    record_alphas = tuple(
+        record.alpha
+        for record in sorted(event_count_records, key=lambda item: item.alpha)
+    )
+    if record_alphas != alpha_grid:
+        raise ValueError("event_count_records must match the required alpha_grid")
+    _validate_real_output_error_endpoint_count_metadata(endpoint_metadata)
+    _validate_real_endpoint_count_approval_ids(approval_ids)
+    _validate_real_endpoint_count_artifact_references(artifact_references)
+    _validate_real_endpoint_count_threshold_semantics(threshold_semantics)
+    _require_reference_match(
+        approval_ids,
+        "a013_grid_error_approval_id",
+        endpoint_metadata,
+        "a013_grid_error_approval_id",
+    )
+    _require_reference_match(
+        approval_ids,
+        "g2_tier1_envelope_approval_id",
+        endpoint_metadata,
+        "g2_tier1_envelope_approval_id",
+    )
+    _require_reference_match(
+        approval_ids,
+        "a016_scenario_consistency_id",
+        endpoint_metadata,
+        "a016_scenario_consistency_id",
+    )
+    _require_reference_match(
+        artifact_references,
+        "capacity_convention_linkage",
+        endpoint_metadata,
+        "capacity_convention_linkage",
+    )
+    _require_reference_match(
+        artifact_references,
+        "capacity_denominator_provenance",
+        endpoint_metadata,
+        "capacity_denominator_provenance",
+    )
+    _require_reference_match(
+        artifact_references,
+        "output_error_endpoint_count_manifest_id",
+        endpoint_metadata,
+        "endpoint_record_manifest_id",
+    )
+    if threshold_semantics["direction_gate"] != endpoint_metadata["direction_gate"]:
+        raise ValueError("threshold direction_gate must match endpoint metadata")
+
+
+def _validate_real_output_error_endpoint_count_metadata(
+    metadata: Mapping[str, object]
+) -> None:
+    _validate_alpha_event_endpoint_metadata(metadata)
+    required = _ALPHA_EVENT_COUNT_ENDPOINT_METADATA_FIELDS | {
+        "dependence_assumption",
+        "endpoint_count_provenance",
+        "lower_composition_formula",
+        "output_error_protocol",
+        "upper_composition_formula",
+    }
+    _require_mapping_fields(metadata, required, name="real_endpoint_count_metadata")
+    if metadata["endpoint_count_provenance"] != OUTPUT_ERROR_ENDPOINT_COUNT_PROVENANCE:
+        raise ValueError(
+            "endpoint counts must be from loading endpoints before event detection"
+        )
+    if metadata["output_error_protocol"] != OUTPUT_ERROR_ENDPOINT_COUNT_PROTOCOL:
+        raise ValueError("endpoint counts must use the G1-A2 output-error protocol")
+    if metadata["dependence_assumption"] != OUTPUT_ERROR_DEPENDENCE:
+        raise ValueError("endpoint counts must preserve arbitrary unknown dependence")
+    if metadata["lower_composition_formula"] != OUTPUT_ERROR_LOWER_FORMULA:
+        raise ValueError("lower composition formula must match G1-A2")
+    if metadata["upper_composition_formula"] != OUTPUT_ERROR_UPPER_FORMULA:
+        raise ValueError("upper composition formula must match G1-A2")
+    for key, value in metadata.items():
+        if key.endswith("_status"):
+            _expect_real_clean_reference(value, name=key)
+    for field in _OUTPUT_ERROR_ENDPOINT_COUNT_REFERENCE_FIELDS:
+        _expect_real_clean_reference(metadata[field], name=field)
+
+
+def _validate_real_endpoint_count_approval_ids(approval_ids: Mapping[str, object]) -> None:
+    _require_mapping_fields(
+        approval_ids,
+        set(_REAL_OUTPUT_ERROR_ENDPOINT_COUNT_REQUIRED_APPROVAL_IDS),
+        name="approval_ids",
+    )
+    for field in _REAL_OUTPUT_ERROR_ENDPOINT_COUNT_REQUIRED_APPROVAL_IDS:
+        _expect_real_clean_reference(approval_ids[field], name=field)
+
+
+def _validate_real_endpoint_count_artifact_references(
+    artifact_references: Mapping[str, object]
+) -> None:
+    _require_mapping_fields(
+        artifact_references,
+        set(_REAL_OUTPUT_ERROR_ENDPOINT_COUNT_REQUIRED_ARTIFACT_REFERENCES),
+        name="artifact_references",
+    )
+    for field in _REAL_OUTPUT_ERROR_ENDPOINT_COUNT_REQUIRED_ARTIFACT_REFERENCES:
+        _expect_real_clean_reference(artifact_references[field], name=field)
+
+
+def _validate_real_endpoint_count_threshold_semantics(
+    threshold_semantics: Mapping[str, object]
+) -> None:
+    _require_mapping_fields(
+        threshold_semantics,
+        {
+            "comparator",
+            "direction_gate",
+            "event_scope",
+            "min_consecutive_steps",
+            "threshold_pu",
+            "timestep_seconds",
+        },
+        name="threshold_semantics",
+    )
+    if threshold_semantics["comparator"] != "strict_greater_than":
+        raise ValueError("threshold comparator must be strict_greater_than")
+    if threshold_semantics["direction_gate"] != "unwidened_p_net_import_mask":
+        raise ValueError("threshold direction_gate must use unwidened P_net")
+    if threshold_semantics["event_scope"] != "full_planning_year":
+        raise ValueError("threshold event_scope must be full_planning_year")
+    if threshold_semantics["threshold_pu"] != 1.0:
+        raise ValueError("threshold_pu must match G0-A3 primary 1.0 p.u. event")
+    if threshold_semantics["min_consecutive_steps"] != 4:
+        raise ValueError("min_consecutive_steps must match the four-step event")
+    if threshold_semantics["timestep_seconds"] != 900:
+        raise ValueError("timestep_seconds must record 15-minute cadence")
+
+
+def _expect_real_clean_reference(value: object, *, name: str) -> str:
+    if not isinstance(value, str):
+        raise TypeError(f"{name} must be a string")
+    reference = value
+    if not reference.strip():
+        raise ValueError(f"{name} must be a nonempty string")
+    lowered = reference.lower()
+    stale = [
+        token
+        for token in _REAL_OUTPUT_ERROR_ENDPOINT_COUNT_STALE_REFERENCE_TOKENS
+        if token in lowered
+    ]
+    if stale:
+        raise ValueError(f"{name} contains stale or unsigned token(s): {stale}")
+    return reference
+
+
+def _require_reference_match(
+    left: Mapping[str, object],
+    left_key: str,
+    right: Mapping[str, object],
+    right_key: str,
+) -> None:
+    if str(left[left_key]) != str(right[right_key]):
+        raise ValueError(f"{left_key} must match {right_key}")
 
 def _validate_alpha_event_count_records(
     records: Sequence[AlphaEventCountRecord], *, require_nested: bool

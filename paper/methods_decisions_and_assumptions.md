@@ -348,6 +348,22 @@ requires signed G2 Tier-1 endpoints, signed A-013 grid-error value/form,
 capacity convention and denominator provenance, A-016 scenario consistency,
 real output-error endpoint-count manifests, and G3 wherever a vertex shortcut
 is claimed.
+
+The `e5s3-real-output-error-endpoint-count-manifest-preflight-v1` packet is a
+fail-closed real-use manifest validator for the same E5.S3 protocol. It is not
+a probability result and cannot mark paper-facing use ready. Instead, it checks
+that a future real endpoint-count manifest carries a declared alpha grid,
+alpha-indexed lower and upper endpoint counts, common CRN/sample identity,
+G1-A2 composition metadata, the unwidened `P_net` direction gate, G0-A3 primary
+threshold semantics, signed/provenance references for A-013, G2, capacity and
+A-016, and links to real loading-trajectory and output-error endpoint-count
+manifests. The validator rejects defuzzified or scalar probability fields,
+post-hoc probability-margin widening, independent output-error sampling,
+non-nested alpha rows, stale proposed/unsigned reference IDs, and relabeling as
+paper-facing. It deliberately returns a blocker manifest until the real Agent
+A/C artifacts and signed G2, A-013, capacity/provenance, A-016, and applicable
+G3 prerequisites exist.
+
 <!-- methods-id: RNG-001 -->
 ### RNG-001 - Seed-Tree and CRN Identity Protocol
 
