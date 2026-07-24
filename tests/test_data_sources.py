@@ -1522,6 +1522,163 @@ def test_hp001_profile_rebuild_preflight_template_is_fail_closed(tmp_path: Path)
     assert payload["validator"] == "src.hp_model.require_hp001_profile_rebuild_preflight_manifest"
 
 
+def _signed_hp001_profile_rebuild_runner_manifest() -> dict[str, object]:
+    weather_identity = {
+        "shared_weather_driver_id": "d004_alkmaar_berkhout_2014_2023_v1",
+        "member_id": "weather-member-001",
+        "source": "D-004 WEATHER-001 signed synthetic fixture",
+        "content_sha256": "a" * 64,
+        "n_timesteps": 35040,
+        "cadence_seconds": 900,
+    }
+    return {
+        "status": "approved_for_hp001_profile_rebuild_preflight",
+        "approval_ids": {
+            "value_column": "PI-HP001-VALUE-COLUMN-20260724",
+            "denominator": "PI-HP001-DENOMINATOR-20260724",
+            "unit_conversion": "PI-HP001-UNIT-CONVERSION-20260724",
+            "sfh_mfh_split": "PI-HP001-SFH-MFH-SPLIT-20260724",
+            "adoption_electrification": "PI-HP001-ADOPTION-ELECTRIFICATION-20260724",
+            "scenario_source_consistency": "PI-A016-SCENARIO-CONSISTENCY-20260724",
+            "d004_paired_weather_acceptance": "PI-D004-PAIRED-WEATHER-20260724",
+            "cold_spell_tolerances": "PI-HP001-COLD-SPELL-TOLERANCES-20260724",
+        },
+        "source_artifacts": {
+            "when2heat_source": {
+                "data_id": "D-003",
+                "path": "data/raw/when2heat/signed_fixture.csv",
+                "sha256": "b" * 64,
+                "provenance": "signed synthetic test fixture",
+            },
+            "weather_member": {
+                "data_id": "D-004",
+                "path": "data/processed/weather_pv/signed_fixture.parquet",
+                "sha256": "c" * 64,
+                "provenance": "signed synthetic test fixture",
+            },
+            "value_binding_record": {
+                "data_id": "D-013",
+                "path": "data/metadata/hp_scaling/signed_fixture.json",
+                "sha256": "d" * 64,
+                "provenance": "signed synthetic test fixture",
+            },
+        },
+        "weather_identity": dict(weather_identity),
+        "paired_pv_weather_identity": dict(weather_identity),
+        "output_plan": {
+            "profile_artifact_path": "data/processed/hp_profiles/signed_fixture.npz",
+            "profile_manifest_path": "data/metadata/hp_scaling/signed_fixture_manifest.json",
+            "checksum_manifest_path": "data/metadata/hp_scaling/signed_fixture_checksums.json",
+            "n_timesteps": 35040,
+            "cadence_seconds": 900,
+            "component_count": 4,
+            "electric_power_unit": "kW",
+        },
+        "unresolved_blocker_ids": [],
+    }
+
+
+def _write_json(path: Path, payload: dict[str, object]) -> Path:
+    path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    return path
+
+
+def test_hp001_profile_rebuild_runner_blocks_committed_template_packet(tmp_path: Path) -> None:
+    preflight_path = hp_scaling.write_hp001_profile_rebuild_preflight_template(tmp_path)
+    output_path = tmp_path / "runner_blocker.json"
+
+    result_path = hp_scaling.write_hp001_profile_rebuild_runner_manifest(
+        preflight_path,
+        output_path,
+        request_id="test-template-packet",
+        repository_root=Path("."),
+    )
+    payload = json.loads(result_path.read_text(encoding="utf-8"))
+
+    assert payload["packet_id"] == "E2-S3-HP001-PROFILE-REBUILD-RUNNER-SCAFFOLD"
+    assert payload["status"] == "blocked_fail_closed_no_profile_rebuild"
+    assert payload["accepted_for_profile_rebuild_handoff"] is False
+    assert payload["profile_generation_performed"] is False
+    assert payload["input_manifest"]["kind"] == "template_packet_preflight_manifest_template"
+    assert payload["input_manifest"]["sha256"] == hashlib.sha256(preflight_path.read_bytes()).hexdigest()
+    assert "stale_or_placeholder_approval:value_column" in payload["blocker_ids"]
+    assert "source_artifacts:when2heat_source_sha256_missing_or_invalid" in payload["blocker_ids"]
+    assert payload["intended_handoff_shape"] is None
+
+
+def test_hp001_profile_rebuild_runner_rejects_placeholder_approval_ids(tmp_path: Path) -> None:
+    manifest = _signed_hp001_profile_rebuild_runner_manifest()
+    manifest["approval_ids"]["value_column"] = "<future signed value_column approval id>"
+    preflight_path = _write_json(tmp_path / "preflight.json", manifest)
+
+    payload = hp_scaling.build_hp001_profile_rebuild_runner_manifest(
+        preflight_path,
+        request_id="test-placeholder-approval",
+        repository_root=Path("."),
+    )
+
+    assert payload["accepted_for_profile_rebuild_handoff"] is False
+    assert "stale_or_placeholder_approval:value_column" in payload["blocker_ids"]
+    assert payload["profile_generation_performed"] is False
+
+
+def test_hp001_profile_rebuild_runner_rejects_missing_source_checksum(tmp_path: Path) -> None:
+    manifest = _signed_hp001_profile_rebuild_runner_manifest()
+    manifest["source_artifacts"]["when2heat_source"]["sha256"] = ""
+    preflight_path = _write_json(tmp_path / "preflight.json", manifest)
+
+    payload = hp_scaling.build_hp001_profile_rebuild_runner_manifest(
+        preflight_path,
+        request_id="test-missing-checksum",
+        repository_root=Path("."),
+    )
+
+    assert payload["accepted_for_profile_rebuild_handoff"] is False
+    assert "source_artifacts:when2heat_source_sha256_missing" in payload["blocker_ids"]
+
+
+def test_hp001_profile_rebuild_runner_rejects_hp_pv_weather_mismatch(tmp_path: Path) -> None:
+    manifest = _signed_hp001_profile_rebuild_runner_manifest()
+    manifest["paired_pv_weather_identity"]["member_id"] = "different-member"
+    preflight_path = _write_json(tmp_path / "preflight.json", manifest)
+
+    payload = hp_scaling.build_hp001_profile_rebuild_runner_manifest(
+        preflight_path,
+        request_id="test-weather-mismatch",
+        repository_root=Path("."),
+    )
+
+    assert payload["accepted_for_profile_rebuild_handoff"] is False
+    assert "paired_weather_identity_mismatch:member_id" in payload["blocker_ids"]
+
+
+def test_hp001_profile_rebuild_runner_accepts_signed_synthetic_fixture_without_generation(tmp_path: Path) -> None:
+    manifest = _signed_hp001_profile_rebuild_runner_manifest()
+    preflight_path = _write_json(tmp_path / "preflight.json", manifest)
+    output_path = tmp_path / "runner_output.json"
+
+    result_path = hp_scaling.write_hp001_profile_rebuild_runner_manifest(
+        preflight_path,
+        output_path,
+        request_id="test-signed-synthetic",
+        repository_root=Path("."),
+    )
+    payload = json.loads(result_path.read_text(encoding="utf-8"))
+
+    assert payload["status"] == "accepted_preflight_handoff_no_profile_generation"
+    assert payload["accepted_for_profile_rebuild_handoff"] is True
+    assert payload["profile_generation_performed"] is False
+    assert payload["blocker_ids"] == []
+    assert payload["intended_handoff_shape"]["output_plan"]["component_count"] == 4
+    assert payload["intended_handoff_shape"]["next_runner_boundary"].startswith(
+        "future signed HP profile artifact builder"
+    )
+    assert payload["code_identity"]["git_head"]
+    assert set(payload["code_identity"]["tracked_file_sha256"]) == {
+        "data/get_hp_scaling.py",
+        "src/hp_model.py",
+    }
+
 def test_d014_capacity_approval_template_is_value_free_and_fail_closed() -> None:
     packet = pv_capacity.build_d014_pv_capacity_approval_template_packet()
 
