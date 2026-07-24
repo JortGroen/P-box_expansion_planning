@@ -73,7 +73,7 @@ the corresponding register row.
 | A-016/Scenario consistency | EV, HP, and PV may use different best-available sources, but their 2035 branches must be reconciled and manifested before integrated net-load/event analysis. | Approved consistency requirement; unresolved mismatch is a limitation or escalation, not a silent assumption. |
 | EV-007A/A-014/D-010 | Alkmaar municipality is the local proxy for the synthetic SimBench case, and local counts are allocated across grid loads by static `p_mw`. | EV local totals and A-014 allocation are approved; this remains an illustrative-case transfer assumption. |
 | A-013 | The candidate `epsilon_grid = 5%` with `2%`/`10%` sensitivities is not empirical or expert-signed. | Proposed only; E9.S5a evidence review is required before numerical use as a scientific claim. |
-| E5.S4 | The math-core trust certificate requires both the analytic Gaussian cross-check and a published hybrid-propagation reproduction. | The analytic and finite synthetic fixtures are implemented; the published Baudrit-style reproduction remains fail-closed until verified source/example provenance is approved and reproduced. |
+| E5.S4 | The math-core trust certificate requires both the analytic Gaussian cross-check and a published hybrid-propagation reproduction. | The analytic synthetic fixture now records tolerance, alpha-row nestedness, separate lower/upper CI containment, and no-defuzzification guards in `e5s4-math-core-trust-certificate-v1`; the published Baudrit-style reproduction remains fail-closed until verified source/example provenance is approved and reproduced, and G3 remains pending for paper-facing vertex shortcut claims. |
 ## Decisions
 
 <!-- methods-id: G0 -->

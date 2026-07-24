@@ -119,6 +119,12 @@ class GaussianCrosscheckAlphaRecord:
     closed_form_upper: float
     estimated_lower: float
     estimated_upper: float
+    estimated_lower_ci_lower: float
+    estimated_lower_ci_upper: float
+    estimated_upper_ci_lower: float
+    estimated_upper_ci_upper: float
+    closed_form_lower_in_ci: bool
+    closed_form_upper_in_ci: bool
     absolute_error_lower: float
     absolute_error_upper: float
 
@@ -127,6 +133,9 @@ class GaussianCrosscheckAlphaRecord:
             if name == "alpha" or name.startswith("rho_"):
                 if not isinstance(value, float) or not math.isfinite(value):
                     raise ValueError(f"{name} must be finite")
+            elif name.endswith("_in_ci"):
+                if not isinstance(value, bool):
+                    raise TypeError(f"{name} must be boolean")
             elif isinstance(value, float) and (
                 not math.isfinite(value) or not 0.0 <= value <= 1.0
             ):
@@ -137,16 +146,46 @@ class GaussianCrosscheckAlphaRecord:
             raise ValueError("closed-form lower bound must not exceed upper bound")
         if self.estimated_lower > self.estimated_upper:
             raise ValueError("estimated lower bound must not exceed upper bound")
+        if not (
+            self.estimated_lower_ci_lower
+            <= self.estimated_lower
+            <= self.estimated_lower_ci_upper
+        ):
+            raise ValueError("estimated lower CI must contain estimated lower probability")
+        if not (
+            self.estimated_upper_ci_lower
+            <= self.estimated_upper
+            <= self.estimated_upper_ci_upper
+        ):
+            raise ValueError("estimated upper CI must contain estimated upper probability")
+        if self.closed_form_lower_in_ci != (
+            self.estimated_lower_ci_lower
+            <= self.closed_form_lower
+            <= self.estimated_lower_ci_upper
+        ):
+            raise ValueError("closed_form_lower_in_ci is inconsistent with CI endpoints")
+        if self.closed_form_upper_in_ci != (
+            self.estimated_upper_ci_lower
+            <= self.closed_form_upper
+            <= self.estimated_upper_ci_upper
+        ):
+            raise ValueError("closed_form_upper_in_ci is inconsistent with CI endpoints")
 
-    def to_mapping(self) -> dict[str, float]:
+    def to_mapping(self) -> dict[str, float | bool]:
         return {
             "absolute_error_lower": self.absolute_error_lower,
             "absolute_error_upper": self.absolute_error_upper,
             "alpha": self.alpha,
             "closed_form_lower": self.closed_form_lower,
+            "closed_form_lower_in_ci": self.closed_form_lower_in_ci,
             "closed_form_upper": self.closed_form_upper,
+            "closed_form_upper_in_ci": self.closed_form_upper_in_ci,
             "estimated_lower": self.estimated_lower,
+            "estimated_lower_ci_lower": self.estimated_lower_ci_lower,
+            "estimated_lower_ci_upper": self.estimated_lower_ci_upper,
             "estimated_upper": self.estimated_upper,
+            "estimated_upper_ci_lower": self.estimated_upper_ci_lower,
+            "estimated_upper_ci_upper": self.estimated_upper_ci_upper,
             "rho_lower": self.rho_lower,
             "rho_upper": self.rho_upper,
         }
@@ -188,15 +227,35 @@ class GaussianCrosscheckManifest:
         )
 
     @property
+    def alpha_rows_nested(self) -> bool:
+        return _alpha_probability_rows_nested(self.rows)
+
+    @property
+    def closed_form_within_confidence_intervals(self) -> bool:
+        return all(
+            row.closed_form_lower_in_ci and row.closed_form_upper_in_ci
+            for row in self.rows
+        )
+
+    @property
     def passed(self) -> bool:
-        return self.max_absolute_error <= self.tolerance
+        return (
+            self.max_absolute_error <= self.tolerance
+            and self.alpha_rows_nested
+            and self.closed_form_within_confidence_intervals
+        )
 
     def to_mapping(self) -> dict[str, object]:
         return {
             "alpha_rows": [row.to_mapping() for row in self.rows],
+            "alpha_rows_nested": self.alpha_rows_nested,
             "closed_form_oracle": (
                 "P(E_toy | rho)=1-Phi((c_toy-mu_0+beta*rho)/sigma)"
             ),
+            "closed_form_within_confidence_intervals": (
+                self.closed_form_within_confidence_intervals
+            ),
+            "confidence_interval_reporting": "separate-lower-upper-ci",
             "crosscheck_id": self.crosscheck_id,
             "g3_claim": "none-pre-g3-synthetic",
             "max_absolute_error": self.max_absolute_error,
@@ -213,6 +272,37 @@ class GaussianCrosscheckManifest:
             "tolerance": self.tolerance,
             "use_status": self.use_status,
         }
+
+
+def _alpha_probability_rows_nested(
+    rows: Sequence[GaussianCrosscheckAlphaRecord],
+    *,
+    tolerance: float = 1e-12,
+) -> bool:
+    previous: GaussianCrosscheckAlphaRecord | None = None
+    for row in rows:
+        if previous is not None:
+            lower_expands = (
+                row.closed_form_lower + tolerance < previous.closed_form_lower
+            )
+            upper_expands = (
+                row.closed_form_upper > previous.closed_form_upper + tolerance
+            )
+            estimated_lower_expands = (
+                row.estimated_lower + tolerance < previous.estimated_lower
+            )
+            estimated_upper_expands = (
+                row.estimated_upper > previous.estimated_upper + tolerance
+            )
+            if (
+                lower_expands
+                or upper_expands
+                or estimated_lower_expands
+                or estimated_upper_expands
+            ):
+                return False
+        previous = row
+    return True
 
 
 def build_gaussian_crosscheck_manifest(
@@ -252,6 +342,16 @@ def build_gaussian_crosscheck_manifest(
                 closed_form_upper=expected_upper,
                 estimated_lower=result.lower.probability,
                 estimated_upper=result.upper.probability,
+                estimated_lower_ci_lower=result.lower.ci_lower,
+                estimated_lower_ci_upper=result.lower.ci_upper,
+                estimated_upper_ci_lower=result.upper.ci_lower,
+                estimated_upper_ci_upper=result.upper.ci_upper,
+                closed_form_lower_in_ci=(
+                    result.lower.ci_lower <= expected_lower <= result.lower.ci_upper
+                ),
+                closed_form_upper_in_ci=(
+                    result.upper.ci_lower <= expected_upper <= result.upper.ci_upper
+                ),
                 absolute_error_lower=abs(result.lower.probability - expected_lower),
                 absolute_error_upper=abs(result.upper.probability - expected_upper),
             )
@@ -673,7 +773,9 @@ def _coerce_hybrid_reproduction_readiness(
     if missing:
         raise ValueError(f"hybrid reproduction readiness missing fields: {missing}")
     blockers_obj = payload["blockers"]
-    if not isinstance(blockers_obj, Sequence) or isinstance(blockers_obj, (str, bytes)):
+    if not isinstance(blockers_obj, Sequence) or isinstance(
+        blockers_obj, (str, bytes)
+    ):
         raise TypeError("blockers must be a sequence of strings")
     return HybridReproductionReadiness(
         source_id=_expect_string(payload["source_id"], name="source_id"),
@@ -706,6 +808,215 @@ def _expect_bool(value: object, *, name: str) -> bool:
     if not isinstance(value, bool):
         raise TypeError(f"{name} must be boolean")
     return value
+
+
+MATH_CORE_TRUST_CERTIFICATE_PROTOCOL = "e5s4-math-core-trust-certificate-v1"
+_COLLAPSED_PROBABILITY_FIELDS = frozenset(
+    {
+        "defuzzified_probability",
+        "expected_probability",
+        "mean_probability",
+        "mid_probability",
+        "p_hat",
+        "p_mid",
+        "probability",
+    }
+)
+
+
+@dataclass(frozen=True)
+class MathCoreTrustCertificateManifest:
+    """Synthetic E5.S4 trust-certificate boundary for p-box math checks."""
+
+    analytic_gaussian: GaussianCrosscheckManifest
+    hybrid_reproduction: HybridReproductionReadiness
+    use_status: str = "synthetic-only"
+    protocol: str = MATH_CORE_TRUST_CERTIFICATE_PROTOCOL
+    g3_status: str = "pending-no-paper-facing-vertex-claim"
+
+    def __post_init__(self) -> None:
+        if self.protocol != MATH_CORE_TRUST_CERTIFICATE_PROTOCOL:
+            raise ValueError(
+                f"protocol must be {MATH_CORE_TRUST_CERTIFICATE_PROTOCOL!r}"
+            )
+        if self.use_status != "synthetic-only":
+            raise ValueError("math-core trust certificate must remain synthetic-only")
+        if self.g3_status != "pending-no-paper-facing-vertex-claim":
+            raise ValueError("G3 must remain pending in this synthetic scaffold")
+
+    @property
+    def green_checks(self) -> tuple[str, ...]:
+        checks: list[str] = []
+        if self.analytic_gaussian.passed:
+            checks.append("analytic Gaussian p-box cross-check within tolerance")
+        if self.analytic_gaussian.alpha_rows_nested:
+            checks.append("alpha-indexed lower/upper rows are nested")
+        if self.analytic_gaussian.closed_form_within_confidence_intervals:
+            checks.append("closed-form endpoints lie within separate lower/upper CIs")
+        if (
+            _find_collapsed_probability_field(self.to_mapping(include_checks=False))
+            is None
+        ):
+            checks.append("no scalar defuzzified probability fields")
+        return tuple(checks)
+
+    @property
+    def paper_facing_blockers(self) -> tuple[str, ...]:
+        blockers: list[str] = []
+        if not self.analytic_gaussian.passed:
+            blockers.append("analytic Gaussian toy cross-check is not within tolerance")
+        if not self.analytic_gaussian.alpha_rows_nested:
+            blockers.append("analytic Gaussian alpha rows are not nested")
+        if not self.analytic_gaussian.closed_form_within_confidence_intervals:
+            blockers.append("closed-form endpoints are not contained in endpoint CIs")
+        if not self.hybrid_reproduction.ready:
+            blockers.extend(self.hybrid_reproduction.blockers)
+        blockers.append("G3 remains pending for any paper-facing vertex-shortcut claim")
+        return tuple(blockers)
+
+    @property
+    def ready_for_paper_math_claims(self) -> bool:
+        return not self.paper_facing_blockers
+
+    def to_mapping(self, *, include_checks: bool = True) -> dict[str, object]:
+        payload: dict[str, object] = {
+            "analytic_gaussian": self.analytic_gaussian.to_mapping(),
+            "g3_status": self.g3_status,
+            "hybrid_reproduction": self.hybrid_reproduction.to_mapping(),
+            "paper_facing_blockers": list(self.paper_facing_blockers),
+            "probability_reporting": "alpha-indexed-lower-upper-only",
+            "protocol": self.protocol,
+            "ready_for_paper_math_claims": self.ready_for_paper_math_claims,
+            "synthetic_non_claims": [
+                "no real trajectories",
+                "no real P(E)",
+                "no capacity screen",
+                "no manuscript number",
+                "no paper-facing G3 vertex claim",
+            ],
+            "use_status": self.use_status,
+        }
+        if include_checks:
+            payload["green_checks"] = list(self.green_checks)
+        return payload
+
+
+def build_math_core_trust_certificate_manifest(
+    *,
+    analytic_gaussian: GaussianCrosscheckManifest,
+    hybrid_reproduction: HybridReproductionReadiness,
+) -> MathCoreTrustCertificateManifest:
+    """Build the synthetic E5.S4 trust-certificate manifest boundary."""
+
+    return MathCoreTrustCertificateManifest(
+        analytic_gaussian=analytic_gaussian,
+        hybrid_reproduction=hybrid_reproduction,
+    )
+
+
+def assert_math_core_trust_certificate_payload(payload: Mapping[str, object]) -> None:
+    """Validate the serialized E5.S4 trust-certificate payload fail-closed."""
+
+    _validate_no_probability_collapse(payload)
+    required = {
+        "analytic_gaussian",
+        "g3_status",
+        "green_checks",
+        "hybrid_reproduction",
+        "paper_facing_blockers",
+        "probability_reporting",
+        "protocol",
+        "ready_for_paper_math_claims",
+        "use_status",
+    }
+    missing = sorted(required.difference(payload))
+    if missing:
+        raise ValueError(f"math-core trust certificate missing fields: {missing}")
+    if (
+        _expect_string(payload["protocol"], name="protocol")
+        != MATH_CORE_TRUST_CERTIFICATE_PROTOCOL
+    ):
+        raise ValueError(f"protocol must be {MATH_CORE_TRUST_CERTIFICATE_PROTOCOL!r}")
+    if _expect_string(payload["use_status"], name="use_status") != "synthetic-only":
+        raise ValueError("math-core trust certificate must remain synthetic-only")
+    if (
+        _expect_string(payload["probability_reporting"], name="probability_reporting")
+        != "alpha-indexed-lower-upper-only"
+    ):
+        raise ValueError(
+            "trust certificate must preserve alpha-indexed lower/upper reporting"
+        )
+    if (
+        _expect_string(payload["g3_status"], name="g3_status")
+        != "pending-no-paper-facing-vertex-claim"
+    ):
+        raise ValueError("G3 status must remain pending for this scaffold")
+
+    analytic = payload["analytic_gaussian"]
+    if not isinstance(analytic, Mapping):
+        raise TypeError("analytic_gaussian must be a mapping")
+    for name in (
+        "passed",
+        "alpha_rows_nested",
+        "closed_form_within_confidence_intervals",
+    ):
+        _expect_bool(analytic[name], name=f"analytic_gaussian.{name}")
+    if analytic["probability_reporting"] != "alpha-indexed-lower-upper-only":
+        raise ValueError(
+            "analytic Gaussian payload must preserve lower/upper reporting"
+        )
+
+    hybrid = payload["hybrid_reproduction"]
+    if not isinstance(hybrid, Mapping):
+        raise TypeError("hybrid_reproduction must be a mapping")
+    hybrid_readiness = _coerce_hybrid_reproduction_readiness(hybrid)
+
+    blockers_obj = payload["paper_facing_blockers"]
+    if not isinstance(blockers_obj, Sequence) or isinstance(
+        blockers_obj, (str, bytes)
+    ):
+        raise TypeError("paper_facing_blockers must be a sequence of strings")
+    blockers = tuple(
+        _expect_string(blocker, name="paper_facing_blocker")
+        for blocker in blockers_obj
+    )
+    ready = _expect_bool(
+        payload["ready_for_paper_math_claims"],
+        name="ready_for_paper_math_claims",
+    )
+    if ready != (not blockers):
+        raise ValueError("ready_for_paper_math_claims must match blocker state")
+    if ready and (not analytic["passed"] or not hybrid_readiness.ready):
+        raise ValueError(
+            "ready trust certificate must have green analytic and hybrid checks"
+        )
+
+
+def _validate_no_probability_collapse(payload: object) -> None:
+    path = _find_collapsed_probability_field(payload)
+    if path is not None:
+        raise ValueError(f"trust certificate must not contain collapsed field {path}")
+
+
+def _find_collapsed_probability_field(
+    payload: object, *, path: str = "payload"
+) -> str | None:
+    if isinstance(payload, Mapping):
+        for key, value in payload.items():
+            key_text = str(key)
+            current_path = f"{path}.{key_text}"
+            if key_text in _COLLAPSED_PROBABILITY_FIELDS:
+                return current_path
+            nested = _find_collapsed_probability_field(value, path=current_path)
+            if nested is not None:
+                return nested
+    elif isinstance(payload, Sequence) and not isinstance(payload, (str, bytes)):
+        for index, value in enumerate(payload):
+            nested = _find_collapsed_probability_field(value, path=f"{path}[{index}]")
+            if nested is not None:
+                return nested
+    return None
+
 
 @dataclass(frozen=True)
 class FiniteHybridState:

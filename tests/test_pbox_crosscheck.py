@@ -9,13 +9,16 @@ from src.fuzzy import TrapezoidalFuzzyNumber
 from src.pbox_crosscheck import (
     BootstrapProbabilityInterval,
     FiniteHybridState,
+    GaussianCrosscheckAlphaRecord,
     GaussianCrosscheckManifest,
     GaussianToyParameters,
     HybridReproductionReadiness,
     OutputErrorToyTrajectory,
     assert_hybrid_reproduction_ready_payload,
+    assert_math_core_trust_certificate_payload,
     bootstrap_probability_interval,
     build_gaussian_crosscheck_manifest,
+    build_math_core_trust_certificate_manifest,
     estimate_gaussian_toy_pbox,
     finite_hybrid_bounds,
     gaussian_closed_form_bounds,
@@ -132,9 +135,16 @@ def test_gaussian_crosscheck_manifest_is_json_stable_and_tolerance_guarded() -> 
     assert payload["max_absolute_error"] <= payload["tolerance"]
     assert payload["probability_reporting"] == "alpha-indexed-lower-upper-only"
     assert payload["g3_claim"] == "none-pre-g3-synthetic"
+    assert payload["alpha_rows_nested"] is True
+    assert payload["closed_form_within_confidence_intervals"] is True
+    assert payload["confidence_interval_reporting"] == "separate-lower-upper-ci"
     assert "defuzzified_probability" not in json.dumps(payload)
     assert [row["alpha"] for row in payload["alpha_rows"]] == alpha_grid
-
+    for row in payload["alpha_rows"]:
+        assert row["closed_form_lower_in_ci"] is True
+        assert row["closed_form_upper_in_ci"] is True
+        assert row["estimated_lower_ci_lower"] <= row["estimated_lower"]
+        assert row["estimated_upper"] <= row["estimated_upper_ci_upper"]
 
 def test_gaussian_crosscheck_manifest_can_fail_closed_without_changing_oracle() -> None:
     fuzzy, alpha_grid, params = _gaussian_fixture()
@@ -170,6 +180,74 @@ def test_gaussian_crosscheck_manifest_rejects_bad_metadata() -> None:
             root_seed=20260721,
             use_status="paper-facing",
         )
+
+
+def test_gaussian_crosscheck_alpha_record_rejects_inconsistent_ci_flag() -> None:
+    with pytest.raises(ValueError, match="closed_form_lower_in_ci"):
+        GaussianCrosscheckAlphaRecord(
+            alpha=0.0,
+            rho_lower=0.0,
+            rho_upper=1.0,
+            closed_form_lower=0.2,
+            closed_form_upper=0.8,
+            estimated_lower=0.25,
+            estimated_upper=0.75,
+            estimated_lower_ci_lower=0.1,
+            estimated_lower_ci_upper=0.3,
+            estimated_upper_ci_lower=0.7,
+            estimated_upper_ci_upper=0.9,
+            closed_form_lower_in_ci=False,
+            closed_form_upper_in_ci=True,
+            absolute_error_lower=0.05,
+            absolute_error_upper=0.05,
+        )
+
+
+def test_gaussian_crosscheck_manifest_detects_non_nested_alpha_rows() -> None:
+    row_0 = GaussianCrosscheckAlphaRecord(
+        alpha=0.0,
+        rho_lower=0.0,
+        rho_upper=1.0,
+        closed_form_lower=0.2,
+        closed_form_upper=0.8,
+        estimated_lower=0.2,
+        estimated_upper=0.8,
+        estimated_lower_ci_lower=0.1,
+        estimated_lower_ci_upper=0.3,
+        estimated_upper_ci_lower=0.7,
+        estimated_upper_ci_upper=0.9,
+        closed_form_lower_in_ci=True,
+        closed_form_upper_in_ci=True,
+        absolute_error_lower=0.0,
+        absolute_error_upper=0.0,
+    )
+    row_1 = GaussianCrosscheckAlphaRecord(
+        alpha=0.5,
+        rho_lower=0.25,
+        rho_upper=0.75,
+        closed_form_lower=0.1,
+        closed_form_upper=0.9,
+        estimated_lower=0.1,
+        estimated_upper=0.9,
+        estimated_lower_ci_lower=0.05,
+        estimated_lower_ci_upper=0.15,
+        estimated_upper_ci_lower=0.85,
+        estimated_upper_ci_upper=0.95,
+        closed_form_lower_in_ci=True,
+        closed_form_upper_in_ci=True,
+        absolute_error_lower=0.0,
+        absolute_error_upper=0.0,
+    )
+
+    manifest = GaussianCrosscheckManifest(
+        rows=(row_0, row_1),
+        tolerance=0.01,
+        sample_count=10,
+        root_seed=0,
+    )
+
+    assert manifest.alpha_rows_nested is False
+    assert manifest.passed is False
 
 
 def test_hybrid_reproduction_readiness_blocks_until_source_is_verified() -> None:
@@ -230,6 +308,91 @@ def test_hybrid_reproduction_readiness_rejects_serialized_tampering() -> None:
         assert_hybrid_reproduction_ready_payload(false_ready)
 
 
+def test_math_core_trust_certificate_records_green_analytic_and_blocked_source() -> None:
+    fuzzy, alpha_grid, params = _gaussian_fixture()
+    analytic = build_gaussian_crosscheck_manifest(
+        fuzzy_number=fuzzy,
+        alpha_grid=alpha_grid,
+        params=params,
+        sample_count=4096,
+        root_seed=20260721,
+        tolerance=0.01,
+    )
+    hybrid = HybridReproductionReadiness(
+        source_id="baudrit-style-source-pending",
+        source_status="pending-source",
+        published_example_id="published-example-pending",
+        example_reproduced=False,
+        qualitative_behavior_checked=True,
+        blockers=("verified published example source is not registered",),
+    )
+
+    certificate = build_math_core_trust_certificate_manifest(
+        analytic_gaussian=analytic,
+        hybrid_reproduction=hybrid,
+    )
+    payload = certificate.to_mapping()
+
+    assert json.loads(json.dumps(payload, sort_keys=True)) == payload
+    assert payload["protocol"] == "e5s4-math-core-trust-certificate-v1"
+    assert payload["ready_for_paper_math_claims"] is False
+    assert (
+        "analytic Gaussian p-box cross-check within tolerance"
+        in payload["green_checks"]
+    )
+    assert "alpha-indexed lower/upper rows are nested" in payload["green_checks"]
+    assert "no scalar defuzzified probability fields" in payload["green_checks"]
+    assert (
+        "verified published example source is not registered"
+        in payload["paper_facing_blockers"]
+    )
+    assert (
+        "G3 remains pending for any paper-facing vertex-shortcut claim"
+        in payload["paper_facing_blockers"]
+    )
+    assert "defuzzified_probability" not in json.dumps(payload)
+    assert_math_core_trust_certificate_payload(payload)
+
+
+def test_math_core_trust_certificate_rejects_ready_and_defuzzified_tampering() -> None:
+    fuzzy, alpha_grid, params = _gaussian_fixture()
+    analytic = build_gaussian_crosscheck_manifest(
+        fuzzy_number=fuzzy,
+        alpha_grid=alpha_grid,
+        params=params,
+        sample_count=4096,
+        root_seed=20260721,
+        tolerance=0.01,
+    )
+    hybrid = HybridReproductionReadiness(
+        source_id="baudrit-style-source-pending",
+        source_status="pending-source",
+        published_example_id="published-example-pending",
+        example_reproduced=False,
+        qualitative_behavior_checked=True,
+        blockers=("verified published example source is not registered",),
+    )
+    payload = build_math_core_trust_certificate_manifest(
+        analytic_gaussian=analytic,
+        hybrid_reproduction=hybrid,
+    ).to_mapping()
+
+    false_ready = dict(payload)
+    false_ready["ready_for_paper_math_claims"] = True
+    with pytest.raises(ValueError, match="blocker state"):
+        assert_math_core_trust_certificate_payload(false_ready)
+
+    collapsed = dict(payload)
+    collapsed["analytic_gaussian"] = dict(payload["analytic_gaussian"])
+    collapsed["analytic_gaussian"]["defuzzified_probability"] = 0.5
+    with pytest.raises(ValueError, match="collapsed field"):
+        assert_math_core_trust_certificate_payload(collapsed)
+
+    relabeled = dict(payload)
+    relabeled["use_status"] = "paper-facing"
+    with pytest.raises(ValueError, match="synthetic-only"):
+        assert_math_core_trust_certificate_payload(relabeled)
+
 def test_finite_hybrid_crosscheck_matches_hand_computed_probability_bounds() -> None:
     fuzzy = TrapezoidalFuzzyNumber(0.0, 0.2, 0.4, 0.6)
     states = [
@@ -274,8 +437,6 @@ def test_finite_hybrid_crosscheck_keeps_alpha_indexed_bounds_only() -> None:
     assert all(hasattr(result, "lower_probability") for result in bounds.values())
     assert all(hasattr(result, "upper_probability") for result in bounds.values())
     assert all(not hasattr(result, "defuzzified_probability") for result in bounds.values())
-
-
 
 def _output_error_config() -> OutputErrorProtocolConfig:
     return OutputErrorProtocolConfig.from_mapping(
@@ -487,6 +648,9 @@ def test_crosscheck_report_records_scaffold_only_guardrails() -> None:
         "Q-5 is resolved by G0-A3",
         "Cross-Check 4: Synthetic Monotonicity",
         "rank-bootstrap intervals",
+        "trust-certificate manifest",
+        "separate lower/upper confidence intervals",
+        "published-example blocker",
         "no G3 verdict",
     ]
     for phrase in required_phrases:

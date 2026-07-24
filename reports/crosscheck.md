@@ -51,9 +51,9 @@ The random variable is only `Z`. The executable scaffold uses deterministic norm
 
 ### Manifestable Analytic Certificate
 
-The executable scaffold now emits a JSON-stable synthetic certificate for this analytic toy. Each row records the alpha cut, rho endpoints, closed-form lower/upper oracle probabilities, estimated lower/upper p-box probabilities, and absolute errors against a predeclared tolerance. The manifest records the root seed, sample count, tolerance, pass/fail flag, and explicit non-claims: it is synthetic-only, reports alpha-indexed lower/upper probabilities only, makes no G3 paper-facing vertex claim, and contains no real `P(E)`, capacity-screen, or manuscript result.
+The executable scaffold now emits a JSON-stable synthetic certificate for this analytic toy. Each row records the alpha cut, rho endpoints, closed-form lower/upper oracle probabilities, estimated lower/upper p-box probabilities, separate lower/upper confidence intervals, oracle-within-CI flags, and absolute errors against a predeclared tolerance. The manifest records the root seed, sample count, tolerance, alpha-row nestedness, pass/fail flag, and explicit non-claims: it is synthetic-only, reports alpha-indexed lower/upper probabilities only, makes no G3 paper-facing vertex claim, and contains no real `P(E)`, capacity-screen, or manuscript result.
 
-This certificate is a runner/report readiness surface rather than a scientific result. It is intended to fail closed if the analytic p-box path drifts outside tolerance or if the payload is relabeled as paper-facing.
+This certificate is a runner/report readiness surface rather than a scientific result. It is intended to fail closed if the analytic p-box path drifts outside tolerance, if alpha-indexed probability intervals stop nesting from support to core, if closed-form endpoints no longer fall inside their endpoint confidence intervals, or if the payload is relabeled as paper-facing.
 
 ## Cross-Check 2: Finite Hybrid P-Box Toy
 
@@ -77,6 +77,12 @@ The fixture uses three finite states whose probabilities sum to one. The tests h
 The published Baudrit-style reproduction remains fail-closed until a verified source/example is registered or otherwise PI-approved. The `e5s4-hybrid-reproduction-readiness-v1` packet records source status, the published-example identifier, whether the example has been reproduced, whether qualitative hybrid behavior was checked, and explicit blocker strings. A pending-source packet may document the gap, but `assert_hybrid_reproduction_ready_payload` rejects it before it can satisfy the E5.S4 trust certificate.
 
 
+## Trust-Certificate Manifest Scaffold
+
+The trust-certificate manifest, `e5s4-math-core-trust-certificate-v1`, records what is green now and what remains blocked before paper-facing math claims. It accepts a valid blocked packet so the PI can see the blocker list, but it rejects payloads that relabel the scaffold as paper-facing, claim readiness while blockers remain, or introduce scalar collapsed fields such as `defuzzified_probability`. The current green checks are the analytic Gaussian tolerance comparison, alpha-indexed nestedness, separate lower/upper confidence-interval containment, and no scalar defuzzification at the serialized boundary.
+
+The published-example blocker remains explicit: no Baudrit-style numerical reproduction is cited or encoded until the exact source/example provenance is verified and register-allowed. G3 also remains pending for any paper-facing vertex-shortcut claim.
+
 ## Cross-Check 3: Output-Error Endpoint Ordering Toy
 
 This synthetic fixture exercises the E5.S3/G1-A2 output-error machinery inside the E5.S4 trust-certificate package. It uses short hand-computable loading trajectories that satisfy the shared `LoadingTrajectoryResult` contract, then builds manifest-ready endpoint-count records through the output-error path.
@@ -98,9 +104,9 @@ The E5.S4 package lives in `src/pbox_crosscheck.py` with tests in `tests/test_pb
 
 - `GaussianToyParameters`, `gaussian_tail_probability`, and `gaussian_closed_form_bounds` provide the analytic oracle.
 - `estimate_gaussian_toy_pbox` routes the Gaussian toy through the existing p-box endpoint pathway using canonical RNG sample identities and `PRE_G3_SYNTHETIC` mode.
-- `build_gaussian_crosscheck_manifest` emits a JSON-stable analytic certificate with alpha-indexed oracle/estimate rows, absolute errors, a tolerance guard, and explicit synthetic-only non-claims.
+- `build_gaussian_crosscheck_manifest` emits a JSON-stable analytic certificate with alpha-indexed oracle/estimate rows, separate lower/upper confidence intervals, nestedness, absolute errors, a tolerance guard, and explicit synthetic-only non-claims.
 - `FiniteHybridState` and `finite_hybrid_bounds` provide a small qualitative hybrid/p-box fixture with exact hand-summed lower/upper event probabilities.
-- `HybridReproductionReadiness` and `assert_hybrid_reproduction_ready_payload` keep the published Baudrit-style reproduction fail-closed until source/example provenance and reproduction evidence are complete.
+- `HybridReproductionReadiness`, `build_math_core_trust_certificate_manifest`, and `assert_math_core_trust_certificate_payload` keep the published Baudrit-style reproduction fail-closed until source/example provenance and reproduction evidence are complete, while still making the analytic toy green checks manifestable.
 - `OutputErrorToyTrajectory` and `output_error_alpha_crosscheck_records` provide a synthetic output-error ordering check with manifest-ready endpoint counts and alpha-level CRN identity.
 - `bootstrap_probability_interval` and `monotonicity_sweep_from_events` provide synthetic fixed-CRN rho-sweep diagnostics with deterministic rank-bootstrap intervals and explicit violation reporting.
 
@@ -111,12 +117,12 @@ This executable synthetic package does not use real net-load data, the project o
 | Check | Synthetic Fixture | Expected Outcome | Blocks Paper Results If Failing |
 |---|---|---|---|
 | Closed-form Gaussian endpoint values | `L(rho)=mu_0-beta*rho+sigma Z` and single-step `E_toy` | Endpoint p-box probabilities match closed form within 0.01 absolute error | yes |
-| Manifestable Gaussian certificate | Same Gaussian fixture serialized through `build_gaussian_crosscheck_manifest` | JSON-stable alpha rows record oracle/estimate errors, pass/fail tolerance, sample metadata, and synthetic-only non-claims | yes |
+| Manifestable Gaussian certificate | Same Gaussian fixture serialized through `build_gaussian_crosscheck_manifest` | JSON-stable alpha rows record oracle/estimate errors, separate endpoint CIs, nestedness, pass/fail tolerance, sample metadata, and synthetic-only non-claims | yes |
 | Monotone endpoint selection | Same Gaussian fixture with `beta > 0` | Lower endpoint uses `rho_up`; upper endpoint uses `rho_lo` | yes |
 | Nested alpha intervals | Trapezoidal fuzzy `rho` with multiple alpha levels | Probability intervals contract as alpha increases | yes |
 | CRN identity | Seeded executable Gaussian fixture | Same sample identities across alpha levels and endpoints | yes |
 | Baudrit-style reporting discipline | Finite hybrid toy | Alpha-indexed lower/upper bounds only; no defuzzified answer | yes |
-| Published hybrid reproduction readiness | `e5s4-hybrid-reproduction-readiness-v1` packet | Pending-source packets are valid blockers but cannot satisfy the trust certificate; verified reproduced packets pass | yes |
+| Published hybrid reproduction readiness | `e5s4-hybrid-reproduction-readiness-v1` and aggregate `e5s4-math-core-trust-certificate-v1` packets | Pending-source packets are valid blockers but cannot satisfy paper-facing readiness; scalar defuzzification and false-ready tampering are rejected | yes |
 | Output-error ordering | Synthetic loading trajectories with endpoint envelopes | Error endpoints act before event detection; probabilities are not shifted | yes |
 | Output-error CRN identity | Alpha-indexed synthetic loading samples with explicit sample IDs | Same ordered sample identities are preserved across alpha levels | yes |
 | Synthetic monotonicity sweep | Boolean toy event indicators over a rho grid | Probabilities are ordered, local violations are reported, and no G3 verdict is emitted | yes |
