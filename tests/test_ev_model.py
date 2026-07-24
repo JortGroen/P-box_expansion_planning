@@ -10,6 +10,12 @@ from pathlib import Path
 import numpy as np
 import pytest
 
+import data.get_ev_component_outputs as ev_component_outputs
+from data.get_ev_component_outputs import (
+    EVComponentOutputVerificationError,
+    rebuild_and_verify_ev_component_outputs,
+    verify_existing_ev_component_outputs,
+)
 import src.ev_model as ev_model
 from src.ev_model import (
     EV_CALENDAR_MAPPING_RULE_ID,
@@ -880,6 +886,7 @@ def _synthetic_selection_manifest_set(processed_path: str, sha256: str) -> dict[
 def _synthetic_component_output_inputs(tmp_path: Path) -> tuple[dict[str, object], dict[str, object], dict[str, object], np.ndarray]:
     batch = parse_elaad_profile_response(_payload(n_profiles=2), batch_seed=140001, expected_n_profiles=2)
     processed_path = tmp_path / "data" / "processed" / "elaad_profiles" / "synthetic_candidate.npz"
+    processed_path.parent.mkdir(parents=True, exist_ok=True)
     save_processed_batch_npz(batch, processed_path)
     digest = ev_model._sha256_file(processed_path)
     rel_path = processed_path.relative_to(tmp_path).as_posix()
@@ -985,6 +992,220 @@ def test_materialize_ev_ic1_candidate_component_outputs_rejects_checksum_drift(
             materialized_timestamp_utc="2026-07-24T12:30:00Z",
         )
 
+
+def test_ev_component_output_verifier_rebuilds_and_matches_committed_manifest(
+    tmp_path: Path,
+) -> None:
+    scaffold, preflight, selection_manifest, _expected_sum = _synthetic_component_output_inputs(tmp_path)
+    committed_manifest = materialize_ev_ic1_candidate_component_outputs(
+        scaffold,
+        preflight,
+        selection_manifest,
+        base_dir=tmp_path,
+        output_dir=Path("data") / "processed" / "elaad_profiles" / "component_outputs",
+        materialized_timestamp_utc="2026-07-24T12:30:00Z",
+    )
+    output_path = tmp_path / committed_manifest["scenario_outputs"][0]["output_file"]["path"]
+    output_path.unlink()
+
+    result = rebuild_and_verify_ev_component_outputs(
+        component_input_scaffold=scaffold,
+        checksum_preflight=preflight,
+        selection_manifest_set=selection_manifest,
+        committed_component_output_manifest=committed_manifest,
+        base_dir=tmp_path,
+        output_dir=Path("data") / "processed" / "elaad_profiles" / "component_outputs",
+        timestamp_utc="2026-07-24T12:45:00Z",
+    )
+
+    assert result["status"] == "verified"
+    assert result["mode"] == "rebuild"
+    rebuilt_manifest = result["manifest"]
+    assert rebuilt_manifest["scenario_outputs"][0]["output_file"]["sha256"] == (
+        committed_manifest["scenario_outputs"][0]["output_file"]["sha256"]
+    )
+
+
+def test_ev_component_output_rebuild_rejects_duplicate_expected_scenario(
+    tmp_path: Path,
+) -> None:
+    scaffold, preflight, selection_manifest, _expected_sum = _synthetic_component_output_inputs(tmp_path)
+    committed_manifest = materialize_ev_ic1_candidate_component_outputs(
+        scaffold,
+        preflight,
+        selection_manifest,
+        base_dir=tmp_path,
+        output_dir=Path("data") / "processed" / "elaad_profiles" / "component_outputs",
+        materialized_timestamp_utc="2026-07-24T12:30:00Z",
+    )
+    committed_manifest["materialization"]["output_files"].append(
+        json.loads(json.dumps(committed_manifest["materialization"]["output_files"][0]))
+    )
+
+    with pytest.raises(EVComponentOutputVerificationError, match="duplicate scenario records") as excinfo:
+        rebuild_and_verify_ev_component_outputs(
+            component_input_scaffold=scaffold,
+            checksum_preflight=preflight,
+            selection_manifest_set=selection_manifest,
+            committed_component_output_manifest=committed_manifest,
+            base_dir=tmp_path,
+            output_dir=Path("data") / "processed" / "elaad_profiles" / "component_outputs",
+            timestamp_utc="2026-07-24T12:45:00Z",
+        )
+
+    assert "expected: low" in str(excinfo.value)
+    assert "observed: --" in str(excinfo.value)
+
+
+def test_ev_component_output_rebuild_rejects_duplicate_observed_scenario(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    scaffold, preflight, selection_manifest, _expected_sum = _synthetic_component_output_inputs(tmp_path)
+    committed_manifest = materialize_ev_ic1_candidate_component_outputs(
+        scaffold,
+        preflight,
+        selection_manifest,
+        base_dir=tmp_path,
+        output_dir=Path("data") / "processed" / "elaad_profiles" / "component_outputs",
+        materialized_timestamp_utc="2026-07-24T12:30:00Z",
+    )
+
+    def fake_materializer(*_args: object, **_kwargs: object) -> dict[str, object]:
+        observed = materialize_ev_ic1_candidate_component_outputs(
+            scaffold,
+            preflight,
+            selection_manifest,
+            base_dir=tmp_path,
+            output_dir=Path("data") / "processed" / "elaad_profiles" / "component_outputs",
+            materialized_timestamp_utc="2026-07-24T12:45:00Z",
+        )
+        observed["materialization"]["output_files"].append(
+            json.loads(json.dumps(observed["materialization"]["output_files"][0]))
+        )
+        return observed
+
+    monkeypatch.setattr(ev_component_outputs, "materialize_ev_ic1_candidate_component_outputs", fake_materializer)
+
+    with pytest.raises(EVComponentOutputVerificationError, match="duplicate scenario records") as excinfo:
+        rebuild_and_verify_ev_component_outputs(
+            component_input_scaffold=scaffold,
+            checksum_preflight=preflight,
+            selection_manifest_set=selection_manifest,
+            committed_component_output_manifest=committed_manifest,
+            base_dir=tmp_path,
+            output_dir=Path("data") / "processed" / "elaad_profiles" / "component_outputs",
+            timestamp_utc="2026-07-24T12:45:00Z",
+        )
+
+    assert "expected: --" in str(excinfo.value)
+    assert "observed: low" in str(excinfo.value)
+
+
+def test_ev_component_output_rebuild_rejects_missing_observed_scenario(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    scaffold, preflight, selection_manifest, _expected_sum = _synthetic_component_output_inputs(tmp_path)
+    committed_manifest = materialize_ev_ic1_candidate_component_outputs(
+        scaffold,
+        preflight,
+        selection_manifest,
+        base_dir=tmp_path,
+        output_dir=Path("data") / "processed" / "elaad_profiles" / "component_outputs",
+        materialized_timestamp_utc="2026-07-24T12:30:00Z",
+    )
+    extra_record = json.loads(json.dumps(committed_manifest["materialization"]["output_files"][0]))
+    extra_record["scenario"] = "middle"
+    extra_record["path"] = extra_record["path"].replace("_low.npz", "_middle.npz")
+    committed_manifest["materialization"]["output_files"].append(extra_record)
+
+    def fake_materializer(*_args: object, **_kwargs: object) -> dict[str, object]:
+        return materialize_ev_ic1_candidate_component_outputs(
+            scaffold,
+            preflight,
+            selection_manifest,
+            base_dir=tmp_path,
+            output_dir=Path("data") / "processed" / "elaad_profiles" / "component_outputs",
+            materialized_timestamp_utc="2026-07-24T12:45:00Z",
+        )
+
+    monkeypatch.setattr(ev_component_outputs, "materialize_ev_ic1_candidate_component_outputs", fake_materializer)
+
+    with pytest.raises(EVComponentOutputVerificationError, match="scenario set mismatch") as excinfo:
+        rebuild_and_verify_ev_component_outputs(
+            component_input_scaffold=scaffold,
+            checksum_preflight=preflight,
+            selection_manifest_set=selection_manifest,
+            committed_component_output_manifest=committed_manifest,
+            base_dir=tmp_path,
+            output_dir=Path("data") / "processed" / "elaad_profiles" / "component_outputs",
+            timestamp_utc="2026-07-24T12:45:00Z",
+        )
+
+    assert "missing: middle" in str(excinfo.value)
+    assert "extra: --" in str(excinfo.value)
+
+
+def test_ev_component_output_verifier_fails_closed_when_outputs_missing(
+    tmp_path: Path,
+) -> None:
+    scaffold, preflight, selection_manifest, _expected_sum = _synthetic_component_output_inputs(tmp_path)
+    committed_manifest = materialize_ev_ic1_candidate_component_outputs(
+        scaffold,
+        preflight,
+        selection_manifest,
+        base_dir=tmp_path,
+        output_dir=Path("data") / "processed" / "elaad_profiles" / "component_outputs",
+        materialized_timestamp_utc="2026-07-24T12:30:00Z",
+    )
+    output_path = tmp_path / committed_manifest["scenario_outputs"][0]["output_file"]["path"]
+    output_path.unlink()
+
+    with pytest.raises(
+        EVComponentOutputVerificationError,
+        match="Missing ignored EV component-output NPZ files",
+    ) as excinfo:
+        verify_existing_ev_component_outputs(committed_manifest, base_dir=tmp_path)
+
+    assert (
+        "data/processed/elaad_profiles/component_outputs/ev_ic1_candidate_component_output_low.npz"
+        in str(excinfo.value)
+    )
+    assert "Restore the ignored candidate processed-profile NPZ files" in str(excinfo.value)
+
+
+def test_ev_component_output_rebuild_fails_before_loading_when_candidate_files_missing(
+    tmp_path: Path,
+) -> None:
+    scaffold, preflight, selection_manifest, _expected_sum = _synthetic_component_output_inputs(tmp_path)
+    committed_manifest = materialize_ev_ic1_candidate_component_outputs(
+        scaffold,
+        preflight,
+        selection_manifest,
+        base_dir=tmp_path,
+        output_dir=Path("data") / "processed" / "elaad_profiles" / "component_outputs",
+        materialized_timestamp_utc="2026-07-24T12:30:00Z",
+    )
+    processed_path = tmp_path / selection_manifest["scenarios"][0]["node_manifests"][0]["selections"][0]["candidate_processed_path"]
+    processed_path.unlink()
+
+    with pytest.raises(
+        EVComponentOutputVerificationError,
+        match="Missing candidate processed-profile NPZ files",
+    ) as excinfo:
+        rebuild_and_verify_ev_component_outputs(
+            component_input_scaffold=scaffold,
+            checksum_preflight=preflight,
+            selection_manifest_set=selection_manifest,
+            committed_component_output_manifest=committed_manifest,
+            base_dir=tmp_path,
+            output_dir=Path("data") / "processed" / "elaad_profiles" / "component_outputs",
+            timestamp_utc="2026-07-24T12:45:00Z",
+        )
+
+    assert "data/processed/elaad_profiles/synthetic_candidate.npz" in str(excinfo.value)
+    assert "ask the PI before regenerating ElaadNL source batches" in str(excinfo.value)
 
 def test_committed_ev_ic1_candidate_component_output_manifest_records_fast_provenance() -> None:
     manifest = json.loads(
