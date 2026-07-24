@@ -32,6 +32,8 @@ D014_PV_PARAM_CONVERSION_SOURCE_CHOICE_NAME = "d014_pv_param_conversion_source_c
 D014_PV_PARAM_CONVERSION_SOURCE_CHOICE_ID = "D014-PV-PARAM-CONVERSION-SOURCE-CHOICE-PACKET"
 D014_PV_FIRST_EXPERIMENT_APPROVAL_NAME = "d014_pv_first_experiment_approval_packet.json"
 D014_PV_FIRST_EXPERIMENT_APPROVAL_ID = "D014-PV-FIRST-EXPERIMENT-APPROVAL-PACKET"
+D014_PV_FIRST_EXPERIMENT_VALUE_DECISION_NAME = "d014_pv_first_experiment_value_decision_packet.json"
+D014_PV_FIRST_EXPERIMENT_VALUE_DECISION_ID = "D014-PV-FIRST-EXPERIMENT-VALUE-DECISION-PACKET"
 D014_DATA_ID = "D-014"
 CBS_TABLE_ID = "85005NED"
 CBS_ODATA_BASE = f"https://opendata.cbs.nl/ODataApi/OData/{CBS_TABLE_ID}"
@@ -1847,6 +1849,126 @@ def build_d014_pv_first_experiment_approval_packet(
             "PVGIS remains qualitative sanity/provenance context and is not a realized sampled WEATHER-001 path.",
         ],
     }
+
+
+def build_d014_pv_first_experiment_value_decision_packet(
+    *,
+    first_experiment_approval_path: str | Path = "data/metadata/weather_pv/d014_pv_first_experiment_approval_packet.json",
+    capacity_value_choice_path: str | Path = "data/metadata/weather_pv/d014_pv_capacity_value_choice_packet.json",
+    orientation_value_choice_path: str | Path = "data/metadata/weather_pv/d014_pv_orientation_tilt_value_choice_packet.json",
+    conversion_source_choice_path: str | Path = "data/metadata/weather_pv/d014_pv_param_conversion_source_choice_packet.json",
+    executable_preflight_guard_path: str | Path = "data/metadata/weather_pv/d014_pv_executable_preflight_guard.json",
+) -> dict[str, Any]:
+    """Return the proposed first-experiment PV value-decision support packet."""
+    first_experiment = _metadata_input_record(first_experiment_approval_path, D014_PV_FIRST_EXPERIMENT_APPROVAL_ID)
+    capacity_choice = _metadata_input_record(capacity_value_choice_path, D014_CAPACITY_VALUE_CHOICE_ID)
+    orientation_values = _metadata_input_record(orientation_value_choice_path, D014_ORIENTATION_TILT_VALUE_CHOICE_ID)
+    conversion_choice = _metadata_input_record(conversion_source_choice_path, D014_PV_PARAM_CONVERSION_SOURCE_CHOICE_ID)
+    preflight = _metadata_input_record(executable_preflight_guard_path, D014_PV_EXECUTABLE_PREFLIGHT_GUARD_ID)
+    approval_keys = [
+        "signed_cbs_anchor_row_period_sector_and_field",
+        "signed_ii3050_scenario_growth_factor_denominator_and_a016_mapping",
+        "signed_capacity_unit_dc_ac_convention_and_clipping_capacity",
+        "signed_statistical_orientation_tilt_source",
+        "signed_orientation_tilt_class_bins_representative_angles_weights_and_weighting_convention",
+        "signed_pv_param_conversion_route_pvlib_poa_or_direct_ghi_fallback",
+        "signed_ghi_to_poa_decomposition_transposition_and_albedo_rule_if_poa",
+        "signed_performance_ratio_loss_model_or_pvgis_loss_mapping",
+        "signed_temperature_model_temperature_coefficient_and_reference_temperature",
+        "signed_clipping_rule",
+        "signed_node_allocation_rule_and_normalization_denominator",
+        "signed_a016_ev_hp_pv_scenario_consistency_check",
+        "signed_final_paired_hp_pv_weather_acceptance_gate",
+    ]
+    return {
+        "packet_id": D014_PV_FIRST_EXPERIMENT_VALUE_DECISION_ID,
+        "data_id": D014_DATA_ID,
+        "created_utc": _now_utc_iso(),
+        "status": "proposed_first_experiment_pv_value_decision_support_no_executable_values",
+        "download_performed": False,
+        "raw_data_committed": False,
+        "input_metadata": {
+            "first_experiment_approval_packet": first_experiment,
+            "capacity_value_choice_packet": capacity_choice,
+            "orientation_tilt_value_choice_packet": orientation_values,
+            "pv_param_conversion_source_choice_packet": conversion_choice,
+            "executable_preflight_guard": preflight,
+        },
+        "scope_guardrails": {
+            "first_experiment_orientation_scope": "PV-ORIENT-001 typical/statistical distribution only",
+            "roof_building_location_specific_geometry_allowed": False,
+            "three_dbag_pv_map_or_per_roof_workflow_allowed": False,
+            "d014_capacity_route_separate": "PV-CAP-001 CBS Alkmaar anchor scaled by signed II3050/scenario growth factor",
+            "weather_realization_boundary": "WEATHER-001 KNMI is the realized weather path; PVGIS remains qualitative sanity/provenance only",
+        },
+        "decision_options_for_pi": {
+            "statistical_orientation_tilt_distribution": {
+                "recommended_path": "select a source-backed statistical class set, then sign class bins, representative azimuth/tilt angles, weights, and capacity-weighting convention",
+                "source_backed_candidate": "D014-PV-ORIENTATION-TILT-VALUE-CHOICE-PACKET source-backed candidate remains unsigned until PI selects source and values",
+                "assumption_only_fallback": "simple south/east/west/flat-style class prior only if explicitly signed as an assumption-only first-screen fallback",
+                "must_remain_unsigned_here": ["class weights", "representative angles", "capacity-weighting convention"],
+            },
+            "irradiance_to_power_conversion": {
+                "recommended_path": "prefer a lightweight pvlib-style statistical plane-of-array route after PI signs decomposition/transposition/albedo and class treatment",
+                "fallback_path": "direct KNMI GHI scalar conversion only if PI explicitly signs the simplification and loss model",
+                "pvgis_boundary": "PVGIS-SARAH3 is qualitative sanity/provenance/calibration context, not a realized ALEA-001 weather member",
+                "must_remain_unsigned_here": ["formula", "pvlib model/version", "direct-GHI fallback", "PR=0.86"],
+            },
+            "performance_loss_treatment": {
+                "recommended_path": "sign either a transparent loss/performance-ratio source or an explicit PVGIS reference-loss mapping before executable use",
+                "blocked_values": ["performance ratio", "loss percentage", "soiling/inverter/wiring decomposition"],
+            },
+            "temperature_and_clipping_treatment": {
+                "recommended_path": "sign whether first experiment uses a module-temperature coefficient or an explicit no-temperature simplification, plus clipping convention",
+                "blocked_values": ["temperature coefficient", "reference temperature", "clipping capacity basis"],
+            },
+            "capacity_convention": {
+                "recommended_path": "label the later D-014 capacity artifact as DC kWp, AC kW, or another signed convention before PV-PARAM consumes it",
+                "boundary": "capacity total and growth factor are decided by D-014/PV-CAP, not by PV-PARAM",
+                "blocked_values": ["installed capacity", "growth factor", "DC/AC convention"],
+            },
+            "node_allocation": {
+                "recommended_path": "keep first-experiment allocation as a separate signed rule with explicit normalization denominator and no roof/building geometry",
+                "candidate_routes_for_future_pi_choice": [
+                    "single aggregate PV fleet if IC-1 accepts aggregate component input",
+                    "simple node-share allocation using a signed existing network/load denominator",
+                    "post-first-experiment spatial refinement using registered local data only after new scope approval",
+                ],
+                "blocked_values": ["per-node shares", "eligible node set", "normalization denominator"],
+            },
+            "scenario_consistency": {
+                "recommended_path": "require A-016 manifest check to reconcile CBS PV source year, II3050 scenario label, HP scenario, EV scenario, and 2035 planning layer",
+                "blocked_values": ["scenario label mapping", "growth denominator", "cross-source consistency acceptance"],
+            },
+        },
+        "recommended_first_experiment_route_for_review": {
+            "route_status": "recommendation_only_unsigned_not_executable",
+            "capacity": "use later signed D-014/PV-CAP artifact only",
+            "orientation_tilt": "use later signed statistical class distribution only; no roof/building extraction",
+            "conversion": "prefer signed lightweight statistical POA route; allow direct-GHI fallback only by explicit PI signature",
+            "losses_temperature_clipping": "sign as part of PV-PARAM or successor before executable use",
+            "allocation": "sign separately before node-level PV generation",
+        },
+        "executable_gate": {
+            "executable_pv_generation_authorized": False,
+            "result_if_invoked": "abort_until_value_decisions_signed",
+            "blocking_register_ids": [
+                "D014-PV-CAPACITY-APPROVAL-TEMPLATE_successor",
+                "PV-ORIENT-001_values",
+                "PV-PARAM-001_or_signed_amendment",
+                "A-016",
+                "future_node_allocation_rule",
+                "FINAL-PAIRED-HP-PV-ACCEPTANCE",
+            ],
+        },
+        "pi_approval_keys_before_executable_use": approval_keys,
+        "non_claims": [
+            "No PV capacity value, II3050 growth factor, capacity convention, orientation/tilt bin, orientation/tilt weight, PR value, loss value, temperature coefficient, clipping rule, conversion formula, or node allocation is approved.",
+            "No PV generation, net-load, event detection, P(E), threshold run, capacity screen, manuscript result, or final paired HP/PV acceptance is produced.",
+            "No building, roof, location-level, 3DBAG, PV-map, or per-roof geometry workflow is implemented before the first experiment.",
+            "PVGIS remains qualitative sanity/provenance context only and is not a realized sampled WEATHER-001 path.",
+        ],
+    }
 def write_d014_pv_capacity_source_value_packet(metadata_dir: str | Path = "data/metadata") -> Path:
     """Write the proposed D-014 source/value packet and return its path."""
     directory = Path(metadata_dir) / "weather_pv"
@@ -1916,6 +2038,18 @@ def write_d014_pv_first_experiment_approval_packet(metadata_dir: str | Path = "d
     )
     return path
 
+
+def write_d014_pv_first_experiment_value_decision_packet(metadata_dir: str | Path = "data/metadata") -> Path:
+    """Write the proposed first-experiment PV value-decision packet and return its path."""
+    directory = Path(metadata_dir) / "weather_pv"
+    directory.mkdir(parents=True, exist_ok=True)
+    path = directory / D014_PV_FIRST_EXPERIMENT_VALUE_DECISION_NAME
+    path.write_text(
+        json.dumps(build_d014_pv_first_experiment_value_decision_packet(), indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    return path
+
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Prepare D-014 PV capacity source/value metadata.")
     parser.add_argument("--metadata-dir", default="data/metadata")
@@ -1929,6 +2063,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--write-d014-orientation-tilt-value-choice", action="store_true")
     parser.add_argument("--write-d014-pv-param-conversion-source-choice", action="store_true")
     parser.add_argument("--write-d014-pv-first-experiment-approval", action="store_true")
+    parser.add_argument("--write-d014-pv-first-experiment-value-decision", action="store_true")
     parser.add_argument("--retrieve-d014-cbs-anchor-evidence", action="store_true")
     parser.add_argument("--retrieve-d014-ii3050-growth-evidence", action="store_true")
     args = parser.parse_args(argv)
@@ -1945,6 +2080,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         path = retrieve_d014_ii3050_growth_evidence(metadata_dir=args.metadata_dir)
     elif args.retrieve_d014_cbs_anchor_evidence:
         path = retrieve_d014_cbs_capacity_anchor_evidence(metadata_dir=args.metadata_dir)
+    elif args.write_d014_pv_first_experiment_value_decision:
+        path = write_d014_pv_first_experiment_value_decision_packet(args.metadata_dir)
     elif args.write_d014_pv_first_experiment_approval:
         path = write_d014_pv_first_experiment_approval_packet(args.metadata_dir)
     elif args.write_d014_pv_param_conversion_source_choice:

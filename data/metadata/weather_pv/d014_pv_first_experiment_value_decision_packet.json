@@ -1,0 +1,162 @@
+{
+  "created_utc": "2026-07-24T14:49:02+00:00",
+  "data_id": "D-014",
+  "decision_options_for_pi": {
+    "capacity_convention": {
+      "blocked_values": [
+        "installed capacity",
+        "growth factor",
+        "DC/AC convention"
+      ],
+      "boundary": "capacity total and growth factor are decided by D-014/PV-CAP, not by PV-PARAM",
+      "recommended_path": "label the later D-014 capacity artifact as DC kWp, AC kW, or another signed convention before PV-PARAM consumes it"
+    },
+    "irradiance_to_power_conversion": {
+      "fallback_path": "direct KNMI GHI scalar conversion only if PI explicitly signs the simplification and loss model",
+      "must_remain_unsigned_here": [
+        "formula",
+        "pvlib model/version",
+        "direct-GHI fallback",
+        "PR=0.86"
+      ],
+      "pvgis_boundary": "PVGIS-SARAH3 is qualitative sanity/provenance/calibration context, not a realized ALEA-001 weather member",
+      "recommended_path": "prefer a lightweight pvlib-style statistical plane-of-array route after PI signs decomposition/transposition/albedo and class treatment"
+    },
+    "node_allocation": {
+      "blocked_values": [
+        "per-node shares",
+        "eligible node set",
+        "normalization denominator"
+      ],
+      "candidate_routes_for_future_pi_choice": [
+        "single aggregate PV fleet if IC-1 accepts aggregate component input",
+        "simple node-share allocation using a signed existing network/load denominator",
+        "post-first-experiment spatial refinement using registered local data only after new scope approval"
+      ],
+      "recommended_path": "keep first-experiment allocation as a separate signed rule with explicit normalization denominator and no roof/building geometry"
+    },
+    "performance_loss_treatment": {
+      "blocked_values": [
+        "performance ratio",
+        "loss percentage",
+        "soiling/inverter/wiring decomposition"
+      ],
+      "recommended_path": "sign either a transparent loss/performance-ratio source or an explicit PVGIS reference-loss mapping before executable use"
+    },
+    "scenario_consistency": {
+      "blocked_values": [
+        "scenario label mapping",
+        "growth denominator",
+        "cross-source consistency acceptance"
+      ],
+      "recommended_path": "require A-016 manifest check to reconcile CBS PV source year, II3050 scenario label, HP scenario, EV scenario, and 2035 planning layer"
+    },
+    "statistical_orientation_tilt_distribution": {
+      "assumption_only_fallback": "simple south/east/west/flat-style class prior only if explicitly signed as an assumption-only first-screen fallback",
+      "must_remain_unsigned_here": [
+        "class weights",
+        "representative angles",
+        "capacity-weighting convention"
+      ],
+      "recommended_path": "select a source-backed statistical class set, then sign class bins, representative azimuth/tilt angles, weights, and capacity-weighting convention",
+      "source_backed_candidate": "D014-PV-ORIENTATION-TILT-VALUE-CHOICE-PACKET source-backed candidate remains unsigned until PI selects source and values"
+    },
+    "temperature_and_clipping_treatment": {
+      "blocked_values": [
+        "temperature coefficient",
+        "reference temperature",
+        "clipping capacity basis"
+      ],
+      "recommended_path": "sign whether first experiment uses a module-temperature coefficient or an explicit no-temperature simplification, plus clipping convention"
+    }
+  },
+  "download_performed": false,
+  "executable_gate": {
+    "blocking_register_ids": [
+      "D014-PV-CAPACITY-APPROVAL-TEMPLATE_successor",
+      "PV-ORIENT-001_values",
+      "PV-PARAM-001_or_signed_amendment",
+      "A-016",
+      "future_node_allocation_rule",
+      "FINAL-PAIRED-HP-PV-ACCEPTANCE"
+    ],
+    "executable_pv_generation_authorized": false,
+    "result_if_invoked": "abort_until_value_decisions_signed"
+  },
+  "input_metadata": {
+    "capacity_value_choice_packet": {
+      "packet_id": "D014-PV-CAPACITY-VALUE-CHOICE-PACKET",
+      "path": "data/metadata/weather_pv/d014_pv_capacity_value_choice_packet.json",
+      "sha256": "99442e8fcea304bba9cf7af06b8626c0d6fc8de1888be97fd2cef2a38364d718",
+      "size_bytes": 10982,
+      "status": "proposed_value_choice_packet_no_executable_values"
+    },
+    "executable_preflight_guard": {
+      "packet_id": "D014-PV-EXECUTABLE-PREFLIGHT-GUARD",
+      "path": "data/metadata/weather_pv/d014_pv_executable_preflight_guard.json",
+      "sha256": "9a1df205142f29853b3250f7aa9af882ca818817a7b488a402ef036aee14a5c5",
+      "size_bytes": 2404,
+      "status": "proposed_fail_closed_preflight_no_generation"
+    },
+    "first_experiment_approval_packet": {
+      "packet_id": "D014-PV-FIRST-EXPERIMENT-APPROVAL-PACKET",
+      "path": "data/metadata/weather_pv/d014_pv_first_experiment_approval_packet.json",
+      "sha256": "f2048ffcee50e0e770673d49e74d6ff14f50a0ca9a3e269ec5ba58bcb79482b9",
+      "size_bytes": 5688,
+      "status": "proposed_first_experiment_pv_approval_packet_no_executable_values"
+    },
+    "orientation_tilt_value_choice_packet": {
+      "packet_id": "D014-PV-ORIENTATION-TILT-VALUE-CHOICE-PACKET",
+      "path": "data/metadata/weather_pv/d014_pv_orientation_tilt_value_choice_packet.json",
+      "sha256": "7d786ce0978c09cdaad2c24b339f0b84d94eb4f13c2c1333202b8223bfd86ba4",
+      "size_bytes": 7734,
+      "status": "proposed_value_choice_packet_no_raw_download_no_executable_values"
+    },
+    "pv_param_conversion_source_choice_packet": {
+      "packet_id": "D014-PV-PARAM-CONVERSION-SOURCE-CHOICE-PACKET",
+      "path": "data/metadata/weather_pv/d014_pv_param_conversion_source_choice_packet.json",
+      "sha256": "28b66b80bf9b009f105656c7bfc855e9f466b23e9585463659b332e2436471b3",
+      "size_bytes": 6452,
+      "status": "proposed_conversion_source_choice_no_raw_download_no_executable_formula"
+    }
+  },
+  "non_claims": [
+    "No PV capacity value, II3050 growth factor, capacity convention, orientation/tilt bin, orientation/tilt weight, PR value, loss value, temperature coefficient, clipping rule, conversion formula, or node allocation is approved.",
+    "No PV generation, net-load, event detection, P(E), threshold run, capacity screen, manuscript result, or final paired HP/PV acceptance is produced.",
+    "No building, roof, location-level, 3DBAG, PV-map, or per-roof geometry workflow is implemented before the first experiment.",
+    "PVGIS remains qualitative sanity/provenance context only and is not a realized sampled WEATHER-001 path."
+  ],
+  "packet_id": "D014-PV-FIRST-EXPERIMENT-VALUE-DECISION-PACKET",
+  "pi_approval_keys_before_executable_use": [
+    "signed_cbs_anchor_row_period_sector_and_field",
+    "signed_ii3050_scenario_growth_factor_denominator_and_a016_mapping",
+    "signed_capacity_unit_dc_ac_convention_and_clipping_capacity",
+    "signed_statistical_orientation_tilt_source",
+    "signed_orientation_tilt_class_bins_representative_angles_weights_and_weighting_convention",
+    "signed_pv_param_conversion_route_pvlib_poa_or_direct_ghi_fallback",
+    "signed_ghi_to_poa_decomposition_transposition_and_albedo_rule_if_poa",
+    "signed_performance_ratio_loss_model_or_pvgis_loss_mapping",
+    "signed_temperature_model_temperature_coefficient_and_reference_temperature",
+    "signed_clipping_rule",
+    "signed_node_allocation_rule_and_normalization_denominator",
+    "signed_a016_ev_hp_pv_scenario_consistency_check",
+    "signed_final_paired_hp_pv_weather_acceptance_gate"
+  ],
+  "raw_data_committed": false,
+  "recommended_first_experiment_route_for_review": {
+    "allocation": "sign separately before node-level PV generation",
+    "capacity": "use later signed D-014/PV-CAP artifact only",
+    "conversion": "prefer signed lightweight statistical POA route; allow direct-GHI fallback only by explicit PI signature",
+    "losses_temperature_clipping": "sign as part of PV-PARAM or successor before executable use",
+    "orientation_tilt": "use later signed statistical class distribution only; no roof/building extraction",
+    "route_status": "recommendation_only_unsigned_not_executable"
+  },
+  "scope_guardrails": {
+    "d014_capacity_route_separate": "PV-CAP-001 CBS Alkmaar anchor scaled by signed II3050/scenario growth factor",
+    "first_experiment_orientation_scope": "PV-ORIENT-001 typical/statistical distribution only",
+    "roof_building_location_specific_geometry_allowed": false,
+    "three_dbag_pv_map_or_per_roof_workflow_allowed": false,
+    "weather_realization_boundary": "WEATHER-001 KNMI is the realized weather path; PVGIS remains qualitative sanity/provenance only"
+  },
+  "status": "proposed_first_experiment_pv_value_decision_support_no_executable_values"
+}
