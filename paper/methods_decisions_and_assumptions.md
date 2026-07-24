@@ -642,6 +642,20 @@ semantics, energy preservation or signed correction, rejection of unsigned rules
 and exclusion of held-out/quarantined partitions. No mapping algorithm is
 implemented until the PI signs the rule.
 
+The EV IC-1 accepted-artifact index preflight joins the candidate-only component
+output consumption packet with the accepted A-014 executable adoption artifact
+as a metadata-only handoff surface for Agent A. It records the exact source
+artifact paths and Git-blob SHA-256 values for the EV output packet and A-014
+allocation artifact, preserves scenario branch explicitness for low, middle, and
+high 2035 Alkmaar branches, exposes the node axis, public EV-008A capacity-class
+counts, EV-005B duplicate/multiplicity provenance, and EV-CAL-001 calendar
+mapping fields, and requires checksum verification before any ignored EV-only
+NPZ is loaded. The index remains blocked for paper-facing integrated use: it
+does not open held-out or quarantined batches, certify finite-library adequacy,
+select the final branch, aggregate net load, evaluate events, estimate `P(E)`,
+run capacity screens, or produce manuscript numbers. It is an Agent A preflight
+index, not a scientific result.
+
 
 <!-- methods-id: EV-CAL-001 -->
 ### EV-CAL-001 - EV Source-To-Planning Calendar Mapping
