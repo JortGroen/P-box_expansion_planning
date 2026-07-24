@@ -16,6 +16,8 @@ from typing import Any, Protocol
 import numpy as np
 import pandas as pd
 
+from src.weather_model import assert_same_weather_realization
+
 
 HOURLY_STEP_MINUTES = 60
 QUARTER_HOUR_STEP_MINUTES = 15
@@ -50,10 +52,14 @@ HP001_SCALING_REQUIRED_APPROVAL_KEYS = (
     "adoption_electrification",
 )
 HP001_VALUE_BINDING_APPROVED_STATUS = "approved_for_executable_value_binding"
+HP001_VALUE_BINDING_COMPONENT_APPROVED_STATUS = "approved_for_executable_value_binding"
+
+HP001_COMPONENT_OUTPUT_READY_STATUS = "approved_for_ic1_component_output_consumption"
 HP001_WEATHER_ACCEPTANCE_REQUIRED_APPROVAL_KEYS = (
     "d004_paired_weather_acceptance",
     "cold_spell_tolerances",
 )
+HP001_COLD_SPELL_ACCEPTANCE_DESIGN_ID = "E2-S3-COLD-SPELL-ACCEPTANCE-DESIGN"
 HP001_SCENARIO_CONSISTENCY_REQUIRED_APPROVAL_KEYS = (
     "scenario_source_consistency",
 )
@@ -61,6 +67,13 @@ HP001_FINAL_READINESS_REQUIRED_APPROVAL_KEYS = (
     *HP001_SCALING_REQUIRED_APPROVAL_KEYS,
     *HP001_SCENARIO_CONSISTENCY_REQUIRED_APPROVAL_KEYS,
     *HP001_WEATHER_ACCEPTANCE_REQUIRED_APPROVAL_KEYS,
+)
+HP001_PROFILE_ARTIFACT_CONSUMPTION_APPROVED_STATUS = "approved_for_integrated_hp_profile_consumption"
+HP001_PROFILE_ARTIFACT_REQUIRED_COMPONENTS = (
+    ("SFH", "space", "NL_heat_profile_space_SFH", HP001_SPACE_COP_COLUMN),
+    ("MFH", "space", "NL_heat_profile_space_MFH", HP001_SPACE_COP_COLUMN),
+    ("SFH", "water", "NL_heat_profile_water_SFH", HP001_WATER_COP_COLUMN),
+    ("MFH", "water", "NL_heat_profile_water_MFH", HP001_WATER_COP_COLUMN),
 )
 
 
@@ -517,6 +530,94 @@ class ColdWeekSanity:
     peak_inside_cold_week: bool
 
 
+@dataclass(frozen=True)
+class ColdSpellAcceptanceTolerances:
+    """Signed tolerance inputs required before HP cold-spell acceptance."""
+
+    tolerance_set_id: str
+    approval_id: str
+    cold_window_days: Sequence[int]
+    near_freezing_band_c: tuple[float, float]
+    max_outside_to_inside_peak_ratio: float
+    max_near_freezing_step_change_fraction_of_peak: float
+    require_cold_cop_not_above_near_freezing_mean: bool = True
+    provenance: Mapping[str, Any] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        tolerance_set_id = str(self.tolerance_set_id).strip()
+        approval_id = str(self.approval_id).strip()
+        if not tolerance_set_id:
+            raise ValueError("tolerance_set_id must be non-empty")
+        windows = tuple(int(value) for value in self.cold_window_days)
+        if not windows or any(value <= 0 for value in windows):
+            raise ValueError("cold_window_days must contain positive day counts")
+        band = tuple(float(value) for value in self.near_freezing_band_c)
+        if len(band) != 2 or not np.isfinite(band).all() or band[0] > band[1]:
+            raise ValueError("near_freezing_band_c must be an ordered finite two-value band")
+        if self.max_outside_to_inside_peak_ratio <= 0:
+            raise ValueError("max_outside_to_inside_peak_ratio must be positive")
+        if self.max_near_freezing_step_change_fraction_of_peak < 0:
+            raise ValueError("max_near_freezing_step_change_fraction_of_peak must be non-negative")
+        object.__setattr__(self, "tolerance_set_id", tolerance_set_id)
+        object.__setattr__(self, "approval_id", approval_id)
+        object.__setattr__(self, "cold_window_days", windows)
+        object.__setattr__(self, "near_freezing_band_c", band)
+        object.__setattr__(self, "provenance", _as_provenance_mapping(self.provenance, "tolerance provenance"))
+
+    def missing_approval_keys(self) -> tuple[str, ...]:
+        """Return unsigned tolerance approvals blocking final acceptance."""
+        if self.approval_id:
+            return ()
+        return ("cold_spell_tolerances",)
+
+    def as_record(self) -> dict[str, object]:
+        """Return JSON-serializable tolerance metadata."""
+        return {
+            "tolerance_set_id": self.tolerance_set_id,
+            "approval_id": self.approval_id,
+            "missing_approval_keys": self.missing_approval_keys(),
+            "cold_window_days": self.cold_window_days,
+            "near_freezing_band_c": self.near_freezing_band_c,
+            "max_outside_to_inside_peak_ratio": self.max_outside_to_inside_peak_ratio,
+            "max_near_freezing_step_change_fraction_of_peak": self.max_near_freezing_step_change_fraction_of_peak,
+            "require_cold_cop_not_above_near_freezing_mean": self.require_cold_cop_not_above_near_freezing_mean,
+            "provenance": dict(self.provenance),
+        }
+
+
+@dataclass(frozen=True)
+class ColdSpellAcceptanceResult:
+    """Fixture-scale HP cold-spell/paired-weather acceptance diagnostics."""
+
+    status: str
+    accepted: bool
+    weather_identity_checked: bool
+    tolerance_set_id: str
+    tolerance_approval_id: str
+    profile_weather_identity: Mapping[str, object]
+    pv_weather_identity: Mapping[str, object]
+    cold_window_diagnostics: tuple[dict[str, object], ...]
+    near_freezing_diagnostics: Mapping[str, object]
+    checks: Mapping[str, bool]
+    non_claims: tuple[str, ...]
+
+    def as_record(self) -> dict[str, object]:
+        """Return JSON-serializable acceptance diagnostics."""
+        return {
+            "status": self.status,
+            "accepted": self.accepted,
+            "weather_identity_checked": self.weather_identity_checked,
+            "tolerance_set_id": self.tolerance_set_id,
+            "tolerance_approval_id": self.tolerance_approval_id,
+            "profile_weather_identity": dict(self.profile_weather_identity),
+            "pv_weather_identity": dict(self.pv_weather_identity),
+            "cold_window_diagnostics": self.cold_window_diagnostics,
+            "near_freezing_diagnostics": dict(self.near_freezing_diagnostics),
+            "checks": dict(self.checks),
+            "non_claims": self.non_claims,
+        }
+
+
 def default_when2heat_components(
     *,
     country_code: str = "NL",
@@ -613,7 +714,6 @@ def hp001_residential_when2heat_components(
     return tuple(components)
 
 
-
 def hp001_final_readiness_missing_approval_keys(
     approval_ids: Mapping[str, str],
 ) -> tuple[str, ...]:
@@ -635,6 +735,167 @@ def require_hp001_final_readiness_approvals(approval_ids: Mapping[str, str]) -> 
             "scenario-consistency, paired-weather, and cold-spell approvals; "
             f"missing={missing}"
         )
+
+
+def hp001_profile_artifact_consumption_missing_approval_keys(
+    manifest: Mapping[str, Any],
+) -> tuple[str, ...]:
+    """Return approvals missing before consuming a future HP profile artifact."""
+    if not isinstance(manifest, Mapping):
+        raise ValueError("HP-001 profile artifact consumption manifest must be a mapping")
+    approval_ids = _require_mapping(manifest.get("approval_ids"), "approval_ids")
+    return hp001_final_readiness_missing_approval_keys(approval_ids)
+
+
+def require_hp001_profile_artifact_consumption_manifest(manifest: Mapping[str, Any]) -> None:
+    """Raise until a future HP profile artifact is auditable and fully signed.
+
+    This validates metadata only. It deliberately does not build annual HP loads
+    or recalculate an integrated profile; callers must provide a manifest that
+    already records the artifact checksum, WEATHER-001 identity, component
+    traces, and signed approval IDs.
+    """
+    if not isinstance(manifest, Mapping):
+        raise ValueError("HP-001 profile artifact consumption manifest must be a mapping")
+    status = str(manifest.get("status", "")).strip()
+    if status != HP001_PROFILE_ARTIFACT_CONSUMPTION_APPROVED_STATUS:
+        raise ValueError(
+            "HP-001 profile artifact is not approved for integrated consumption; "
+            f"status={status!r}"
+        )
+    missing = hp001_profile_artifact_consumption_missing_approval_keys(manifest)
+    if missing:
+        raise ValueError(
+            "HP-001 profile artifact consumption requires signed annual, "
+            "scenario-consistency, paired-weather, and cold-spell approvals; "
+            f"missing={missing}"
+        )
+
+    artifact = _require_mapping(manifest.get("profile_artifact"), "profile_artifact")
+    _require_non_empty_text(artifact, "path", label="profile_artifact")
+    _require_non_empty_text(artifact, "sha256", label="profile_artifact")
+    if int(artifact.get("n_timesteps", 0)) <= 0:
+        raise ValueError("profile_artifact n_timesteps must be positive")
+    if int(artifact.get("cadence_seconds", 0)) != QUARTER_HOUR_STEP_MINUTES * 60:
+        raise ValueError("profile_artifact cadence_seconds must be 900 for HP-001")
+    if str(artifact.get("electric_power_unit", "")).strip() != "kW":
+        raise ValueError("profile_artifact electric_power_unit must be 'kW'")
+
+    weather = _require_mapping(manifest.get("weather_identity"), "weather_identity")
+    for key in ("shared_weather_driver_id", "member_id", "source", "content_sha256"):
+        _require_non_empty_text(weather, key, label="weather_identity")
+    if int(weather.get("n_timesteps", 0)) != int(artifact["n_timesteps"]):
+        raise ValueError("weather_identity n_timesteps must match profile_artifact")
+    if int(weather.get("cadence_seconds", 0)) != QUARTER_HOUR_STEP_MINUTES * 60:
+        raise ValueError("weather_identity cadence_seconds must be 900 for HP-001")
+
+    components = manifest.get("component_traceability")
+    if not isinstance(components, Sequence) or isinstance(components, (str, bytes)):
+        raise ValueError("component_traceability must be a sequence")
+    seen: set[tuple[str, str, str, str]] = set()
+    for component in components:
+        record = _require_mapping(component, "component_traceability entry")
+        building_class = _require_non_empty_text(record, "building_class", label="component_traceability")
+        end_use = _require_non_empty_text(record, "end_use", label="component_traceability")
+        heat_column = _require_non_empty_text(record, "heat_column", label="component_traceability")
+        cop_column = _require_non_empty_text(record, "cop_column", label="component_traceability")
+        if float(record.get("annual_heat_demand_twh", 0.0)) <= 0:
+            raise ValueError("component_traceability annual_heat_demand_twh must be positive")
+        provenance = _require_mapping(record.get("provenance"), "component provenance")
+        if str(provenance.get("annual_scaling_status", "")).strip().lower() != "signed":
+            raise ValueError("component_traceability requires signed annual_scaling_status")
+        if not str(provenance.get("annual_scaling_approval_id", "")).strip():
+            raise ValueError("component_traceability requires annual_scaling_approval_id")
+        seen.add((building_class, end_use, heat_column, cop_column))
+    required = set(HP001_PROFILE_ARTIFACT_REQUIRED_COMPONENTS)
+    if seen != required:
+        raise ValueError(
+            "component_traceability must contain exactly the HP-001 SFH/MFH "
+            f"space/water components; missing={tuple(sorted(required - seen))}, "
+            f"extra={tuple(sorted(seen - required))}"
+        )
+
+
+def hp001_profile_artifact_consumption_manifest_from_profile(
+    profile: HeatPumpProfile,
+    *,
+    profile_artifact_path: str,
+    profile_artifact_sha256: str,
+    approval_ids: Mapping[str, str],
+    status: str = "proposed_template_values_unsigned",
+) -> dict[str, object]:
+    """Build metadata for a future HP profile artifact without signing it."""
+    manifest: dict[str, object] = {
+        "manifest_id": "E2-S3-HP001-PROFILE-ARTIFACT-CONSUMPTION-MANIFEST",
+        "status": status,
+        "profile_artifact": {
+            "path": str(profile_artifact_path).strip(),
+            "sha256": str(profile_artifact_sha256).strip(),
+            "n_timesteps": profile.n_timesteps,
+            "cadence_seconds": profile.cadence_seconds,
+            "electric_power_unit": "kW",
+            "thermal_power_unit": "kW",
+            "first_timestamp_utc": profile.timestamps_utc[0].isoformat(),
+            "last_timestamp_utc": profile.timestamps_utc[-1].isoformat(),
+        },
+        "weather_identity": profile.weather_identity_record(),
+        "component_traceability": profile.component_traceability_record(),
+        "approval_ids": dict(_as_provenance_mapping(approval_ids, "approval_ids")),
+        "missing_approval_keys": hp001_final_readiness_missing_approval_keys(approval_ids),
+        "non_claims": (
+            "No annual HP TWh values are approved by this manifest.",
+            "No D-004 paired-weather or cold-spell acceptance is signed by this manifest.",
+            "No net-load, event, P(E), capacity-screen, threshold, manuscript, or probability result is produced.",
+        ),
+    }
+    return manifest
+
+def hp001_component_output_readiness_blockers(manifest: Mapping[str, Any]) -> tuple[str, ...]:
+    """Return blockers before an HP component-output artifact can feed IC-1.
+
+    The check is intentionally stricter than annual value binding: integrated
+    consumers need signed annual/scenario/weather approvals plus artifact
+    checksum and component provenance metadata before they may consume HP
+    outputs.
+    """
+    if not isinstance(manifest, Mapping):
+        return ("manifest_not_mapping",)
+
+    blockers: list[str] = []
+    status = str(manifest.get("status", "")).strip()
+    if status != HP001_COMPONENT_OUTPUT_READY_STATUS:
+        blockers.append("status_not_approved_for_ic1_component_output_consumption")
+
+    approval_ids_raw = manifest.get("approval_ids")
+    if not isinstance(approval_ids_raw, Mapping):
+        blockers.append("approval_ids_missing_or_not_mapping")
+        approval_ids: Mapping[str, str] = {}
+    else:
+        approval_ids = approval_ids_raw
+    blockers.extend(f"missing_approval:{key}" for key in hp001_final_readiness_missing_approval_keys(approval_ids))
+
+    _append_profile_artifact_blockers(manifest.get("profile_artifact"), blockers)
+    _append_weather_identity_blockers(manifest.get("weather_identity"), manifest.get("paired_pv_weather_identity"), blockers)
+    _append_component_traceability_blockers(manifest.get("component_traceability"), blockers)
+
+    unresolved = manifest.get("unresolved_blocker_ids", ())
+    if unresolved is None:
+        unresolved = ()
+    if isinstance(unresolved, (str, bytes)) or not isinstance(unresolved, Sequence):
+        blockers.append("unresolved_blocker_ids_not_sequence")
+    else:
+        unresolved_ids = tuple(str(item).strip() for item in unresolved if str(item).strip())
+        if unresolved_ids:
+            blockers.append("unresolved_blocker_ids_present")
+
+    return tuple(dict.fromkeys(blockers))
+
+
+def require_hp001_component_output_readiness_manifest(manifest: Mapping[str, Any]) -> None:
+    """Raise unless an HP component-output manifest is ready for IC-1 use."""
+    blockers = hp001_component_output_readiness_blockers(manifest)
+    if blockers:
+        raise ValueError(f"HP-001 component-output artifact is not ready for IC-1 consumption; blockers={blockers}")
 
 def require_signed_hp001_local_scaling_config(config: HP001LocalScalingConfig) -> None:
     """Raise unless every remaining HP-001 local-scaling choice is signed."""
@@ -693,6 +954,34 @@ def hp001_local_scaling_config_from_value_binding_record(
         )
     source_inputs = _require_mapping(record.get("source_inputs_under_review"), "source_inputs_under_review")
     approval_state = _require_mapping(record.get("approval_state"), "approval_state")
+    if approval_state.get("executable_binding_allowed") is not True:
+        raise ValueError("HP-001 value-binding record executable_binding_allowed must be true")
+    required_keys = _coerce_approval_key_sequence(
+        approval_state.get("required_before_executable_binding"),
+        label="required_before_executable_binding",
+    )
+    if required_keys != HP001_SCALING_REQUIRED_APPROVAL_KEYS:
+        raise ValueError(
+            "HP-001 value-binding record required approval keys do not match "
+            f"the HP-001 contract; required={required_keys}"
+        )
+    declared_missing = _coerce_approval_key_sequence(
+        approval_state.get("missing_approval_keys", ()),
+        label="missing_approval_keys",
+    )
+    if declared_missing:
+        raise ValueError(
+            "HP-001 value-binding record still declares missing approval keys; "
+            f"missing={declared_missing}"
+        )
+    approved_mapping_ids = {
+        str(item).strip() for item in approval_state.get("approved_indicator_mapping_ids", ())
+    }
+    if HP001_INDICATOR_MAPPING_ASSUMPTION_ID not in approved_mapping_ids or "D013-PBL-MAPPING" not in approved_mapping_ids:
+        raise ValueError(
+            "HP-001 value-binding record must preserve the D013-PBL-MAPPING/A-015 "
+            "indicator-mapping approval before executable use"
+        )
     approval_ids = _require_mapping(approval_state.get("approval_ids"), "approval_ids")
     component_records = record.get("component_value_drafts_unsigned_before_2035_adoption")
     if not isinstance(component_records, Sequence) or isinstance(component_records, (str, bytes)):
@@ -702,6 +991,12 @@ def hp001_local_scaling_config_from_value_binding_record(
     water_heat_twh_by_class: dict[str, float] = {}
     for component in component_records:
         component_record = _require_mapping(component, "component value draft")
+        component_status = str(component_record.get("annual_twh_status", "")).strip()
+        if component_status != HP001_VALUE_BINDING_COMPONENT_APPROVED_STATUS:
+            raise ValueError(
+                "HP-001 component annual_twh_status must be approved before "
+                f"executable binding; component_status={component_status!r}"
+            )
         building_class = str(component_record.get("building_class", "")).strip()
         end_use = str(component_record.get("end_use", "")).strip()
         annual_heat_twh = float(component_record.get("annual_heat_twh", 0.0))
@@ -732,6 +1027,14 @@ def hp001_local_scaling_config_from_value_binding_record(
     require_signed_hp001_local_scaling_config(config)
     return config
 
+
+def _coerce_approval_key_sequence(raw: object, *, label: str) -> tuple[str, ...]:
+    if not isinstance(raw, Sequence) or isinstance(raw, (str, bytes)):
+        raise ValueError(f"{label} must be a sequence of approval keys")
+    keys = tuple(str(item).strip() for item in raw)
+    if any(not key for key in keys):
+        raise ValueError(f"{label} must not contain empty approval keys")
+    return keys
 
 def load_when2heat_hourly_csv(
     path: str | Path,
@@ -1051,6 +1354,145 @@ def cold_week_sanity_check(profile: HeatPumpProfile, *, window_days: int = 7) ->
     )
 
 
+def require_signed_cold_spell_tolerances(tolerances: ColdSpellAcceptanceTolerances) -> None:
+    """Raise until the PI signs numerical HP cold-spell tolerances."""
+    missing = tolerances.missing_approval_keys()
+    if missing:
+        raise ValueError(
+            "HP cold-spell acceptance requires signed numerical tolerances; "
+            f"missing={missing}"
+        )
+
+
+def evaluate_hp001_cold_spell_acceptance(
+    profile: HeatPumpProfile,
+    *,
+    pv_weather_identity_record: Mapping[str, object],
+    tolerances: ColdSpellAcceptanceTolerances,
+) -> ColdSpellAcceptanceResult:
+    """Evaluate fixture-scale HP cold-spell diagnostics after gate checks.
+
+    This runner is intentionally fail-closed: paired-weather identity and PI-
+    signed tolerance metadata are prerequisites before any pass/fail judgement
+    can be produced. Real D-004 use remains blocked until the signed approvals
+    are recorded by the PI.
+    """
+    hp_identity = profile.weather_identity_record()
+    assert_same_weather_realization(hp_identity, pv_weather_identity_record)
+    require_signed_cold_spell_tolerances(tolerances)
+
+    cold_windows = tuple(_cold_window_diagnostic(profile, days=days) for days in tolerances.cold_window_days)
+    near_freezing = _near_freezing_diagnostic(profile, band_c=tolerances.near_freezing_band_c)
+    cold_window_peak_ok = all(
+        float(item["outside_to_inside_peak_ratio"]) <= tolerances.max_outside_to_inside_peak_ratio
+        for item in cold_windows
+    )
+    step_ok = bool(
+        float(near_freezing["max_step_change_fraction_of_peak_load"])
+        <= tolerances.max_near_freezing_step_change_fraction_of_peak
+    )
+    coldest_window = min(cold_windows, key=lambda item: float(item["mean_temperature_c"]))
+    near_mean_cop = near_freezing.get("mean_cop")
+    if tolerances.require_cold_cop_not_above_near_freezing_mean and near_mean_cop is not None:
+        cop_order_ok = float(coldest_window["mean_cop"]) <= float(near_mean_cop)
+    else:
+        cop_order_ok = True
+    checks = {
+        "paired_weather_identity_equal": True,
+        "signed_cold_spell_tolerances_present": True,
+        "cold_window_peak_ratio_within_tolerance": bool(cold_window_peak_ok),
+        "near_freezing_step_change_within_tolerance": bool(step_ok),
+        "cold_window_cop_not_above_near_freezing_mean": bool(cop_order_ok),
+    }
+    return ColdSpellAcceptanceResult(
+        status="fixture_or_signed_tolerance_acceptance_result",
+        accepted=all(checks.values()),
+        weather_identity_checked=True,
+        tolerance_set_id=tolerances.tolerance_set_id,
+        tolerance_approval_id=tolerances.approval_id,
+        profile_weather_identity=hp_identity,
+        pv_weather_identity=pv_weather_identity_record,
+        cold_window_diagnostics=cold_windows,
+        near_freezing_diagnostics=near_freezing,
+        checks=checks,
+        non_claims=(
+            "This runner does not by itself sign D-004 paired-weather acceptance.",
+            "This runner does not approve annual HP TWh values or 2035 adoption/electrification.",
+            "This runner does not run net-load, event, P(E), capacity-screen, threshold, or manuscript-result analysis.",
+        ),
+    )
+
+
+def _cold_window_diagnostic(profile: HeatPumpProfile, *, days: int) -> dict[str, object]:
+    if days <= 0:
+        raise ValueError("cold-window days must be positive")
+    steps_per_day = _steps_per_day(profile.timestamps_utc)
+    window_steps = steps_per_day * days
+    if len(profile.timestamps_utc) < window_steps:
+        raise ValueError("profile is shorter than the requested cold window")
+    rolling = np.convolve(
+        profile.temperature_c,
+        np.ones(window_steps, dtype=np.float64) / window_steps,
+        mode="valid",
+    )
+    start = int(np.argmin(rolling))
+    stop = start + window_steps
+    inside_peak = float(np.max(profile.electric_kw[start:stop]))
+    outside_mask = np.ones_like(profile.electric_kw, dtype=bool)
+    outside_mask[start:stop] = False
+    outside_peak = float(np.max(profile.electric_kw[outside_mask])) if outside_mask.any() else 0.0
+    ratio = outside_peak / inside_peak if inside_peak > 0 else float("inf")
+    return {
+        "window_days": int(days),
+        "start_utc": profile.timestamps_utc[start].isoformat(),
+        "end_utc": (profile.timestamps_utc[stop - 1] + timedelta(minutes=QUARTER_HOUR_STEP_MINUTES)).isoformat(),
+        "mean_temperature_c": float(rolling[start]),
+        "min_temperature_c": float(np.min(profile.temperature_c[start:stop])),
+        "max_load_inside_kw": inside_peak,
+        "max_load_outside_kw": outside_peak,
+        "outside_to_inside_peak_ratio": float(ratio),
+        "mean_cop": float(np.mean(profile.cop[start:stop])),
+        "min_cop": float(np.min(profile.cop[start:stop])),
+    }
+
+
+def _near_freezing_diagnostic(profile: HeatPumpProfile, *, band_c: tuple[float, float]) -> dict[str, object]:
+    lower, upper = band_c
+    mask = (profile.temperature_c >= lower) & (profile.temperature_c <= upper)
+    peak_load = float(np.max(profile.electric_kw))
+    if not mask.any():
+        return {
+            "band_c": band_c,
+            "n_timesteps": 0,
+            "mean_load_kw": None,
+            "max_load_kw": None,
+            "mean_cop": None,
+            "min_cop": None,
+            "max_step_change_kw": 0.0,
+            "max_step_change_fraction_of_peak_load": 0.0,
+        }
+    indices = np.flatnonzero(mask)
+    step_changes = np.abs(np.diff(profile.electric_kw))
+    boundary_changes: list[float] = []
+    for index in indices:
+        if index > 0:
+            boundary_changes.append(float(step_changes[index - 1]))
+        if index < len(step_changes):
+            boundary_changes.append(float(step_changes[index]))
+    max_change = max(boundary_changes) if boundary_changes else 0.0
+    return {
+        "band_c": band_c,
+        "n_timesteps": int(mask.sum()),
+        "first_timestamp_utc": profile.timestamps_utc[int(indices[0])].isoformat(),
+        "last_timestamp_utc": profile.timestamps_utc[int(indices[-1])].isoformat(),
+        "mean_load_kw": float(np.mean(profile.electric_kw[mask])),
+        "max_load_kw": float(np.max(profile.electric_kw[mask])),
+        "mean_cop": float(np.mean(profile.cop[mask])),
+        "min_cop": float(np.min(profile.cop[mask])),
+        "max_step_change_kw": float(max_change),
+        "max_step_change_fraction_of_peak_load": float(max_change / peak_load) if peak_load > 0 else 0.0,
+    }
+
 def _downscale_component_series(component: HeatPumpComponentSeries) -> HeatPumpComponentSeries:
     return HeatPumpComponentSeries(
         heat_column=component.heat_column,
@@ -1138,6 +1580,90 @@ def _when2heat_use_columns(
         columns.add(component.heat_column)
         columns.add(component.cop_column)
     return columns
+
+
+def _require_non_empty_text(record: Mapping[str, Any], key: str, *, label: str) -> str:
+    value = record.get(key)
+    text = str(value).strip() if value is not None else ""
+    if not text:
+        raise ValueError(f"{label} {key} must be non-empty")
+    return text
+
+def _append_profile_artifact_blockers(raw: object, blockers: list[str]) -> None:
+    if not isinstance(raw, Mapping):
+        blockers.append("profile_artifact_missing_or_not_mapping")
+        return
+    if not str(raw.get("path", "")).strip():
+        blockers.append("profile_artifact_path_missing")
+    sha = str(raw.get("sha256", "")).strip()
+    if len(sha) != 64:
+        blockers.append("profile_artifact_sha256_missing_or_invalid")
+    if int(raw.get("n_timesteps", 0) or 0) != 35040:
+        blockers.append("profile_artifact_n_timesteps_not_35040")
+    if int(raw.get("cadence_seconds", 0) or 0) != 900:
+        blockers.append("profile_artifact_cadence_not_900_seconds")
+
+
+def _append_weather_identity_blockers(raw_hp: object, raw_pv: object, blockers: list[str]) -> None:
+    required = ("shared_weather_driver_id", "member_id", "source", "content_sha256")
+    if not isinstance(raw_hp, Mapping):
+        blockers.append("weather_identity_missing_or_not_mapping")
+        return
+    for key in required:
+        if not str(raw_hp.get(key, "")).strip():
+            blockers.append(f"weather_identity_{key}_missing")
+    if int(raw_hp.get("n_timesteps", 0) or 0) != 35040:
+        blockers.append("weather_identity_n_timesteps_not_35040")
+    if int(raw_hp.get("cadence_seconds", 0) or 0) != 900:
+        blockers.append("weather_identity_cadence_not_900_seconds")
+    if not isinstance(raw_pv, Mapping):
+        blockers.append("paired_pv_weather_identity_missing_or_not_mapping")
+        return
+    for key in required:
+        if str(raw_hp.get(key, "")).strip() != str(raw_pv.get(key, "")).strip():
+            blockers.append(f"paired_weather_identity_mismatch:{key}")
+    for key in ("n_timesteps", "cadence_seconds"):
+        if int(raw_hp.get(key, 0) or 0) != int(raw_pv.get(key, 0) or 0):
+            blockers.append(f"paired_weather_identity_mismatch:{key}")
+
+
+def _append_component_traceability_blockers(raw: object, blockers: list[str]) -> None:
+    if isinstance(raw, (str, bytes)) or not isinstance(raw, Sequence):
+        blockers.append("component_traceability_missing_or_not_sequence")
+        return
+    expected = {
+        ("SFH", "space", "NL_heat_profile_space_SFH", HP001_SPACE_COP_COLUMN),
+        ("MFH", "space", "NL_heat_profile_space_MFH", HP001_SPACE_COP_COLUMN),
+        ("SFH", "water", "NL_heat_profile_water_SFH", HP001_WATER_COP_COLUMN),
+        ("MFH", "water", "NL_heat_profile_water_MFH", HP001_WATER_COP_COLUMN),
+    }
+    observed: set[tuple[str, str, str, str]] = set()
+    for item in raw:
+        if not isinstance(item, Mapping):
+            blockers.append("component_traceability_item_not_mapping")
+            continue
+        record = (
+            str(item.get("building_class", "")).strip(),
+            str(item.get("end_use", "")).strip(),
+            str(item.get("heat_column", "")).strip(),
+            str(item.get("cop_column", "")).strip(),
+        )
+        observed.add(record)
+        try:
+            if float(item.get("annual_heat_demand_twh", 0.0)) <= 0:
+                blockers.append("component_traceability_annual_heat_demand_not_positive")
+        except (TypeError, ValueError):
+            blockers.append("component_traceability_annual_heat_demand_not_numeric")
+        provenance = item.get("provenance")
+        if not isinstance(provenance, Mapping):
+            blockers.append("component_traceability_provenance_missing")
+            continue
+        if str(provenance.get("annual_scaling_status", "")).strip() != "signed":
+            blockers.append("component_traceability_annual_scaling_not_signed")
+        if not str(provenance.get("annual_scaling_approval_id", "")).strip():
+            blockers.append("component_traceability_annual_scaling_approval_missing")
+    if observed != expected:
+        blockers.append("component_traceability_missing_or_extra_hp001_components")
 
 
 def _require_exact_hp001_classes(values: Mapping[str, float], *, label: str) -> None:
