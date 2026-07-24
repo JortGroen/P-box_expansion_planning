@@ -1,7 +1,7 @@
 {
   "schema_version": "e3_s2_accepted_artifact_blocker_preflight_input_v1",
   "task_id": "E3.S2",
-  "intended_use": "e3_s2_accepted_artifact_loader_blocker_preflight_through_pr243",
+  "intended_use": "e3_s2_accepted_artifact_loader_blocker_preflight_through_pr248_current_main",
   "scope": "metadata_preflight_only_no_arrays_no_ic2_execution_no_events_no_probability_no_capacity_screen",
   "config": {
     "config_id": "e3_s2_accepted_artifact_loader_blocker_preflight_v1",
@@ -31,7 +31,7 @@
       "no_event_detection": true,
       "no_probability_estimate": true,
       "no_capacity_screen_result": true,
-      "refresh_basis": "origin/main through PR #243 after EV accepted-artifact index preflight merged",
+      "refresh_basis": "origin/main through PR #248 EV held-out blocker and PR #249 methods cleanup; no real arrays opened",
       "ic2_bridge_preflight_path": "reports/E3_S2_EXECUTABLE_BRIDGE_PREFLIGHT.md",
       "primary_threshold_metadata": "G0-A3: strict L_import > 1.0 p.u. for four consecutive 15-minute import steps over the full year; 1.1 and 1.2 are sensitivities only",
       "accepted_artifact_loader_helper": "build_accepted_artifact_loader_blocker_preflight"
@@ -94,11 +94,13 @@
         "supporting_adoption_artifact": "data/metadata/ev_adoption/e2_s6_a014_alkmaar_executable_adoption_artifact.json",
         "supporting_component_output_manifest": "data/metadata/ev_adoption/e2_s2_ev_ic1_candidate_component_output_manifest.json",
         "component_output_manifest_sha256": "01dcac20e7369a5997bb2a7584cac98e3a62a9ebaff4f44cfc4e6969c3bc4e39",
-        "boundary_note": "merged PR #243 EV index is available and consumed as metadata only; no held-out data opened and no EV component arrays loaded",
+        "boundary_note": "merged PR #243 EV accepted-artifact index is available and consumed as metadata only; merged PR #248 EV held-out blocker is also recorded, no held-out data opened, and no EV component arrays loaded",
         "packet_status": "accepted EV metadata index for Agent A preflight; blocked for integrated results",
         "readiness_bucket": "accepted_metadata_only",
-        "ev_output_verifier_status": "merged_pr_243_accepted_artifact_index_available_metadata_only",
-        "rng_protocol_id": "RNG-001"
+        "ev_output_verifier_status": "merged_pr_243_accepted_artifact_index_available; merged_pr_248_heldout_blocker_available_metadata_only",
+        "rng_protocol_id": "RNG-001",
+        "supporting_heldout_adequacy_preflight_blockers": "data/metadata/ev_adoption/e3_s2a_ev_heldout_adequacy_preflight_blockers.json",
+        "supporting_heldout_adequacy_preflight_blockers_sha256": "8bafdcd8c2a55efc03fbf34f634e84bd00f9194aac14437e95b7acb69613543f"
       }
     },
     {
@@ -177,9 +179,11 @@
         "supporting_weather_input_artifact": "data/metadata/weather_pv/d004_alkmaar_berkhout_2014_2023_v1_weather_input_artifact.json",
         "supporting_capacity_approval_template": "data/metadata/weather_pv/d014_pv_capacity_approval_template.json",
         "supporting_capacity_approval_template_sha256": "f4124256525f9004d4a12dce5150bc9ad73935661586884f1ff781073a07a6f7",
-        "classification_note": "Merged PR #241 records accepted weather source/member readiness but keeps executable PV generation blocked until D-014 capacity, A-016 scenario consistency, PV-ORIENT/PV-PARAM, node allocation, and final paired HP/PV/cold-spell gates are signed.",
+        "classification_note": "Merged PR #241 records accepted weather source/member readiness and PR #246 adds the executable PV preflight guard, but executable PV generation remains blocked until D-014 capacity, A-016 scenario consistency, PV-ORIENT/PV-PARAM, node allocation, and final paired HP/PV/cold-spell gates are signed.",
         "packet_status": "proposed fail-closed executable PV readiness blockers; executable values unsigned",
-        "readiness_bucket": "proposed_blocked"
+        "readiness_bucket": "proposed_blocked",
+        "supporting_executable_preflight_guard": "data/metadata/weather_pv/d014_pv_executable_preflight_guard.json",
+        "supporting_executable_preflight_guard_sha256": "9a1df205142f29853b3250f7aa9af882ca818817a7b488a402ef036aee14a5c5"
       }
     },
     {
@@ -237,8 +241,8 @@
     }
   ],
   "metadata": {
-    "refresh_basis": "origin/main through PR #243 after EV accepted-artifact index preflight merged",
-    "ev_output_verifier_status": "merged_pr_243_accepted_artifact_index_available_metadata_only",
+    "refresh_basis": "origin/main through PR #248 EV held-out blocker and PR #249 methods cleanup; no real arrays opened",
+    "ev_output_verifier_status": "merged_pr_243_accepted_artifact_index_available; merged_pr_248_heldout_blocker_available_metadata_only",
     "checksum_policy": "source and component-output manifest paths require version-controlled expected SHA-256 before accepted-artifact loader execution",
     "no_real_net_load_arrays": true,
     "no_ic2_execution": true,
@@ -252,7 +256,14 @@
       "PR-236": "synthetic artifact-loader assembly smoke harness is present on main; no real arrays are opened here.",
       "PR-240": "Hybrid source-readiness guard is present on main.",
       "PR-241": "PV executable-readiness blocker packet is present on main and consumed as metadata only.",
-      "PR-243": "EV accepted-artifact index preflight is present on main and consumed as current EV metadata."
+      "PR-243": "EV accepted-artifact index preflight is present on main and consumed as current EV metadata.",
+      "PR-246": "PV executable preflight guard is present on main and consumed as supporting metadata only.",
+      "PR-248": "EV held-out adequacy preflight blocker packet is present on main and consumed as supporting metadata only; held-out data remain closed.",
+      "PR-249": "Q-5 methods cleanup is present on main; G0-A3 remains metadata only in this preflight."
+    },
+    "supporting_metadata_sha256_by_path": {
+      "data/metadata/ev_adoption/e3_s2a_ev_heldout_adequacy_preflight_blockers.json": "8bafdcd8c2a55efc03fbf34f634e84bd00f9194aac14437e95b7acb69613543f",
+      "data/metadata/weather_pv/d014_pv_executable_preflight_guard.json": "9a1df205142f29853b3250f7aa9af882ca818817a7b488a402ef036aee14a5c5"
     }
   },
   "trajectory_config": {
