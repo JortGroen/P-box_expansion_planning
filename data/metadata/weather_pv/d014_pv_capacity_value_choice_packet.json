@@ -1,0 +1,215 @@
+{
+  "candidate_equations_for_local_2035_capacity": [
+    {
+      "capacity_convention": "DC panel capacity in kWp",
+      "equation_id": "dc_kwp_source_year_matched_ii3050_ratio",
+      "executable_status": "proposed_recommendation_unsigned",
+      "formula": "pv_capacity_2035_kwp_dc = cbs_panel_capacity_kwp(period_key, sector_key) * ii3050_zon_pv_gw(2035, scenario_column) / ii3050_zon_pv_gw(2019_reference)",
+      "reason": "Uses the CBS panel-capacity field and II3050 2019 reference denominator in the same source year when the PI selects the 2019 CBS operand; avoids silently double-counting 2019-2023 growth.",
+      "recommended_for_pi_review": true
+    },
+    {
+      "capacity_convention": "DC panel capacity in kWp",
+      "equation_id": "dc_kwp_latest_definitive_with_signed_crosswalk",
+      "executable_status": "blocked_until_growth_crosswalk_signed",
+      "formula": "pv_capacity_2035_kwp_dc = cbs_panel_capacity_kwp(2023JJ00, sector_key) * signed_ii3050_growth_factor_from_2023_to_2035",
+      "reason": "Uses the latest definitive CBS local anchor, but requires a signed 2023-to-2035 II3050/CBS crosswalk because Table A.1 evidence currently records 2019 and scenario-year national values, not a 2023 denominator.",
+      "recommended_for_pi_review": false
+    },
+    {
+      "capacity_convention": "AC inverter/grid-facing capacity in kW",
+      "equation_id": "ac_kw_inverter_capacity_variant",
+      "executable_status": "blocked_until_capacity_convention_and_growth_denominator_signed",
+      "formula": "pv_capacity_2035_kw_ac = cbs_inverter_capacity_kw(period_key, sector_key) * signed_ii3050_growth_factor_same_convention",
+      "reason": "Potentially closer to grid-facing capacity, but CBS inverter capacity is not available for all periods and PV-PARAM-001 must first say whether installed_capacity_kw expects DC peak or AC clipped capacity.",
+      "recommended_for_pi_review": false
+    }
+  ],
+  "candidate_operands_for_pi_review": {
+    "cbs_alkmaar_capacity_operands": [
+      {
+        "installations_count_diagnostic": 6751,
+        "inverter_capacity_kw_operand": null,
+        "operand_role": "source_year_matched_ii3050_reference_all_activity_and_homes",
+        "operand_status": "candidate_operand_unsigned_not_executable",
+        "panel_capacity_kwp_operand": 33951,
+        "period_key": "2019JJ00",
+        "period_status": "Definitief",
+        "period_title": "2019",
+        "row_id": 175,
+        "sector_key": "E007161",
+        "sector_title": "Alle economische activiteit en woningen"
+      },
+      {
+        "installations_count_diagnostic": 6280,
+        "inverter_capacity_kw_operand": null,
+        "operand_role": "source_year_matched_ii3050_reference_homes_only_sensitivity",
+        "operand_status": "candidate_operand_unsigned_not_executable",
+        "panel_capacity_kwp_operand": 18416,
+        "period_key": "2019JJ00",
+        "period_status": "Definitief",
+        "period_title": "2019",
+        "row_id": 3339,
+        "sector_key": "E007037",
+        "sector_title": "Woningen"
+      },
+      {
+        "installations_count_diagnostic": 17502,
+        "inverter_capacity_kw_operand": 87643,
+        "operand_role": "latest_definitive_all_activity_and_homes_candidate",
+        "operand_status": "candidate_operand_unsigned_not_executable",
+        "panel_capacity_kwp_operand": 94183,
+        "period_key": "2023JJ00",
+        "period_status": "Definitief",
+        "period_title": "2023",
+        "row_id": 179,
+        "sector_key": "E007161",
+        "sector_title": "Alle economische activiteit en woningen"
+      },
+      {
+        "installations_count_diagnostic": 16501,
+        "inverter_capacity_kw_operand": 51439,
+        "operand_role": "latest_definitive_homes_only_sensitivity_candidate",
+        "operand_status": "candidate_operand_unsigned_not_executable",
+        "panel_capacity_kwp_operand": 54457,
+        "period_key": "2023JJ00",
+        "period_status": "Definitief",
+        "period_title": "2023",
+        "row_id": 3343,
+        "sector_key": "E007037",
+        "sector_title": "Woningen"
+      },
+      {
+        "installations_count_diagnostic": 20860,
+        "inverter_capacity_kw_operand": 100304,
+        "operand_role": "latest_available_provisional_all_activity_and_homes_diagnostic",
+        "operand_status": "candidate_operand_unsigned_not_executable",
+        "panel_capacity_kwp_operand": 108329,
+        "period_key": "2025JJ00",
+        "period_status": "NaderVoorlopig",
+        "period_title": "2025",
+        "row_id": 181,
+        "sector_key": "E007161",
+        "sector_title": "Alle economische activiteit en woningen"
+      }
+    ],
+    "ii3050_2035_scenario_operands": [
+      {
+        "candidate_role": "planning_year_2035_ka_candidate",
+        "column_label": "2035 KA",
+        "executable_status": "candidate_only_unsigned",
+        "scenario": "KA",
+        "year": 2035,
+        "zon_pv_gw": 75.9
+      },
+      {
+        "candidate_role": "planning_year_2035_nd_candidate",
+        "column_label": "2035 ND",
+        "executable_status": "candidate_only_unsigned",
+        "scenario": "ND",
+        "year": 2035,
+        "zon_pv_gw": 98.2
+      },
+      {
+        "candidate_role": "planning_year_2035_ia_candidate",
+        "column_label": "2035 IA",
+        "executable_status": "candidate_only_unsigned",
+        "scenario": "IA",
+        "year": 2035,
+        "zon_pv_gw": 52.6
+      }
+    ],
+    "ii3050_denominator_operands": [
+      {
+        "denominator_id": "ii3050_2019_reference_zon_pv_gw",
+        "question": "Use II3050 2019 national PV capacity as the growth denominator?",
+        "value_status": "source_evidence_candidate_unsigned",
+        "zon_pv_gw": 6.2
+      },
+      {
+        "denominator_id": "cbs_anchor_year_same_convention",
+        "question": "Use a CBS anchor-year denominator or crosswalk instead of the II3050 2019 reference?",
+        "value_status": "requires signed CBS period/field/convention and a national/local crosswalk"
+      }
+    ]
+  },
+  "capacity_convention_recommendation": {
+    "not_approved_by_this_packet": true,
+    "rationale": "CBS panel capacity is available across the complete candidate evidence window and matches PV installed-capacity reporting. Using inverter AC kW may be useful as a grid-facing sensitivity, but it should not be silently substituted for PV-PARAM's capacity input.",
+    "recommended_for_pi_review": "Use DC panel capacity in kWp as the signed capacity-value artifact convention, label it explicitly as `installed_capacity_kwp_dc`, and let PV-PARAM-001 or an amendment decide how that maps into PVSystemConfig.installed_capacity_kw."
+  },
+  "created_utc": "2026-07-24T12:06:09+00:00",
+  "data_id": "D-014",
+  "download_performed": false,
+  "governing_decisions": {
+    "approved_route": "PV-CAP-001",
+    "conversion_parameters": "PV-PARAM-001 remains proposed/fail-closed",
+    "orientation_scope": "PV-ORIENT-001 statistical orientation/tilt only; no roof/building/3DBAG/PV-map extraction",
+    "scenario_consistency": "A-016 requires EV/HP/PV 2035 source-lineage consistency before integrated use"
+  },
+  "non_claims": [
+    "No final PV capacity value is approved or computed.",
+    "No CBS row, period, sector/category, field, unit, or DC/AC convention is selected as final.",
+    "No II3050 scenario column, denominator, formula, or growth-factor value is selected as final.",
+    "No A-016 EV/HP/PV scenario-consistency mapping is approved.",
+    "No per-node PV allocation is approved.",
+    "No statistical orientation/tilt values or PV-PARAM conversion treatment are approved.",
+    "No roof, building, 3DBAG, or PV-map geometry source is retrieved or used.",
+    "No PV generation, net-load, event detection, P(E), threshold analysis, capacity screen, manuscript result, or final PV output is produced."
+  ],
+  "packet_id": "D014-PV-CAPACITY-VALUE-CHOICE-PACKET",
+  "pi_approval_keys_before_executable_use": [
+    "D014-PV-CAPACITY-VALUE-CHOICE-PACKET",
+    "cbs_anchor_evidence_packet_id_and_sha256",
+    "ii3050_growth_evidence_packet_id_and_sha256",
+    "alkmaar_geography_key",
+    "cbs_source_period_key",
+    "cbs_sector_category_key",
+    "cbs_capacity_field_key",
+    "capacity_unit_and_dc_ac_convention",
+    "ii3050_scenario_column",
+    "ii3050_growth_denominator",
+    "ii3050_growth_factor_formula",
+    "ii3050_growth_factor_value",
+    "scenario_source_consistency_with_ev_hp_inputs",
+    "node_allocation_rule",
+    "statistical_orientation_tilt_distribution_source",
+    "statistical_orientation_tilt_distribution_weights",
+    "PV-PARAM-001_or_amended_conversion_decision"
+  ],
+  "pi_recommendation": {
+    "primary_capacity_convention": "DC kWp labelled as installed_capacity_kwp_dc before PV-PARAM-001",
+    "primary_cbs_operand_role": "source_year_matched_ii3050_reference_all_activity_and_homes",
+    "primary_equation_id": "dc_kwp_source_year_matched_ii3050_ratio",
+    "recommendation_status": "proposed_unsigned_not_executable",
+    "scenario_selection_rule": "PI selects the II3050 2035 scenario column only after A-016 consistency with EV/HP scenario branches is recorded.",
+    "sensitivity_candidates": [
+      "latest_definitive_2023_all_activity_and_homes_with_signed_2023_to_2035_growth_crosswalk",
+      "homes_only_sector_if PV is restricted to residential nodes",
+      "inverter_AC_capacity_if PI signs AC/grid-facing capacity convention"
+    ]
+  },
+  "raw_data_committed": false,
+  "scenario_consistency_issue": {
+    "decision_id": "A-016",
+    "executable_status": "blocked_until_A016_consistency_mapping_signed",
+    "issue": "EV local adoption is anchored to ElaadNL Outlook branches, HP scaling uses PBL/CBS/When2Heat evidence, and PV growth candidates use II3050 scenario columns. Shared labels such as low/middle/high must not be assumed equivalent to II3050 KA/ND/IA without a signed scenario-consistency mapping.",
+    "required_manifest_fields_later": [
+      "pv_cbs_source_year",
+      "pv_cbs_capacity_field_key",
+      "pv_capacity_convention",
+      "pv_ii3050_scenario_column",
+      "pv_growth_factor_value",
+      "scenario_consistency_decision_id"
+    ]
+  },
+  "source_evidence_inputs": {
+    "cbs_anchor_metadata_path": "data/metadata/weather_pv/d014_cbs_85005ned_alkmaar_gm0361_anchor_evidence.json",
+    "cbs_anchor_packet_id": "D014-CBS-PV-CAPACITY-ANCHOR-EVIDENCE",
+    "cbs_raw_sha256": "b2efd245a974ccd462ebedb340a48d399d65a454b2aef4caa7a09cea91341963",
+    "ii3050_growth_metadata_path": "data/metadata/weather_pv/d014_ii3050_pv_growth_evidence.json",
+    "ii3050_growth_packet_id": "D014-II3050-PV-GROWTH-EVIDENCE",
+    "ii3050_raw_sha256": "7bcfe6607464590df3b755b6a9e531409927b100f1a79f15faba00d67d7c95ce"
+  },
+  "status": "proposed_value_choice_packet_no_executable_values"
+}

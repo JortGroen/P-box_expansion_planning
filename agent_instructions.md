@@ -33,6 +33,8 @@ You are **one of up to three agents** on this project. Your role (A, B, or C —
 10. **Report bounds, never a defuzzified number.** Project-specific hard rule: every probability result is reported as α-indexed lower/upper bounds with Monte-Carlo CIs. Producing a single collapsed scalar as "the answer" is a violation (Baudrit rule, plan §3).
 11. **No silent or restart-only long runs.** Inform the PI before launching any process expected to exceed about 15 minutes, and make it durably resumable from verified checkpoints. A long process that cannot be checkpointed requires explicit PI approval before launch.
 12. **Ownership is machine-enforced.** Run `.\scripts\task.ps1 ownership` before committing. A cross-boundary edit fails CI unless an exact PI exception already exists on the PR base branch.
+13. **Automate repeated mechanical work.** If an operation repeats more than about three times, or involves API batches, downloads, profile generation, checksums, artifact rebuilds, scenario sweeps, or manifest validation, build or extend a deterministic script/runner with tests, pilot evidence, and resume checkpoints. Do not spend agent time manually babysitting loops that code can execute and verify.
+14. **Fast integration fails closed.** Stacked or war-room integration may connect components early, but executable runs must reject unresolved science. Missing values, proposed-only assumptions, unsigned data/decision IDs, missing artifacts, unverified checksums, and unsafe placeholders produce a named blocker manifest and no result number.
 
 ---
 
@@ -90,6 +92,8 @@ If your current directory, branch, or worktree does not match your role and assi
 - All randomness through `src/rng.py`'s seed tree — never a bare `np.random` call.
 - No magic numbers in code: scientific constants and parameters live in `configs/*.yaml` with units in key names (`p_crit`, `s_rated_kva`, `step_min: 15`).
 - A PR that adds or changes an entry in `DECISIONS.md`, `ASSUMPTIONS.md`, or `DATA_REGISTER.md` must add or update its same-ID block in `paper/methods_decisions_and_assumptions.md`. Write one standalone manuscript paragraph explaining and defending the choice, scope, and limitations. Use an explicit status label so proposed, not-invoked, superseded, and pending items cannot be mistaken for approved claims.
+- Repeated mechanical work is a script/runner task, not a manual agent task. Before scaling beyond a pilot, create or extend the relevant `data/get_*.py`, `experiments/`, `reports/*generate*.py`, or runner command so request parameters, seeds/member IDs, completed units, checksums, and output paths are persisted. A PR may include the automation and a small probe first; the larger run must use that automation.
+- Integration shortcuts must fail closed. Any code path that can produce integrated trajectories, event counts, probabilities, capacity-screen conclusions, or manuscript-facing tables must validate that all required register IDs are signed, source artifacts exist and match expected checksums where available, executable configs contain no unapproved scientific defaults, and blocker IDs are empty. If not, write a compact blocker manifest and abort before producing the number.
 
 ### 3.3 Long-running process protocol
 
@@ -122,6 +126,12 @@ Resume procedure: <exact command and how completed work is skipped>
    new. Resuming must validate the stored identity, skip verified completed
    units, and avoid duplicating samples, API members, or result rows.
 
+For repeated API calls, source downloads, profile generation, checksum sweeps,
+artifact rebuilds, scenario sweeps, and manifest checks, the checkpointed
+script/runner is the deliverable. A manual loop is acceptable only for an
+explicitly documented pilot of three or fewer units; scaling that pilot requires
+automation first.
+
 The notice is informational unless another rule requires PI approval. If the
 process cannot be checkpointed, stop and obtain explicit PI approval for a
 documented restart-only recovery plan before launch. If a process unexpectedly
@@ -148,6 +158,8 @@ checkpoints.
 - A scientific value is needed that is not in `ASSUMPTIONS.md` / `DATA_REGISTER.md` (parameter, threshold, distribution, cost, citation).
 - A data source's license is unclear, or a dataset must be modified by hand.
 - A process expected to exceed about 15 minutes has no durable checkpoint/resume path.
+- A repeated mechanical operation would be scaled manually instead of through a tested script/runner.
+- An integrated or stacked execution path would turn a placeholder, unsigned value, proposed assumption, missing checksum, or unresolved blocker into a numeric result instead of failing closed with a blocker manifest.
 - Runtime exceeds the G1-approved or provisional validation budget by more than 2×.
 - A result contradicts a passed gate (e.g., non-monotone behavior after G3 approved the vertex shortcut).
 - You would need to edit outside your owned paths, add a dependency, or touch `main`.
@@ -244,6 +256,8 @@ not the default PR status check.
   - [ ] Full validation run or explicitly not applicable for this PR
   - [ ] Invariant suite green (if math touched)
   - [ ] Manifest(s) attached for every produced result
+  - [ ] Repeated/API/download/profile/checksum/sweep work is scripted, tested, and resumable before scale-up
+  - [ ] Integrated/stacked execution fails closed on unsigned values, placeholders, missing artifacts/checksums, and unresolved blocker IDs
   - [ ] Registers updated (`ASSUMPTIONS`/`DATA_REGISTER` rows `proposed` where needed)
   - [ ] Methods paragraph registry updated for every changed decision, assumption, or data/protocol choice
   - [ ] No interface-contract or schema change (or: gate approval linked)
