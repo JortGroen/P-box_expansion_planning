@@ -1375,6 +1375,45 @@ def test_d014_first_experiment_approval_packet_is_metadata_only_and_fail_closed(
     assert path.name == "d014_pv_first_experiment_approval_packet.json"
     assert payload["status"].startswith("proposed_first_experiment_pv_approval_packet")
 
+
+def test_d014_first_experiment_value_decision_packet_narrows_options_without_values(tmp_path: Path) -> None:
+    packet = pv_capacity.build_d014_pv_first_experiment_value_decision_packet()
+
+    assert packet["packet_id"] == "D014-PV-FIRST-EXPERIMENT-VALUE-DECISION-PACKET"
+    assert packet["data_id"] == "D-014"
+    assert packet["download_performed"] is False
+    assert packet["raw_data_committed"] is False
+    assert packet["input_metadata"]["first_experiment_approval_packet"]["packet_id"] == "D014-PV-FIRST-EXPERIMENT-APPROVAL-PACKET"
+    assert packet["input_metadata"]["capacity_value_choice_packet"]["packet_id"] == "D014-PV-CAPACITY-VALUE-CHOICE-PACKET"
+    assert packet["input_metadata"]["orientation_tilt_value_choice_packet"]["packet_id"] == "D014-PV-ORIENTATION-TILT-VALUE-CHOICE-PACKET"
+    assert packet["input_metadata"]["pv_param_conversion_source_choice_packet"]["packet_id"] == "D014-PV-PARAM-CONVERSION-SOURCE-CHOICE-PACKET"
+    assert packet["scope_guardrails"]["roof_building_location_specific_geometry_allowed"] is False
+    assert packet["scope_guardrails"]["three_dbag_pv_map_or_per_roof_workflow_allowed"] is False
+    assert "PVGIS remains qualitative" in packet["scope_guardrails"]["weather_realization_boundary"]
+    assert set(packet["decision_options_for_pi"]) == {
+        "statistical_orientation_tilt_distribution",
+        "irradiance_to_power_conversion",
+        "performance_loss_treatment",
+        "temperature_and_clipping_treatment",
+        "capacity_convention",
+        "node_allocation",
+        "scenario_consistency",
+    }
+    assert packet["recommended_first_experiment_route_for_review"]["route_status"] == (
+        "recommendation_only_unsigned_not_executable"
+    )
+    assert packet["executable_gate"]["executable_pv_generation_authorized"] is False
+    assert packet["executable_gate"]["result_if_invoked"] == "abort_until_value_decisions_signed"
+    assert "PV-PARAM-001_or_signed_amendment" in packet["executable_gate"]["blocking_register_ids"]
+    assert "signed_node_allocation_rule_and_normalization_denominator" in packet["pi_approval_keys_before_executable_use"]
+    assert any("No PV capacity value" in item and "orientation/tilt" in item for item in packet["non_claims"])
+    assert any("No building, roof" in item and "PV-map" in item for item in packet["non_claims"])
+
+    path = pv_capacity.write_d014_pv_first_experiment_value_decision_packet(tmp_path)
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    assert path.name == "d014_pv_first_experiment_value_decision_packet.json"
+    assert payload["status"].startswith("proposed_first_experiment_pv_value_decision_support")
+
 def test_d014_orientation_tilt_value_choice_packet_lists_unsigned_candidate_values(tmp_path: Path) -> None:
     packet = pv_capacity.build_d014_pv_orientation_tilt_value_choice_packet()
 

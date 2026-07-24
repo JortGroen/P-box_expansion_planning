@@ -21,6 +21,7 @@ from src.pv_model import (
     PVExecutablePreflightGuardPacket,
     PVExecutableReadinessBlockersPacket,
     PVFirstExperimentApprovalPacket,
+    PVFirstExperimentValueDecisionPacket,
     PVGISReference,
     PVII3050GrowthEvidencePacket,
     PVOrientationTiltSourceChoicePacket,
@@ -47,6 +48,7 @@ from src.pv_model import (
     load_pv_executable_preflight_guard_packet,
     load_pv_executable_readiness_blockers_packet,
     load_pv_first_experiment_approval_packet,
+    load_pv_first_experiment_value_decision_packet,
     load_pv_ii3050_growth_evidence_packet,
     load_pv_orientation_tilt_source_choice_packet,
     load_pv_orientation_tilt_value_choice_packet,
@@ -2137,6 +2139,88 @@ def test_pv_executable_readiness_blockers_reject_silent_authorization() -> None:
             non_claims=payload["non_claims"],
         )
 
+
+
+def test_committed_d014_first_experiment_value_decision_packet_is_fail_closed() -> None:
+    packet = load_pv_first_experiment_value_decision_packet(
+        "data/metadata/weather_pv/d014_pv_first_experiment_value_decision_packet.json"
+    )
+    record = packet.identity_record()
+
+    assert packet.packet_id == "D014-PV-FIRST-EXPERIMENT-VALUE-DECISION-PACKET"
+    assert packet.download_performed is False
+    assert packet.raw_data_committed is False
+    assert record["executable_pv_generation_authorized"] is False
+    assert record["input_packet_ids"]["first_experiment_approval_packet"] == "D014-PV-FIRST-EXPERIMENT-APPROVAL-PACKET"
+    assert record["input_packet_ids"]["capacity_value_choice_packet"] == "D014-PV-CAPACITY-VALUE-CHOICE-PACKET"
+    assert record["input_packet_ids"]["orientation_tilt_value_choice_packet"] == "D014-PV-ORIENTATION-TILT-VALUE-CHOICE-PACKET"
+    assert record["input_packet_ids"]["pv_param_conversion_source_choice_packet"] == "D014-PV-PARAM-CONVERSION-SOURCE-CHOICE-PACKET"
+    assert "PV-PARAM-001_or_signed_amendment" in packet.blocking_register_ids
+    assert "future_node_allocation_rule" in packet.blocking_register_ids
+    assert "signed_cbs_anchor_row_period_sector_and_field" in packet.missing_approval_keys
+    assert "signed_pv_param_conversion_route_pvlib_poa_or_direct_ghi_fallback" in packet.missing_approval_keys
+    assert set(record["decision_option_ids"]) == {
+        "statistical_orientation_tilt_distribution",
+        "irradiance_to_power_conversion",
+        "performance_loss_treatment",
+        "temperature_and_clipping_treatment",
+        "capacity_convention",
+        "node_allocation",
+        "scenario_consistency",
+    }
+    assert packet.scope_guardrails["roof_building_location_specific_geometry_allowed"] is False
+    assert packet.recommended_first_experiment_route_for_review["route_status"] == (
+        "recommendation_only_unsigned_not_executable"
+    )
+    with pytest.raises(ValueError, match="First-experiment PV value-decision packet is unsigned"):
+        packet.require_executable_value_decisions_signed()
+
+
+def test_first_experiment_value_decision_packet_rejects_executable_or_roof_claims() -> None:
+    payload = json.loads(
+        Path("data/metadata/weather_pv/d014_pv_first_experiment_value_decision_packet.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    payload["executable_gate"]["executable_pv_generation_authorized"] = True
+
+    with pytest.raises(ValueError, match="must not authorize executable PV generation"):
+        PVFirstExperimentValueDecisionPacket(
+            packet_id=payload["packet_id"],
+            data_id=payload["data_id"],
+            status=payload["status"],
+            download_performed=payload["download_performed"],
+            raw_data_committed=payload["raw_data_committed"],
+            input_metadata=payload["input_metadata"],
+            scope_guardrails=payload["scope_guardrails"],
+            decision_options_for_pi=payload["decision_options_for_pi"],
+            recommended_first_experiment_route_for_review=payload["recommended_first_experiment_route_for_review"],
+            executable_gate=payload["executable_gate"],
+            pi_approval_keys_before_executable_use=payload["pi_approval_keys_before_executable_use"],
+            non_claims=payload["non_claims"],
+        )
+
+    payload = json.loads(
+        Path("data/metadata/weather_pv/d014_pv_first_experiment_value_decision_packet.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    payload["scope_guardrails"]["roof_building_location_specific_geometry_allowed"] = True
+    with pytest.raises(ValueError, match="roof/building/location geometry"):
+        PVFirstExperimentValueDecisionPacket(
+            packet_id=payload["packet_id"],
+            data_id=payload["data_id"],
+            status=payload["status"],
+            download_performed=payload["download_performed"],
+            raw_data_committed=payload["raw_data_committed"],
+            input_metadata=payload["input_metadata"],
+            scope_guardrails=payload["scope_guardrails"],
+            decision_options_for_pi=payload["decision_options_for_pi"],
+            recommended_first_experiment_route_for_review=payload["recommended_first_experiment_route_for_review"],
+            executable_gate=payload["executable_gate"],
+            pi_approval_keys_before_executable_use=payload["pi_approval_keys_before_executable_use"],
+            non_claims=payload["non_claims"],
+        )
 
 def test_committed_d014_pv_executable_preflight_guard_fails_closed() -> None:
     packet = load_pv_executable_preflight_guard_packet(

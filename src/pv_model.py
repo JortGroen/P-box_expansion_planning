@@ -1734,6 +1734,165 @@ def load_pv_first_experiment_approval_packet(path: str | Path) -> PVFirstExperim
         executable_gate=payload.get("executable_gate", {}),
         non_claims=payload.get("non_claims", ()),
     )
+
+@dataclass(frozen=True)
+class PVFirstExperimentValueDecisionPacket:
+    """Fail-closed PI value-decision support packet for first-experiment PV."""
+
+    packet_id: str
+    data_id: str
+    status: str
+    download_performed: bool
+    raw_data_committed: bool
+    input_metadata: Mapping[str, object]
+    scope_guardrails: Mapping[str, object]
+    decision_options_for_pi: Mapping[str, object]
+    recommended_first_experiment_route_for_review: Mapping[str, object]
+    executable_gate: Mapping[str, object]
+    pi_approval_keys_before_executable_use: Sequence[str]
+    non_claims: Sequence[str]
+
+    def __post_init__(self) -> None:
+        if self.packet_id != "D014-PV-FIRST-EXPERIMENT-VALUE-DECISION-PACKET":
+            raise ValueError("first-experiment PV value-decision packet must identify D014-PV-FIRST-EXPERIMENT-VALUE-DECISION-PACKET")
+        if self.data_id != "D-014":
+            raise ValueError("first-experiment PV value-decision packet must identify D-014")
+        if not str(self.status).startswith("proposed_"):
+            raise ValueError("first-experiment PV value-decision packet must remain proposed until PI approval")
+        if self.download_performed is not False or self.raw_data_committed is not False:
+            raise ValueError("first-experiment PV value-decision packet must not claim raw retrieval or committed raw data")
+        inputs = _audit_json_mapping(self.input_metadata, "input_metadata")
+        scope = _audit_json_mapping(self.scope_guardrails, "scope_guardrails")
+        options = _audit_json_mapping(self.decision_options_for_pi, "decision_options_for_pi")
+        recommendation = _audit_json_mapping(
+            self.recommended_first_experiment_route_for_review,
+            "recommended_first_experiment_route_for_review",
+        )
+        gate = _audit_json_mapping(self.executable_gate, "executable_gate")
+        approval_keys = tuple(str(item) for item in self.pi_approval_keys_before_executable_use)
+        non_claims = tuple(str(item) for item in self.non_claims)
+
+        required_inputs = {
+            "first_experiment_approval_packet": "D014-PV-FIRST-EXPERIMENT-APPROVAL-PACKET",
+            "capacity_value_choice_packet": "D014-PV-CAPACITY-VALUE-CHOICE-PACKET",
+            "orientation_tilt_value_choice_packet": "D014-PV-ORIENTATION-TILT-VALUE-CHOICE-PACKET",
+            "pv_param_conversion_source_choice_packet": "D014-PV-PARAM-CONVERSION-SOURCE-CHOICE-PACKET",
+            "executable_preflight_guard": "D014-PV-EXECUTABLE-PREFLIGHT-GUARD",
+        }
+        for key, packet_id in required_inputs.items():
+            record = _audit_json_mapping(inputs.get(key, {}), f"input_metadata.{key}")
+            if record.get("packet_id") != packet_id:
+                raise ValueError(f"first-experiment PV value-decision input {key} must reference {packet_id}")
+            if len(str(record.get("sha256", ""))) != 64:
+                raise ValueError(f"first-experiment PV value-decision input {key} must record SHA-256")
+        if "PV-ORIENT-001 typical/statistical" not in str(scope.get("first_experiment_orientation_scope", "")):
+            raise ValueError("first-experiment PV value-decision packet must preserve PV-ORIENT-001 statistical scope")
+        if scope.get("roof_building_location_specific_geometry_allowed") is not False:
+            raise ValueError("first-experiment PV value-decision packet must block roof/building/location geometry")
+        if scope.get("three_dbag_pv_map_or_per_roof_workflow_allowed") is not False:
+            raise ValueError("first-experiment PV value-decision packet must block 3DBAG/PV-map/per-roof workflows")
+        if "PV-CAP-001" not in str(scope.get("d014_capacity_route_separate", "")):
+            raise ValueError("first-experiment PV value-decision packet must keep D-014/PV-CAP capacity separate")
+        if "PVGIS remains qualitative" not in str(scope.get("weather_realization_boundary", "")):
+            raise ValueError("first-experiment PV value-decision packet must preserve the PVGIS boundary")
+        required_options = {
+            "statistical_orientation_tilt_distribution",
+            "irradiance_to_power_conversion",
+            "performance_loss_treatment",
+            "temperature_and_clipping_treatment",
+            "capacity_convention",
+            "node_allocation",
+            "scenario_consistency",
+        }
+        missing_options = required_options.difference(options)
+        if missing_options:
+            raise ValueError(f"first-experiment PV value-decision packet missing decision options: {sorted(missing_options)}")
+        if recommendation.get("route_status") != "recommendation_only_unsigned_not_executable":
+            raise ValueError("first-experiment PV value-decision route must remain unsigned and not executable")
+        if gate.get("executable_pv_generation_authorized") is not False:
+            raise ValueError("first-experiment PV value-decision packet must not authorize executable PV generation")
+        if gate.get("result_if_invoked") != "abort_until_value_decisions_signed":
+            raise ValueError("first-experiment PV value-decision packet must abort until values are signed")
+        blockers = tuple(str(item) for item in gate.get("blocking_register_ids", ()))
+        for blocker in ("PV-PARAM-001_or_signed_amendment", "PV-ORIENT-001_values", "A-016", "future_node_allocation_rule"):
+            if blocker not in blockers:
+                raise ValueError(f"first-experiment PV value-decision packet missing blocker {blocker}")
+        required_keys = {
+            "signed_cbs_anchor_row_period_sector_and_field",
+            "signed_ii3050_scenario_growth_factor_denominator_and_a016_mapping",
+            "signed_capacity_unit_dc_ac_convention_and_clipping_capacity",
+            "signed_orientation_tilt_class_bins_representative_angles_weights_and_weighting_convention",
+            "signed_pv_param_conversion_route_pvlib_poa_or_direct_ghi_fallback",
+            "signed_node_allocation_rule_and_normalization_denominator",
+            "signed_final_paired_hp_pv_weather_acceptance_gate",
+        }
+        missing_keys = required_keys.difference(approval_keys)
+        if missing_keys:
+            raise ValueError(f"first-experiment PV value-decision packet missing approval keys: {sorted(missing_keys)}")
+        if not any("No PV capacity value" in item and "orientation/tilt" in item for item in non_claims):
+            raise ValueError("first-experiment PV value-decision packet must state no values are approved")
+        if not any("No building, roof" in item and "PV-map" in item for item in non_claims):
+            raise ValueError("first-experiment PV value-decision packet must defer heavy geometry")
+        if not any("PVGIS remains qualitative" in item for item in non_claims):
+            raise ValueError("first-experiment PV value-decision packet must state PVGIS is qualitative only")
+
+        object.__setattr__(self, "input_metadata", inputs)
+        object.__setattr__(self, "scope_guardrails", scope)
+        object.__setattr__(self, "decision_options_for_pi", options)
+        object.__setattr__(self, "recommended_first_experiment_route_for_review", recommendation)
+        object.__setattr__(self, "executable_gate", gate)
+        object.__setattr__(self, "pi_approval_keys_before_executable_use", approval_keys)
+        object.__setattr__(self, "non_claims", non_claims)
+
+    @property
+    def missing_approval_keys(self) -> tuple[str, ...]:
+        return self.pi_approval_keys_before_executable_use
+
+    @property
+    def blocking_register_ids(self) -> tuple[str, ...]:
+        return tuple(str(item) for item in self.executable_gate["blocking_register_ids"])
+
+    def require_executable_value_decisions_signed(self) -> None:
+        """Always fail until PI signs every first-experiment PV value decision."""
+        raise ValueError(
+            "First-experiment PV value-decision packet is unsigned; executable PV requires signed capacity, "
+            "orientation/tilt values, conversion, A-016 mapping, allocation, and paired acceptance"
+        )
+
+    def identity_record(self) -> dict[str, object]:
+        return {
+            "packet_id": self.packet_id,
+            "data_id": self.data_id,
+            "status": self.status,
+            "input_packet_ids": {
+                key: _audit_json_mapping(value, f"input_metadata.{key}")["packet_id"]
+                for key, value in self.input_metadata.items()
+            },
+            "decision_option_ids": tuple(str(key) for key in self.decision_options_for_pi.keys()),
+            "blocking_register_ids": self.blocking_register_ids,
+            "missing_approval_keys": self.missing_approval_keys,
+            "executable_pv_generation_authorized": False,
+        }
+
+
+def load_pv_first_experiment_value_decision_packet(path: str | Path) -> PVFirstExperimentValueDecisionPacket:
+    """Load the proposed first-experiment PV value-decision support packet."""
+    payload = json.loads(Path(path).read_text(encoding="utf-8"))
+    return PVFirstExperimentValueDecisionPacket(
+        packet_id=str(payload.get("packet_id", "")),
+        data_id=str(payload.get("data_id", "")),
+        status=str(payload.get("status", "")),
+        download_performed=bool(payload.get("download_performed")),
+        raw_data_committed=bool(payload.get("raw_data_committed")),
+        input_metadata=payload.get("input_metadata", {}),
+        scope_guardrails=payload.get("scope_guardrails", {}),
+        decision_options_for_pi=payload.get("decision_options_for_pi", {}),
+        recommended_first_experiment_route_for_review=payload.get("recommended_first_experiment_route_for_review", {}),
+        executable_gate=payload.get("executable_gate", {}),
+        pi_approval_keys_before_executable_use=payload.get("pi_approval_keys_before_executable_use", ()),
+        non_claims=payload.get("non_claims", ()),
+    )
+
 @dataclass(frozen=True)
 class PVGenerationProfile:
     """PV generation produced from one validated paired weather member."""
