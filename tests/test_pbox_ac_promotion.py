@@ -165,6 +165,14 @@ def test_selective_ac_payload_rejects_tampered_candidate_seed() -> None:
         assert_selective_ac_promotion_payload(payload)
 
 
+def test_selective_ac_payload_rejects_duplicate_candidate_identity_keys() -> None:
+    payload = _valid_payload()
+    payload["candidates"].append(dict(payload["candidates"][0]))
+
+    with pytest.raises(ValueError, match="strictly increasing"):
+        assert_selective_ac_promotion_payload(payload)
+
+
 def test_selective_ac_payload_rejects_unsorted_candidate_indices() -> None:
     payload = _valid_payload()
     payload["candidates"][0]["straddling_timestep_indices"] = [2, 1]
@@ -179,6 +187,15 @@ def test_selective_ac_payload_rejects_lower_event_outside_upper_event() -> None:
     payload["candidates"][0]["upper_event"] = False
 
     with pytest.raises(ValueError, match="lower endpoint event"):
+        assert_selective_ac_promotion_payload(payload)
+
+
+def test_selective_ac_payload_rejects_endpoint_longest_run_inversion() -> None:
+    payload = _valid_payload()
+    payload["candidates"][0]["lower_longest_run_steps"] = 4
+    payload["candidates"][0]["upper_longest_run_steps"] = 3
+
+    with pytest.raises(ValueError, match="lower_longest_run_steps"):
         assert_selective_ac_promotion_payload(payload)
 
 

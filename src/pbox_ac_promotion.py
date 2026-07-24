@@ -64,6 +64,8 @@ class SelectiveACPromotionCandidate:
             raise ValueError("lower endpoint event cannot exceed upper endpoint event")
         if self.lower_longest_run_steps < 0 or self.upper_longest_run_steps < 0:
             raise ValueError("longest run diagnostics must be nonnegative")
+        if self.lower_longest_run_steps > self.upper_longest_run_steps:
+            raise ValueError("lower_longest_run_steps must be <= upper_longest_run_steps")
 
     def to_mapping(self) -> dict[str, object]:
         """Return a JSON-stable candidate record."""
@@ -244,8 +246,8 @@ def assert_selective_ac_promotion_payload(payload: Mapping[str, object]) -> None
             sample_count=sample_count,
         )
         key = (float(candidate["alpha"]), int(candidate["sample_index"]))
-        if previous_key is not None and key < previous_key:
-            raise ValueError("candidates must be sorted by alpha and sample_index")
+        if previous_key is not None and key <= previous_key:
+            raise ValueError("candidates must be strictly increasing by alpha and sample_index")
         previous_key = key
 
 
@@ -337,12 +339,14 @@ def _validate_candidate_mapping(
         raise TypeError("candidate endpoint events must be booleans")
     if lower_event and not upper_event:
         raise ValueError("lower endpoint event cannot exceed upper endpoint event")
-    _expect_nonnegative_int(
+    lower_longest = _expect_nonnegative_int(
         candidate["lower_longest_run_steps"], name="candidate.lower_longest_run_steps"
     )
-    _expect_nonnegative_int(
+    upper_longest = _expect_nonnegative_int(
         candidate["upper_longest_run_steps"], name="candidate.upper_longest_run_steps"
     )
+    if lower_longest > upper_longest:
+        raise ValueError("lower_longest_run_steps must be <= upper_longest_run_steps")
 
 
 def _require_mapping_fields(mapping: Mapping[str, object], required: set[str], *, name: str) -> None:
