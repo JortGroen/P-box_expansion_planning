@@ -1094,6 +1094,9 @@ def test_committed_d004_pv_parameter_decision_packet_is_unsigned_fail_closed() -
     assert payload["status"] == "proposed_pending_pi_signoff"
     assert payload["parameter_config_status"] == "unsigned_fail_closed_scaffold"
     assert payload["blocks_signed_executable_pv_generation"] is True
+    assert "PV-CAP-001" in payload["governing_inputs"]
+    assert "outside PV-PARAM-001" in payload["source_traceability"]["capacity_source_status"]
+    assert "CBS Alkmaar" in payload["source_traceability"]["capacity_source_status"]
     assert {item["field"] for item in payload["recommended_decisions"]} == {
         "installed_capacity_kw",
         "tilt_aspect",
@@ -1103,7 +1106,20 @@ def test_committed_d004_pv_parameter_decision_packet_is_unsigned_fail_closed() -
         "ghi_vs_plane_of_array",
     }
     assert payload["scaffold_contract"]["guard_method"] == "PVSystemConfig.require_signed_parameters()"
-    assert "no net-load/event/P(E)/capacity-screen/manuscript results" in payload["out_of_scope_guards"]
+    assert payload["scaffold_contract"]["required_signed_value"] == "PV-PARAM-001"
+    proposed = payload["proposed_primary_first_pass_config_template"]
+    assert proposed["config_id"] == "pv_param_001_first_pass_ghi_pr086_no_temp_clipped_v1"
+    assert proposed["installed_capacity_kw"]["default"] is None
+    assert proposed["installed_capacity_kw"]["value"] == "caller_supplied_per_node_or_fleet"
+    assert "PV-CAP-001" in proposed["installed_capacity_kw"]["source"]
+    assert "PV-CAP-001" in proposed["installed_capacity_kw"]["fail_closed_rule"]
+    assert proposed["performance_ratio"]["value"] == pytest.approx(0.86)
+    assert "PVGIS reference request loss_percent=14.0" in proposed["performance_ratio"]["source"]
+    assert proposed["temperature_adjustment"]["temperature_coefficient_per_c"] == pytest.approx(0.0)
+    assert proposed["irradiance_input_basis"]["value"] == "weather_member_ghi_w_per_m2"
+    assert proposed["tilt_aspect"]["primary_first_pass_use"] == "provenance_only_not_applied_to_knmi_ghi"
+    assert payload["proposed_formula_for_pi_review"]["formula"].startswith("pv_kw[t] = min")
+    assert "no net-load/event/P(E)/threshold/capacity-screen/manuscript results" in payload["out_of_scope_guards"]
 
 
 def test_pv_paired_readiness_preflight_fails_closed_without_signed_inputs() -> None:

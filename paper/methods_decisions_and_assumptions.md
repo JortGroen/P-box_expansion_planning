@@ -48,6 +48,7 @@ the corresponding register row.
 | `A-013` | Symmetric relative grid-model discrepancy with unknown dependence; numerical values unsigned. | proposed |
 | `A-014` | Load-proportional EV adoption allocation across SimBench load nodes. | approved for second-stage use after local totals |
 | `A-015` | PBL Startanalyse D-013 suffix/indicator mapping for residential HP scaling. | approved for D-013 indicator mapping only |
+| `A-016` | EV/HP/PV 2035 source and scenario-lineage consistency must be checked before integrated analysis. | approved consistency requirement |
 <!-- assumption-inventory-end -->
 
 ### Additional Modelling and Data-Inference Boundaries
@@ -66,8 +67,9 @@ the corresponding register row.
 | D-013/HP local scaling | PBL `H23_Vraag_RV_w` and `H24_Vraag_TW_w` are treated as residential space-heat and domestic-hot-water indicators under A-015/D013-PBL-MAPPING, but the exact raw-code meaning is still currently inferred from code pattern plus Startanalyse documentation rather than explicit PBL evidence for those literal labels. | Approved as a transparent assumption for indicator mapping only; annual TWh values, `Referentie_2030` value-column use, SFH/MFH split, 2035 adoption, and executable HP load remain separate gates. |
 | D-013/CBS split | HP local heat is split over SFH/MFH using CBS Alkmaar dwelling counts, not measured class-specific heat demand. | Proposed route; count-share versus area-weighted split requires PI sign-off before executable values. |
 | D004-MC-001/D004-SOURCE-MEMBER-ACCEPTANCE | KNMI Berkhout is the realized weather path for Alkmaar; hourly `T` and `Q` are expanded to 15-minute members, and PVGIS remains sanity/provenance only. | Approved for internal source/member use; final paired HP/PV validation and cold-spell tolerances remain pending. |
-| PV-PARAM-001 | PV conversion parameters remain unsigned: installed capacity, tilt/aspect, losses/PR, temperature coefficient, clipping, and GHI-vs-plane treatment require PI signoff. | Proposed; fail-closed scaffold only. |
+| PV-PARAM-001 | Proposed primary first-pass PV conversion uses capacity supplied by a separate signed capacity route such as PV-CAP-001, KNMI GHI directly, PR=0.86 from the PVGIS 14% reference loss, no temperature correction, clipping at supplied capacity, and PVGIS tilt/aspect as provenance only. | Proposed; fail-closed until PI signoff. |
 | PV-CAP-001/D-014 | PV installed capacity is anchored to local Alkmaar CBS photovoltaic capacity and scaled to 2035 through a signed II3050/scenario growth factor; optional DEGO/Zonnedakje/building sources support allocation only if registered. | Approved route; concrete retrieval, values, capacity convention, and per-node allocation remain pending. |
+| A-016/Scenario consistency | EV, HP, and PV may use different best-available sources, but their 2035 branches must be reconciled and manifested before integrated net-load/event analysis. | Approved consistency requirement; unresolved mismatch is a limitation or escalation, not a silent assumption. |
 | EV-007A/A-014/D-010 | Alkmaar municipality is the local proxy for the synthetic SimBench case, and local counts are allocated across grid loads by static `p_mw`. | EV local totals and A-014 allocation are approved; this remains an illustrative-case transfer assumption. |
 | A-013 | The candidate `epsilon_grid = 5%` with `2%`/`10%` sensitivities is not empirical or expert-signed. | Proposed only; E9.S5a evidence review is required before numerical use as a scientific claim. |
 ## Decisions
@@ -986,6 +988,11 @@ import episodes from being joined across an intervening export interval. The
 unconditioned magnitude is retained for screening so reverse-flow stress
 remains visible.
 
+<!-- methods-id: A-016 -->
+### A-016 - Cross-Source 2035 Scenario Consistency
+
+**Status: Approved consistency requirement.** The 2035 EV, heat-pump, and PV layers may draw on different best-available Dutch sources because no single source cleanly supplies all local quantities needed for this synthetic DSO case. EV counts are anchored to ElaadNL Outlook, HP scaling is built from When2Heat shape/COP evidence plus PBL/CBS local heat-demand evidence, and PV installed capacity is routed through CBS local capacity and II3050 scenario growth. Before any executable integrated net-load or event analysis, each component artifact and the integration manifest must therefore record source lineage, source year, planning year, scenario label, scaling factor or adoption branch, and an explicit consistency check across the EV/HP/PV choices. If those choices cannot be reconciled as one coherent 2035 case, the mismatch is reported as a limitation or escalated for a signed amendment; it must not be hidden behind a shared `low`, `middle`, or `high` label.
+
 <!-- methods-id: A-013 -->
 ### A-013 - Grid-Model Output Discrepancy
 
@@ -1411,7 +1418,7 @@ integrated HP/PV acceptance.
 <!-- methods-id: PV-PARAM-001 -->
 ### PV-PARAM-001 - PV Conversion Parameter Signoff Packet
 
-**Status: Proposed; unsigned fail-closed scaffold only.** The PV/weather readiness layer now records a proposed `PV-PARAM-001` decision packet for the PV conversion parameters that remain scientifically unsigned after D-004 source/member acceptance. The packet asks the PI to decide installed-capacity handling, whether PVGIS 35-degree south-facing geometry remains provenance only or becomes an approved plane-of-array treatment, how losses or performance ratio are represented, whether and how temperature coefficients apply, clipping semantics, and whether KNMI `Q`-derived GHI may be used directly or must be transformed to plane-of-array irradiance. Until the PI signs this parameter decision, `PVSystemConfig` can support scaffold and unit-test calculations but its guard method raises before signed executable PV input use. This proposed packet does not approve numerical PV parameters, final paired HP/PV acceptance, cold-spell tolerances, net-load/event analysis, `P(E)`, capacity screens, or manuscript results.
+**Status: Proposed; unsigned fail-closed scaffold only.** The PV/weather readiness layer now records a concrete `PV-PARAM-001` proposal for the primary first-pass PV conversion parameters that remain scientifically unsigned after D-004 source/member acceptance. The proposed template `pv_param_001_first_pass_ghi_pr086_no_temp_clipped_v1` requires signed `installed_capacity_kw` per node or fleet from a separate capacity route such as PV-CAP-001, uses accepted WEATHER-001 KNMI `Q`-derived `ghi_w_per_m2` directly as a simplified irradiance index, maps the approved PVGIS reference request loss setting of 14% to `performance_ratio = 0.86`, disables PV temperature correction with `temperature_coefficient_per_c = 0.0` and `reference_temperature_c = 25.0`, clips nonnegative output at installed capacity, and keeps PVGIS 35-degree south-facing geometry as qualitative sanity/provenance only rather than applying plane-of-array transposition. This is a proposed first-screen simplification and not empirical PV performance evidence. Until the PI signs this parameter decision, `PVSystemConfig` can support scaffold and unit-test calculations but its guard method raises before signed executable PV input use. This proposed packet does not approve installed-capacity source, numeric capacity, capacity convention, 2035 scaling, per-node allocation, final paired HP/PV acceptance, cold-spell tolerances, net-load/event analysis, `P(E)`, threshold analysis, capacity screens, or manuscript results.
 
 <!-- methods-id: PV-CAP-001 -->
 ### PV-CAP-001 - PV Installed-Capacity Source Route
@@ -1583,6 +1590,10 @@ explicitly promotes that use.
 
 
 
+<!-- methods-id: E2-S3-HP001-EXECUTABLE-VALUE-BINDING-BRIEF -->
+### E2-S3-HP001-EXECUTABLE-VALUE-BINDING-BRIEF - HP-001 Executable Value-Binding Decision Brief
+
+**Status: Proposed brief; executable annual values and final paired acceptance unsigned.** The HP-001 executable value-binding decision brief restates the merged packet as simple PI approval options: approve or amend PBL `Referentie_2030`, PBL `I11_woningequivalenten [Woning]`, GJ/year-to-TWh/year conversion by division by `3,600,000`, the CBS 85035NED SFH/MFH split rule, and the 2035 HP service/adoption/electrification route for residential space heat plus domestic hot water. Its candidate adoption options are unsigned scenario choices only: a `0.50` first-pass service fraction, a `0.25`/`0.50`/`0.75` low/mid/high scenario set, a PBL pathway sensitivity using `A08_Aandeel_eWP_GJ` with `A07_Aandeel_eWP_WEQ` and `A02_Aansl_eWP` diagnostics, or a future external public source. The fractions are not source-estimated adoption values, not probabilities, and not executable annual HP TWh. Final HP use remains blocked on separately signed D-004 paired-weather acceptance and cold-spell numerical tolerances. This brief does not approve annual HP values, net-load/event analysis, `P(E)`, threshold/capacity-screen results, manuscript numbers, or probability results.
 <!-- methods-id: E2-S3-HP001-EXECUTABLE-VALUE-BINDING-PACKET -->
 ### E2-S3-HP001-EXECUTABLE-VALUE-BINDING-PACKET - HP-001 Executable Value-Binding Decision Packet
 
@@ -1681,3 +1692,4 @@ base policy as well. The sole code-level bootstrap exception is the initial
 `codex/ownership-enforcement` pull request when neither policy file exists on
 its base; after that first merge, the same branch is governed by the base
 policy like every other branch.
+
