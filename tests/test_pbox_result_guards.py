@@ -19,6 +19,7 @@ def _complete_prerequisites(*, g3: bool = False) -> FinalResultPrerequisites:
         capacity_convention_approved=True,
         capacity_denominator_provenance="synthetic-signed-capacity-convention",
         output_error_endpoint_records_manifested=True,
+        a016_scenario_consistency_manifested=True,
         g3_vertex_shortcut_approved=g3,
     )
 
@@ -36,6 +37,7 @@ def test_paper_facing_guard_blocks_default_prerequisite_state() -> None:
         "approved capacity convention",
         "capacity denominator provenance",
         "manifested output-error endpoint event records",
+        "manifested A-016 scenario consistency",
     )
     assert report.to_mapping()["result_kind"] == "pbox-probability"
 
@@ -90,11 +92,29 @@ def test_paper_facing_guard_rejects_missing_capacity_provenance_even_when_capaci
             capacity_convention_approved=True,
             capacity_denominator_provenance=" ",
             output_error_endpoint_records_manifested=True,
+            a016_scenario_consistency_manifested=True,
         ),
     )
 
     assert report.allowed is False
     assert report.missing_prerequisites == ("capacity denominator provenance",)
+
+
+def test_paper_facing_guard_requires_a016_scenario_consistency_manifest() -> None:
+    report = evaluate_paper_facing_guard(
+        PaperFacingResultKind.PBOX_PROBABILITY,
+        FinalResultPrerequisites(
+            g2_tier1_envelope_approved=True,
+            a013_grid_error_signed=True,
+            capacity_convention_approved=True,
+            capacity_denominator_provenance="synthetic-signed-capacity-convention",
+            output_error_endpoint_records_manifested=True,
+        ),
+    )
+
+    assert report.allowed is False
+    assert report.missing_prerequisites == ("manifested A-016 scenario consistency",)
+    assert report.to_mapping()["prerequisites"]["a016_scenario_consistency_manifested"] is False
 
 
 def test_alpha_indexed_probability_report_accepts_complete_lower_upper_rows() -> None:

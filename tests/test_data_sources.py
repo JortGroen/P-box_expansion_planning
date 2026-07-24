@@ -1113,6 +1113,99 @@ def test_d014_cbs_odata_url_builder_is_official_and_encoded() -> None:
         pv_capacity.build_cbs_odata_url("TypedDataSet?$filter=bad")
 
 
+def test_d014_cbs_anchor_query_urls_are_narrow_and_official() -> None:
+    urls = pv_capacity.build_d014_cbs_anchor_query_urls()
+
+    assert set(urls) == {
+        "table_infos",
+        "data_properties",
+        "periods",
+        "sector_and_capacity_class_codes",
+        "alkmaar_region",
+        "alkmaar_rows",
+    }
+    assert all(parse.urlparse(url).netloc == "opendata.cbs.nl" for url in urls.values())
+    assert "85005NED" in urls["alkmaar_rows"]
+    assert "%24filter=RegioS+eq+%27GM0361%27" in urls["alkmaar_rows"]
+    assert "%24filter=Key+eq+%27GM0361%27" in urls["alkmaar_region"]
+
+
+def test_committed_d014_cbs_anchor_evidence_metadata_records_unsigned_rows() -> None:
+    payload = json.loads(
+        Path("data/metadata/weather_pv/d014_cbs_85005ned_alkmaar_gm0361_anchor_evidence.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    choices = payload["candidate_value_choices_for_pi_review"]
+    fields = {item["key"]: item for item in payload["schema"]["topic_fields"]}
+
+    assert payload["packet_id"] == "D014-CBS-PV-CAPACITY-ANCHOR-EVIDENCE"
+    assert payload["download_performed"] is True
+    assert payload["raw_data_committed"] is False
+    assert payload["source"]["table_id"] == "85005NED"
+    assert payload["source"]["modified"] == "2026-06-12T02:00:00"
+    assert payload["raw_bundle"]["path"].startswith("data/raw/pv_capacity/")
+    assert len(payload["raw_bundle"]["sha256"]) == 64
+    assert payload["raw_bundle"]["size_bytes"] > 0
+    assert payload["schema"]["alkmaar_row_count"] == 63
+    assert fields["OpgesteldVermogenVanZonnepanelen_2"]["unit"] == "kWp"
+    assert fields["OpgesteldVermogenOmvormers_3"]["unit"] == "kW"
+    latest = next(
+        item
+        for item in choices["exact_row_candidates"]
+        if item["choice_role"] == "latest_definitive_all_activity_and_homes_candidate"
+    )
+    assert latest["period_key"] == "2023JJ00"
+    assert latest["period_status"] == "Definitief"
+    assert latest["sector_key"] == "E007161"
+    assert latest["panel_capacity_kwp"] > 0
+    assert latest["inverter_capacity_kw"] > 0
+    assert latest["executable_status"] == "candidate_only_unsigned"
+    assert "ii3050_growth_factor_value" in payload["pi_approval_keys_before_executable_use"]
+    assert any("No executable PV installed-capacity value" in item for item in payload["non_claims"])
+
+
+def test_d014_ii3050_query_urls_are_public_and_pdf_pinned() -> None:
+    urls = pv_capacity.build_d014_ii3050_query_urls()
+
+    assert set(urls) == {
+        "appendices_publication_page",
+        "appendices_pdf",
+        "main_report_publication_page",
+    }
+    assert parse.urlparse(urls["appendices_publication_page"]).netloc == "www.netbeheernederland.nl"
+    parsed_pdf = parse.urlparse(urls["appendices_pdf"])
+    assert parsed_pdf.netloc == "www.netbeheernederland.nl"
+    assert parsed_pdf.path.endswith("/Bijlagen_II3050_eindrapport__285.pdf")
+
+
+def test_committed_d014_ii3050_growth_evidence_metadata_records_unsigned_candidates() -> None:
+    payload = json.loads(
+        Path("data/metadata/weather_pv/d014_ii3050_pv_growth_evidence.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    candidates = payload["table_evidence"]["planning_year_2035_candidates"]
+
+    assert payload["packet_id"] == "D014-II3050-PV-GROWTH-EVIDENCE"
+    assert payload["download_performed"] is True
+    assert payload["raw_data_committed"] is False
+    assert payload["approved_route_decision"] == "PV-CAP-001"
+    assert payload["cbs_anchor_evidence_id"] == "D014-CBS-PV-CAPACITY-ANCHOR-EVIDENCE"
+    assert payload["source"]["owner"] == "Netbeheer Nederland"
+    assert payload["raw_bundle"]["path"].startswith("data/raw/pv_capacity/")
+    assert len(payload["raw_bundle"]["sha256"]) == 64
+    assert payload["raw_bundle"]["size_bytes"] > 1_000_000
+    assert payload["table_evidence"]["table_label"] == "Tabel A.1"
+    assert payload["table_evidence"]["row_label"] == "Zon PV*"
+    assert payload["table_evidence"]["unit"] == "GW"
+    assert {item["scenario"] for item in candidates} == {"KA", "ND", "IA"}
+    assert {item["year"] for item in candidates} == {2035}
+    assert all(item["executable_status"] == "candidate_only_unsigned" for item in candidates)
+    assert "ii3050_growth_factor_value" in payload["pi_approval_keys_before_executable_use"]
+    assert any("No II3050 growth denominator" in item for item in payload["non_claims"])
+
+
 def test_d014_statistical_orientation_tilt_packet_is_lightweight_and_metadata_only(tmp_path: Path) -> None:
     packet = pv_capacity.build_d014_pv_statistical_orientation_tilt_packet()
 

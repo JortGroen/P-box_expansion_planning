@@ -8,6 +8,7 @@ adequacy and physics checks.
 
 from __future__ import annotations
 
+import hashlib
 from dataclasses import dataclass, field
 from pathlib import Path
 from types import MappingProxyType
@@ -1751,6 +1752,105 @@ def build_executable_loading_bridge_preflight(
     }
 
 
+def build_real_artifact_assembly_preflight(
+    config: FutureLayerScreenPreflightConfig,
+    artifacts: Sequence[ExecutableInputArtifact],
+    trajectory_config: LoadingTrajectoryPreRunConfig,
+    *,
+    capacity_provenance: Mapping[str, object] | None = None,
+    artifact_sha256_by_path: Mapping[str, str] | None = None,
+    repo_root: str | Path | None = None,
+    required_component_kinds: Sequence[ComponentKind] = REQUIRED_INTEGRATION_COMPONENT_KINDS,
+    missing_artifact_blockers: Mapping[str, Sequence[str]] | None = None,
+    downstream_blocker_ids: Sequence[str] = DEFAULT_EXECUTABLE_BRIDGE_BLOCKER_IDS,
+    intended_use: str = "e3_s2_real_artifact_assembly_preflight",
+) -> dict[str, object]:
+    """Build a path/checksum-aware real-artifact assembly dossier.
+
+    The dossier composes the existing executable-input and IC-2 bridge gates,
+    then validates only metadata packet existence/checksums. It deliberately
+    never opens component trajectory arrays or produces loading/event results.
+    """
+
+    bridge = build_executable_loading_bridge_preflight(
+        config,
+        artifacts,
+        trajectory_config,
+        capacity_provenance=capacity_provenance,
+        required_component_kinds=required_component_kinds,
+        missing_artifact_blockers=missing_artifact_blockers,
+        downstream_blocker_ids=downstream_blocker_ids,
+        intended_use=intended_use,
+    )
+    root = (Path(repo_root) if repo_root is not None else Path(__file__).resolve().parents[2]).resolve()
+    expected_checksums = dict(artifact_sha256_by_path or {})
+    manifest_paths = {
+        artifact.manifest_path
+        for artifact in artifacts
+        if artifact.manifest_path is not None
+    }
+    source_records: list[dict[str, object]] = []
+    missing_paths: list[str] = []
+    checksum_mismatches: list[dict[str, str]] = []
+    for artifact in artifacts:
+        if artifact.manifest_path is None:
+            continue
+        relative_path = _require_nonempty(artifact.manifest_path, name="artifact manifest_path")
+        full_path = _resolve_repo_metadata_path(root, relative_path)
+        exists = full_path.is_file()
+        record: dict[str, object] = {
+            "kind": artifact.kind,
+            "artifact_id": artifact.artifact_id,
+            "path": relative_path,
+            "exists": exists,
+            "artifact_status": artifact.artifact_status,
+        }
+        if exists:
+            observed = _sha256_file(full_path)
+            record["sha256"] = observed
+            expected = expected_checksums.get(relative_path)
+            if expected is not None:
+                checksum_match = observed == expected
+                record["expected_sha256"] = expected
+                record["checksum_match"] = checksum_match
+                if not checksum_match:
+                    checksum_mismatches.append(
+                        {"path": relative_path, "expected": expected, "observed": observed}
+                    )
+        else:
+            missing_paths.append(relative_path)
+        source_records.append(record)
+
+    unmatched_expected_paths = tuple(
+        sorted(path for path in expected_checksums if path not in manifest_paths)
+    )
+    source_artifacts_ready = not missing_paths and not checksum_mismatches and not unmatched_expected_paths
+    ready_for_real_artifact_assembly = (
+        bridge["ready_for_first_real_experiment"] is True
+        and source_artifacts_ready
+    )
+    return {
+        "intended_use": intended_use,
+        "dry_run_only": True,
+        "metadata_preflight_only": True,
+        "ready_for_real_artifact_assembly": ready_for_real_artifact_assembly,
+        "source_artifacts_ready": source_artifacts_ready,
+        "no_real_net_load_arrays": True,
+        "no_event_detection": True,
+        "no_event_counts": True,
+        "no_probability_estimate": True,
+        "no_capacity_screen_result": True,
+        "bridge_preflight": bridge,
+        "source_artifact_records": tuple(source_records),
+        "blockers": {
+            **bridge["blockers"],
+            "source_manifest_paths_missing": tuple(missing_paths),
+            "source_manifest_checksum_mismatches": tuple(checksum_mismatches),
+            "unmatched_expected_checksum_paths": unmatched_expected_paths,
+        },
+    }
+
+
 def validate_future_layer_screen_preflight(
     config: FutureLayerScreenPreflightConfig,
     artifacts: Sequence[ExecutableInputArtifact],
@@ -2048,6 +2148,26 @@ def validate_net_load_result(result: NetLoadResult) -> None:
 
 _VALID_COMPONENT_KINDS = frozenset(ComponentKind.__args__)
 _VALID_EXECUTABLE_INPUT_STATUSES = frozenset(ExecutableInputArtifactStatus.__args__)
+
+
+def _resolve_repo_metadata_path(repo_root: Path, relative_path: str) -> Path:
+    path = Path(relative_path)
+    if path.is_absolute():
+        raise ValueError("artifact manifest_path must be repository-relative")
+    resolved_root = repo_root.resolve()
+    resolved = (resolved_root / path).resolve()
+    try:
+        resolved.relative_to(resolved_root)
+    except ValueError as exc:
+        raise ValueError("artifact manifest_path must stay within repo_root") from exc
+    return resolved
+
+def _sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
 
 
 def _validate_bridge_capacity_provenance(record: Mapping[str, object] | None) -> dict[str, object] | None:

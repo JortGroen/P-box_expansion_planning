@@ -1,0 +1,241 @@
+{
+  "approved_route_decision": "PV-CAP-001",
+  "capacity_route_boundary": "II3050/scenario PV growth evidence only; CBS Alkmaar anchor row and all executable values remain separate and unsigned",
+  "cbs_anchor_evidence_id": "D014-CBS-PV-CAPACITY-ANCHOR-EVIDENCE",
+  "created_utc": "2026-07-24T11:42:43+00:00",
+  "data_id": "D-014",
+  "download_performed": true,
+  "growth_factor_choices_for_pi_review": {
+    "denominator_candidates": [
+      {
+        "denominator_id": "ii3050_2019_reference_zon_pv_gw",
+        "question": "Use II3050 2019 national PV capacity as the growth denominator?",
+        "value_status": "source_evidence_candidate_unsigned",
+        "zon_pv_gw": 6.2
+      },
+      {
+        "denominator_id": "cbs_anchor_year_same_convention",
+        "question": "Use a CBS anchor-year denominator or crosswalk instead of the II3050 2019 reference?",
+        "value_status": "requires signed CBS period/field/convention and a national/local crosswalk"
+      }
+    ],
+    "formula_candidates": [
+      {
+        "formula": "growth_factor = selected_2035_zon_pv_gw / ii3050_2019_reference_zon_pv_gw",
+        "formula_id": "national_ii3050_ratio_to_reference",
+        "status": "candidate_only_unsigned"
+      },
+      {
+        "formula": "growth_factor = selected_2035_scenario_value / signed_anchor_year_reference_value",
+        "formula_id": "scenario_crosswalk_to_cbs_anchor_year",
+        "status": "requires PI-defined source/convention crosswalk"
+      }
+    ],
+    "scenario_column_candidates": [
+      {
+        "candidate_role": "planning_year_2035_ka_candidate",
+        "column_label": "2035 KA",
+        "executable_status": "candidate_only_unsigned",
+        "scenario": "KA",
+        "year": 2035,
+        "zon_pv_gw": 75.9
+      },
+      {
+        "candidate_role": "planning_year_2035_nd_candidate",
+        "column_label": "2035 ND",
+        "executable_status": "candidate_only_unsigned",
+        "scenario": "ND",
+        "year": 2035,
+        "zon_pv_gw": 98.2
+      },
+      {
+        "candidate_role": "planning_year_2035_ia_candidate",
+        "column_label": "2035 IA",
+        "executable_status": "candidate_only_unsigned",
+        "scenario": "IA",
+        "year": 2035,
+        "zon_pv_gw": 52.6
+      }
+    ]
+  },
+  "non_claims": [
+    "No executable PV installed-capacity value is approved.",
+    "No II3050 scenario column is selected as final.",
+    "No II3050 growth denominator, formula, or growth-factor value is approved.",
+    "No CBS period, sector/category, capacity field, unit convention, or DC/AC convention is selected as final.",
+    "No per-node PV allocation is approved.",
+    "No statistical orientation/tilt values or PV-PARAM conversion treatment are approved.",
+    "No roof, building, 3DBAG, or PV-map geometry source is retrieved or used.",
+    "No net-load, event detection, P(E), threshold analysis, capacity screen, manuscript result, or final PV output is produced."
+  ],
+  "packet_id": "D014-II3050-PV-GROWTH-EVIDENCE",
+  "pi_approval_keys_before_executable_use": [
+    "ii3050_raw_pdf_sha256",
+    "ii3050_source_table_page_or_sheet",
+    "ii3050_row_label",
+    "ii3050_unit",
+    "ii3050_scenario_column",
+    "ii3050_growth_denominator",
+    "ii3050_growth_factor_formula",
+    "ii3050_growth_factor_value",
+    "scenario_source_consistency_with_ev_hp_inputs",
+    "cbs_source_period_key",
+    "cbs_capacity_field_key",
+    "capacity_unit_and_dc_ac_convention",
+    "node_allocation_rule",
+    "statistical_orientation_tilt_distribution_source",
+    "statistical_orientation_tilt_distribution_weights",
+    "PV-PARAM-001_or_amended_conversion_decision"
+  ],
+  "pv_orient_boundary": "PV-ORIENT-001 lightweight statistical orientation/tilt scope preserved; no roof/building/3DBAG/PV-map retrieval",
+  "pv_param_boundary": "PV-PARAM-001 remains proposed/fail-closed; this packet does not approve PR=0.86, direct-GHI, plane-of-array conversion, or PV output",
+  "raw_bundle": {
+    "path": "data/raw/pv_capacity/d014_ii3050_bijlagen_eindrapport_285.pdf",
+    "retrieved_utc": "2026-07-24T11:42:43+00:00",
+    "sha256": "7bcfe6607464590df3b755b6a9e531409927b100f1a79f15faba00d67d7c95ce",
+    "size_bytes": 14784688,
+    "source_url": "https://www.netbeheernederland.nl/sites/default/files/Bijlagen_II3050_eindrapport__285.pdf"
+  },
+  "raw_data_committed": false,
+  "source": {
+    "license": "public Netbeheer Nederland web publication/citation route; no redistributable raw data committed",
+    "owner": "Netbeheer Nederland",
+    "planned_use": "PI-reviewed scenario growth evidence for scaling the CBS Alkmaar PV-capacity anchor to planning year 2035",
+    "publication": "Bijlagen II3050 eindrapport",
+    "publication_date": "2023-10-12",
+    "source_pages": {
+      "appendices_pdf": "https://www.netbeheernederland.nl/sites/default/files/Bijlagen_II3050_eindrapport__285.pdf",
+      "appendices_publication_page": "https://www.netbeheernederland.nl/publicatie/bijlagen-ii3050-eindrapport",
+      "main_report_publication_page": "https://www.netbeheernederland.nl/publicatie/ii3050-eindrapport"
+    }
+  },
+  "source_value_packet_id": "D014-PV-CAPACITY-SOURCE-VALUE-PACKET",
+  "status": "retrieved_source_evidence_values_unsigned",
+  "table_evidence": {
+    "candidate_columns": [
+      {
+        "column_label": "2019 reference",
+        "scenario": "reference",
+        "year": 2019,
+        "zon_pv_gw": 6.2
+      },
+      {
+        "column_label": "2030 KA",
+        "scenario": "KA",
+        "year": 2030,
+        "zon_pv_gw": 59.3
+      },
+      {
+        "column_label": "2030 ND",
+        "scenario": "ND",
+        "year": 2030,
+        "zon_pv_gw": 76.1
+      },
+      {
+        "column_label": "2030 IA",
+        "scenario": "IA",
+        "year": 2030,
+        "zon_pv_gw": 42.1
+      },
+      {
+        "column_label": "2035 KA",
+        "scenario": "KA",
+        "year": 2035,
+        "zon_pv_gw": 75.9
+      },
+      {
+        "column_label": "2035 ND",
+        "scenario": "ND",
+        "year": 2035,
+        "zon_pv_gw": 98.2
+      },
+      {
+        "column_label": "2035 IA",
+        "scenario": "IA",
+        "year": 2035,
+        "zon_pv_gw": 52.6
+      },
+      {
+        "column_label": "2040 DEC",
+        "scenario": "DEC",
+        "year": 2040,
+        "zon_pv_gw": 126.1
+      },
+      {
+        "column_label": "2040 NAT",
+        "scenario": "NAT",
+        "year": 2040,
+        "zon_pv_gw": 122.7
+      },
+      {
+        "column_label": "2040 EUR",
+        "scenario": "EUR",
+        "year": 2040,
+        "zon_pv_gw": 92.6
+      },
+      {
+        "column_label": "2040 INT",
+        "scenario": "INT",
+        "year": 2040,
+        "zon_pv_gw": 68.2
+      },
+      {
+        "column_label": "2050 DEC",
+        "scenario": "DEC",
+        "year": 2050,
+        "zon_pv_gw": 183.1
+      },
+      {
+        "column_label": "2050 NAT",
+        "scenario": "NAT",
+        "year": 2050,
+        "zon_pv_gw": 172.6
+      },
+      {
+        "column_label": "2050 EUR",
+        "scenario": "EUR",
+        "year": 2050,
+        "zon_pv_gw": 126.3
+      },
+      {
+        "column_label": "2050 INT",
+        "scenario": "INT",
+        "year": 2050,
+        "zon_pv_gw": 100.0
+      }
+    ],
+    "document_section": "A. Cijferbijlage",
+    "extraction_note": "Values are transcribed as source-evidence candidates from the public Netbeheer Nederland appendix page/PDF table. They require PI confirmation of scenario column, denominator, and growth-factor formula before executable use.",
+    "page_candidate": 4,
+    "planning_year_2035_candidates": [
+      {
+        "candidate_role": "planning_year_2035_ka_candidate",
+        "column_label": "2035 KA",
+        "executable_status": "candidate_only_unsigned",
+        "scenario": "KA",
+        "year": 2035,
+        "zon_pv_gw": 75.9
+      },
+      {
+        "candidate_role": "planning_year_2035_nd_candidate",
+        "column_label": "2035 ND",
+        "executable_status": "candidate_only_unsigned",
+        "scenario": "ND",
+        "year": 2035,
+        "zon_pv_gw": 98.2
+      },
+      {
+        "candidate_role": "planning_year_2035_ia_candidate",
+        "column_label": "2035 IA",
+        "executable_status": "candidate_only_unsigned",
+        "scenario": "IA",
+        "year": 2035,
+        "zon_pv_gw": 52.6
+      }
+    ],
+    "row_label": "Zon PV*",
+    "table_label": "Tabel A.1",
+    "table_title": "Overzicht voornaamste kengetallen II3050-editie 2: 2030, 2035, 2040 en 2050",
+    "unit": "GW"
+  }
+}
