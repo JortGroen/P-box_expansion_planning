@@ -1895,6 +1895,214 @@ def load_pv_first_experiment_value_decision_packet(path: str | Path) -> PVFirstE
     )
 
 
+
+@dataclass(frozen=True)
+class PVFirstExperimentValueApprovalPacket:
+    """Compact PI-facing value-approval packet that remains non-executable."""
+
+    packet_id: str
+    data_id: str
+    status: str
+    download_performed: bool
+    raw_data_committed: bool
+    real_pv_generation_performed: bool
+    input_metadata: Mapping[str, object]
+    pi_value_choices_for_signature: Mapping[str, object]
+    machine_readable_fail_closed_gate: Mapping[str, object]
+    required_signed_artifacts_before_executable_pv: Sequence[str]
+    non_claims: Sequence[str]
+
+    def __post_init__(self) -> None:
+        if self.packet_id != "D014-PV-FIRST-EXPERIMENT-VALUE-APPROVAL-PACKET":
+            raise ValueError("first-experiment PV value-approval packet must identify D014-PV-FIRST-EXPERIMENT-VALUE-APPROVAL-PACKET")
+        if self.data_id != "D-014":
+            raise ValueError("first-experiment PV value-approval packet must identify D-014")
+        if self.status != "proposed_first_experiment_pv_value_approval_packet_no_executable_values":
+            raise ValueError("first-experiment PV value-approval packet must remain proposed and non-executable")
+        if self.download_performed is not False or self.raw_data_committed is not False:
+            raise ValueError("first-experiment PV value-approval packet must not claim retrieval or raw committed data")
+        if self.real_pv_generation_performed is not False:
+            raise ValueError("first-experiment PV value-approval packet must not claim real PV generation")
+        inputs = _audit_json_mapping(self.input_metadata, "input_metadata")
+        choices = _audit_json_mapping(self.pi_value_choices_for_signature, "pi_value_choices_for_signature")
+        gate = _audit_json_mapping(self.machine_readable_fail_closed_gate, "machine_readable_fail_closed_gate")
+        required_artifacts = tuple(str(item) for item in self.required_signed_artifacts_before_executable_pv)
+        non_claims = tuple(str(item) for item in self.non_claims)
+
+        required_inputs = {
+            "value_decision_packet": "D014-PV-FIRST-EXPERIMENT-VALUE-DECISION-PACKET",
+            "capacity_value_choice_packet": "D014-PV-CAPACITY-VALUE-CHOICE-PACKET",
+            "capacity_approval_template": "D014-PV-CAPACITY-APPROVAL-TEMPLATE",
+            "orientation_tilt_value_choice_packet": "D014-PV-ORIENTATION-TILT-VALUE-CHOICE-PACKET",
+            "pv_param_conversion_source_choice_packet": "D014-PV-PARAM-CONVERSION-SOURCE-CHOICE-PACKET",
+            "component_output_artifact_scaffold": "D014-PV-COMPONENT-OUTPUT-ARTIFACT-SCAFFOLD",
+        }
+        for key, packet_id in required_inputs.items():
+            record = _audit_json_mapping(inputs.get(key, {}), f"input_metadata.{key}")
+            if record.get("packet_id") != packet_id:
+                raise ValueError(f"first-experiment PV value-approval input {key} must reference {packet_id}")
+            if len(str(record.get("sha256", ""))) != 64:
+                raise ValueError(f"first-experiment PV value-approval input {key} must record SHA-256")
+
+        required_choice_sections = {
+            "alkmaar_capacity_anchor",
+            "ii3050_growth_and_scenario_link",
+            "statistical_orientation_tilt",
+            "pv_conversion",
+            "reactive_power_and_manifest_policy",
+            "node_allocation",
+        }
+        missing_choice_sections = required_choice_sections.difference(choices)
+        if missing_choice_sections:
+            raise ValueError(f"first-experiment PV value-approval packet missing choice sections: {sorted(missing_choice_sections)}")
+        capacity = _audit_json_mapping(choices["alkmaar_capacity_anchor"], "alkmaar_capacity_anchor")
+        if capacity.get("source_table") != "CBS 85005NED" or capacity.get("geography_key") != "GM0361":
+            raise ValueError("value-approval capacity choice must use CBS 85005NED Alkmaar GM0361")
+        if capacity.get("recommended_period_key") != "2019JJ00":
+            raise ValueError("value-approval capacity choice must expose the 2019 source-year candidate")
+        if capacity.get("recommended_sector_key") != "E007161":
+            raise ValueError("value-approval capacity choice must expose the all-activity-and-homes sector candidate")
+        if capacity.get("recommended_capacity_field_key") != "OpgesteldVermogenVanZonnepanelen_2":
+            raise ValueError("value-approval capacity choice must expose the CBS panel-capacity field candidate")
+        if "unsigned" not in str(capacity.get("recommended_choice_status", "")):
+            raise ValueError("value-approval capacity choice must remain unsigned")
+        ii3050 = _audit_json_mapping(choices["ii3050_growth_and_scenario_link"], "ii3050_growth_and_scenario_link")
+        if int(ii3050.get("planning_year", 0)) != 2035:
+            raise ValueError("value-approval II3050 choice must target planning year 2035")
+        if {"2035 KA", "2035 ND", "2035 IA"}.difference(str(item) for item in ii3050.get("scenario_column_candidates", ())):
+            raise ValueError("value-approval II3050 choice must expose the 2035 KA/ND/IA candidates")
+        if "A-016" not in str(ii3050.get("a016_consistency_note", "")):
+            raise ValueError("value-approval II3050 choice must keep A-016 scenario consistency explicit")
+        orientation = _audit_json_mapping(choices["statistical_orientation_tilt"], "statistical_orientation_tilt")
+        if orientation.get("scope_decision") != "PV-ORIENT-001":
+            raise ValueError("value-approval orientation choice must be governed by PV-ORIENT-001")
+        blocked_geometry = {str(item) for item in orientation.get("blocked_geometry", ())}
+        if {"per-building", "per-roof", "PV-map", "3DBAG", "location-specific geometry"}.difference(blocked_geometry):
+            raise ValueError("value-approval orientation choice must block heavy geometry")
+        conversion = _audit_json_mapping(choices["pv_conversion"], "pv_conversion")
+        if "PVGIS-SARAH3 remains qualitative" not in str(conversion.get("pvgis_role", "")):
+            raise ValueError("value-approval conversion choice must keep PVGIS qualitative-only")
+        if "KNMI" not in str(conversion.get("knmi_role", "")):
+            raise ValueError("value-approval conversion choice must keep KNMI as the realized weather path")
+        policy = _audit_json_mapping(choices["reactive_power_and_manifest_policy"], "reactive_power_and_manifest_policy")
+        if "q_kvar = 0" not in str(policy.get("reactive_power_choice", "")):
+            raise ValueError("value-approval packet must expose the q_kvar policy choice")
+        if "repository-relative" not in str(policy.get("manifest_path_policy", "")) or "'..'" not in str(policy.get("manifest_path_policy", "")):
+            raise ValueError("value-approval packet must expose the manifest path policy")
+        allocation = _audit_json_mapping(choices["node_allocation"], "node_allocation")
+        if allocation.get("status") != "explicitly_gated_unsigned":
+            raise ValueError("value-approval node allocation must remain explicitly gated")
+
+        if gate.get("executable_pv_generation_authorized") is not False:
+            raise ValueError("value-approval packet must not authorize executable PV generation")
+        if gate.get("real_pv_arrays_written") is not False or gate.get("real_component_output_manifest_written") is not False:
+            raise ValueError("value-approval packet must not claim real PV arrays or manifests")
+        if gate.get("result_if_invoked_before_required_signatures") != "return_value_approval_blocker_manifest_no_arrays":
+            raise ValueError("value-approval packet must return a blocker manifest before signatures")
+        blockers = tuple(str(item) for item in gate.get("blocking_register_ids", ()))
+        for blocker in (
+            "D014-PV-CAPACITY-APPROVAL-TEMPLATE_successor",
+            "PV-ORIENT-001_values",
+            "PV-PARAM-001_or_signed_amendment",
+            "A-016",
+            "future_node_allocation_rule",
+            "FINAL-PAIRED-HP-PV-ACCEPTANCE",
+            "future_pv_reactive_power_policy",
+            "signed_component_output_manifest_path_policy",
+        ):
+            if blocker not in blockers:
+                raise ValueError(f"value-approval packet missing blocker {blocker}")
+        required_signed = {
+            "signed_d014_capacity_artifact",
+            "signed_cbs_anchor_row_period_sector_field_and_value",
+            "signed_ii3050_scenario_column_denominator_formula_and_growth_factor",
+            "signed_a016_ev_hp_pv_scenario_consistency_mapping",
+            "signed_statistical_orientation_tilt_source_and_value_artifact",
+            "signed_pv_param_conversion_formula_or_amendment",
+            "signed_node_allocation_rule_and_normalization_denominator",
+            "signed_pv_reactive_power_policy_or_q_zero_convention",
+            "signed_component_output_manifest_path_policy",
+            "signed_final_paired_hp_pv_acceptance_artifact",
+        }
+        missing_signed = required_signed.difference(required_artifacts)
+        if missing_signed:
+            raise ValueError(f"value-approval packet missing signed artifact keys: {sorted(missing_signed)}")
+        if not any("No PV capacity value" in item and "node allocation" in item for item in non_claims):
+            raise ValueError("value-approval packet must state no values are approved")
+        if not any("No real PV generation" in item for item in non_claims):
+            raise ValueError("value-approval packet must state no real PV generation is produced")
+        if not any("PVGIS remains qualitative" in item for item in non_claims):
+            raise ValueError("value-approval packet must state PVGIS is qualitative only")
+
+        object.__setattr__(self, "input_metadata", inputs)
+        object.__setattr__(self, "pi_value_choices_for_signature", choices)
+        object.__setattr__(self, "machine_readable_fail_closed_gate", gate)
+        object.__setattr__(self, "required_signed_artifacts_before_executable_pv", required_artifacts)
+        object.__setattr__(self, "non_claims", non_claims)
+
+    @property
+    def missing_signed_artifacts(self) -> tuple[str, ...]:
+        return self.required_signed_artifacts_before_executable_pv
+
+    @property
+    def blocking_register_ids(self) -> tuple[str, ...]:
+        return tuple(str(item) for item in self.machine_readable_fail_closed_gate["blocking_register_ids"])
+
+    def require_executable_value_approval(self) -> None:
+        """Always fail until the PI replaces this proposed packet with signed artifacts."""
+        raise ValueError(
+            "First-experiment PV value approval is unsigned; executable PV requires signed capacity, "
+            "II3050/A-016 mapping, orientation/tilt, PV-PARAM, allocation, reactive-power, path policy, and paired acceptance"
+        )
+
+    def blocker_manifest(self) -> dict[str, object]:
+        """Return the metadata-only blocker produced by premature executable attempts."""
+        return {
+            "packet_id": "D014-PV-FIRST-EXPERIMENT-VALUE-APPROVAL-BLOCKER-MANIFEST",
+            "data_id": self.data_id,
+            "status": "blocked_no_pv_arrays_unsigned_first_experiment_values",
+            "source_packet_id": self.packet_id,
+            "blocked_by": self.blocking_register_ids,
+            "missing_signed_artifacts": self.missing_signed_artifacts,
+            "real_pv_arrays_written": False,
+            "real_component_output_manifest_written": False,
+            "input_metadata": dict(self.input_metadata),
+            "non_claims": self.non_claims,
+        }
+
+    def identity_record(self) -> dict[str, object]:
+        return {
+            "packet_id": self.packet_id,
+            "data_id": self.data_id,
+            "status": self.status,
+            "input_packet_ids": {
+                key: _audit_json_mapping(value, f"input_metadata.{key}")["packet_id"]
+                for key, value in self.input_metadata.items()
+            },
+            "choice_sections": tuple(str(key) for key in self.pi_value_choices_for_signature.keys()),
+            "blocking_register_ids": self.blocking_register_ids,
+            "missing_signed_artifacts": self.missing_signed_artifacts,
+            "executable_pv_generation_authorized": False,
+        }
+
+
+def load_pv_first_experiment_value_approval_packet(path: str | Path) -> PVFirstExperimentValueApprovalPacket:
+    """Load the proposed first-experiment PV value-approval packet."""
+    payload = json.loads(Path(path).read_text(encoding="utf-8"))
+    return PVFirstExperimentValueApprovalPacket(
+        packet_id=str(payload.get("packet_id", "")),
+        data_id=str(payload.get("data_id", "")),
+        status=str(payload.get("status", "")),
+        download_performed=bool(payload.get("download_performed")),
+        raw_data_committed=bool(payload.get("raw_data_committed")),
+        real_pv_generation_performed=bool(payload.get("real_pv_generation_performed")),
+        input_metadata=payload.get("input_metadata", {}),
+        pi_value_choices_for_signature=payload.get("pi_value_choices_for_signature", {}),
+        machine_readable_fail_closed_gate=payload.get("machine_readable_fail_closed_gate", {}),
+        required_signed_artifacts_before_executable_pv=payload.get("required_signed_artifacts_before_executable_pv", ()),
+        non_claims=payload.get("non_claims", ()),
+    )
+
 @dataclass(frozen=True)
 class PVComponentOutputArtifactScaffoldPacket:
     """Fail-closed scaffold for future PV component-output artifact generation."""
