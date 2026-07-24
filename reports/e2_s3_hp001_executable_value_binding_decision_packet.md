@@ -29,3 +29,8 @@ If the PI later signs or amends the five annual value-binding choices, a follow-
 ## Suggested STATUS Update
 
 E2.S3 HP remains scaffold/readiness. A PI-facing executable value-binding approval template exists for the five HP annual scaling choices plus the separate D-004 paired-weather and cold-spell gates; no annual HP TWh values, 2035 adoption/electrification, D-004 final acceptance, integrated analysis, or manuscript results are approved.
+## 2026-07-24 Guard Tightening
+
+The executable handoff now requires more than setting the record status and filling approval IDs. A future signed record must also set `approval_state.executable_binding_allowed = true`, declare `missing_approval_keys = []`, preserve the exact five annual value-binding keys, retain the D013-PBL-MAPPING/A-015 indicator-mapping approvals, and mark every SFH/MFH space/DHW component draft with `annual_twh_status = approved_for_executable_value_binding`.
+
+This tightening is fail-closed only. It does not approve `Referentie_2030`, `I11_woningequivalenten [Woning]`, GJ-to-TWh conversion, the CBS SFH/MFH split, 2035 HP service/adoption/electrification, A-016 integrated scenario consistency, D-004 paired-weather acceptance, cold-spell tolerances, annual HP TWh values, net-load/event analysis, `P(E)`, capacity screens, or manuscript results.

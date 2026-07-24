@@ -1268,16 +1268,11 @@ to expose possible ASHP defrost or COP stress, winter/top-load overlap, and
 paired plots and tables linking temperature, HP load, COP, and PV irradiance.
 Including the near-freezing diagnostic prevents the source check from assuming
 that the coldest absolute temperature is always the hardest heat-pump operating
-condition. This paragraph and
-the design packet do not approve D-004, do not set numerical acceptance
+condition. The current HP-owned scaffold implements a fixture-scale fail-closed runner and PI-facing tolerance decision packet: `src.hp_model.evaluate_hp001_cold_spell_acceptance` first requires exact WEATHER-001 HP/PV identity equality, then requires a non-empty `cold_spell_tolerances` approval ID before producing pass/fail diagnostics. This paragraph, the decision packet, and the scaffold do not approve D-004, do not set numerical acceptance
 tolerances, do not run the check, and do not authorize net-load integration,
 event analysis, `P(E)`, capacity-screen evidence, manuscript claims, or any
 probability result. Final integrated D-003/D-004 acceptance remains pending
-until WEATHER-001 is implemented, real D-004 weather members and checksums
-exist, PI-signed tolerances and the exact near-freezing band are recorded before
-inspection, the predeclared acceptance report is generated from committed code
-and source metadata, and the PI explicitly accepts or escalates the resulting
-evidence.
+until real paired HP/PV WEATHER-001 identity evidence is generated over the accepted D-004 members, PI-signed tolerances and the exact near-freezing band are recorded before inspection, the predeclared acceptance report is generated from committed code and source metadata, and the PI explicitly accepts or escalates the resulting evidence.
 
 <!-- methods-id: E2-S3-HP-TECH-SCALING-DECISION-PACKET -->
 ### E2-S3-HP-TECH-SCALING-DECISION-PACKET - Heat-Pump Technology And Scaling Decision Packet
@@ -1725,7 +1720,7 @@ explicitly promotes that use.
 <!-- methods-id: E2-S3-HP001-EXECUTABLE-VALUE-BINDING-PACKET -->
 ### E2-S3-HP001-EXECUTABLE-VALUE-BINDING-PACKET - HP-001 Executable Value-Binding Decision Packet
 
-**Status: Proposed packet; executable annual values and final paired acceptance unsigned.** The HP-001 executable value-binding packet is an approval template, not an approval. It asks the PI to approve or amend the remaining annual value-binding choices: PBL `Referentie_2030` value-column use, PBL `I11_woningequivalenten [Woning]` denominator use, GJ/year-to-TWh/year conversion by division by `3,600,000`, CBS 85035NED count-share allocation over SFH/MFH, and the 2035 HP service/adoption/electrification scenario for space heat and domestic hot water. It also keeps final integrated HP use blocked on separately signed D-004 paired-weather acceptance evidence and cold-spell numerical tolerances. The generated candidate record remains fail-closed with blank approval IDs and a non-approved status, so the HP adapter rejects it until a later signed record is committed. This packet does not approve annual HP TWh values, D-004 paired-weather or cold-spell acceptance, net-load/event analysis, `P(E)`, threshold/capacity-screen results, manuscript numbers, or probability results.
+**Status: Proposed packet; executable annual values and final paired acceptance unsigned.** The HP-001 executable value-binding packet is an approval template, not an approval. It asks the PI to approve or amend the remaining annual value-binding choices: PBL `Referentie_2030` value-column use, PBL `I11_woningequivalenten [Woning]` denominator use, GJ/year-to-TWh/year conversion by division by `3,600,000`, CBS 85035NED count-share allocation over SFH/MFH, and the 2035 HP service/adoption/electrification scenario for space heat and domestic hot water. It also keeps final integrated HP use blocked on separately signed A-016 scenario-source consistency, D-004 paired-weather acceptance evidence, and cold-spell numerical tolerances. The generated candidate record remains fail-closed with blank approval IDs, a non-approved status, `executable_binding_allowed = false`, declared missing keys, and component statuses that remain unsigned. A future signed record must explicitly set the approved status, set `executable_binding_allowed = true`, declare no missing keys, preserve the exact five annual approval keys and D013-PBL-MAPPING/A-015 provenance, and mark every SFH/MFH space/DHW annual-TWh component as approved before the HP adapter will return a scaling config. This packet does not approve annual HP TWh values, 2035 HP adoption/electrification, D-004 paired-weather or cold-spell acceptance, net-load/event analysis, `P(E)`, threshold/capacity-screen results, manuscript numbers, or probability results.
 <!-- methods-id: E2-S3-HP001-READINESS-APPROVAL-CHECKLIST -->
 ### E2-S3-HP001-READINESS-APPROVAL-CHECKLIST - HP-001 Final-Readiness Approval Checklist
 
@@ -1800,6 +1795,12 @@ annual TWh values, 2035 HP adoption, final scaling choices, D-004 acceptance,
 paired-weather cold-spell checks, net-load integration, event analysis, `P(E)`,
 threshold runs, capacity-screen results, manuscript numbers, or probability
 results.
+
+<!-- methods-id: E2-S3-HP001-COMPONENT-OUTPUT-READINESS-BLOCKER -->
+### E2-S3-HP001-COMPONENT-OUTPUT-READINESS-BLOCKER - HP-001 Component-Output Readiness Blocker Packet
+
+**Status: Proposed blocker/preflight packet; executable HP outputs unsigned.** The HP-001 component-output readiness blocker packet defines the metadata a future heat-pump component-output artifact must expose before IC-1 or any integrated consumer may use it. The preflight requires signed approval IDs for annual value binding, 2035 adoption/electrification, A-016 scenario-source consistency, D-004 paired-weather acceptance, and cold-spell tolerances; a real HP output artifact path and SHA-256 checksum; a 35,040-step, 900-second WEATHER-001 calendar; identical HP/PV weather identity fields including `shared_weather_driver_id`, `member_id`, source, and content checksum; and separate traceability for SFH/MFH space heat and domestic hot water components with their approved When2Heat shape and COP columns. Any missing approval, missing artifact/checksum, HP/PV weather mismatch, unsigned component provenance, or unresolved blocker ID keeps the preflight red. This packet does not approve annual HP TWh values, 2035 adoption/electrification/service fractions, final D-004 paired-weather or cold-spell acceptance, net-load/event analysis, `P(E)`, capacity screens, threshold analysis, manuscript numbers, or probability results.
+
 <!-- methods-id: OWN-001 -->
 ### OWN-001 - Machine-Enforced Agent Ownership
 
@@ -1820,3 +1821,7 @@ base policy as well. The sole code-level bootstrap exception is the initial
 `codex/ownership-enforcement` pull request when neither policy file exists on
 its base; after that first merge, the same branch is governed by the base
 policy like every other branch.
+
+## E2-S3-HP001-PROFILE-ARTIFACT-CONSUMPTION-MANIFEST - HP-001 profile artifact consumption guard - 2026-07-24 - proposed
+
+**Status: Proposed template; executable annual values and final paired acceptance unsigned.** The HP-001 profile artifact consumption manifest defines the metadata a future integrated consumer must validate before using a heat-pump profile artifact. The proposed validator requires an explicit future status of `approved_for_integrated_hp_profile_consumption`, a recorded profile artifact path and SHA-256, 15-minute cadence and kW units, WEATHER-001 member identity including `shared_weather_driver_id`, source, member ID, and content checksum, and exactly the four HP-001 residential SFH/MFH space/DHW component traces with signed annual-scaling provenance. It also requires the full HP-001 final-readiness approval set: value column, denominator, GJ-to-TWh conversion, SFH/MFH split, 2035 adoption/electrification, A-016 scenario-source consistency, D-004 paired-weather acceptance, and cold-spell tolerances. The committed JSON is only a template with blank approval IDs, so the validator rejects it until a later signed manifest is committed. This packet does not approve annual HP TWh values, 2035 adoption/electrification, D-004 paired-weather or cold-spell acceptance, net-load/event analysis, `P(E)`, threshold/capacity-screen results, manuscript numbers, or probability results.
