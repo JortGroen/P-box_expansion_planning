@@ -1026,6 +1026,81 @@ def test_ev_component_output_verifier_rebuilds_and_matches_committed_manifest(
     )
 
 
+def test_ev_component_output_rebuild_rejects_duplicate_expected_scenario(
+    tmp_path: Path,
+) -> None:
+    scaffold, preflight, selection_manifest, _expected_sum = _synthetic_component_output_inputs(tmp_path)
+    committed_manifest = materialize_ev_ic1_candidate_component_outputs(
+        scaffold,
+        preflight,
+        selection_manifest,
+        base_dir=tmp_path,
+        output_dir=Path("data") / "processed" / "elaad_profiles" / "component_outputs",
+        materialized_timestamp_utc="2026-07-24T12:30:00Z",
+    )
+    committed_manifest["materialization"]["output_files"].append(
+        json.loads(json.dumps(committed_manifest["materialization"]["output_files"][0]))
+    )
+
+    with pytest.raises(EVComponentOutputVerificationError, match="duplicate scenario records") as excinfo:
+        rebuild_and_verify_ev_component_outputs(
+            component_input_scaffold=scaffold,
+            checksum_preflight=preflight,
+            selection_manifest_set=selection_manifest,
+            committed_component_output_manifest=committed_manifest,
+            base_dir=tmp_path,
+            output_dir=Path("data") / "processed" / "elaad_profiles" / "component_outputs",
+            timestamp_utc="2026-07-24T12:45:00Z",
+        )
+
+    assert "expected: low" in str(excinfo.value)
+    assert "observed: --" in str(excinfo.value)
+
+
+def test_ev_component_output_rebuild_rejects_duplicate_observed_scenario(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    scaffold, preflight, selection_manifest, _expected_sum = _synthetic_component_output_inputs(tmp_path)
+    committed_manifest = materialize_ev_ic1_candidate_component_outputs(
+        scaffold,
+        preflight,
+        selection_manifest,
+        base_dir=tmp_path,
+        output_dir=Path("data") / "processed" / "elaad_profiles" / "component_outputs",
+        materialized_timestamp_utc="2026-07-24T12:30:00Z",
+    )
+
+    def fake_materializer(*_args: object, **_kwargs: object) -> dict[str, object]:
+        observed = materialize_ev_ic1_candidate_component_outputs(
+            scaffold,
+            preflight,
+            selection_manifest,
+            base_dir=tmp_path,
+            output_dir=Path("data") / "processed" / "elaad_profiles" / "component_outputs",
+            materialized_timestamp_utc="2026-07-24T12:45:00Z",
+        )
+        observed["materialization"]["output_files"].append(
+            json.loads(json.dumps(observed["materialization"]["output_files"][0]))
+        )
+        return observed
+
+    monkeypatch.setattr(ev_component_outputs, "materialize_ev_ic1_candidate_component_outputs", fake_materializer)
+
+    with pytest.raises(EVComponentOutputVerificationError, match="duplicate scenario records") as excinfo:
+        rebuild_and_verify_ev_component_outputs(
+            component_input_scaffold=scaffold,
+            checksum_preflight=preflight,
+            selection_manifest_set=selection_manifest,
+            committed_component_output_manifest=committed_manifest,
+            base_dir=tmp_path,
+            output_dir=Path("data") / "processed" / "elaad_profiles" / "component_outputs",
+            timestamp_utc="2026-07-24T12:45:00Z",
+        )
+
+    assert "expected: --" in str(excinfo.value)
+    assert "observed: low" in str(excinfo.value)
+
 
 def test_ev_component_output_rebuild_rejects_missing_observed_scenario(
     tmp_path: Path,
@@ -1070,6 +1145,7 @@ def test_ev_component_output_rebuild_rejects_missing_observed_scenario(
 
     assert "missing: middle" in str(excinfo.value)
     assert "extra: --" in str(excinfo.value)
+
 
 def test_ev_component_output_verifier_fails_closed_when_outputs_missing(
     tmp_path: Path,

@@ -188,12 +188,20 @@ def rebuild_and_verify_ev_component_outputs(
         output_dir=output_dir,
         materialized_timestamp_utc=timestamp_utc,
     )
-    expected_by_scenario = {
-        str(record.get("scenario")): record
-        for record in _require_output_records(committed_component_output_manifest)
-    }
+    expected_records = _require_output_records(committed_component_output_manifest)
     observed_records = _require_output_records(observed_manifest)
-    observed_by_scenario = {str(record.get("scenario")): record for record in observed_records}
+    expected_names = [str(record.get("scenario")) for record in expected_records]
+    observed_names = [str(record.get("scenario")) for record in observed_records]
+    duplicate_expected = sorted({name for name in expected_names if expected_names.count(name) > 1})
+    duplicate_observed = sorted({name for name in observed_names if observed_names.count(name) > 1})
+    if duplicate_expected or duplicate_observed:
+        raise EVComponentOutputVerificationError(
+            "EV component-output manifest contains duplicate scenario records: "
+            f"expected: {', '.join(duplicate_expected) if duplicate_expected else '--'}; "
+            f"observed: {', '.join(duplicate_observed) if duplicate_observed else '--'}"
+        )
+    expected_by_scenario = {name: record for name, record in zip(expected_names, expected_records, strict=True)}
+    observed_by_scenario = {name: record for name, record in zip(observed_names, observed_records, strict=True)}
     expected_scenarios = set(expected_by_scenario)
     observed_scenarios = set(observed_by_scenario)
     if observed_scenarios != expected_scenarios:
