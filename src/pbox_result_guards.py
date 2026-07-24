@@ -42,6 +42,7 @@ class FinalResultPrerequisites:
     capacity_convention_approved: bool = False
     capacity_denominator_provenance: str | None = None
     output_error_endpoint_records_manifested: bool = False
+    a016_scenario_consistency_manifested: bool = False
     g3_vertex_shortcut_approved: bool = False
 
     def missing_for(self, result_kind: PaperFacingResultKind) -> tuple[str, ...]:
@@ -60,6 +61,8 @@ class FinalResultPrerequisites:
             missing.append("capacity denominator provenance")
         if not self.output_error_endpoint_records_manifested:
             missing.append("manifested output-error endpoint event records")
+        if not self.a016_scenario_consistency_manifested:
+            missing.append("manifested A-016 scenario consistency")
         if (
             result_kind is PaperFacingResultKind.VERTEX_SHORTCUT
             and not self.g3_vertex_shortcut_approved
@@ -72,6 +75,9 @@ class FinalResultPrerequisites:
 
         return {
             "a013_grid_error_signed": self.a013_grid_error_signed,
+            "a016_scenario_consistency_manifested": (
+                self.a016_scenario_consistency_manifested
+            ),
             "capacity_convention_approved": self.capacity_convention_approved,
             "capacity_denominator_provenance": self.capacity_denominator_provenance,
             "g2_tier1_envelope_approved": self.g2_tier1_envelope_approved,

@@ -44,6 +44,7 @@ def _complete_prerequisites() -> FinalResultPrerequisites:
         capacity_convention_approved=True,
         capacity_denominator_provenance="synthetic-capacity-provenance",
         output_error_endpoint_records_manifested=True,
+        a016_scenario_consistency_manifested=True,
     )
 
 

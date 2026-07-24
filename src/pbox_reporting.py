@@ -388,6 +388,7 @@ def _validate_guard_mapping(
     prerequisites = _expect_mapping(guard["prerequisites"], name="guard.prerequisites")
     required_prerequisites = {
         "a013_grid_error_signed",
+        "a016_scenario_consistency_manifested",
         "capacity_convention_approved",
         "capacity_denominator_provenance",
         "g2_tier1_envelope_approved",
