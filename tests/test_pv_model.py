@@ -16,6 +16,7 @@ from src.hp_model import HeatPumpProfile
 from src.pv_model import (
     PVCapacitySourcePacket,
     PVGISReference,
+    PVStatisticalOrientationTiltPacket,
     PVSystemConfig,
     PVWeatherInputArtifact,
     WeatherMember,
@@ -30,6 +31,7 @@ from src.pv_model import (
     generate_pv_profile,
     generate_pv_profile_from_input_artifact,
     load_pv_capacity_source_packet,
+    load_pv_statistical_orientation_tilt_packet,
     load_pv_weather_input_artifact,
     parse_pvgis_monthly_reference,
     seasonal_energy_kwh,
@@ -1616,4 +1618,45 @@ def test_pv_capacity_source_packet_rejects_silent_executable_values() -> None:
             ii3050_growth_factor_source=payload["ii3050_growth_factor_source"],
             capacity_value_binding_under_review=payload["capacity_value_binding_under_review"],
             fail_closed_non_claims=payload["fail_closed_non_claims"],
+        )
+
+
+def test_committed_d014_statistical_orientation_tilt_packet_is_fail_closed() -> None:
+    packet = load_pv_statistical_orientation_tilt_packet(
+        "data/metadata/weather_pv/d014_pv_statistical_orientation_tilt_packet.json"
+    )
+    record = packet.identity_record()
+
+    assert packet.packet_id == "D014-PV-STATISTICAL-ORIENTATION-TILT-PACKET"
+    assert packet.data_id == "D-014"
+    assert packet.download_performed is False
+    assert packet.raw_data_committed is False
+    assert packet.first_experiment_scope["statistical_orientation_tilt_classes_only"] is True
+    assert packet.first_experiment_scope["building_or_roof_level_extraction_in_scope"] is False
+    assert packet.first_experiment_scope["specific_3dbag_per_roof_workflow_in_first_experiment"] is False
+    assert record["executable_allowed_now"] is False
+    assert "statistical_orientation_tilt_source" in packet.missing_approval_keys
+    assert "class_weight_values" in packet.missing_approval_keys
+    assert "node_allocation_rule" in packet.missing_approval_keys
+    with pytest.raises(ValueError, match="statistical PV orientation/tilt classes are unsigned"):
+        packet.require_executable_orientation_tilt_approval()
+
+
+def test_statistical_orientation_tilt_packet_rejects_building_level_scope() -> None:
+    payload = json.loads(Path("data/metadata/weather_pv/d014_pv_statistical_orientation_tilt_packet.json").read_text(encoding="utf-8"))
+    payload["first_experiment_scope"]["building_or_roof_level_extraction_in_scope"] = True
+
+    with pytest.raises(ValueError, match="building or roof-level extraction"):
+        PVStatisticalOrientationTiltPacket(
+            packet_id=payload["packet_id"],
+            data_id=payload["data_id"],
+            status=payload["status"],
+            download_performed=payload["download_performed"],
+            raw_data_committed=payload["raw_data_committed"],
+            first_experiment_scope=payload["first_experiment_scope"],
+            governing_boundaries=payload["governing_boundaries"],
+            source_route_comparison=payload["source_route_comparison"],
+            proposed_artifact_interface=payload["proposed_artifact_interface"],
+            pi_questions=payload["pi_questions"],
+            non_claims=payload["non_claims"],
         )
