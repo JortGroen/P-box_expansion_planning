@@ -33,6 +33,7 @@ from data.get_elaad_profiles import (
     write_library_plan,
 )
 from data.sources import source_specs, write_metadata
+from src.hp_model import hp001_local_scaling_config_from_value_binding_record
 
 
 def _case_dir(name: str) -> Path:
@@ -298,6 +299,172 @@ def test_hp001_value_binding_packet_preserves_unsigned_component_values(tmp_path
     path = hp_scaling.write_hp001_value_binding_readiness_packet(tmp_path)
     payload = json.loads(path.read_text(encoding="utf-8"))
     assert payload["status"].startswith("proposed value-binding draft")
+
+
+def _write_hp001_value_binding_fixture_sources(tmp_path: Path) -> tuple[Path, Path]:
+    raw_dir = tmp_path / "raw"
+    metadata_dir = tmp_path / "metadata"
+    raw_dir.mkdir(parents=True)
+    hp_metadata_dir = metadata_dir / "hp_scaling"
+    hp_metadata_dir.mkdir(parents=True)
+
+    pbl_path = raw_dir / "pbl_startanalyse_2025_alkmaar.zip"
+    csv_text = "\n".join(
+        [
+            "I01_buurtcode;Code_Indicator;Eenheid;Referentie_2030;I11_woningequivalenten [Woning];Strategie_1",
+            "BU0001;H23_Vraag_RV_w;[GJ/weq/jaar];10,0;100;0",
+            "BU0002;H23_Vraag_RV_w;[GJ/weq/jaar];20,0;50;0",
+            "BU0001;H24_Vraag_TW_w;[GJ/weq/jaar];2,0;100;0",
+            "BU0002;H24_Vraag_TW_w;[GJ/weq/jaar];4,0;50;0",
+            "BU0001;H22_Vraag_totaal_w;[GJ/weq/jaar];15,0;100;0",
+            "BU0002;H22_Vraag_totaal_w;[GJ/weq/jaar];30,0;50;0",
+        ]
+    )
+    with zipfile.ZipFile(pbl_path, "w") as archive:
+        archive.writestr("Alkmaar_strategie.csv", csv_text)
+
+    cbs_path = raw_dir / "cbs_85035ned_alkmaar_dwelling_stock.json"
+    cbs_payload = {
+        "odata": {
+            "TypedDataSet": {
+                "response": {
+                    "value": [
+                        {
+                            "RegioS": "GM0361",
+                            "Woningtype": "ZW10290",
+                            "Perioden": "2026JJ00",
+                            "BeginstandWoningvoorraad_1": 80,
+                        },
+                        {
+                            "RegioS": "GM0361",
+                            "Woningtype": "ZW10340",
+                            "Perioden": "2026JJ00",
+                            "BeginstandWoningvoorraad_1": 20,
+                        },
+                    ]
+                }
+            },
+            "Woningtype": {
+                "response": {
+                    "value": [
+                        {"Key": "ZW10290", "Title": "Eengezinswoningen totaal"},
+                        {"Key": "ZW10340", "Title": "Meergezinswoningen totaal"},
+                    ]
+                }
+            },
+        }
+    }
+    cbs_path.write_text(json.dumps(cbs_payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+    manifest = {
+        "sources": [
+            {
+                "source_key": "cbs_85035ned_dwelling_stock",
+                "raw_path": cbs_path.as_posix(),
+                "size_bytes": cbs_path.stat().st_size,
+                "sha256_file": hashlib.sha256(cbs_path.read_bytes()).hexdigest(),
+            },
+            {
+                "source_key": "pbl_startanalyse_2025_alkmaar",
+                "raw_path": pbl_path.as_posix(),
+                "size_bytes": pbl_path.stat().st_size,
+                "sha256_file": hashlib.sha256(pbl_path.read_bytes()).hexdigest(),
+            },
+        ]
+    }
+    (hp_metadata_dir / hp_scaling.RETRIEVAL_MANIFEST_FILENAME).write_text(
+        json.dumps(manifest, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    return raw_dir, metadata_dir
+
+
+def test_hp001_value_binding_decision_candidates_compute_from_fixture_sources(tmp_path: Path) -> None:
+    raw_dir, metadata_dir = _write_hp001_value_binding_fixture_sources(tmp_path)
+
+    packet = hp_scaling.build_hp001_value_binding_decision_candidates_packet(
+        raw_dir=raw_dir,
+        metadata_dir=metadata_dir,
+    )
+
+    assert packet["decision_packet_id"] == "E2-S3-HP001-VALUE-BINDING-DECISION-CANDIDATES"
+    assert packet["status"] == "proposed_value_binding_decision_candidates_not_executable"
+    assert all(artifact["verified_against_retrieval_manifest"] for artifact in packet["source_artifacts"])
+    pbl = packet["local_heat_demand_diagnostics_unsigned"]["indicators"]
+    assert pbl["space"]["thermal_demand_gj_per_year"] == pytest.approx(2000.0)
+    assert pbl["water"]["thermal_demand_gj_per_year"] == pytest.approx(400.0)
+    assert pbl["residential_total_diagnostic"]["thermal_demand_twh_per_year"] == pytest.approx(3000.0 / 3_600_000.0)
+    assert packet["sfh_mfh_split_diagnostics_unsigned"]["shares"] == {"SFH": 0.8, "MFH": 0.2}
+
+    by_component = {
+        component["component_id"]: component
+        for component in packet["candidate_component_values_unsigned_before_2035_adoption"]
+    }
+    assert set(by_component) == {"sfh_space", "mfh_space", "sfh_water", "mfh_water"}
+    assert by_component["sfh_space"]["annual_heat_twh"] == pytest.approx((2000.0 / 3_600_000.0) * 0.8)
+    assert by_component["mfh_space"]["annual_heat_twh"] == pytest.approx((2000.0 / 3_600_000.0) * 0.2)
+    assert by_component["sfh_water"]["annual_heat_twh"] == pytest.approx((400.0 / 3_600_000.0) * 0.8)
+    assert by_component["mfh_water"]["annual_heat_twh"] == pytest.approx((400.0 / 3_600_000.0) * 0.2)
+    assert {component["cop_column"] for component in by_component.values() if component["end_use"] == "space"} == {
+        "NL_COP_ASHP_radiator"
+    }
+    assert {component["cop_column"] for component in by_component.values() if component["end_use"] == "water"} == {
+        "NL_COP_ASHP_water"
+    }
+
+    half = next(
+        option for option in packet["adoption_electrification_options_unsigned"]
+        if option["service_fraction"] == 0.5
+    )
+    half_by_component = {
+        component["component_id"]: component
+        for component in half["component_values_after_fraction"]
+    }
+    assert half_by_component["sfh_space"]["annual_heat_twh_after_fraction"] == pytest.approx(
+        by_component["sfh_space"]["annual_heat_twh"] * 0.5
+    )
+    assert packet["approval_state"]["executable_binding_allowed"] is False
+    assert "No annual HP TWh values are approved or executable." in packet["non_claims"]
+
+
+def test_hp001_value_binding_decision_candidates_block_when_raw_missing(tmp_path: Path) -> None:
+    packet = hp_scaling.build_hp001_value_binding_decision_candidates_packet(
+        raw_dir=tmp_path / "missing_raw",
+        metadata_dir=tmp_path / "metadata",
+    )
+
+    assert packet["status"].startswith("blocked_missing_or_unverified")
+    assert "source_artifact_missing:cbs_85035ned_dwelling_stock" in packet["blocker_ids"]
+    assert "source_artifact_missing:pbl_startanalyse_2025_alkmaar" in packet["blocker_ids"]
+    assert packet["candidate_component_values_unsigned_before_2035_adoption"] == []
+    assert packet["unsigned_candidate_binding_record"]["status"].startswith("blocked_missing")
+
+
+def test_hp001_value_binding_decision_candidates_reject_checksum_mismatch(tmp_path: Path) -> None:
+    raw_dir, metadata_dir = _write_hp001_value_binding_fixture_sources(tmp_path)
+    manifest_path = metadata_dir / "hp_scaling" / hp_scaling.RETRIEVAL_MANIFEST_FILENAME
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest["sources"][0]["sha256_file"] = "0" * 64
+    manifest_path.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+    packet = hp_scaling.build_hp001_value_binding_decision_candidates_packet(
+        raw_dir=raw_dir,
+        metadata_dir=metadata_dir,
+    )
+
+    assert "source_artifact_checksum_mismatch:cbs_85035ned_dwelling_stock" in packet["blocker_ids"]
+    assert packet["candidate_component_values_unsigned_before_2035_adoption"] == []
+
+
+def test_hp001_value_binding_decision_candidates_remain_adapter_rejected(tmp_path: Path) -> None:
+    raw_dir, metadata_dir = _write_hp001_value_binding_fixture_sources(tmp_path)
+    packet = hp_scaling.build_hp001_value_binding_decision_candidates_packet(
+        raw_dir=raw_dir,
+        metadata_dir=metadata_dir,
+    )
+
+    with pytest.raises(ValueError, match="not approved for executable use"):
+        hp001_local_scaling_config_from_value_binding_record(packet["unsigned_candidate_binding_record"])
 
 
 def test_elaad_source_uses_profile_generator_route() -> None:
