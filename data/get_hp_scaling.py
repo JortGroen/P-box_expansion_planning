@@ -546,6 +546,7 @@ def build_hp001_profile_artifact_consumption_manifest_template() -> dict[str, An
         ],
     }
 
+
 def write_hp001_executable_value_binding_decision_packet(metadata_dir: Path) -> Path:
     """Write the proposed executable value-binding decision packet."""
     target_dir = metadata_dir / "hp_scaling"
@@ -574,6 +575,7 @@ def write_hp001_readiness_approval_checklist_packet(metadata_dir: Path) -> Path:
     payload = build_hp001_readiness_approval_checklist_packet()
     path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     return path
+
 
 def write_hp001_value_binding_readiness_packet(metadata_dir: Path) -> Path:
     """Write the unsigned next-step value-binding packet for PI review."""
