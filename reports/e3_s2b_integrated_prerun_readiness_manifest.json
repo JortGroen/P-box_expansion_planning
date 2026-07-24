@@ -1,16 +1,16 @@
 {
   "command": ".\\.venv\\Scripts\\python.exe reports\\e3_s2b_generate_integrated_prerun_readiness.py",
-  "generated_at_utc": "2026-07-24T17:43:31Z",
-  "git_commit": "17d2cad1ba8a855060dc30a70549fedca0fc754c",
+  "generated_at_utc": "2026-07-24T18:15:25Z",
+  "git_commit": "430c4d86f7067cb0cc40a5368acab01fe5fa2506",
   "git_status_short_before_generation": "",
   "input": {
     "path": "reports/e3_s2b_integrated_prerun_readiness_input.json",
     "schema_version": "e3_s2b_integrated_prerun_readiness_input_v1",
-    "sha256": "a092038110f56378ae64e2dd0731bc49510076d0e6d462bfc95d69245638a190"
+    "sha256": "2a24cf5e7d03121765e32e8a14a06ca8e88c1d80cbb7a872fdcd23efaf03af63"
   },
   "outputs": {
     "report_path": "reports/E3_S2B_INTEGRATED_PRERUN_READINESS.md",
-    "report_sha256": "6887f79777b45d2001b1677cb1f7f9ba3de155ce6fca1033bbb0de85df4bb9b4"
+    "report_sha256": "c9a1d8c2b4fc7f1cce56cb46ba4bc86dc2f0271c87c9487aa5010c093fd47bc0"
   },
   "preflight": {
     "accepted_artifact_preflight": {
@@ -23,7 +23,7 @@
           "hp",
           "pv"
         ],
-        "blocker_count": 18,
+        "blocker_count": 22,
         "items": [
           {
             "blocker_ids": [
@@ -117,6 +117,57 @@
             "message": "all executable component artifacts must cite one common ALEA-001 calendar before loader use"
           },
           {
+            "artifact_id": "e2_s2_ev_ic1_accepted_artifact_index_preflight",
+            "blocker_ids": [
+              "E3.S2A-EV-PER-NODE-SOURCE-NPZ"
+            ],
+            "code": "component_output_per_node_source_outputs_missing",
+            "kind": "ev",
+            "message": "EV per-node export cannot run until the required source multi-node component-output NPZs are present and checksum-verified",
+            "missing_source_component_outputs": [
+              {
+                "failure": "missing_ignored_source_npz",
+                "path": "data/processed/elaad_profiles/component_outputs/ev_ic1_candidate_component_output_high.npz",
+                "scenario": "high",
+                "sha256": "dd95f30d74da00b6fb87c2ced8f402b4d612c59a28e7d1d33e9e82fcd7a805d5"
+              },
+              {
+                "failure": "missing_ignored_source_npz",
+                "path": "data/processed/elaad_profiles/component_outputs/ev_ic1_candidate_component_output_low.npz",
+                "scenario": "low",
+                "sha256": "a896794ddd9f004fe945c62a5b84b2b1b6e9381cbecd80b17ca7c749de68ce65"
+              },
+              {
+                "failure": "missing_ignored_source_npz",
+                "path": "data/processed/elaad_profiles/component_outputs/ev_ic1_candidate_component_output_middle.npz",
+                "scenario": "middle",
+                "sha256": "38081c7f849bb679a19560d1a7f7fd6d8428e35ef6cad2087e4d82a46c1e568d"
+              }
+            ],
+            "path": "data/metadata/ev_adoption/e3_s2a_ev_per_node_export_preflight.json"
+          },
+          {
+            "artifact_id": "e2_s2_ev_ic1_accepted_artifact_index_preflight",
+            "blocker_ids": [
+              "E3.S2A-EV-PER-NODE-MANIFESTS"
+            ],
+            "code": "component_output_per_node_exports_missing",
+            "kind": "ev",
+            "message": "EV per-node component-output manifests are not present for loader use",
+            "path": "data/metadata/ev_adoption/e3_s2a_ev_per_node_export_preflight.json"
+          },
+          {
+            "artifact_id": "e2_s2_ev_ic1_accepted_artifact_index_preflight",
+            "blocker_ids": [
+              "E3.S2A-EV-PER-NODE-EXPORT-PREFLIGHT"
+            ],
+            "code": "component_output_export_preflight_not_ready",
+            "kind": "ev",
+            "message": "component-output export preflight is not ready for executable IC-1 loading",
+            "path": "data/metadata/ev_adoption/e3_s2a_ev_per_node_export_preflight.json",
+            "status": "blocked_missing_source_component_outputs"
+          },
+          {
             "artifact_id": "e2_s5_baseline_diversity_readiness_report",
             "blocker_ids": [
               "E2.S5-BASELINE-COMPONENT-OUTPUT-ARTIFACT"
@@ -132,7 +183,7 @@
             ],
             "code": "component_output_manifest_not_accepted",
             "kind": "ev",
-            "message": "component-output manifest status must be accepted before loader use",
+            "message": "component-output manifest status must be accepted before real loader use; synthetic_fixture is allowed only for synthetic executable fixtures",
             "path": "data/metadata/ev_adoption/generic_component_output_manifests/ev_2035_middle.json"
           },
           {
@@ -158,6 +209,16 @@
               "node_axis_contract",
               "array_shape_contract"
             ],
+            "path": "data/metadata/ev_adoption/generic_component_output_manifests/ev_2035_middle.json"
+          },
+          {
+            "artifact_id": "e3_s2a_ev_ic1_generic_component_output_2035_middle",
+            "blocker_ids": [
+              "E3.S2-EV-ARRAY-FILE"
+            ],
+            "code": "component_output_array_missing",
+            "kind": "ev",
+            "message": "component-output array_path is missing from the repository",
             "path": "data/metadata/ev_adoption/generic_component_output_manifests/ev_2035_middle.json"
           },
           {
@@ -207,6 +268,23 @@
         ],
         "ready": false
       },
+      "component_output_export_preflight_records": [
+        {
+          "artifact_id": "e2_s2_ev_ic1_accepted_artifact_index_preflight",
+          "checksum_match": true,
+          "completed_per_node_export_count": 0,
+          "expected_sha256": "b56bda0f1b1857dc5bd171d172497f3e57bb2062c568b0b4bb0192d9f2ea5e18",
+          "kind": "ev",
+          "manifest_directory": "data/metadata/ev_adoption/per_node_component_output_manifests",
+          "missing_source_component_output_count": 3,
+          "output_directory": "data/processed/elaad_profiles/component_outputs/per_node",
+          "path": "data/metadata/ev_adoption/e3_s2a_ev_per_node_export_preflight.json",
+          "preflight_type": "component_output_export_preflight",
+          "sha256": "b56bda0f1b1857dc5bd171d172497f3e57bb2062c568b0b4bb0192d9f2ea5e18",
+          "state": "blocked",
+          "status": "blocked_missing_source_component_outputs"
+        }
+      ],
       "component_output_manifest_records": [
         {
           "artifact_id": "e2_s5_baseline_diversity_readiness_report",
@@ -248,7 +326,7 @@
           "state": "missing"
         }
       ],
-      "intended_use": "e3_s2b_integrated_prerun_gate_current_main_through_pr270",
+      "intended_use": "e3_s2b_integrated_prerun_gate_current_main_through_pr273",
       "metadata_preflight_only": true,
       "no_capacity_screen_result": true,
       "no_component_array_loading": true,
@@ -461,8 +539,8 @@
                     "load_000_to_load_114"
                   ],
                   "provenance": {
-                    "boundary_note": "PR #265 exposes low/middle/high 115-node EV generic manifests. The configured Agent A loader probe uses the middle-branch manifest as representative and fails closed on the multi-node contract; no EV arrays are opened or accepted for integrated assembly.",
-                    "packet_status": "accepted EV metadata index for Agent A preflight; #265 generic component-output manifests are present but remain blocked for current single-node loader execution",
+                    "boundary_note": "PR #265 exposes low/middle/high 115-node EV generic manifests. PR #272 adds the intended per-node export route, but the clean checkout has zero completed per-node exports because ignored source multi-node NPZs are missing. The configured Agent A loader probe still uses the middle-branch generic manifest as representative and fails closed on the multi-node contract; no EV arrays are opened or accepted for integrated assembly.",
+                    "packet_status": "accepted EV metadata index for Agent A preflight; #265 generic component-output manifests are present but remain blocked for current single-node loader execution; #272 per-node export preflight is present but reports missing source NPZs and zero completed per-node exports.",
                     "readiness_bucket": "accepted_metadata_only",
                     "supporting_candidate_output_checksum_preflight": "data/metadata/ev_adoption/e3_s2a_ev_candidate_component_output_checksum_preflight.json",
                     "supporting_candidate_output_checksum_preflight_sha256": "7fd8b7f02a753867abcb1c5646d4c288f522e7eaa49ad26e88256a4f7746e508",
@@ -470,7 +548,9 @@
                     "supporting_ev_generic_manifest_low": "data/metadata/ev_adoption/generic_component_output_manifests/ev_2035_low.json",
                     "supporting_ev_generic_manifest_middle": "data/metadata/ev_adoption/generic_component_output_manifests/ev_2035_middle.json",
                     "supporting_ev_generic_manifest_packet": "data/metadata/ev_adoption/e3_s2a_ev_ic1_generic_component_output_manifest_packet.json",
-                    "supporting_ev_generic_manifest_packet_sha256": "74b0b545194839bbf0186586426b5cd31e48ef94b9b94de79776b26c04ce2019"
+                    "supporting_ev_generic_manifest_packet_sha256": "74b0b545194839bbf0186586426b5cd31e48ef94b9b94de79776b26c04ce2019",
+                    "supporting_ev_per_node_export_preflight": "data/metadata/ev_adoption/e3_s2a_ev_per_node_export_preflight.json",
+                    "supporting_ev_per_node_export_report": "reports/e3_s2a_ev_per_node_export_strategy.md"
                   },
                   "shared_weather_driver_id": null,
                   "signed_register_ids": [
@@ -566,11 +646,13 @@
                     "simbench_1_mv_semiurb_0_sw_all_in_service_load_nodes"
                   ],
                   "provenance": {
-                    "packet_status": "PR #250 HP component-output readiness blocker present; annual HP values, profile artifact manifest, A-016, paired-weather acceptance, and cold-spell tolerances remain unsigned",
+                    "packet_status": "PR #250 HP component-output readiness blocker present; #271 value-binding candidate packet is present for PI review, but annual HP values, profile artifact manifest, A-016, paired-weather acceptance, and cold-spell tolerances remain unsigned.",
                     "readiness_bucket": "proposed_blocked",
                     "supporting_cold_spell_acceptance_packet": "data/metadata/hp_scaling/hp001_d004_cold_spell_acceptance_decision_packet.json",
                     "supporting_profile_artifact_consumption_template": "data/metadata/hp_scaling/hp001_profile_artifact_consumption_manifest_template.json",
-                    "supporting_refreshed_value_binding_packet": "data/metadata/hp_scaling/hp001_alkmaar_gm0361_executable_value_binding_decision_packet.json"
+                    "supporting_refreshed_value_binding_packet": "data/metadata/hp_scaling/hp001_alkmaar_gm0361_executable_value_binding_decision_packet.json",
+                    "supporting_value_binding_decision_candidates_blocker": "data/metadata/hp_scaling/hp001_alkmaar_gm0361_value_binding_decision_candidates_blocker.json",
+                    "supporting_value_binding_decision_candidates_report": "reports/e2_s3_hp001_value_binding_decision_candidates.md"
                   },
                   "shared_weather_driver_id": "d004_alkmaar_berkhout_2014_2023_v1:unselected",
                   "signed_register_ids": [
@@ -697,7 +779,7 @@
                 "no_real_net_load_arrays": true,
                 "planning_year_basis": "G0-A4",
                 "primary_threshold_metadata": "G0-A3: strict L_import > 1.0 p.u. for four consecutive 15-minute import steps over the full year; 1.1 and 1.2 are sensitivities only",
-                "refresh_basis": "origin/main through PR #270; #263 PV component-output scaffold, #265 EV generic multi-node manifests, #266 B hybrid provenance guard, #267 HP profile rebuild runner scaffold, #268 B alpha event-count scaffold, and #270 PV value-approval packet consumed as metadata only; #264 capacity provenance consumed by path and checksum",
+                "refresh_basis": "origin/main through PR #273; #263 PV component-output scaffold, #265 EV generic multi-node manifests, #267 HP profile rebuild runner scaffold, #268 B alpha event-count scaffold, #270 PV value-approval packet, #271 HP value-binding candidate packet, #272 EV per-node export preflight, and #273 B endpoint-count probability reporting context consumed as metadata only; #264 capacity provenance consumed by path and checksum",
                 "threshold_basis": "G0-A3 metadata only; not evaluated in this pre-run readiness packet"
               },
               "node_ids": [
@@ -724,7 +806,7 @@
             "dry_run_only": true,
             "executable_input_gate": null,
             "gate_error": null,
-            "intended_use": "e3_s2b_integrated_prerun_gate_current_main_through_pr270",
+            "intended_use": "e3_s2b_integrated_prerun_gate_current_main_through_pr273",
             "missing_component_kinds": [],
             "no_capacity_screen_result": true,
             "no_event_detection": true,
@@ -749,7 +831,7 @@
             ],
             "screen_prerequisite_only": true
           },
-          "intended_use": "e3_s2b_integrated_prerun_gate_current_main_through_pr270",
+          "intended_use": "e3_s2b_integrated_prerun_gate_current_main_through_pr273",
           "manifest_fields": {
             "calendar_id": "calendar_e3_s2b_planned_2030_2033_2035_15min_full_year",
             "capacity_provenance": {
@@ -834,7 +916,7 @@
           }
         },
         "dry_run_only": true,
-        "intended_use": "e3_s2b_integrated_prerun_gate_current_main_through_pr270",
+        "intended_use": "e3_s2b_integrated_prerun_gate_current_main_through_pr273",
         "metadata_preflight_only": true,
         "no_capacity_screen_result": true,
         "no_event_counts": true,
@@ -916,7 +998,7 @@
         "hp",
         "pv"
       ],
-      "blocker_count": 25,
+      "blocker_count": 29,
       "items": [
         {
           "blocker_ids": [
@@ -1010,6 +1092,57 @@
           "message": "all executable component artifacts must cite one common ALEA-001 calendar before loader use"
         },
         {
+          "artifact_id": "e2_s2_ev_ic1_accepted_artifact_index_preflight",
+          "blocker_ids": [
+            "E3.S2A-EV-PER-NODE-SOURCE-NPZ"
+          ],
+          "code": "component_output_per_node_source_outputs_missing",
+          "kind": "ev",
+          "message": "EV per-node export cannot run until the required source multi-node component-output NPZs are present and checksum-verified",
+          "missing_source_component_outputs": [
+            {
+              "failure": "missing_ignored_source_npz",
+              "path": "data/processed/elaad_profiles/component_outputs/ev_ic1_candidate_component_output_high.npz",
+              "scenario": "high",
+              "sha256": "dd95f30d74da00b6fb87c2ced8f402b4d612c59a28e7d1d33e9e82fcd7a805d5"
+            },
+            {
+              "failure": "missing_ignored_source_npz",
+              "path": "data/processed/elaad_profiles/component_outputs/ev_ic1_candidate_component_output_low.npz",
+              "scenario": "low",
+              "sha256": "a896794ddd9f004fe945c62a5b84b2b1b6e9381cbecd80b17ca7c749de68ce65"
+            },
+            {
+              "failure": "missing_ignored_source_npz",
+              "path": "data/processed/elaad_profiles/component_outputs/ev_ic1_candidate_component_output_middle.npz",
+              "scenario": "middle",
+              "sha256": "38081c7f849bb679a19560d1a7f7fd6d8428e35ef6cad2087e4d82a46c1e568d"
+            }
+          ],
+          "path": "data/metadata/ev_adoption/e3_s2a_ev_per_node_export_preflight.json"
+        },
+        {
+          "artifact_id": "e2_s2_ev_ic1_accepted_artifact_index_preflight",
+          "blocker_ids": [
+            "E3.S2A-EV-PER-NODE-MANIFESTS"
+          ],
+          "code": "component_output_per_node_exports_missing",
+          "kind": "ev",
+          "message": "EV per-node component-output manifests are not present for loader use",
+          "path": "data/metadata/ev_adoption/e3_s2a_ev_per_node_export_preflight.json"
+        },
+        {
+          "artifact_id": "e2_s2_ev_ic1_accepted_artifact_index_preflight",
+          "blocker_ids": [
+            "E3.S2A-EV-PER-NODE-EXPORT-PREFLIGHT"
+          ],
+          "code": "component_output_export_preflight_not_ready",
+          "kind": "ev",
+          "message": "component-output export preflight is not ready for executable IC-1 loading",
+          "path": "data/metadata/ev_adoption/e3_s2a_ev_per_node_export_preflight.json",
+          "status": "blocked_missing_source_component_outputs"
+        },
+        {
           "artifact_id": "e2_s5_baseline_diversity_readiness_report",
           "blocker_ids": [
             "E2.S5-BASELINE-COMPONENT-OUTPUT-ARTIFACT"
@@ -1025,7 +1158,7 @@
           ],
           "code": "component_output_manifest_not_accepted",
           "kind": "ev",
-          "message": "component-output manifest status must be accepted before loader use",
+          "message": "component-output manifest status must be accepted before real loader use; synthetic_fixture is allowed only for synthetic executable fixtures",
           "path": "data/metadata/ev_adoption/generic_component_output_manifests/ev_2035_middle.json"
         },
         {
@@ -1051,6 +1184,16 @@
             "node_axis_contract",
             "array_shape_contract"
           ],
+          "path": "data/metadata/ev_adoption/generic_component_output_manifests/ev_2035_middle.json"
+        },
+        {
+          "artifact_id": "e3_s2a_ev_ic1_generic_component_output_2035_middle",
+          "blocker_ids": [
+            "E3.S2-EV-ARRAY-FILE"
+          ],
+          "code": "component_output_array_missing",
+          "kind": "ev",
+          "message": "component-output array_path is missing from the repository",
           "path": "data/metadata/ev_adoption/generic_component_output_manifests/ev_2035_middle.json"
         },
         {
@@ -1328,7 +1471,7 @@
         ]
       }
     },
-    "intended_use": "e3_s2b_integrated_prerun_gate_current_main_through_pr270",
+    "intended_use": "e3_s2b_integrated_prerun_gate_current_main_through_pr273",
     "metadata_preflight_only": true,
     "no_capacity_screen_result": true,
     "no_event_counts": true,
@@ -1463,6 +1606,22 @@
       {
         "checksum_match": true,
         "exists": true,
+        "expected_sha256": "ba6dca0e5520e38c953f6689fb804dd1f32550a45ecc2db65e66415d8abd0b95",
+        "label": "agent_b_endpoint_count_readiness",
+        "path": "reports/e5_s3_output_error_endpoint_count_readiness.md",
+        "sha256": "ba6dca0e5520e38c953f6689fb804dd1f32550a45ecc2db65e66415d8abd0b95"
+      },
+      {
+        "checksum_match": true,
+        "exists": true,
+        "expected_sha256": "c2be19ea5cadb35063c9b6f26086c0e3c9f9c5f87e0f32e4b6669bcab3534795",
+        "label": "agent_b_endpoint_count_readiness_log",
+        "path": "reports/agent_logs/agent-b/E5.S3-output-error-endpoint-count-readiness.md",
+        "sha256": "c2be19ea5cadb35063c9b6f26086c0e3c9f9c5f87e0f32e4b6669bcab3534795"
+      },
+      {
+        "checksum_match": true,
+        "exists": true,
         "expected_sha256": "8e906d6ab592f7009e330082ffe5bdfbc6091765f9872c9b97315425b65ec669",
         "label": "agent_b_hybrid_provenance_guard_log",
         "path": "reports/agent_logs/agent-b/E5.S4-trust-certificate-analytic-gate.md",
@@ -1583,6 +1742,22 @@
       {
         "checksum_match": true,
         "exists": true,
+        "expected_sha256": "b56bda0f1b1857dc5bd171d172497f3e57bb2062c568b0b4bb0192d9f2ea5e18",
+        "label": "ev_per_node_export_preflight",
+        "path": "data/metadata/ev_adoption/e3_s2a_ev_per_node_export_preflight.json",
+        "sha256": "b56bda0f1b1857dc5bd171d172497f3e57bb2062c568b0b4bb0192d9f2ea5e18"
+      },
+      {
+        "checksum_match": true,
+        "exists": true,
+        "expected_sha256": "5c40807e0dbf12b1381b51529cfade82e31d9a8e2575ab45eac7e2fc6cd3f2de",
+        "label": "ev_per_node_export_report",
+        "path": "reports/e3_s2a_ev_per_node_export_strategy.md",
+        "sha256": "5c40807e0dbf12b1381b51529cfade82e31d9a8e2575ab45eac7e2fc6cd3f2de"
+      },
+      {
+        "checksum_match": true,
+        "exists": true,
         "expected_sha256": "90db98a21399412bec6edae3d9cff5707fcf0b60a52e634e20b756b89c153058",
         "label": "hp_cold_spell_acceptance_decision_packet",
         "path": "data/metadata/hp_scaling/hp001_d004_cold_spell_acceptance_decision_packet.json",
@@ -1659,6 +1834,22 @@
         "label": "hp_refreshed_executable_value_binding_packet",
         "path": "data/metadata/hp_scaling/hp001_alkmaar_gm0361_executable_value_binding_decision_packet.json",
         "sha256": "5483ed6a0cc39b9323e4e3366458b412230b822973592769d010feb9ac5dc920"
+      },
+      {
+        "checksum_match": true,
+        "exists": true,
+        "expected_sha256": "b8dbe47e54a7816450d384bfd93b2999e2b9220fb1ea079a48725531bff36732",
+        "label": "hp_value_binding_decision_candidates_blocker",
+        "path": "data/metadata/hp_scaling/hp001_alkmaar_gm0361_value_binding_decision_candidates_blocker.json",
+        "sha256": "b8dbe47e54a7816450d384bfd93b2999e2b9220fb1ea079a48725531bff36732"
+      },
+      {
+        "checksum_match": true,
+        "exists": true,
+        "expected_sha256": "af7b51fe59b9adaefd9ef5e24abf42c054219e1ecda5358eb6daea871d31ca56",
+        "label": "hp_value_binding_decision_candidates_report",
+        "path": "reports/e2_s3_hp001_value_binding_decision_candidates.md",
+        "sha256": "af7b51fe59b9adaefd9ef5e24abf42c054219e1ecda5358eb6daea871d31ca56"
       },
       {
         "checksum_match": true,

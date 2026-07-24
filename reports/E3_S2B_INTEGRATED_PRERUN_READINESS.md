@@ -1,7 +1,7 @@
 # E3.S2b Integrated Pre-Run Readiness
 
 Task: E3.S2b future-layer capacity/domain screen pre-run design scaffold.
-Status: metadata/preflight only. This packet composes the current Agent A IC-1 accepted-artifact gate with E3.S2b launch-shape checks on current `origin/main` through PR #270. It consumes the merged EV accepted index, checksum preflight, and #265 generic multi-node component-output manifest packet; consolidated HP readiness guard packets plus the #267 HP profile rebuild runner blocker; PV first-experiment value-decision/approval/preflight blocker packets, the #263 PV component-output scaffold, and the #270 PV value-approval packet; the synthetic IC-1 assembly gate; the accepted-artifact blocker refresh; Agent B trust/readiness, rho-sweep guard, hybrid-provenance guard, and #268 alpha event-count scaffold context; and the #264 capacity-provenance packet as metadata only.
+Status: metadata/preflight only. This packet composes the current Agent A IC-1 accepted-artifact gate with E3.S2b launch-shape checks on current `origin/main` through PR #273. It consumes the merged EV accepted index, checksum preflight, #265 generic multi-node component-output manifest packet, and #272 EV per-node export preflight; consolidated HP readiness guard packets plus the #267 HP profile rebuild runner blocker and #271 HP value-binding candidate packet; PV first-experiment value-decision/approval/preflight blocker packets, the #263 PV component-output scaffold, and the #270 PV value-approval packet; the synthetic IC-1 assembly gate; the accepted-artifact blocker refresh; Agent B trust/readiness, rho-sweep guard, hybrid-provenance guard, #268 alpha event-count scaffold context, and #273 endpoint-count probability reporting context; and the #264 capacity-provenance packet as metadata only.
 
 ## Boundary
 
@@ -26,7 +26,7 @@ The version-controlled input is `reports/e3_s2b_integrated_prerun_readiness_inpu
 
 Ready for E3.S2b pre-run launch: `false`.
 Ready for accepted-artifact loader execution: `false`.
-Blocker count: `25`.
+Blocker count: `29`.
 Blocked component families: adoption, baseline, ev, flexibility, hp, pv.
 Executable input gate states: adoption: accepted; baseline: blocked; ev: accepted; flexibility: accepted; hp: blocked; pv: blocked.
 
@@ -60,6 +60,12 @@ Capacity convention status: present. Total and firm nameplate fields are provena
 | adoption | missing | -- | -- |
 | flexibility | missing | -- | -- |
 
+## Component-Output Export Preflights
+
+| Component | State | Status | Preflight path | Checksum match | Completed exports | Missing source outputs |
+| --- | --- | --- | --- | --- | --- | --- |
+| ev | blocked | blocked_missing_source_component_outputs | data/metadata/ev_adoption/e3_s2a_ev_per_node_export_preflight.json | True | 0 | 3 |
+
 ## Planned-Year Coverage
 
 | Component | Covered years in current metadata | Missing planned years |
@@ -81,6 +87,8 @@ Capacity convention status: present. Total and firm nameplate fields are provena
 | agent_b_alpha_probability_estimator_log | reports/agent_logs/agent-b/E4.S1-alpha-probability-estimator-readiness.md | checksum-verified | 64925ef87a5408582586518a13a5fac45638868243f456f136ce18e0d0d9c1b1 |
 | agent_b_e4_e5_runner_readiness | reports/e4_e5_runner_readiness.md | checksum-verified | 81fbf9317d638451e22c605f3e8b3caa612222439a6b1ec846a6f4043d7e7d68 |
 | agent_b_e4_s1_rho_sweep_payload_guards | reports/e4_s1_rho_sweep_payload_guards.md | checksum-verified | 98c24865d1cd7b99ba2ea0414d62cc74be2868d7db57d19092c99ca1814594c3 |
+| agent_b_endpoint_count_readiness | reports/e5_s3_output_error_endpoint_count_readiness.md | checksum-verified | ba6dca0e5520e38c953f6689fb804dd1f32550a45ecc2db65e66415d8abd0b95 |
+| agent_b_endpoint_count_readiness_log | reports/agent_logs/agent-b/E5.S3-output-error-endpoint-count-readiness.md | checksum-verified | c2be19ea5cadb35063c9b6f26086c0e3c9f9c5f87e0f32e4b6669bcab3534795 |
 | agent_b_hybrid_provenance_guard_log | reports/agent_logs/agent-b/E5.S4-trust-certificate-analytic-gate.md | checksum-verified | 8e906d6ab592f7009e330082ffe5bdfbc6091765f9872c9b97315425b65ec669 |
 | agent_b_pbox_monotonicity_module | src/pbox_monotonicity.py | checksum-verified | 6d34e53ec804aca3d55f4f6bc27bc8fd198116fb6ca79d7a7e998a6c8ddbd86d |
 | agent_b_pre_experiment_readiness | reports/pre_experiment_readiness_b.md | checksum-verified | 008048d81de8cf16e0c15beb7966446f209cb57746e240605c27e70407d56013 |
@@ -96,6 +104,8 @@ Capacity convention status: present. Total and firm nameplate fields are provena
 | ev_generic_component_output_manifest_middle | data/metadata/ev_adoption/generic_component_output_manifests/ev_2035_middle.json | checksum-verified | 224289519072ce9a858515b4a52b5004e35c405faf65d12cad676d8baf066921 |
 | ev_generic_component_output_manifest_packet | data/metadata/ev_adoption/e3_s2a_ev_ic1_generic_component_output_manifest_packet.json | checksum-verified | 74b0b545194839bbf0186586426b5cd31e48ef94b9b94de79776b26c04ce2019 |
 | ev_heldout_adequacy_blocker | data/metadata/ev_adoption/e3_s2a_ev_heldout_adequacy_preflight_blockers.json | checksum-verified | 163b780b5235a280e92da80758ef7835b5fe1163a903a62a2ccdf1607a2df97d |
+| ev_per_node_export_preflight | data/metadata/ev_adoption/e3_s2a_ev_per_node_export_preflight.json | checksum-verified | b56bda0f1b1857dc5bd171d172497f3e57bb2062c568b0b4bb0192d9f2ea5e18 |
+| ev_per_node_export_report | reports/e3_s2a_ev_per_node_export_strategy.md | checksum-verified | 5c40807e0dbf12b1381b51529cfade82e31d9a8e2575ab45eac7e2fc6cd3f2de |
 | hp_cold_spell_acceptance_decision_packet | data/metadata/hp_scaling/hp001_d004_cold_spell_acceptance_decision_packet.json | checksum-verified | 90db98a21399412bec6edae3d9cff5707fcf0b60a52e634e20b756b89c153058 |
 | hp_cold_spell_acceptance_report | reports/e2_s3_hp001_cold_spell_acceptance_readiness.md | checksum-verified | 055cce65ddb92a5cf6a852564ae411c1a0e0dc05e1e28d89e125124953a57d20 |
 | hp_component_output_readiness_blocker | data/metadata/hp_scaling/hp001_component_output_readiness_blocker_packet.json | checksum-verified | 14d7a28bfc9c08c35c99cd4622060ee9f9cdfcdde46360d3be71a65726515997 |
@@ -106,6 +116,8 @@ Capacity convention status: present. Total and firm nameplate fields are provena
 | hp_profile_rebuild_runner_report | reports/e2_s3_hp001_profile_rebuild_preflight.md | checksum-verified | 36f0bd92fdc526b1e816febeb55dea932071ef06543b68f6895e9bcde8cdf30e |
 | hp_readiness_approval_checklist | data/metadata/hp_scaling/hp001_alkmaar_gm0361_readiness_approval_checklist.json | checksum-verified | 4a32bbffaf171660e2f80d4ad8f874f2da58b74390008d8481057df2da00034a |
 | hp_refreshed_executable_value_binding_packet | data/metadata/hp_scaling/hp001_alkmaar_gm0361_executable_value_binding_decision_packet.json | checksum-verified | 5483ed6a0cc39b9323e4e3366458b412230b822973592769d010feb9ac5dc920 |
+| hp_value_binding_decision_candidates_blocker | data/metadata/hp_scaling/hp001_alkmaar_gm0361_value_binding_decision_candidates_blocker.json | checksum-verified | b8dbe47e54a7816450d384bfd93b2999e2b9220fb1ea079a48725531bff36732 |
+| hp_value_binding_decision_candidates_report | reports/e2_s3_hp001_value_binding_decision_candidates.md | checksum-verified | af7b51fe59b9adaefd9ef5e24abf42c054219e1ecda5358eb6daea871d31ca56 |
 | prior_e3_s2b_e3s3_prerun_skeleton | reports/E3_S2B_E3S3_PRERUN_CONFIG_SKELETON.md | checksum-verified | 27377f319dedaa79ea2a871800602309e77d9087d624ee734410863600344660 |
 | pv_component_output_artifact_scaffold | data/metadata/weather_pv/d014_pv_component_output_artifact_scaffold.json | checksum-verified | ba4ce8a6e6a7408fb5d2126e9f24c56741c3d00d1d4d29d5cddcbebc8854dd49 |
 | pv_component_output_artifact_scaffold_report | reports/e2_s4_d014_pv_component_output_artifact_scaffold.md | checksum-verified | faad77bdf6b1710fdd15b161c3a222abd9fc2c2818760441f28a3e228cbfe360 |
@@ -134,10 +146,14 @@ Capacity convention status: present. Total and firm nameplate fields are provena
 | -- | downstream_gate_blocked | G1-A2-CAPACITY-CONVENTION | -- | downstream gate remains unresolved before executable integrated analysis |
 | -- | downstream_gate_blocked | A016-SCENARIO-CONSISTENCY | -- | downstream gate remains unresolved before executable integrated analysis |
 | -- | calendar_id_mismatch | ALEA-001 | -- | all executable component artifacts must cite one common ALEA-001 calendar before loader use |
+| ev | component_output_per_node_source_outputs_missing | E3.S2A-EV-PER-NODE-SOURCE-NPZ | data/metadata/ev_adoption/e3_s2a_ev_per_node_export_preflight.json | EV per-node export cannot run until the required source multi-node component-output NPZs are present and checksum-verified |
+| ev | component_output_per_node_exports_missing | E3.S2A-EV-PER-NODE-MANIFESTS | data/metadata/ev_adoption/e3_s2a_ev_per_node_export_preflight.json | EV per-node component-output manifests are not present for loader use |
+| ev | component_output_export_preflight_not_ready | E3.S2A-EV-PER-NODE-EXPORT-PREFLIGHT | data/metadata/ev_adoption/e3_s2a_ev_per_node_export_preflight.json | component-output export preflight is not ready for executable IC-1 loading |
 | baseline | component_output_manifest_missing | E2.S5-BASELINE-COMPONENT-OUTPUT-ARTIFACT | -- | accepted component-output manifest is required before artifact-loader execution |
-| ev | component_output_manifest_not_accepted | E3.S2-EV-COMPONENT-OUTPUT-ACCEPTANCE | data/metadata/ev_adoption/generic_component_output_manifests/ev_2035_middle.json | component-output manifest status must be accepted before loader use |
+| ev | component_output_manifest_not_accepted | E3.S2-EV-COMPONENT-OUTPUT-ACCEPTANCE | data/metadata/ev_adoption/generic_component_output_manifests/ev_2035_middle.json | component-output manifest status must be accepted before real loader use; synthetic_fixture is allowed only for synthetic executable fixtures |
 | ev | component_output_manifest_node_missing | E3.S2-EV-NODE-MAPPING | data/metadata/ev_adoption/generic_component_output_manifests/ev_2035_middle.json | component-output manifest node_id must appear in executable artifact node_ids |
 | ev | component_output_manifest_loader_contract_missing | E3.S2-EV-COMPONENT-OUTPUT-LOADER-CONTRACT | data/metadata/ev_adoption/generic_component_output_manifests/ev_2035_middle.json | component-output manifest must declare the single-node 1D loader contract before executable IC-1 use |
+| ev | component_output_array_missing | E3.S2-EV-ARRAY-FILE | data/metadata/ev_adoption/generic_component_output_manifests/ev_2035_middle.json | component-output array_path is missing from the repository |
 | hp | component_output_manifest_missing | HP-001, E2-S3-HP001-COMPONENT-OUTPUT-READINESS-BLOCKER, E2-S3-HP001-EXECUTABLE-VALUE-BINDING-PACKET, E2-S3-HP001-PROFILE-ARTIFACT-CONSUMPTION-MANIFEST, E2-S3-HP001-COLD-SPELL-ACCEPTANCE-READINESS, D004-PAIRED-HP-PV-ACCEPTANCE | -- | accepted component-output manifest is required before artifact-loader execution |
 | pv | component_output_manifest_missing | PV-PARAM-001, D-014, D014-PV-CAPACITY-APPROVAL-TEMPLATE, FINAL-PAIRED-HP-PV-ACCEPTANCE | -- | accepted component-output manifest is required before artifact-loader execution |
 | adoption | component_output_manifest_missing | E3.S2-ADOPTION-COMPONENT-OUTPUT-MANIFEST | -- | accepted component-output manifest is required before artifact-loader execution |
@@ -152,13 +168,13 @@ Capacity convention status: present. Total and firm nameplate fields are provena
 
 ## Interpretation
 
-The useful current-main state is metadata-rich but still fail-closed. EV has an accepted Agent A-facing index, checksum preflight, and #265 generic low/middle/high component-output manifest packet, but those manifests describe 115-node scenario NPZ files while the current A-owned generic NPZ loader accepts only single-node, one-dimensional component-output manifests. That metadata wrapper is therefore reported as a loadability blocker until A adds an explicit multi-node loader or C emits per-node loadable manifests. Adoption metadata is accepted for declared branches, and FLEX-001 is approved as a scaffold protocol. PV now has the first-experiment value-decision packet, approval checklist packets, executable preflight guard, #263 component-output artifact scaffold, and #270 value-approval packet, but PV capacity values, orientation/tilt values, conversion treatment, allocation, reactive-power policy, component-output path policy, A-016 consistency, and final paired HP/PV acceptance remain unsigned. HP now has the consolidated #250 component-output readiness blocker, profile-artifact template, cold-spell acceptance packet, refreshed value-binding packet, and #267 profile rebuild runner blocker, but still lacks signed annual value binding, final A-016 scenario consistency, paired-weather acceptance, cold-spell tolerances, and an accepted component-output manifest. Baseline, HP, PV, adoption, and flexibility still lack accepted generic component-output manifests for the IC-1 loader boundary.
+The useful current-main state is metadata-rich but still fail-closed. EV has an accepted Agent A-facing index, checksum preflight, and #265 generic low/middle/high component-output manifest packet, but those manifests describe 115-node scenario NPZ files while the current A-owned generic NPZ loader accepts only single-node, one-dimensional component-output manifests. The #272 EV per-node export route is now recognized as the intended resolution path, but its current preflight reports zero completed per-node exports because the ignored source multi-node NPZs are missing from the clean checkout. EV therefore remains blocked until per-node one-dimensional manifests and checksum-matching arrays exist. Adoption metadata is accepted for declared branches, and FLEX-001 is approved as a scaffold protocol. PV now has the first-experiment value-decision packet, approval checklist packets, executable preflight guard, #263 component-output artifact scaffold, and #270 value-approval packet, but PV capacity values, orientation/tilt values, conversion treatment, allocation, reactive-power policy, component-output path policy, A-016 consistency, and final paired HP/PV acceptance remain unsigned. HP now has the consolidated #250 component-output readiness blocker, profile-artifact template, cold-spell acceptance packet, refreshed value-binding packet, #267 profile rebuild runner blocker, and #271 value-binding candidate packet, but still lacks signed annual value binding, final A-016 scenario consistency, paired-weather acceptance, cold-spell tolerances, and an accepted component-output manifest. Baseline, HP, PV, adoption, and flexibility still lack accepted generic component-output manifests for the IC-1 loader boundary.
 
 The E3.S2b design also records that the future screen must be a predeclared 2030/2033/2035 by low/middle/high by rho-endpoint plan, but current component metadata does not yet cover all planned years. The #264 capacity provenance packet is now checksum-verified and supplies total 80 MVA plus firm (n-1) 40 MVA raw-reporting fields, but the denominator convention remains pending and no screen can launch until all component-output, A-016, A-013, G2, and convention prerequisites are satisfied. A-013 and G2 remain downstream blockers for later model-error and Tier-1 validation; this report does not use their numerical values.
 
 ## Reproduction
 
 Command: `.\.venv\Scripts\python.exe reports\e3_s2b_generate_integrated_prerun_readiness.py`
-Input SHA-256: `a092038110f56378ae64e2dd0731bc49510076d0e6d462bfc95d69245638a190`
-Generated from git commit: `17d2cad1ba8a855060dc30a70549fedca0fc754c`
-Refresh basis: origin/main through PR #270; #263 PV component-output scaffold, #265 EV generic multi-node manifests, #266 B hybrid provenance guard, #267 HP profile rebuild runner scaffold, #268 B alpha event-count scaffold, and #270 PV value-approval packet consumed as metadata only; #264 capacity provenance consumed by path and checksum
+Input SHA-256: `2a24cf5e7d03121765e32e8a14a06ca8e88c1d80cbb7a872fdcd23efaf03af63`
+Generated from git commit: `430c4d86f7067cb0cc40a5368acab01fe5fa2506`
+Refresh basis: origin/main through PR #273; #263 PV component-output scaffold, #265 EV generic multi-node manifests, #267 HP profile rebuild runner scaffold, #268 B alpha event-count scaffold, #270 PV value-approval packet, #271 HP value-binding candidate packet, #272 EV per-node export preflight, and #273 B endpoint-count probability reporting context consumed as metadata only; #264 capacity provenance consumed by path and checksum
