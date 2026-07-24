@@ -477,6 +477,13 @@ def build_hp001_executable_value_binding_decision_packet() -> dict[str, Any]:
         },
         "future_executable_handoff_if_pi_signs": {
             "required_record_status": "approved_for_executable_value_binding",
+            "required_approval_state": {
+                "executable_binding_allowed": True,
+                "missing_approval_keys": [],
+                "required_before_executable_binding": annual_keys,
+                "approved_indicator_mapping_ids_must_include": ["D013-PBL-MAPPING", "A-015"],
+                "component_annual_twh_status": "approved_for_executable_value_binding",
+            },
             "adapter": "src.hp_model.hp001_local_scaling_config_from_value_binding_record",
             "annual_scaling_guard": "src.hp_model.require_signed_hp001_local_scaling_config",
             "component_builder": "src.hp_model.hp001_components_from_local_scaling_config",

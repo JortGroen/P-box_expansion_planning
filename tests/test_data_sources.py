@@ -1060,6 +1060,20 @@ def test_hp001_executable_value_binding_packet_is_approval_template_only(tmp_pat
         "d004_paired_weather_acceptance",
         "cold_spell_tolerances",
     ]
+    handoff = packet["future_executable_handoff_if_pi_signs"]
+    assert handoff["required_approval_state"] == {
+        "executable_binding_allowed": True,
+        "missing_approval_keys": [],
+        "required_before_executable_binding": [
+            "value_column",
+            "denominator",
+            "unit_conversion",
+            "sfh_mfh_split",
+            "adoption_electrification",
+        ],
+        "approved_indicator_mapping_ids_must_include": ["D013-PBL-MAPPING", "A-015"],
+        "component_annual_twh_status": "approved_for_executable_value_binding",
+    }
     assert "No annual HP TWh values are executable." in packet["non_claims"]
 
     path = hp_scaling.write_hp001_executable_value_binding_decision_packet(tmp_path)
