@@ -95,6 +95,112 @@ class PVSystemConfig:
 
 
 @dataclass(frozen=True)
+class PVCapacitySourcePacket:
+    """D-014 installed-capacity source/value packet that remains fail-closed."""
+
+    packet_id: str
+    data_id: str
+    status: str
+    download_performed: bool
+    raw_data_committed: bool
+    governing_decisions: Mapping[str, object]
+    primary_cbs_anchor_source: Mapping[str, object]
+    ii3050_growth_factor_source: Mapping[str, object]
+    capacity_value_binding_under_review: Mapping[str, object]
+    fail_closed_non_claims: Sequence[str]
+
+    def __post_init__(self) -> None:
+        if self.packet_id != "D014-PV-CAPACITY-SOURCE-VALUE-PACKET":
+            raise ValueError("PV capacity source packet must identify D014-PV-CAPACITY-SOURCE-VALUE-PACKET")
+        if self.data_id != "D-014":
+            raise ValueError("PV capacity source packet must identify D-014")
+        if not str(self.status).startswith("proposed_"):
+            raise ValueError("PV capacity source packet must remain proposed until PI approval")
+        if self.download_performed is not False:
+            raise ValueError("PV capacity source packet must not claim raw retrieval")
+        if self.raw_data_committed is not False:
+            raise ValueError("PV capacity source packet must not commit raw data")
+        governing = _audit_json_mapping(self.governing_decisions, "governing_decisions")
+        cbs = _audit_json_mapping(self.primary_cbs_anchor_source, "primary_cbs_anchor_source")
+        ii3050 = _audit_json_mapping(self.ii3050_growth_factor_source, "ii3050_growth_factor_source")
+        binding = _audit_json_mapping(self.capacity_value_binding_under_review, "capacity_value_binding_under_review")
+        non_claims = tuple(str(item) for item in self.fail_closed_non_claims)
+        if governing.get("approved_route") != "PV-CAP-001":
+            raise ValueError("D-014 capacity packet must be governed by PV-CAP-001")
+        if "PV-PARAM-001 remains proposed" not in str(governing.get("conversion_parameters", "")):
+            raise ValueError("D-014 capacity packet must keep PV-PARAM-001 proposed")
+        if cbs.get("table_id") != "85005NED":
+            raise ValueError("D-014 primary CBS anchor must use table 85005NED")
+        if cbs.get("planned_raw_path") and not str(cbs["planned_raw_path"]).startswith("data/raw/pv_capacity/"):
+            raise ValueError("D-014 raw PV capacity files must stay under ignored data/raw/pv_capacity")
+        if ii3050.get("numeric_growth_factor_approved") is not False:
+            raise ValueError("D-014 must not approve a numeric II3050 growth factor")
+        required = tuple(str(item) for item in binding.get("approval_keys_required_before_executable_use", ()))
+        missing = {
+            "cbs_source_file_checksum",
+            "cbs_capacity_field_key",
+            "capacity_unit_and_dc_ac_convention",
+            "ii3050_growth_factor_value",
+            "node_allocation_rule",
+            "PV-PARAM-001_or_amended_conversion_decision",
+        }.difference(required)
+        if missing:
+            raise ValueError(f"D-014 capacity packet missing approval keys: {sorted(missing)}")
+        if not any("No numeric PV installed capacity" in item for item in non_claims):
+            raise ValueError("D-014 capacity packet must state that no numeric PV capacity is approved")
+
+        object.__setattr__(self, "governing_decisions", governing)
+        object.__setattr__(self, "primary_cbs_anchor_source", cbs)
+        object.__setattr__(self, "ii3050_growth_factor_source", ii3050)
+        object.__setattr__(self, "capacity_value_binding_under_review", binding)
+        object.__setattr__(self, "fail_closed_non_claims", non_claims)
+
+    @property
+    def missing_approval_keys(self) -> tuple[str, ...]:
+        return tuple(
+            str(item)
+            for item in self.capacity_value_binding_under_review["approval_keys_required_before_executable_use"]
+        )
+
+    def require_executable_capacity_approval(self) -> None:
+        """Always fail for the proposed packet until a later signed value record replaces it."""
+        raise ValueError(
+            "D-014 PV capacity values are unsigned; executable PV requires signed CBS source, "
+            "II3050 growth factor, capacity convention, node allocation, and PV-PARAM approval"
+        )
+
+    def identity_record(self) -> dict[str, object]:
+        """Return audit fields for downstream readiness manifests."""
+        return {
+            "packet_id": self.packet_id,
+            "data_id": self.data_id,
+            "status": self.status,
+            "approved_route": self.governing_decisions["approved_route"],
+            "cbs_table_id": self.primary_cbs_anchor_source["table_id"],
+            "ii3050_source_id": self.ii3050_growth_factor_source["source_id"],
+            "download_performed": self.download_performed,
+            "raw_data_committed": self.raw_data_committed,
+            "missing_approval_keys": self.missing_approval_keys,
+        }
+
+
+def load_pv_capacity_source_packet(path: str | Path) -> PVCapacitySourcePacket:
+    """Load the proposed D-014 PV capacity source/value packet."""
+    payload = json.loads(Path(path).read_text(encoding="utf-8"))
+    return PVCapacitySourcePacket(
+        packet_id=str(payload.get("packet_id", "")),
+        data_id=str(payload.get("data_id", "")),
+        status=str(payload.get("status", "")),
+        download_performed=bool(payload.get("download_performed")),
+        raw_data_committed=bool(payload.get("raw_data_committed")),
+        governing_decisions=payload.get("governing_decisions", {}),
+        primary_cbs_anchor_source=payload.get("primary_cbs_anchor_source", {}),
+        ii3050_growth_factor_source=payload.get("ii3050_growth_factor_source", {}),
+        capacity_value_binding_under_review=payload.get("capacity_value_binding_under_review", {}),
+        fail_closed_non_claims=payload.get("fail_closed_non_claims", ()),
+    )
+
+@dataclass(frozen=True)
 class PVGenerationProfile:
     """PV generation produced from one validated paired weather member."""
 
