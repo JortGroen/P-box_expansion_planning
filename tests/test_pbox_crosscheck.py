@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import pytest
@@ -8,9 +9,11 @@ from src.fuzzy import TrapezoidalFuzzyNumber
 from src.pbox_crosscheck import (
     BootstrapProbabilityInterval,
     FiniteHybridState,
+    GaussianCrosscheckManifest,
     GaussianToyParameters,
     OutputErrorToyTrajectory,
     bootstrap_probability_interval,
+    build_gaussian_crosscheck_manifest,
     estimate_gaussian_toy_pbox,
     finite_hybrid_bounds,
     gaussian_closed_form_bounds,
@@ -105,6 +108,66 @@ def test_gaussian_crosscheck_replays_same_root_seed_deterministically() -> None:
     for alpha in alpha_grid:
         assert first[alpha].lower == second[alpha].lower
         assert first[alpha].upper == second[alpha].upper
+
+
+def test_gaussian_crosscheck_manifest_is_json_stable_and_tolerance_guarded() -> None:
+    fuzzy, alpha_grid, params = _gaussian_fixture()
+
+    manifest = build_gaussian_crosscheck_manifest(
+        fuzzy_number=fuzzy,
+        alpha_grid=alpha_grid,
+        params=params,
+        sample_count=4096,
+        root_seed=20260721,
+        tolerance=0.01,
+    )
+    payload = manifest.to_mapping()
+
+    assert isinstance(manifest, GaussianCrosscheckManifest)
+    assert json.loads(json.dumps(payload, sort_keys=True)) == payload
+    assert payload["crosscheck_id"] == "E5.S4-gaussian-analytic-v1"
+    assert payload["passed"] is True
+    assert payload["max_absolute_error"] <= payload["tolerance"]
+    assert payload["probability_reporting"] == "alpha-indexed-lower-upper-only"
+    assert payload["g3_claim"] == "none-pre-g3-synthetic"
+    assert "defuzzified_probability" not in json.dumps(payload)
+    assert [row["alpha"] for row in payload["alpha_rows"]] == alpha_grid
+
+
+def test_gaussian_crosscheck_manifest_can_fail_closed_without_changing_oracle() -> None:
+    fuzzy, alpha_grid, params = _gaussian_fixture()
+
+    manifest = build_gaussian_crosscheck_manifest(
+        fuzzy_number=fuzzy,
+        alpha_grid=alpha_grid,
+        params=params,
+        sample_count=64,
+        root_seed=20260721,
+        tolerance=1e-6,
+    )
+
+    assert manifest.passed is False
+    assert manifest.max_absolute_error > manifest.tolerance
+
+
+def test_gaussian_crosscheck_manifest_rejects_bad_metadata() -> None:
+    fuzzy, alpha_grid, params = _gaussian_fixture()
+    valid = build_gaussian_crosscheck_manifest(
+        fuzzy_number=fuzzy,
+        alpha_grid=alpha_grid,
+        params=params,
+        sample_count=128,
+        root_seed=20260721,
+    )
+
+    with pytest.raises(ValueError, match="synthetic-only"):
+        GaussianCrosscheckManifest(
+            rows=valid.rows,
+            tolerance=0.01,
+            sample_count=128,
+            root_seed=20260721,
+            use_status="paper-facing",
+        )
 
 
 def test_finite_hybrid_crosscheck_matches_hand_computed_probability_bounds() -> None:
