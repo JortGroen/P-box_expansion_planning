@@ -23,7 +23,7 @@
     "deterministic planning-year calendar mapping must be approved/implemented",
     "candidate processed-file checksums must verify in the consuming worktree",
     "EV source-library adequacy must remain downstream of aggregated net-load analysis",
-    "Q-5 still blocks event-based scientific analysis"
+    "G0-A3 approved threshold semantics must be implemented before event-based scientific analysis"
   ],
   "policy": {
     "candidate_libraries_only": true,

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
 import gzip
+import hashlib
 import inspect
 import json
 import subprocess
@@ -1556,7 +1557,8 @@ def test_committed_ev_readiness_guardrail_packet_blocks_ic1_result_claims() -> N
     assert packet["policy"]["profile_arrays_opened"] is False
     assert packet["policy"]["integrated_analysis_performed"] is False
     assert packet["policy"]["m_sufficiency_claimed"] is False
-    assert any("Q-5" in blocker for blocker in packet["ic1_use_blockers"])
+    assert any("G0-A3" in blocker for blocker in packet["ic1_use_blockers"])
+    assert not any("Q-5" in blocker for blocker in packet["ic1_use_blockers"])
 
 
 
@@ -1610,11 +1612,18 @@ def _committed_ev_heldout_preflight_inputs() -> tuple[dict[str, object], dict[st
 def test_committed_e3_s2a_ev_heldout_adequacy_preflight_matches_builder() -> None:
     accepted_index, criterion, accepted_sha, criterion_sha = _committed_ev_heldout_preflight_inputs()
 
+    checksum_path = Path(
+        "data/metadata/ev_adoption/e3_s2a_ev_candidate_component_output_checksum_preflight.json"
+    )
+    checksum_verification = json.loads(checksum_path.read_text(encoding="utf-8"))
     expected = e3_s2a_ev_heldout_adequacy_preflight_blockers(
         accepted_index,
         criterion,
         accepted_artifact_index_sha256=accepted_sha,
         criterion_packet_sha256=criterion_sha,
+        candidate_output_checksum_verification=checksum_verification,
+        candidate_output_checksum_verification_path=checksum_path.as_posix(),
+        candidate_output_checksum_verification_sha256=ev_adequacy_preflight.git_blob_or_file_sha256(checksum_path),
     )
     committed = json.loads(
         Path(
@@ -1627,6 +1636,9 @@ def test_committed_e3_s2a_ev_heldout_adequacy_preflight_matches_builder() -> Non
     assert committed["status"] == "blocked_before_held_out_access"
     assert committed["blocked"] is True
     assert committed["missing_checksum_or_manifest_inputs"] == []
+    assert committed["candidate_output_checksum_verification"]["status"] == "blocked_missing_ignored_component_outputs"
+    assert committed["candidate_output_checksum_verification"]["all_expected_outputs_verified"] is False
+    assert committed["candidate_output_checksum_verification"]["missing_output_count"] == 3
     blocker_ids = {row["blocker_id"] for row in committed["blockers"]}
     assert {
         "E3.S2A-DOWNSTREAM-AGGREGATE-ADEQUACY-CRITERION-NOT-SIGNED",
@@ -1686,6 +1698,100 @@ def test_ev_adequacy_preflight_cli_builder_is_deterministic(tmp_path: Path) -> N
     assert written["blocked"] is True
     assert written["policy"]["held_out_access"] is False
     assert written["policy"]["profile_arrays_loaded"] is False
+
+
+def _synthetic_ev_accepted_component_output_index(tmp_path: Path) -> tuple[dict[str, object], dict[str, bytes]]:
+    payloads = {
+        "low": b"candidate-low-output-bytes",
+        "middle": b"candidate-middle-output-bytes",
+        "high": b"candidate-high-output-bytes",
+    }
+    rows = []
+    for scenario, payload in payloads.items():
+        rows.append(
+            {
+                "scenario": scenario,
+                "output_npz_path": f"outputs/{scenario}.npz",
+                "output_sha256": hashlib.sha256(payload).hexdigest(),
+            }
+        )
+    return {"scenario_index": rows}, payloads
+
+
+def test_ev_candidate_output_checksum_preflight_verifies_files_without_loading_arrays(tmp_path: Path) -> None:
+    accepted_index, payloads = _synthetic_ev_accepted_component_output_index(tmp_path)
+    output_root = tmp_path / "outputs"
+    output_root.mkdir(parents=True)
+    for scenario, payload in payloads.items():
+        (output_root / f"{scenario}.npz").write_bytes(payload)
+    checkpoint = tmp_path / "metadata" / "checksum_preflight.json"
+
+    payload = ev_adequacy_preflight.verify_candidate_component_output_checksums(
+        accepted_index,
+        base_dir=tmp_path,
+        checkpoint_path=checkpoint,
+    )
+
+    assert checkpoint.is_file()
+    assert json.loads(checkpoint.read_text(encoding="utf-8")) == payload
+    assert payload["status"] == "verified_candidate_component_outputs"
+    assert payload["all_expected_outputs_verified"] is True
+    assert payload["missing_outputs"] == []
+    assert payload["checksum_mismatches"] == []
+    assert {row["status"] for row in payload["verification_records"]} == {"verified"}
+    assert payload["policy"]["hash_file_bytes_only"] is True
+    assert payload["policy"]["held_out_access"] is False
+    assert payload["policy"]["profile_arrays_loaded"] is False
+    source = inspect.getsource(ev_adequacy_preflight.verify_candidate_component_output_checksums)
+    assert "np.load" not in source
+    assert "load_processed_batch_npz" not in source
+
+
+def test_ev_candidate_output_checksum_preflight_checkpoints_missing_outputs(tmp_path: Path) -> None:
+    accepted_index, payloads = _synthetic_ev_accepted_component_output_index(tmp_path)
+    output_root = tmp_path / "outputs"
+    output_root.mkdir(parents=True)
+    for scenario in ("low", "middle"):
+        (output_root / f"{scenario}.npz").write_bytes(payloads[scenario])
+    checkpoint = tmp_path / "metadata" / "checksum_preflight.json"
+
+    payload = ev_adequacy_preflight.verify_candidate_component_output_checksums(
+        accepted_index,
+        base_dir=tmp_path,
+        checkpoint_path=checkpoint,
+    )
+
+    assert payload["status"] == "blocked_missing_ignored_component_outputs"
+    assert payload["all_expected_outputs_verified"] is False
+    assert payload["checkpoint"]["complete"] is True
+    assert payload["missing_outputs"] == [
+        {"scenario": "high", "output_npz_path": "outputs/high.npz"}
+    ]
+    by_scenario = {row["scenario"]: row for row in payload["verification_records"]}
+    assert by_scenario["high"]["status"] == "missing"
+    assert by_scenario["high"]["observed_sha256"] is None
+
+
+def test_ev_candidate_output_checksum_preflight_rejects_bad_scenario_set(tmp_path: Path) -> None:
+    accepted_index, _payloads = _synthetic_ev_accepted_component_output_index(tmp_path)
+    duplicate = json.loads(json.dumps(accepted_index))
+    duplicate["scenario_index"][1]["scenario"] = "low"
+
+    with pytest.raises(ValueError, match="duplicate scenarios"):
+        ev_adequacy_preflight.verify_candidate_component_output_checksums(
+            duplicate,
+            base_dir=tmp_path,
+            checkpoint_path=tmp_path / "checksum.json",
+        )
+
+    held_out = json.loads(json.dumps(accepted_index))
+    held_out["scenario_index"][0]["output_npz_path"] = "data/processed/held_out/low.npz"
+    with pytest.raises(ValueError, match="held-out/quarantined"):
+        ev_adequacy_preflight.verify_candidate_component_output_checksums(
+            held_out,
+            base_dir=tmp_path,
+            checkpoint_path=tmp_path / "checksum.json",
+        )
 
 
 def test_ev005_replacement_policy_packet_records_approval_and_profile_free_boundary() -> None:

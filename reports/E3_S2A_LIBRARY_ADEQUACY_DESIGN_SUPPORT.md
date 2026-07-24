@@ -23,7 +23,16 @@ leaving the unresolved scientific choices to the PI.
 
 ## Blocking Boundary
 
-Q-5 is open and blocks event-based E3.S2a evidence. Until Q-5 is resolved:
+G0-A3 resolves Q-5: event-based E3.S2a work must use the strict
+`L_import > 1.0 p.u.` four-step primary threshold with the predeclared `1.1`
+and `1.2 p.u.` persistent sensitivities. Q-5 itself is no longer a blocker.
+
+E3.S2a remains blocked until the downstream aggregate adequacy criterion is
+PI-signed, Agent A IC-1/IC-2 assembly is accepted, A-016 scenario consistency is
+resolved, the final 2035 low/middle/high branch is selected or explicitly
+branched in a signed run design, candidate component-output checksums verify in
+the consuming worktree, and held-out access is explicitly invoked under that
+signed route. Until then:
 
 - no held-out event result should be opened;
 - no threshold exceedance, episode count, or `P(E)` should be reported as an
@@ -31,13 +40,13 @@ Q-5 is open and blocks event-based E3.S2a evidence. Until Q-5 is resolved:
 - no E3.S2a event metric should be tuned or selected using held-out outcomes;
 - no manuscript result should be produced from an integrated event run.
 
-Non-event scaffolding may continue. Valid work before Q-5 resolution includes
-schema checks, synthetic harnesses, candidate-only dry-run mechanics, manifest
-template review, and provenance validation. Candidate-only diagnostics must stay
-labeled as diagnostics and must not be used to certify adequacy.
+Non-event scaffolding may continue. Valid work before the remaining prerequisites
+are resolved includes schema checks, synthetic harnesses, candidate-only dry-run
+mechanics, manifest template review, checksum-preflight automation, and
+provenance validation. Candidate-only diagnostics must stay labeled as
+diagnostics and must not be used to certify adequacy.
 
 ## Required Inputs Before Held-Out Access
-
 Before opening fresh held-out EV data, A/C should have the following frozen in
 version-controlled configuration and runner code:
 
@@ -45,14 +54,14 @@ version-controlled configuration and runner code:
 |---|---|---|
 | IC-1 assembly | `NetLoadProvider.get_net_load(scenario, year, time_domain, rho, seed)` implementation that returns a validated `NetLoadResult` | Public signature stays fixed; real adapters operate behind the merged IC-1 boundary. |
 | Component adapters | Baseline, EV, HP, PV, adoption, and flexibility adapters emitting validated `ComponentAdapterOutput` objects | Synthetic adapters are already scaffolded; real E2 adapters must retain source/member provenance. |
-| Calendar | One common 900-second calendar for all components in a realization | Required by ALEA-001 and by the four-step one-hour event interpretation once Q-5 is resolved. |
+| Calendar | One common 900-second calendar for all components in a realization | Required by ALEA-001 and by the G0-A3 four-step one-hour event interpretation. |
 | Node mapping | Versioned IC-1 node IDs and component-to-node allocation metadata | Needed to prevent candidate/held-out differences from being caused by mapping drift. |
 | Weather identity | One shared HP/PV weather-driver identity per realization | The implementation path remains governed by Q-8 or a later PI-approved weather decision. |
 | EV libraries | Candidate and held-out EV source batches with disjoint provenance, checksums, seeds, and member IDs | EV-005 keeps finite-library uncertainty separate from Monte Carlo uncertainty. |
-| Adoption | Signed scenario, planning year, local count, and node-allocation metadata | EV within-realization replacement remains pending until cohort sizes and PI guidance resolve it. |
+| Adoption | Signed scenario, planning year, local count, and node-allocation metadata | EV within-realization replacement is approved by EV-005B for candidate member selection only; held-out adequacy and M-sufficiency remain separate. |
 | Flexibility | Declared `rho` branch and flexibility-adapter provenance | FLEX-001 remains proposed unless separately approved by the PI. |
-| IC-2 trajectory | Validated `LoadingTrajectoryResult` output contract, not a legacy boolean only | IC-3 and adequacy comparisons must be able to recompute events from trajectories after Q-5. |
-| Criterion | Predeclared downstream adequacy tolerance and comparison metric | Event-based criteria require Q-5 resolution before held-out opening. |
+| IC-2 trajectory | Validated `LoadingTrajectoryResult` output contract, not a legacy boolean only | IC-3 and adequacy comparisons must be able to recompute G0-A3 events from trajectories. |
+| Criterion | Predeclared downstream adequacy tolerance and comparison metric | Event-based criteria must use G0-A3 semantics and require PI-signed tolerances before held-out opening. |
 
 ## IC-1 Data Contract For Adequacy
 
@@ -88,9 +97,7 @@ IC-2 should consume the aggregate IC-1 trajectories and emit a validated
 - timestep cadence, threshold metadata, persistence metadata, and transformer
   denominator/capacity-convention provenance.
 
-For E3.S2a, this trajectory object is the boundary to downstream adequacy. Once
-Q-5 is resolved, event quantities can be recomputed from the validated
-trajectories without relying on a stale boolean overload result.
+For E3.S2a, this trajectory object is the boundary to downstream adequacy. G0-A3 event quantities can be recomputed from the validated trajectories without relying on a stale boolean overload result.
 
 ## CRN Structure
 
@@ -121,7 +128,7 @@ The predeclared comparison should separate three uncertainty questions:
 | Nested candidate prefixes | Test stability as candidate library size grows within the candidate pool | No |
 | Disjoint candidate groups | Expose sensitivity to candidate source-batch composition | No |
 | Leave-out variants | Detect whether specific candidate members dominate the downstream quantity | No |
-| Fresh held-out batches | Test adequacy against untouched disjoint EV source data after the criterion is frozen | Yes, only after Q-5 and criterion freeze |
+| Fresh held-out batches | Test adequacy against untouched disjoint EV source data after the criterion is frozen | Yes, only after G0-A3-compliant criterion freeze |
 
 The held-out test should be executed once from the frozen committed runner and
 configuration. If it fails, the response is to accept the failure, extend and
@@ -137,7 +144,7 @@ The E3.S2a runner manifest should include, at minimum:
   package versions, hardware/runtime context, and timestamp;
 - scenario, planning year, `time_domain`, `rho`, timestep cadence, calendar ID,
   and node-mapping version;
-- Q-5 status, criterion ID, criterion status, loading threshold, persistence
+- G0-A3/Q-5 resolution status, criterion ID, criterion status, loading threshold, persistence
   length, and whether event quantities were computed;
 - transformer denominator/capacity convention and source decision status;
 - root seed, sample indices, sample seeds, component stream IDs, and source
@@ -169,8 +176,7 @@ item:
    inspecting held-out outcomes.
 5. The downstream criterion, tolerance, and failure response are frozen in a
    committed runner configuration.
-6. Q-5 is resolved if the criterion uses threshold exceedances, event episodes,
-   or event probabilities.
+6. The criterion records G0-A3 threshold semantics if it uses threshold exceedances, event episodes, or event probabilities.
 7. The manifest records seed-tree identity, component streams, member IDs,
    weather-driver identity, node mapping, calendar, denominator convention, and
    every comparison checksum.

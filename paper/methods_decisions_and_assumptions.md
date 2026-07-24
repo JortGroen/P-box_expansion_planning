@@ -741,8 +741,15 @@ criterion is PI-signed, Agent A's IC-1 assembly is accepted, held-out access is
 invoked under that signed route, A-016 scenario consistency is resolved, the
 final low/middle/high branch is selected or kept explicitly branched in a signed
 run design, and candidate output files are verified in the consuming worktree.
-It loads no profile arrays, runs no net-load/event/`P(E)` analysis, certifies no
-`M` sufficiency, and produces no manuscript number.
+The candidate-output checksum check is automated as a checkpointed script step:
+it hashes ignored EV component-output NPZ bytes only when those files are
+present, writes a resumable verification artifact after each declared scenario,
+and otherwise records exact missing paths as a fail-closed blocker. G0-A3 has
+resolved Q-5 threshold semantics, so EV readiness no longer treats Q-5 itself
+as a blocker; event use still remains blocked by the other unsigned or missing
+integrated prerequisites listed above. It loads no profile arrays, runs no
+net-load/event/`P(E)` analysis, certifies no `M` sufficiency, and produces no
+manuscript number.
 
 <!-- methods-id: EV-005A -->
 ### EV-005A - Low-Cost Held-Out Replacement
