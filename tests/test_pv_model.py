@@ -18,6 +18,7 @@ from src.pv_model import (
     PVCapacitySourcePacket,
     PVCapacityValueChoicePacket,
     PVCBSAnchorEvidencePacket,
+    PVExecutablePreflightGuardPacket,
     PVExecutableReadinessBlockersPacket,
     PVGISReference,
     PVII3050GrowthEvidencePacket,
@@ -41,6 +42,7 @@ from src.pv_model import (
     load_pv_capacity_source_packet,
     load_pv_capacity_value_choice_packet,
     load_pv_cbs_anchor_evidence_packet,
+    load_pv_executable_preflight_guard_packet,
     load_pv_executable_readiness_blockers_packet,
     load_pv_ii3050_growth_evidence_packet,
     load_pv_orientation_tilt_source_choice_packet,
@@ -2030,6 +2032,47 @@ def test_pv_executable_readiness_blockers_reject_silent_authorization() -> None:
             raw_data_committed=payload["raw_data_committed"],
             input_metadata=payload["input_metadata"],
             readiness_layers=payload["readiness_layers"],
+            executable_gate=payload["executable_gate"],
+            non_claims=payload["non_claims"],
+        )
+
+
+def test_committed_d014_pv_executable_preflight_guard_fails_closed() -> None:
+    packet = load_pv_executable_preflight_guard_packet(
+        "data/metadata/weather_pv/d014_pv_executable_preflight_guard.json"
+    )
+    record = packet.identity_record()
+
+    assert packet.packet_id == "D014-PV-EXECUTABLE-PREFLIGHT-GUARD"
+    assert record["input_blocker_packet_id"] == "D014-PV-EXECUTABLE-READINESS-BLOCKERS"
+    assert record["preflight_ready_for_executable_pv_generation"] is False
+    assert record["result_if_invoked"] == "abort_with_blocker_manifest"
+    assert "D014-PV-CAPACITY-APPROVAL-TEMPLATE" in packet.blocking_register_ids
+    assert "A-016" in packet.blocking_register_ids
+    assert "PV-ORIENT-001" in packet.blocking_register_ids
+    assert "PV-PARAM-001" in packet.blocking_register_ids
+    with pytest.raises(ValueError, match="did not pass"):
+        packet.require_executable_preflight_passed()
+
+
+def test_pv_executable_preflight_guard_rejects_silent_pass() -> None:
+    payload = json.loads(
+        Path("data/metadata/weather_pv/d014_pv_executable_preflight_guard.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    payload["executable_gate"]["preflight_ready_for_executable_pv_generation"] = True
+
+    with pytest.raises(ValueError, match="must not pass"):
+        PVExecutablePreflightGuardPacket(
+            packet_id=payload["packet_id"],
+            data_id=payload["data_id"],
+            status=payload["status"],
+            download_performed=payload["download_performed"],
+            raw_data_committed=payload["raw_data_committed"],
+            input_blocker_manifest=payload["input_blocker_manifest"],
+            preflight_checks=payload["preflight_checks"],
+            token_policy=payload["token_policy"],
             executable_gate=payload["executable_gate"],
             non_claims=payload["non_claims"],
         )
