@@ -1,0 +1,153 @@
+{
+  "adoption_electrification_options_unsigned": [],
+  "approval_state": {
+    "approval_ids": {},
+    "approved_indicator_mapping_ids": [
+      "D013-PBL-MAPPING",
+      "A-015"
+    ],
+    "executable_binding_allowed": false,
+    "missing_approval_keys": [
+      "value_column",
+      "denominator",
+      "unit_conversion",
+      "sfh_mfh_split",
+      "adoption_electrification"
+    ],
+    "required_before_executable_binding": [
+      "value_column",
+      "denominator",
+      "unit_conversion",
+      "sfh_mfh_split",
+      "adoption_electrification"
+    ]
+  },
+  "approved_foundation": {
+    "hp001_boundary": "Residential SFH/MFH space heat plus domestic hot water; commercial heat excluded.",
+    "indicator_mapping": {
+      "approval_ids": [
+        "D013-PBL-MAPPING",
+        "A-015"
+      ],
+      "scope": "Mapping only: _w residential, H23 space heat, H24 domestic hot water, H22 total diagnostic, unit [GJ/weq/jaar]."
+    }
+  },
+  "blocker_ids": [
+    "source_artifact_missing:cbs_85035ned_dwelling_stock",
+    "source_artifact_missing:pbl_startanalyse_2025_alkmaar"
+  ],
+  "candidate_component_values_unsigned_before_2035_adoption": [],
+  "created_utc": "2026-07-24T17:15:04Z",
+  "data_ids": [
+    "D-003",
+    "D-004",
+    "D-013"
+  ],
+  "decision_packet_id": "E2-S3-HP001-VALUE-BINDING-DECISION-CANDIDATES",
+  "equations": {
+    "class_allocation_before_adoption": "component_TWh[class,end_use] = end_use_TWh[end_use] * CBS_count_share[class]",
+    "hp_served_candidate_after_adoption": "hp_component_TWh[class,end_use,scenario] = component_TWh[class,end_use] * candidate_2035_service_fraction",
+    "local_heat_gj_per_year_by_end_use": "sum_b intensity_GJ_per_weq_year[b,end_use] * I11_woningequivalenten_woning[b]",
+    "local_heat_twh_per_year_by_end_use": "local_heat_gj_per_year_by_end_use / 3_600_000"
+  },
+  "metadata_dir": "data/metadata",
+  "non_claims": [
+    "No annual HP TWh values are approved or executable.",
+    "No 2035 HP adoption/electrification/service fraction is signed.",
+    "No A-016 scenario-source consistency approval is signed for HP integrated use.",
+    "No D-004 paired-weather or cold-spell final acceptance is signed or run.",
+    "No HP profile artifact, component output, net-load, event, P(E), threshold, capacity-screen, manuscript, or probability result is produced."
+  ],
+  "raw_dir": "data/raw/hp_scaling",
+  "required_approval_ids_before_executable_config": [
+    "value_column",
+    "denominator",
+    "unit_conversion",
+    "sfh_mfh_split",
+    "adoption_electrification",
+    "scenario_source_consistency",
+    "d004_paired_weather_acceptance",
+    "cold_spell_tolerances"
+  ],
+  "source_artifacts": [
+    {
+      "data_id": "D-013",
+      "license_or_terms": "CBS open data terms; cite CBS table page and retrieval timestamp",
+      "manifest_path": "data/metadata/hp_scaling/hp001_alkmaar_gm0361_retrieval_manifest.json",
+      "path": "data/raw/hp_scaling/cbs_85035ned_alkmaar_dwelling_stock.json",
+      "planned_raw_path": "data/raw/hp_scaling/cbs_85035ned_alkmaar_dwelling_stock.json",
+      "role": "SFH/MFH dwelling-stock denominator and crosswalk evidence for GM0361",
+      "source_key": "cbs_85035ned_dwelling_stock",
+      "url": "https://opendata.cbs.nl/ODataApi/OData/85035NED",
+      "verified_against_retrieval_manifest": false
+    },
+    {
+      "data_id": "D-013",
+      "license_or_terms": "CC BY 4.0 NL according to the PBL data portal",
+      "manifest_path": "data/metadata/hp_scaling/hp001_alkmaar_gm0361_retrieval_manifest.json",
+      "path": "data/raw/hp_scaling/pbl_startanalyse_2025_alkmaar.zip",
+      "planned_raw_path": "data/raw/hp_scaling/pbl_startanalyse_2025_alkmaar.zip",
+      "role": "local heat-demand, neighbourhood, and pathway/suitability context for Alkmaar",
+      "source_key": "pbl_startanalyse_2025_alkmaar",
+      "url": "https://dataportaal.pbl.nl/data/Startanalyse_aardgasvrije_buurten/2025/Gemeentes/Alkmaar.zip",
+      "verified_against_retrieval_manifest": false
+    }
+  ],
+  "source_columns": {
+    "cbs_85035ned": {
+      "count_column": "BeginstandWoningvoorraad_1",
+      "mfh_woningtype": "ZW10340",
+      "period_candidate": "2026JJ00",
+      "sfh_woningtype": "ZW10290",
+      "split_rule_candidate": "SFH/MFH count share by Alkmaar dwelling stock type"
+    },
+    "pbl_startanalyse_2025": {
+      "approved_inferred_unit": "[GJ/weq/jaar]",
+      "archive_member": "Alkmaar_strategie.csv",
+      "decimal": ",",
+      "delimiter": ";",
+      "denominator_column_candidate": "I11_woningequivalenten [Woning]",
+      "diagnostic_total_indicator": "H22_Vraag_totaal_w",
+      "indicator_column": "Code_Indicator",
+      "mapping_approval_boundary": "D013-PBL-MAPPING/A-015 approves indicator semantics only, not value-column use, denominator use, unit conversion, annual values, or adoption.",
+      "space_indicator": "H23_Vraag_RV_w",
+      "unit_column": "Eenheid",
+      "value_column_candidate": "Referentie_2030",
+      "water_indicator": "H24_Vraag_TW_w"
+    }
+  },
+  "status": "blocked_missing_or_unverified_d013_raw_sources; no value candidates emitted",
+  "unsigned_candidate_binding_record": {
+    "approval_state": {
+      "approval_ids": {},
+      "approved_indicator_mapping_ids": [
+        "D013-PBL-MAPPING",
+        "A-015"
+      ],
+      "executable_binding_allowed": false,
+      "missing_approval_keys": [
+        "value_column",
+        "denominator",
+        "unit_conversion",
+        "sfh_mfh_split",
+        "adoption_electrification"
+      ],
+      "required_before_executable_binding": [
+        "value_column",
+        "denominator",
+        "unit_conversion",
+        "sfh_mfh_split",
+        "adoption_electrification"
+      ]
+    },
+    "component_value_drafts_unsigned_before_2035_adoption": [],
+    "source_inputs_under_review": {
+      "adoption_electrification_scenario": "unsigned_2035_hp_service_fraction_or_count_pending",
+      "denominator_column": "I11_woningequivalenten [Woning]",
+      "gj_to_twh_divisor": 3600000.0,
+      "sfh_mfh_split_rule": "cbs_85035ned_count_share",
+      "value_column": "Referentie_2030"
+    },
+    "status": "blocked_missing_or_unverified_d013_raw_sources_not_approved_for_executable_use"
+  }
+}

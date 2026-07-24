@@ -10,7 +10,7 @@ import json
 from pathlib import Path
 import subprocess
 import sys
-from typing import Any, Sequence
+from typing import Any, Mapping, Sequence
 from urllib import parse, request
 import zipfile
 
@@ -33,6 +33,7 @@ FORMULA_DECISION_PACKET_FILENAME = "hp001_alkmaar_gm0361_scaling_formula_config_
 VALUE_BINDING_READINESS_FILENAME = "hp001_alkmaar_gm0361_value_binding_readiness_packet.json"
 READINESS_APPROVAL_CHECKLIST_FILENAME = "hp001_alkmaar_gm0361_readiness_approval_checklist.json"
 EXECUTABLE_VALUE_BINDING_DECISION_PACKET_FILENAME = "hp001_alkmaar_gm0361_executable_value_binding_decision_packet.json"
+VALUE_BINDING_DECISION_CANDIDATES_FILENAME = "hp001_alkmaar_gm0361_value_binding_decision_candidates_blocker.json"
 COLD_SPELL_ACCEPTANCE_DECISION_PACKET_FILENAME = "hp001_d004_cold_spell_acceptance_decision_packet.json"
 PROFILE_ARTIFACT_CONSUMPTION_MANIFEST_TEMPLATE_FILENAME = "hp001_profile_artifact_consumption_manifest_template.json"
 PROFILE_REBUILD_PREFLIGHT_TEMPLATE_FILENAME = "hp001_profile_artifact_rebuild_preflight_template.json"
@@ -608,6 +609,121 @@ def build_hp001_executable_value_binding_decision_packet() -> dict[str, Any]:
     }
 
 
+def build_hp001_value_binding_decision_candidates_packet(
+    *,
+    raw_dir: Path,
+    metadata_dir: Path,
+    adoption_fractions: Sequence[float] = (0.25, 0.5, 0.75),
+) -> dict[str, Any]:
+    """Build unsigned HP-001 annual value-binding candidates or fail closed.
+
+    The real-source path verifies D-013 raw artifacts against the retrieval
+    manifest before extracting candidate values. Missing ignored raw files are
+    represented as an explicit blocker packet rather than by reusing stale
+    committed numbers.
+    """
+    source_artifacts, blocker_ids = _hp001_required_value_binding_raw_sources(raw_dir, metadata_dir)
+    base_payload: dict[str, Any] = {
+        "data_ids": ["D-003", "D-004", "D-013"],
+        "decision_packet_id": "E2-S3-HP001-VALUE-BINDING-DECISION-CANDIDATES",
+        "created_utc": _utc_now(),
+        "status": "blocked_missing_or_unverified_d013_raw_sources; no value candidates emitted",
+        "raw_dir": raw_dir.as_posix(),
+        "metadata_dir": metadata_dir.as_posix(),
+        "source_artifacts": source_artifacts,
+        "blocker_ids": blocker_ids,
+        "approved_foundation": {
+            "hp001_boundary": "Residential SFH/MFH space heat plus domestic hot water; commercial heat excluded.",
+            "indicator_mapping": {
+                "approval_ids": ["D013-PBL-MAPPING", "A-015"],
+                "scope": "Mapping only: _w residential, H23 space heat, H24 domestic hot water, H22 total diagnostic, unit [GJ/weq/jaar].",
+            },
+        },
+        "source_columns": _hp001_value_binding_source_columns(),
+        "equations": _hp001_value_binding_equations(),
+        "approval_state": _unsigned_hp001_value_binding_approval_state(),
+        "required_approval_ids_before_executable_config": [
+            "value_column",
+            "denominator",
+            "unit_conversion",
+            "sfh_mfh_split",
+            "adoption_electrification",
+            "scenario_source_consistency",
+            "d004_paired_weather_acceptance",
+            "cold_spell_tolerances",
+        ],
+        "non_claims": _hp001_value_binding_non_claims(),
+    }
+    if blocker_ids:
+        base_payload.update(
+            {
+                "candidate_component_values_unsigned_before_2035_adoption": [],
+                "adoption_electrification_options_unsigned": [],
+                "unsigned_candidate_binding_record": _blocked_unsigned_value_binding_record(),
+            }
+        )
+        return base_payload
+
+    artifact_by_key = {artifact["source_key"]: artifact for artifact in source_artifacts}
+    pbl = _extract_pbl_hp001_heat_demand_candidates(
+        Path(artifact_by_key["pbl_startanalyse_2025_alkmaar"]["path"]),
+        value_column="Referentie_2030",
+        denominator_column="I11_woningequivalenten [Woning]",
+    )
+    cbs = _extract_cbs_hp001_count_share(
+        Path(artifact_by_key["cbs_85035ned_dwelling_stock"]["path"])
+    )
+    components = _hp001_candidate_components_from_demands(pbl, cbs)
+    adoption_options = _hp001_adoption_options(components, adoption_fractions)
+    candidate_record = _unsigned_candidate_binding_record(components)
+    base_payload.update(
+        {
+            "status": "proposed_value_binding_decision_candidates_not_executable",
+            "blocker_ids": [
+                "value_column_unsigned",
+                "denominator_unsigned",
+                "unit_conversion_unsigned",
+                "sfh_mfh_split_unsigned",
+                "adoption_electrification_unsigned",
+                "scenario_source_consistency_unsigned",
+                "d004_paired_weather_acceptance_unsigned",
+                "cold_spell_tolerances_unsigned",
+            ],
+            "local_heat_demand_diagnostics_unsigned": pbl,
+            "sfh_mfh_split_diagnostics_unsigned": cbs,
+            "candidate_component_values_unsigned_before_2035_adoption": components,
+            "adoption_electrification_options_unsigned": adoption_options,
+            "recommended_pi_option_unsigned": {
+                "value_column": "Referentie_2030",
+                "denominator": "I11_woningequivalenten [Woning]",
+                "unit_conversion": "divide GJ/year by 3,600,000 to obtain TWh/year",
+                "sfh_mfh_split": "CBS 85035NED count-share split",
+                "adoption_electrification": "PI must select or provide a signed 2035 HP service fraction or equivalent count route; numeric options here are scenario candidates only.",
+            },
+            "unsigned_candidate_binding_record": candidate_record,
+        }
+    )
+    return base_payload
+
+
+def write_hp001_value_binding_decision_candidates_packet(
+    *,
+    metadata_dir: Path,
+    raw_dir: Path,
+) -> Path:
+    """Write the proposed or blocked HP-001 value-binding candidate packet."""
+    target_dir = metadata_dir / "hp_scaling"
+    target_dir.mkdir(parents=True, exist_ok=True)
+    path = target_dir / VALUE_BINDING_DECISION_CANDIDATES_FILENAME
+    payload = build_hp001_value_binding_decision_candidates_packet(
+        raw_dir=raw_dir,
+        metadata_dir=metadata_dir,
+    )
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    return path
+
+
 def write_hp001_cold_spell_acceptance_decision_packet(metadata_dir: Path) -> Path:
     """Write the proposed HP/D-004 cold-spell tolerance decision packet."""
     target_dir = metadata_dir / "hp_scaling"
@@ -1072,6 +1188,340 @@ def write_hp_scaling_retrieval_plan(metadata_dir: Path) -> Path:
     return path
 
 
+def _hp001_required_value_binding_raw_sources(
+    raw_dir: Path,
+    metadata_dir: Path,
+) -> tuple[list[dict[str, Any]], list[str]]:
+    required_keys = {"cbs_85035ned_dwelling_stock", "pbl_startanalyse_2025_alkmaar"}
+    retrieval_manifest_path = metadata_dir / "hp_scaling" / RETRIEVAL_MANIFEST_FILENAME
+    blocker_ids: list[str] = []
+    manifest_by_key: dict[str, dict[str, Any]] = {}
+    if retrieval_manifest_path.exists():
+        manifest = json.loads(retrieval_manifest_path.read_text(encoding="utf-8"))
+        manifest_by_key = {
+            str(source.get("source_key", "")).strip(): source
+            for source in manifest.get("sources", [])
+            if str(source.get("source_key", "")).strip()
+        }
+    else:
+        blocker_ids.append("retrieval_manifest_missing")
+
+    artifacts: list[dict[str, Any]] = []
+    for spec in HP_SCALING_SOURCES:
+        if spec.key not in required_keys:
+            continue
+        raw_path = raw_dir / Path(spec.planned_raw_path).name
+        manifest_entry = manifest_by_key.get(spec.key)
+        if manifest_entry is None:
+            blocker_ids.append(f"retrieval_manifest_source_missing:{spec.key}")
+        artifact: dict[str, Any] = {
+            "source_key": spec.key,
+            "data_id": DATA_ID,
+            "path": raw_path.as_posix(),
+            "url": spec.url,
+            "role": spec.role,
+            "license_or_terms": spec.license_or_terms,
+            "planned_raw_path": spec.planned_raw_path,
+            "manifest_path": retrieval_manifest_path.as_posix(),
+            "verified_against_retrieval_manifest": False,
+        }
+        if not raw_path.exists():
+            blocker_ids.append(f"source_artifact_missing:{spec.key}")
+            artifacts.append(artifact)
+            continue
+        size_bytes = raw_path.stat().st_size
+        sha256_file = _sha256_path(raw_path)
+        artifact.update({"size_bytes": size_bytes, "sha256_file": sha256_file})
+        if manifest_entry is not None:
+            if int(manifest_entry.get("size_bytes", -1)) != size_bytes:
+                blocker_ids.append(f"source_artifact_size_mismatch:{spec.key}")
+            if str(manifest_entry.get("sha256_file", "")).strip() != sha256_file:
+                blocker_ids.append(f"source_artifact_checksum_mismatch:{spec.key}")
+            if int(manifest_entry.get("size_bytes", -1)) == size_bytes and str(
+                manifest_entry.get("sha256_file", "")
+            ).strip() == sha256_file:
+                artifact["verified_against_retrieval_manifest"] = True
+        artifacts.append(artifact)
+    return artifacts, list(dict.fromkeys(blocker_ids))
+
+
+def _hp001_value_binding_source_columns() -> dict[str, Any]:
+    return {
+        "pbl_startanalyse_2025": {
+            "archive_member": "Alkmaar_strategie.csv",
+            "delimiter": ";",
+            "decimal": ",",
+            "value_column_candidate": "Referentie_2030",
+            "denominator_column_candidate": "I11_woningequivalenten [Woning]",
+            "indicator_column": "Code_Indicator",
+            "unit_column": "Eenheid",
+            "space_indicator": "H23_Vraag_RV_w",
+            "water_indicator": "H24_Vraag_TW_w",
+            "diagnostic_total_indicator": "H22_Vraag_totaal_w",
+            "approved_inferred_unit": "[GJ/weq/jaar]",
+            "mapping_approval_boundary": "D013-PBL-MAPPING/A-015 approves indicator semantics only, not value-column use, denominator use, unit conversion, annual values, or adoption.",
+        },
+        "cbs_85035ned": {
+            "period_candidate": "2026JJ00",
+            "count_column": "BeginstandWoningvoorraad_1",
+            "sfh_woningtype": "ZW10290",
+            "mfh_woningtype": "ZW10340",
+            "split_rule_candidate": "SFH/MFH count share by Alkmaar dwelling stock type",
+        },
+    }
+
+
+def _hp001_value_binding_equations() -> dict[str, str]:
+    return {
+        "local_heat_gj_per_year_by_end_use": "sum_b intensity_GJ_per_weq_year[b,end_use] * I11_woningequivalenten_woning[b]",
+        "local_heat_twh_per_year_by_end_use": "local_heat_gj_per_year_by_end_use / 3_600_000",
+        "class_allocation_before_adoption": "component_TWh[class,end_use] = end_use_TWh[end_use] * CBS_count_share[class]",
+        "hp_served_candidate_after_adoption": "hp_component_TWh[class,end_use,scenario] = component_TWh[class,end_use] * candidate_2035_service_fraction",
+    }
+
+
+def _unsigned_hp001_value_binding_approval_state() -> dict[str, Any]:
+    annual_keys = [
+        "value_column",
+        "denominator",
+        "unit_conversion",
+        "sfh_mfh_split",
+        "adoption_electrification",
+    ]
+    return {
+        "approved_indicator_mapping_ids": ["D013-PBL-MAPPING", "A-015"],
+        "required_before_executable_binding": annual_keys,
+        "approval_ids": {},
+        "missing_approval_keys": annual_keys,
+        "executable_binding_allowed": False,
+    }
+
+
+def _hp001_value_binding_non_claims() -> list[str]:
+    return [
+        "No annual HP TWh values are approved or executable.",
+        "No 2035 HP adoption/electrification/service fraction is signed.",
+        "No A-016 scenario-source consistency approval is signed for HP integrated use.",
+        "No D-004 paired-weather or cold-spell final acceptance is signed or run.",
+        "No HP profile artifact, component output, net-load, event, P(E), threshold, capacity-screen, manuscript, or probability result is produced.",
+    ]
+
+
+def _blocked_unsigned_value_binding_record() -> dict[str, Any]:
+    return {
+        "status": "blocked_missing_or_unverified_d013_raw_sources_not_approved_for_executable_use",
+        "approval_state": _unsigned_hp001_value_binding_approval_state(),
+        "source_inputs_under_review": {
+            "value_column": "Referentie_2030",
+            "denominator_column": "I11_woningequivalenten [Woning]",
+            "gj_to_twh_divisor": 3_600_000.0,
+            "sfh_mfh_split_rule": "cbs_85035ned_count_share",
+            "adoption_electrification_scenario": "unsigned_2035_hp_service_fraction_or_count_pending",
+        },
+        "component_value_drafts_unsigned_before_2035_adoption": [],
+    }
+
+
+def _unsigned_candidate_binding_record(components: Sequence[dict[str, Any]]) -> dict[str, Any]:
+    return {
+        "decision_packet_id": "E2-S3-HP001-VALUE-BINDING-DECISION-CANDIDATES",
+        "status": "proposed_candidate_values_not_approved_for_executable_use",
+        "approval_state": _unsigned_hp001_value_binding_approval_state(),
+        "source_inputs_under_review": {
+            "pbl_source": "D-013 PBL Startanalyse 2025 Alkmaar, Alkmaar_strategie.csv",
+            "value_column": "Referentie_2030",
+            "denominator_column": "I11_woningequivalenten [Woning]",
+            "space_indicator": "H23_Vraag_RV_w",
+            "water_indicator": "H24_Vraag_TW_w",
+            "diagnostic_total_indicator": "H22_Vraag_totaal_w",
+            "cbs_source": "D-013 CBS StatLine 85035NED Alkmaar GM0361 dwelling stock/type evidence",
+            "sfh_mfh_split_rule": "cbs_85035ned_count_share",
+            "gj_to_twh_divisor": 3_600_000.0,
+            "adoption_electrification_scenario": "unsigned_2035_hp_service_fraction_or_count_pending",
+        },
+        "component_value_drafts_unsigned_before_2035_adoption": list(components),
+    }
+
+
+def _extract_pbl_hp001_heat_demand_candidates(
+    pbl_zip_path: Path,
+    *,
+    value_column: str,
+    denominator_column: str,
+) -> dict[str, Any]:
+    with zipfile.ZipFile(pbl_zip_path) as archive:
+        member = next(
+            (name for name in archive.namelist() if name.endswith("Alkmaar_strategie.csv")),
+            None,
+        )
+        if member is None:
+            raise ValueError("PBL ZIP does not contain Alkmaar_strategie.csv")
+        rows = list(
+            csv.DictReader(
+                io.StringIO(archive.read(member).decode("utf-8-sig")),
+                delimiter=";",
+            )
+        )
+    fieldnames = set(rows[0]) if rows else set()
+    required_columns = {"Code_Indicator", "Eenheid", value_column, denominator_column}
+    missing = required_columns - fieldnames
+    if missing:
+        raise ValueError(f"PBL Alkmaar_strategie.csv missing required columns: {tuple(sorted(missing))}")
+    indicators = {
+        "space": "H23_Vraag_RV_w",
+        "water": "H24_Vraag_TW_w",
+        "residential_total_diagnostic": "H22_Vraag_totaal_w",
+    }
+    outputs: dict[str, Any] = {
+        "source_member": member,
+        "value_column": value_column,
+        "denominator_column": denominator_column,
+        "gj_to_twh_divisor": 3_600_000.0,
+        "indicators": {},
+    }
+    for label, indicator in indicators.items():
+        selected = [row for row in rows if str(row.get("Code_Indicator", "")).strip() == indicator]
+        total_weq = sum(_parse_decimal_number(row[denominator_column]) for row in selected)
+        total_gj = sum(
+            _parse_decimal_number(row[value_column]) * _parse_decimal_number(row[denominator_column])
+            for row in selected
+        )
+        units = sorted({str(row.get("Eenheid", "")).strip() for row in selected if str(row.get("Eenheid", "")).strip()})
+        outputs["indicators"][label] = {
+            "code_indicator": indicator,
+            "row_count": len(selected),
+            "unit_values": units,
+            "denominator_sum_weq": total_weq,
+            "thermal_demand_gj_per_year": total_gj,
+            "thermal_demand_twh_per_year": total_gj / 3_600_000.0,
+        }
+    space_twh = outputs["indicators"]["space"]["thermal_demand_twh_per_year"]
+    water_twh = outputs["indicators"]["water"]["thermal_demand_twh_per_year"]
+    total_twh = outputs["indicators"]["residential_total_diagnostic"]["thermal_demand_twh_per_year"]
+    outputs["diagnostic_note"] = (
+        "H22 is retained as a residential-total diagnostic; any gap from H23+H24 remains outside HP-001 "
+        "unless the PI signs an amended boundary."
+    )
+    outputs["diagnostic_total_minus_space_water_twh"] = total_twh - space_twh - water_twh
+    return outputs
+
+
+def _extract_cbs_hp001_count_share(cbs_json_path: Path) -> dict[str, Any]:
+    payload = json.loads(cbs_json_path.read_text(encoding="utf-8"))
+    odata = payload.get("odata", {}) if isinstance(payload, dict) else {}
+    rows = odata.get("TypedDataSet", {}).get("response", {}).get("value", [])
+    type_rows = odata.get("Woningtype", {}).get("response", {}).get("value", [])
+    type_titles = {
+        str(row.get("Key", "")).strip(): str(row.get("Title", "")).strip()
+        for row in type_rows
+        if isinstance(row, dict)
+    }
+    period = "2026JJ00"
+    count_column = "BeginstandWoningvoorraad_1"
+    mapping = {"SFH": "ZW10290", "MFH": "ZW10340"}
+    counts: dict[str, float] = {}
+    for building_class, code in mapping.items():
+        matches = [
+            row for row in rows
+            if str(row.get("Woningtype", "")).strip() == code
+            and str(row.get("Perioden", "")).strip() == period
+        ]
+        if len(matches) != 1:
+            raise ValueError(f"CBS 85035NED fixture/source expected one {building_class} {period} row")
+        counts[building_class] = _parse_decimal_number(matches[0][count_column])
+    total = sum(counts.values())
+    if total <= 0:
+        raise ValueError("CBS SFH/MFH count denominator must be positive")
+    return {
+        "table": "85035NED",
+        "period": period,
+        "count_column": count_column,
+        "woningtype_crosswalk": {
+            building_class: {"code": code, "title": type_titles.get(code, code)}
+            for building_class, code in mapping.items()
+        },
+        "counts": counts,
+        "shares": {building_class: count / total for building_class, count in counts.items()},
+        "total_count": total,
+    }
+
+
+def _hp001_candidate_components_from_demands(
+    pbl: Mapping[str, Any],
+    cbs: Mapping[str, Any],
+) -> list[dict[str, Any]]:
+    indicators = pbl["indicators"]
+    shares = cbs["shares"]
+    component_specs = [
+        ("sfh_space", "SFH", "space", "NL_heat_profile_space_SFH", "NL_COP_ASHP_radiator"),
+        ("mfh_space", "MFH", "space", "NL_heat_profile_space_MFH", "NL_COP_ASHP_radiator"),
+        ("sfh_water", "SFH", "water", "NL_heat_profile_water_SFH", "NL_COP_ASHP_water"),
+        ("mfh_water", "MFH", "water", "NL_heat_profile_water_MFH", "NL_COP_ASHP_water"),
+    ]
+    components: list[dict[str, Any]] = []
+    for component_id, building_class, end_use, shape_column, cop_column in component_specs:
+        base_twh = float(indicators[end_use]["thermal_demand_twh_per_year"])
+        component_twh = base_twh * float(shares[building_class])
+        components.append(
+            {
+                "component_id": component_id,
+                "building_class": building_class,
+                "end_use": end_use,
+                "annual_heat_twh": component_twh,
+                "shape_column": shape_column,
+                "cop_column": cop_column,
+                "annual_twh_status": "unsigned_candidate_local_heat_demand_before_2035_adoption",
+                "provenance": {
+                    "source_status": "D-013 raw artifacts checksum-verified locally for candidate extraction",
+                    "value_column": "Referentie_2030",
+                    "denominator_column": "I11_woningequivalenten [Woning]",
+                    "class_split_rule": "cbs_85035ned_count_share",
+                    "unit_conversion": "GJ/year divided by 3,600,000",
+                },
+            }
+        )
+    return components
+
+
+def _hp001_adoption_options(
+    components: Sequence[dict[str, Any]],
+    adoption_fractions: Sequence[float],
+) -> list[dict[str, Any]]:
+    options: list[dict[str, Any]] = []
+    for fraction in adoption_fractions:
+        value = float(fraction)
+        if value <= 0 or value > 1:
+            raise ValueError("candidate adoption/service fractions must be in (0, 1]")
+        options.append(
+            {
+                "scenario_label": f"candidate_service_fraction_{value:g}",
+                "service_fraction": value,
+                "status": "unsigned_scenario_candidate_not_executable",
+                "source_provenance": "PI scenario candidate only; no public 2035 adoption source is signed by this packet.",
+                "component_values_after_fraction": [
+                    {
+                        "component_id": component["component_id"],
+                        "building_class": component["building_class"],
+                        "end_use": component["end_use"],
+                        "annual_heat_twh_after_fraction": float(component["annual_heat_twh"]) * value,
+                    }
+                    for component in components
+                ],
+            }
+        )
+    return options
+
+
+def _parse_decimal_number(value: object) -> float:
+    if isinstance(value, (int, float)):
+        return float(value)
+    text = str(value).strip()
+    if not text:
+        return 0.0
+    if "," in text:
+        text = text.replace(".", "").replace(",", ".")
+    return float(text)
+
 def _utc_now() -> str:
     return datetime.now(UTC).replace(microsecond=0).isoformat().replace("+00:00", "Z")
 
@@ -1458,6 +1908,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--write-value-binding-packet", action="store_true", help="Write the proposed HP-001 value-binding readiness packet without executable values.")
     parser.add_argument("--write-readiness-checklist", action="store_true", help="Write the proposed HP-001 final-readiness approval checklist without executable values.")
     parser.add_argument("--write-executable-value-binding-packet", action="store_true", help="Write the proposed HP-001 executable value-binding decision packet without approving values.")
+    parser.add_argument("--write-value-binding-candidates", action="store_true", help="Write checksum-verified or fail-closed HP-001 value-binding decision candidates without approving values.")
     parser.add_argument("--write-cold-spell-acceptance-packet", action="store_true", help="Write the proposed HP/D-004 cold-spell tolerance decision packet without running acceptance.")
     parser.add_argument("--write-profile-consumption-template", action="store_true", help="Write the proposed HP-001 profile artifact consumption manifest template without approving values.")
     parser.add_argument("--write-profile-rebuild-preflight", action="store_true", help="Write the proposed HP-001 profile rebuild/checksum preflight template without creating load artifacts.")
@@ -1481,6 +1932,11 @@ def main(argv: Sequence[str] | None = None) -> int:
         path = write_hp001_readiness_approval_checklist_packet(Path(args.metadata_dir))
     elif args.write_executable_value_binding_packet:
         path = write_hp001_executable_value_binding_decision_packet(Path(args.metadata_dir))
+    elif args.write_value_binding_candidates:
+        path = write_hp001_value_binding_decision_candidates_packet(
+            metadata_dir=Path(args.metadata_dir),
+            raw_dir=Path(args.raw_dir),
+        )
     elif args.write_cold_spell_acceptance_packet:
         path = write_hp001_cold_spell_acceptance_decision_packet(Path(args.metadata_dir))
     elif args.write_profile_consumption_template:

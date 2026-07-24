@@ -1741,6 +1741,10 @@ explicitly promotes that use.
 
 
 
+<!-- methods-id: E2-S3-HP001-VALUE-BINDING-DECISION-CANDIDATES -->
+### E2-S3-HP001-VALUE-BINDING-DECISION-CANDIDATES - HP-001 Value-Binding Decision Candidates
+
+**Status: Proposed packet; executable annual values unsigned.** The HP-001 value-binding decision-candidate workflow is a deterministic extraction and blocker packet for the remaining local annual-scaling choices after D013-PBL-MAPPING/A-015. Before computing candidate component values, the workflow verifies that the ignored D-013 CBS/PBL raw artifacts exist and match the D-013 retrieval manifest byte sizes and SHA-256 checksums. If the artifacts are missing or stale, the committed packet records source-specific blockers and emits no value candidates. If verified raw files are present, the workflow reads PBL `Alkmaar_strategie.csv` using the documented semicolon/comma-decimal dialect, applies the approved inferred indicators `H23_Vraag_RV_w`, `H24_Vraag_TW_w`, and diagnostic `H22_Vraag_totaal_w` in `[GJ/weq/jaar]`, multiplies candidate `Referentie_2030` intensities by candidate `I11_woningequivalenten [Woning]`, converts GJ/year to TWh/year by division by `3,600,000`, and allocates space and domestic-hot-water demand over SFH/MFH using the candidate CBS 85035NED count-share split. The packet can also show unsigned 2035 service-fraction options, but those fractions are PI scenario candidates only. The generated binding record remains rejected by the HP adapter until the PI signs value column, denominator, unit conversion, SFH/MFH split, and adoption/electrification approvals and separately resolves A-016 scenario consistency, D-004 paired-weather acceptance, and cold-spell tolerances. This packet does not approve annual HP TWh values, 2035 adoption/electrification/service fractions, HP profile artifacts, net-load/event analysis, `P(E)`, threshold/capacity-screen results, manuscript numbers, or probability results.
 <!-- methods-id: E2-S3-HP001-EXECUTABLE-VALUE-BINDING-BRIEF -->
 ### E2-S3-HP001-EXECUTABLE-VALUE-BINDING-BRIEF - HP-001 Executable Value-Binding Decision Brief
 
