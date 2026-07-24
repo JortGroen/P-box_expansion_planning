@@ -1449,6 +1449,49 @@ def test_d014_first_experiment_value_decision_packet_narrows_options_without_val
     assert payload["status"].startswith("proposed_first_experiment_pv_value_decision_support")
 
 
+def test_d014_first_experiment_value_approval_packet_is_concise_and_fail_closed(tmp_path: Path) -> None:
+    packet = pv_capacity.build_d014_pv_first_experiment_value_approval_packet()
+
+    assert packet["packet_id"] == "D014-PV-FIRST-EXPERIMENT-VALUE-APPROVAL-PACKET"
+    assert packet["data_id"] == "D-014"
+    assert packet["download_performed"] is False
+    assert packet["raw_data_committed"] is False
+    assert packet["real_pv_generation_performed"] is False
+    assert packet["input_metadata"]["value_decision_packet"]["packet_id"] == (
+        "D014-PV-FIRST-EXPERIMENT-VALUE-DECISION-PACKET"
+    )
+    assert packet["input_metadata"]["component_output_artifact_scaffold"]["packet_id"] == (
+        "D014-PV-COMPONENT-OUTPUT-ARTIFACT-SCAFFOLD"
+    )
+    choices = packet["pi_value_choices_for_signature"]
+    assert choices["alkmaar_capacity_anchor"]["source_table"] == "CBS 85005NED"
+    assert choices["alkmaar_capacity_anchor"]["geography_key"] == "GM0361"
+    assert choices["alkmaar_capacity_anchor"]["recommended_period_key"] == "2019JJ00"
+    assert choices["alkmaar_capacity_anchor"]["recommended_sector_key"] == "E007161"
+    assert choices["alkmaar_capacity_anchor"]["recommended_capacity_field_key"] == (
+        "OpgesteldVermogenVanZonnepanelen_2"
+    )
+    assert set(choices["ii3050_growth_and_scenario_link"]["scenario_column_candidates"]) == {
+        "2035 KA",
+        "2035 ND",
+        "2035 IA",
+    }
+    assert "A-016" in choices["ii3050_growth_and_scenario_link"]["a016_consistency_note"]
+    assert "PV-ORIENT-001" == choices["statistical_orientation_tilt"]["scope_decision"]
+    assert "3DBAG" in choices["statistical_orientation_tilt"]["blocked_geometry"]
+    assert "PVGIS-SARAH3 remains qualitative" in choices["pv_conversion"]["pvgis_role"]
+    assert "repository-relative" in choices["reactive_power_and_manifest_policy"]["manifest_path_policy"]
+    assert choices["node_allocation"]["status"] == "explicitly_gated_unsigned"
+    gate = packet["machine_readable_fail_closed_gate"]
+    assert gate["executable_pv_generation_authorized"] is False
+    assert gate["result_if_invoked_before_required_signatures"] == "return_value_approval_blocker_manifest_no_arrays"
+    assert "signed_component_output_manifest_path_policy" in packet["required_signed_artifacts_before_executable_pv"]
+    assert any("No real PV generation" in item for item in packet["non_claims"])
+
+    path = pv_capacity.write_d014_pv_first_experiment_value_approval_packet(tmp_path)
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    assert path.name == "d014_pv_first_experiment_value_approval_packet.json"
+    assert payload["status"].startswith("proposed_first_experiment_pv_value_approval")
 def test_d014_pv_component_output_artifact_scaffold_is_metadata_only(tmp_path: Path) -> None:
     packet = pv_capacity.build_d014_pv_component_output_artifact_scaffold_packet()
 

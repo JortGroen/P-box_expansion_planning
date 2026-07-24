@@ -23,6 +23,7 @@ from src.pv_model import (
     PVExecutablePreflightGuardPacket,
     PVExecutableReadinessBlockersPacket,
     PVFirstExperimentApprovalPacket,
+    PVFirstExperimentValueApprovalPacket,
     PVFirstExperimentValueDecisionPacket,
     PVGISReference,
     PVII3050GrowthEvidencePacket,
@@ -51,6 +52,7 @@ from src.pv_model import (
     load_pv_executable_preflight_guard_packet,
     load_pv_executable_readiness_blockers_packet,
     load_pv_first_experiment_approval_packet,
+    load_pv_first_experiment_value_approval_packet,
     load_pv_first_experiment_value_decision_packet,
     load_pv_ii3050_growth_evidence_packet,
     load_pv_orientation_tilt_source_choice_packet,
@@ -2227,6 +2229,63 @@ def test_first_experiment_value_decision_packet_rejects_executable_or_roof_claim
             non_claims=payload["non_claims"],
         )
 
+
+
+def test_committed_d014_first_experiment_value_approval_packet_is_fail_closed() -> None:
+    packet = load_pv_first_experiment_value_approval_packet(
+        "data/metadata/weather_pv/d014_pv_first_experiment_value_approval_packet.json"
+    )
+    record = packet.identity_record()
+    blocker = packet.blocker_manifest()
+
+    assert packet.packet_id == "D014-PV-FIRST-EXPERIMENT-VALUE-APPROVAL-PACKET"
+    assert record["executable_pv_generation_authorized"] is False
+    assert record["input_packet_ids"]["value_decision_packet"] == "D014-PV-FIRST-EXPERIMENT-VALUE-DECISION-PACKET"
+    assert "alkmaar_capacity_anchor" in record["choice_sections"]
+    assert packet.pi_value_choices_for_signature["alkmaar_capacity_anchor"]["source_table"] == "CBS 85005NED"
+    assert packet.pi_value_choices_for_signature["alkmaar_capacity_anchor"]["recommended_period_key"] == "2019JJ00"
+    assert packet.pi_value_choices_for_signature["alkmaar_capacity_anchor"]["recommended_sector_key"] == "E007161"
+    assert packet.pi_value_choices_for_signature["alkmaar_capacity_anchor"]["recommended_capacity_field_key"] == (
+        "OpgesteldVermogenVanZonnepanelen_2"
+    )
+    assert "2035 KA" in packet.pi_value_choices_for_signature["ii3050_growth_and_scenario_link"]["scenario_column_candidates"]
+    assert "A-016" in packet.pi_value_choices_for_signature["ii3050_growth_and_scenario_link"]["a016_consistency_note"]
+    assert "3DBAG" in packet.pi_value_choices_for_signature["statistical_orientation_tilt"]["blocked_geometry"]
+    assert "PVGIS-SARAH3 remains qualitative" in packet.pi_value_choices_for_signature["pv_conversion"]["pvgis_role"]
+    assert "repository-relative" in packet.pi_value_choices_for_signature["reactive_power_and_manifest_policy"]["manifest_path_policy"]
+    assert packet.pi_value_choices_for_signature["node_allocation"]["status"] == "explicitly_gated_unsigned"
+    assert "signed_component_output_manifest_path_policy" in packet.missing_signed_artifacts
+    assert "future_node_allocation_rule" in packet.blocking_register_ids
+    assert blocker["packet_id"] == "D014-PV-FIRST-EXPERIMENT-VALUE-APPROVAL-BLOCKER-MANIFEST"
+    assert blocker["real_pv_arrays_written"] is False
+    assert blocker["real_component_output_manifest_written"] is False
+    assert "signed_pv_param_conversion_formula_or_amendment" in blocker["missing_signed_artifacts"]
+    with pytest.raises(ValueError, match="value approval is unsigned"):
+        packet.require_executable_value_approval()
+
+
+def test_first_experiment_value_approval_packet_rejects_silent_generation() -> None:
+    payload = json.loads(
+        Path("data/metadata/weather_pv/d014_pv_first_experiment_value_approval_packet.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    payload["machine_readable_fail_closed_gate"]["executable_pv_generation_authorized"] = True
+
+    with pytest.raises(ValueError, match="must not authorize"):
+        PVFirstExperimentValueApprovalPacket(
+            packet_id=payload["packet_id"],
+            data_id=payload["data_id"],
+            status=payload["status"],
+            download_performed=payload["download_performed"],
+            raw_data_committed=payload["raw_data_committed"],
+            real_pv_generation_performed=payload["real_pv_generation_performed"],
+            input_metadata=payload["input_metadata"],
+            pi_value_choices_for_signature=payload["pi_value_choices_for_signature"],
+            machine_readable_fail_closed_gate=payload["machine_readable_fail_closed_gate"],
+            required_signed_artifacts_before_executable_pv=payload["required_signed_artifacts_before_executable_pv"],
+            non_claims=payload["non_claims"],
+        )
 
 def test_committed_d014_pv_component_output_artifact_scaffold_fails_closed() -> None:
     packet = load_pv_component_output_artifact_scaffold_packet(
