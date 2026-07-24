@@ -451,6 +451,56 @@ def test_math_core_trust_certificate_rejects_ready_and_defuzzified_tampering() -
         assert_math_core_trust_certificate_payload(relabeled)
 
 
+
+def test_math_core_trust_certificate_recomputes_serialized_invariants() -> None:
+    fuzzy, alpha_grid, params = _gaussian_fixture()
+    analytic = build_gaussian_crosscheck_manifest(
+        fuzzy_number=fuzzy,
+        alpha_grid=alpha_grid,
+        params=params,
+        sample_count=4096,
+        root_seed=20260721,
+        tolerance=0.01,
+    )
+    hybrid = HybridReproductionReadiness(
+        source_id="baudrit-style-source-pending",
+        source_status="pending-source",
+        published_example_id="published-example-pending",
+        example_reproduced=False,
+        qualitative_behavior_checked=True,
+        blockers=("verified published example source is not registered",),
+    )
+    payload = build_math_core_trust_certificate_manifest(
+        analytic_gaussian=analytic,
+        hybrid_reproduction=hybrid,
+    ).to_mapping()
+
+    analytic_tamper = dict(payload)
+    analytic_payload = dict(payload["analytic_gaussian"])
+    rows = [dict(row) for row in analytic_payload["alpha_rows"]]
+    rows[0]["absolute_error_lower"] = 0.5
+    analytic_payload["alpha_rows"] = rows
+    analytic_tamper["analytic_gaussian"] = analytic_payload
+    with pytest.raises(ValueError, match="analytic_gaussian"):
+        assert_math_core_trust_certificate_payload(analytic_tamper)
+
+    green_tamper = dict(payload)
+    green_tamper["green_checks"] = ["no scalar defuzzified probability fields"]
+    with pytest.raises(ValueError, match="green_checks"):
+        assert_math_core_trust_certificate_payload(green_tamper)
+
+    blocker_tamper = dict(payload)
+    blocker_tamper["paper_facing_blockers"] = [
+        "verified published example source is not registered"
+    ]
+    with pytest.raises(ValueError, match="paper_facing_blockers"):
+        assert_math_core_trust_certificate_payload(blocker_tamper)
+
+    non_claim_tamper = dict(payload)
+    non_claim_tamper["synthetic_non_claims"] = ["no real trajectories"]
+    with pytest.raises(ValueError, match="synthetic_non_claims"):
+        assert_math_core_trust_certificate_payload(non_claim_tamper)
+
 def test_finite_hybrid_crosscheck_matches_hand_computed_probability_bounds() -> None:
     fuzzy = TrapezoidalFuzzyNumber(0.0, 0.2, 0.4, 0.6)
     states = [
