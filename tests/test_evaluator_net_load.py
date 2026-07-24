@@ -30,6 +30,7 @@ from src.contracts.net_load import (
     assemble_net_load_from_registry_outputs,
     build_ic1_assembly_plan_from_registry,
     build_accepted_artifact_loader_blocker_preflight,
+    build_e3_s2b_integrated_prerun_readiness,
     build_component_adapter_registry_from_artifacts,
     build_realization_context,
     build_executable_loading_bridge_preflight,
@@ -3140,6 +3141,164 @@ def test_executable_loading_bridge_rejects_bad_bridge_metadata() -> None:
             capacity_provenance=_synthetic_capacity_provenance(),
         )
 
+
+
+def _synthetic_e3_s2b_capacity_prerun_provenance() -> dict[str, object]:
+    record = dict(_synthetic_capacity_provenance())
+    record.update(
+        {
+            "transformer_indices": (0, 1),
+            "total_nameplate_kva": 80000.0,
+            "firm_n_minus_1_nameplate_kva": 40000.0,
+            "raw_mva_report_conventions": ("total_nameplate", "firm_n_minus_1"),
+        }
+    )
+    return record
+
+
+def _accepted_scenario_consistency_manifest() -> dict[str, object]:
+    return {
+        "status": "accepted",
+        "planning_years": (2030, 2033, 2035),
+        "scenario_ids": ("low", "middle", "high"),
+        "source_lineage_by_component": {
+            kind: f"{kind}-lineage" for kind in REQUIRED_INTEGRATION_COMPONENT_KINDS
+        },
+        "scaling_or_adoption_branch_by_component": {
+            kind: f"{kind}-branch" for kind in REQUIRED_INTEGRATION_COMPONENT_KINDS
+        },
+        "consistency_check": "accepted synthetic fixture only",
+    }
+
+
+def _full_component_year_coverage() -> dict[str, tuple[int, ...]]:
+    return {kind: (2030, 2033, 2035) for kind in REQUIRED_INTEGRATION_COMPONENT_KINDS}
+
+
+def test_e3_s2b_integrated_prerun_readiness_accepts_complete_synthetic_metadata(tmp_path) -> None:
+    artifacts = _safe_executable_input_artifacts()
+    source_sha = _write_synthetic_manifest_files(tmp_path, artifacts)
+    component_paths, component_sha = _write_loader_component_manifests(tmp_path, artifacts)
+    support_path = tmp_path / "reports" / "current_support.json"
+    support_path.parent.mkdir(parents=True, exist_ok=True)
+    support_path.write_text(json.dumps({"status": "accepted"}, sort_keys=True) + "\n", encoding="utf-8")
+    support_relative = "reports/current_support.json"
+    support_sha = {support_relative: hashlib.sha256(support_path.read_bytes()).hexdigest()}
+
+    readiness = build_e3_s2b_integrated_prerun_readiness(
+        _screen_preflight_config(),
+        artifacts,
+        _trajectory_prerun_config(),
+        capacity_provenance=_synthetic_e3_s2b_capacity_prerun_provenance(),
+        artifact_sha256_by_path=source_sha,
+        component_output_manifest_paths_by_kind=component_paths,
+        component_output_manifest_sha256_by_path=component_sha,
+        scenario_consistency_manifest=_accepted_scenario_consistency_manifest(),
+        component_year_coverage_by_kind=_full_component_year_coverage(),
+        supporting_metadata_paths={"support": support_relative},
+        supporting_metadata_sha256_by_path=support_sha,
+        repo_root=tmp_path,
+        downstream_blocker_ids=(),
+    )
+
+    assert readiness["ready_for_e3_s2b_prerun_launch"] is True
+    assert readiness["metadata_preflight_only"] is True
+    assert readiness["no_real_net_load_arrays"] is True
+    assert readiness["no_ic2_execution"] is True
+    assert readiness["no_event_detection"] is True
+    assert readiness["no_event_counts"] is True
+    assert readiness["no_probability_estimate"] is True
+    assert readiness["no_capacity_screen_result"] is True
+    assert readiness["planned_screen"]["planned_case_count"] == 18
+    assert readiness["planned_screen"]["governed_event_metadata"]["primary_threshold_pu"] == 1.0
+    assert readiness["scenario_consistency"]["ready"] is True
+    assert readiness["capacity_prerun_provenance"]["ready"] is True
+    assert readiness["blocker_manifest"] == {
+        "ready": True,
+        "blocked_component_kinds": (),
+        "blocker_count": 0,
+        "items": (),
+    }
+    assert "p_event" not in readiness
+    assert "capacity_screen" not in readiness
+    assert "overload" not in readiness
+
+
+def test_e3_s2b_integrated_prerun_readiness_fails_closed_on_current_missing_launch_inputs(tmp_path) -> None:
+    artifacts = _safe_executable_input_artifacts()
+    source_sha = _write_synthetic_manifest_files(tmp_path, artifacts)
+
+    readiness = build_e3_s2b_integrated_prerun_readiness(
+        _screen_preflight_config(),
+        artifacts,
+        _trajectory_prerun_config(),
+        capacity_provenance=None,
+        artifact_sha256_by_path=source_sha,
+        component_output_manifest_paths_by_kind={"ev": "data/metadata/component_outputs/ev.json"},
+        missing_component_output_manifest_blockers={
+            "baseline": ("E2.S5-BASELINE-COMPONENT-OUTPUT-ARTIFACT",),
+            "hp": ("HP-001", "D004-PAIRED-HP-PV-ACCEPTANCE"),
+            "pv": ("PV-PARAM-001", "D-014"),
+        },
+        scenario_consistency_manifest=None,
+        component_year_coverage_by_kind={"ev": (2035,)},
+        repo_root=tmp_path,
+    )
+
+    assert readiness["ready_for_e3_s2b_prerun_launch"] is False
+    assert readiness["ready_for_artifact_loader_execution"] is False
+    codes = [item["code"] for item in readiness["blocker_manifest"]["items"]]
+    assert "capacity_prerun_provenance_incomplete" in codes
+    assert "scenario_consistency_manifest_missing" in codes
+    assert "component_year_coverage_incomplete" in codes
+    assert "component_output_manifest_missing" in codes
+    assert readiness["scenario_consistency"]["status"] == "missing"
+    assert readiness["capacity_prerun_provenance"]["missing_fields"] == (
+        "s_nom_agg_kva",
+        "convention_status",
+        "source",
+        "transformer_indices",
+        "total_nameplate_kva",
+        "firm_n_minus_1_nameplate_kva",
+        "raw_mva_report_conventions",
+    )
+    assert readiness["component_year_coverage"]["ev"]["missing_years"] == (2030, 2033)
+    assert readiness["no_event_detection"] is True
+    assert "event_count" not in readiness
+    assert "p_event" not in readiness
+
+
+def test_e3_s2b_integrated_prerun_readiness_rejects_bad_supporting_metadata_paths(tmp_path) -> None:
+    artifacts = _safe_executable_input_artifacts()
+    source_sha = _write_synthetic_manifest_files(tmp_path, artifacts)
+
+    with pytest.raises(ValueError, match="repository-relative"):
+        build_e3_s2b_integrated_prerun_readiness(
+            _screen_preflight_config(),
+            artifacts,
+            _trajectory_prerun_config(),
+            capacity_provenance=_synthetic_e3_s2b_capacity_prerun_provenance(),
+            artifact_sha256_by_path=source_sha,
+            scenario_consistency_manifest=_accepted_scenario_consistency_manifest(),
+            component_year_coverage_by_kind=_full_component_year_coverage(),
+            supporting_metadata_paths={"escape": str(tmp_path / "outside.json")},
+            repo_root=tmp_path,
+            downstream_blocker_ids=(),
+        )
+
+    with pytest.raises(ValueError, match="within repo_root"):
+        build_e3_s2b_integrated_prerun_readiness(
+            _screen_preflight_config(),
+            artifacts,
+            _trajectory_prerun_config(),
+            capacity_provenance=_synthetic_e3_s2b_capacity_prerun_provenance(),
+            artifact_sha256_by_path=source_sha,
+            scenario_consistency_manifest=_accepted_scenario_consistency_manifest(),
+            component_year_coverage_by_kind=_full_component_year_coverage(),
+            supporting_metadata_paths={"escape": "../outside.json"},
+            repo_root=tmp_path,
+            downstream_blocker_ids=(),
+        )
 
 def test_future_layer_screen_preflight_records_manifest_fields_without_results() -> None:
     preflight = validate_future_layer_screen_preflight(

@@ -1997,6 +1997,172 @@ def build_accepted_artifact_loader_blocker_preflight(
     }
 
 
+
+def build_e3_s2b_integrated_prerun_readiness(
+    config: FutureLayerScreenPreflightConfig,
+    artifacts: Sequence[ExecutableInputArtifact],
+    trajectory_config: LoadingTrajectoryPreRunConfig,
+    *,
+    capacity_provenance: Mapping[str, object] | None = None,
+    artifact_sha256_by_path: Mapping[str, str] | None = None,
+    component_output_manifest_paths_by_kind: Mapping[str, str] | None = None,
+    component_output_manifest_sha256_by_path: Mapping[str, str] | None = None,
+    missing_component_output_manifest_blockers: Mapping[str, Sequence[str]] | None = None,
+    scenario_consistency_manifest: Mapping[str, object] | None = None,
+    component_year_coverage_by_kind: Mapping[str, Sequence[int]] | None = None,
+    supporting_metadata_paths: Mapping[str, str] | None = None,
+    supporting_metadata_sha256_by_path: Mapping[str, str] | None = None,
+    repo_root: str | Path | None = None,
+    required_component_kinds: Sequence[ComponentKind] = REQUIRED_INTEGRATION_COMPONENT_KINDS,
+    missing_artifact_blockers: Mapping[str, Sequence[str]] | None = None,
+    downstream_blocker_ids: Sequence[str] = DEFAULT_EXECUTABLE_BRIDGE_BLOCKER_IDS,
+    intended_use: str = "e3_s2b_integrated_prerun_readiness",
+) -> dict[str, object]:
+    """Build the fail-closed E3.S2b launch-readiness manifest.
+
+    The helper composes the existing accepted-artifact loader preflight with
+    E3.S2b-specific launch metadata. It reports blockers for the future screen
+    design, but deliberately performs no array loading, IC-2 execution, event
+    counting, probability estimation, or capacity-screen classification.
+    """
+
+    accepted_loader = build_accepted_artifact_loader_blocker_preflight(
+        config,
+        artifacts,
+        trajectory_config,
+        capacity_provenance=capacity_provenance,
+        artifact_sha256_by_path=artifact_sha256_by_path,
+        component_output_manifest_paths_by_kind=component_output_manifest_paths_by_kind,
+        component_output_manifest_sha256_by_path=component_output_manifest_sha256_by_path,
+        missing_component_output_manifest_blockers=missing_component_output_manifest_blockers,
+        repo_root=repo_root,
+        required_component_kinds=required_component_kinds,
+        missing_artifact_blockers=missing_artifact_blockers,
+        downstream_blocker_ids=downstream_blocker_ids,
+        intended_use=intended_use,
+    )
+    root = (Path(repo_root) if repo_root is not None else Path(__file__).resolve().parents[2]).resolve()
+    required = tuple(required_component_kinds)
+    screen_blockers: list[dict[str, object]] = []
+
+    if tuple(config.planning_years) != (2030, 2033, 2035):
+        _append_loader_blocker(
+            screen_blockers,
+            "screen_planning_years_incomplete",
+            "E3.S2b pre-run design must predeclare 2030, 2033, and 2035 before launch",
+            blocker_ids=("G0-A4", "E3.S2B-PLANNED-YEARS"),
+        )
+    if tuple(config.rho_values) != (0.0, 1.0):
+        _append_loader_blocker(
+            screen_blockers,
+            "screen_rho_endpoints_incomplete",
+            "E3.S2b pre-run design must include no-flex and maximum-flex endpoints",
+            blocker_ids=("E3.S2B-RHO-ENDPOINTS", "FLEX-001"),
+        )
+    if trajectory_config.purpose != "e3_s2b_future_layer_screen":
+        _append_loader_blocker(
+            screen_blockers,
+            "trajectory_purpose_mismatch",
+            "loading trajectory pre-run metadata must target the E3.S2b future-layer screen",
+            blocker_ids=("E3.S2B-TRAJECTORY-PRERUN-CONFIG",),
+        )
+    if tuple(trajectory_config.planning_years) != tuple(config.planning_years):
+        _append_loader_blocker(
+            screen_blockers,
+            "trajectory_years_mismatch",
+            "trajectory pre-run years must match the planned E3.S2b screen years",
+            blocker_ids=("E3.S2B-TRAJECTORY-PRERUN-CONFIG",),
+        )
+
+    component_year_records = _component_year_coverage_records(
+        component_year_coverage_by_kind,
+        required_component_kinds=required,
+        planning_years=config.planning_years,
+    )
+    for kind, record in component_year_records.items():
+        if not record["covers_all_planned_years"]:
+            _append_loader_blocker(
+                screen_blockers,
+                "component_year_coverage_incomplete",
+                "component-output manifests must cover every planned E3.S2b screen year before launch",
+                kind=kind,
+                blocker_ids=(f"E3.S2B-{kind.upper()}-YEAR-COVERAGE",),
+            )
+            screen_blockers[-1]["missing_years"] = record["missing_years"]
+
+    scenario_record, scenario_blockers = _e3_s2b_scenario_consistency_record(
+        scenario_consistency_manifest,
+        config=config,
+        required_component_kinds=required,
+    )
+    screen_blockers.extend(scenario_blockers)
+
+    capacity_record = _e3_s2b_capacity_prerun_record(capacity_provenance)
+    if not capacity_record["ready"]:
+        _append_loader_blocker(
+            screen_blockers,
+            "capacity_prerun_provenance_incomplete",
+            "E3.S2b must predeclare capacity provenance fields before any screen can launch",
+            blocker_ids=("G1-A2", "G1-A2-CAPACITY-CONVENTION", "E3.S2B-CAPACITY-PROVENANCE"),
+        )
+        screen_blockers[-1]["missing_fields"] = capacity_record["missing_fields"]
+
+    supporting_records, supporting_blockers = _supporting_metadata_records(
+        root,
+        supporting_metadata_paths,
+        supporting_metadata_sha256_by_path,
+    )
+    screen_blockers.extend(supporting_blockers)
+
+    loader_items = tuple(accepted_loader["blocker_manifest"]["items"])
+    blocker_items = loader_items + tuple(screen_blockers)
+    blocked_kinds = tuple(
+        sorted(
+            {
+                str(item["kind"])
+                for item in blocker_items
+                if item.get("kind") in _VALID_COMPONENT_KINDS
+            }
+        )
+    )
+    ready = (
+        accepted_loader["ready_for_artifact_loader_execution"] is True
+        and not screen_blockers
+    )
+    return {
+        "intended_use": intended_use,
+        "metadata_preflight_only": True,
+        "ready_for_e3_s2b_prerun_launch": ready,
+        "ready_for_artifact_loader_execution": accepted_loader["ready_for_artifact_loader_execution"],
+        "no_real_net_load_arrays": True,
+        "no_ic2_execution": True,
+        "no_event_detection": True,
+        "no_event_counts": True,
+        "no_probability_estimate": True,
+        "no_capacity_screen_result": True,
+        "planned_screen": {
+            "scenario_ids": config.scenario_ids,
+            "planning_years": config.planning_years,
+            "rho_values": config.rho_values,
+            "planned_case_count": len(config.scenario_ids) * len(config.planning_years) * len(config.rho_values),
+            "time_domain": config.time_domain,
+            "timestep_seconds": config.timestep_seconds,
+            "governed_event_metadata": trajectory_config.manifest_record()["governed_event_metadata"],
+            "capacity_convention_status": trajectory_config.capacity_convention_status,
+        },
+        "accepted_artifact_preflight": accepted_loader,
+        "component_year_coverage": component_year_records,
+        "scenario_consistency": scenario_record,
+        "capacity_prerun_provenance": capacity_record,
+        "supporting_metadata_records": tuple(supporting_records),
+        "blocker_manifest": {
+            "ready": ready,
+            "blocked_component_kinds": blocked_kinds,
+            "blocker_count": len(blocker_items),
+            "items": blocker_items,
+        },
+    }
+
 def validate_future_layer_screen_preflight(
     config: FutureLayerScreenPreflightConfig,
     artifacts: Sequence[ExecutableInputArtifact],
@@ -2930,6 +3096,252 @@ def _append_cross_component_metadata_blockers(
             )
             items[-1]["fields"] = unsafe_fields
 
+
+
+def _component_year_coverage_records(
+    coverage_by_kind: Mapping[str, Sequence[int]] | None,
+    *,
+    required_component_kinds: Sequence[ComponentKind],
+    planning_years: Sequence[int],
+) -> dict[str, dict[str, object]]:
+    coverage = dict(coverage_by_kind or {})
+    required_years = tuple(int(year) for year in planning_years)
+    records: dict[str, dict[str, object]] = {}
+    for kind in required_component_kinds:
+        if kind not in _VALID_COMPONENT_KINDS:
+            raise ValueError("required_component_kinds must contain valid component kinds")
+        raw_years = coverage.get(kind, ())
+        years: list[int] = []
+        for year in raw_years:
+            if isinstance(year, bool) or not isinstance(year, int):
+                raise ValueError("component_year_coverage_by_kind values must contain integer years")
+            years.append(year)
+        year_set = frozenset(years)
+        missing = tuple(year for year in required_years if year not in year_set)
+        records[kind] = {
+            "kind": kind,
+            "covered_years": tuple(sorted(year_set)),
+            "required_years": required_years,
+            "missing_years": missing,
+            "covers_all_planned_years": not missing,
+        }
+    return records
+
+
+def _e3_s2b_scenario_consistency_record(
+    manifest: Mapping[str, object] | None,
+    *,
+    config: FutureLayerScreenPreflightConfig,
+    required_component_kinds: Sequence[ComponentKind],
+) -> tuple[dict[str, object], tuple[dict[str, object], ...]]:
+    required_keys = (
+        "status",
+        "planning_years",
+        "scenario_ids",
+        "source_lineage_by_component",
+        "scaling_or_adoption_branch_by_component",
+        "consistency_check",
+    )
+    if manifest is None:
+        item = _loader_blocker_record(
+            "scenario_consistency_manifest_missing",
+            "A-016 scenario-consistency manifest is required before the E3.S2b screen can launch",
+            blocker_ids=("A-016", "A016-SCENARIO-CONSISTENCY"),
+        )
+        return {
+            "ready": False,
+            "status": "missing",
+            "required_keys": required_keys,
+        }, (item,)
+
+    missing = tuple(key for key in required_keys if key not in manifest)
+    blockers: list[dict[str, object]] = []
+    if missing:
+        item = _loader_blocker_record(
+            "scenario_consistency_required_keys_missing",
+            "A-016 scenario-consistency manifest is missing required fields",
+            blocker_ids=("A-016", "A016-SCENARIO-CONSISTENCY"),
+        )
+        item["missing_keys"] = missing
+        blockers.append(item)
+
+    status = str(manifest.get("status", ""))
+    if status != "accepted":
+        blockers.append(
+            _loader_blocker_record(
+                "scenario_consistency_not_accepted",
+                "A-016 scenario-consistency manifest must be accepted before launch",
+                blocker_ids=("A-016", "A016-SCENARIO-CONSISTENCY"),
+            )
+        )
+
+    if "planning_years" in manifest and tuple(manifest["planning_years"]) != tuple(config.planning_years):
+        blockers.append(
+            _loader_blocker_record(
+                "scenario_consistency_years_mismatch",
+                "A-016 scenario-consistency years must match the planned E3.S2b screen years",
+                blocker_ids=("A-016", "G0-A4"),
+            )
+        )
+    if "scenario_ids" in manifest and tuple(manifest["scenario_ids"]) != tuple(config.scenario_ids):
+        blockers.append(
+            _loader_blocker_record(
+                "scenario_consistency_scenarios_mismatch",
+                "A-016 scenario-consistency scenarios must match the planned E3.S2b screen scenarios",
+                blocker_ids=("A-016",),
+            )
+        )
+
+    lineage = manifest.get("source_lineage_by_component", {})
+    branches = manifest.get("scaling_or_adoption_branch_by_component", {})
+    if not isinstance(lineage, Mapping) or not isinstance(branches, Mapping):
+        blockers.append(
+            _loader_blocker_record(
+                "scenario_consistency_component_maps_invalid",
+                "A-016 component lineage and branch fields must be mappings",
+                blocker_ids=("A-016",),
+            )
+        )
+    else:
+        missing_components = tuple(
+            kind for kind in required_component_kinds if kind not in lineage or kind not in branches
+        )
+        if missing_components:
+            item = _loader_blocker_record(
+                "scenario_consistency_components_missing",
+                "A-016 scenario-consistency manifest must cover every required component kind",
+                blocker_ids=("A-016",),
+            )
+            item["missing_component_kinds"] = missing_components
+            blockers.append(item)
+
+    return {
+        "ready": not blockers,
+        "status": status or "missing",
+        "required_keys": required_keys,
+        "manifest": dict(manifest),
+    }, tuple(blockers)
+
+
+def _e3_s2b_capacity_prerun_record(record: Mapping[str, object] | None) -> dict[str, object]:
+    required_fields = (
+        "s_nom_agg_kva",
+        "convention_status",
+        "source",
+        "transformer_indices",
+        "total_nameplate_kva",
+        "firm_n_minus_1_nameplate_kva",
+        "raw_mva_report_conventions",
+    )
+    if record is None:
+        return {
+            "ready": False,
+            "status": "missing",
+            "required_fields": required_fields,
+            "missing_fields": required_fields,
+        }
+    base = _validate_bridge_capacity_provenance(record)
+    missing = tuple(key for key in required_fields if key not in record)
+    ready = not missing and str(record.get("convention_status")) == "pending_g1_a2_e3_s2b"
+    result = {
+        "ready": ready,
+        "status": "present" if ready else "incomplete",
+        "required_fields": required_fields,
+        "missing_fields": missing,
+        "bridge_capacity_provenance": base,
+    }
+    for key in required_fields:
+        if key in record:
+            result[key] = record[key]
+    return result
+
+
+def _supporting_metadata_records(
+    repo_root: Path,
+    paths_by_label: Mapping[str, str] | None,
+    sha256_by_path: Mapping[str, str] | None,
+) -> tuple[list[dict[str, object]], tuple[dict[str, object], ...]]:
+    records: list[dict[str, object]] = []
+    blockers: list[dict[str, object]] = []
+    expected = dict(sha256_by_path or {})
+    for label, raw_path in sorted(dict(paths_by_label or {}).items()):
+        label = _require_nonempty(str(label), name="supporting metadata label")
+        path = _require_nonempty(str(raw_path), name="supporting metadata path")
+        full_path = _resolve_repo_metadata_path(repo_root, path)
+        record: dict[str, object] = {
+            "label": label,
+            "path": path,
+            "exists": full_path.is_file(),
+        }
+        if not full_path.is_file():
+            blockers.append(
+                _loader_blocker_record(
+                    "supporting_metadata_missing",
+                    "supporting metadata packet is referenced but not present",
+                    path=path,
+                    blocker_ids=("E3.S2B-SUPPORTING-METADATA",),
+                )
+            )
+            records.append(record)
+            continue
+        observed = _sha256_file(full_path)
+        record["sha256"] = observed
+        if path not in expected:
+            blockers.append(
+                _loader_blocker_record(
+                    "supporting_metadata_expected_checksum_missing",
+                    "supporting metadata packet must have an expected SHA-256 in the preflight input",
+                    path=path,
+                    blocker_ids=("E3.S2B-SUPPORTING-METADATA-CHECKSUM",),
+                )
+            )
+        else:
+            record["expected_sha256"] = expected[path]
+            record["checksum_match"] = observed == expected[path]
+            if observed != expected[path]:
+                blockers.append(
+                    _loader_blocker_record(
+                        "supporting_metadata_checksum_mismatch",
+                        "supporting metadata packet checksum does not match the preflight input",
+                        path=path,
+                        blocker_ids=("E3.S2B-SUPPORTING-METADATA-CHECKSUM",),
+                    )
+                )
+        records.append(record)
+    unmatched = tuple(sorted(path for path in expected if path not in set((paths_by_label or {}).values())))
+    for path in unmatched:
+        blockers.append(
+            _loader_blocker_record(
+                "supporting_metadata_unmatched_expected_checksum",
+                "expected supporting metadata checksum has no matching metadata path",
+                path=path,
+                blocker_ids=("E3.S2B-SUPPORTING-METADATA-CHECKSUM",),
+            )
+        )
+    return records, tuple(blockers)
+
+
+def _loader_blocker_record(
+    code: str,
+    message: str,
+    *,
+    kind: str | None = None,
+    artifact_id: str | None = None,
+    path: str | None = None,
+    blocker_ids: Sequence[str] = (),
+) -> dict[str, object]:
+    record: dict[str, object] = {
+        "code": _require_nonempty(code, name="blocker code"),
+        "message": _require_nonempty(message, name="blocker message"),
+        "blocker_ids": tuple(_require_nonempty(item, name="blocker_id") for item in blocker_ids),
+    }
+    if kind is not None:
+        record["kind"] = _require_nonempty(kind, name="blocker kind")
+    if artifact_id is not None:
+        record["artifact_id"] = _require_nonempty(artifact_id, name="blocker artifact_id")
+    if path is not None:
+        record["path"] = _require_nonempty(path, name="blocker path")
+    return record
 
 def _component_output_manifest_preflight_record(
     repo_root: Path,
