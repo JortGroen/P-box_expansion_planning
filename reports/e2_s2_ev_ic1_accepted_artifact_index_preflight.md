@@ -36,5 +36,5 @@ This packet does not open held-out or quarantined EV batches, certify home `M=10
 - `./.venv/Scripts/python.exe -m pytest tests/test_ev_model.py -q -k "accepted_artifact_index"`: 4 passed, 103 deselected.
 - `./.venv/Scripts/python.exe -m pytest tests/test_ev_model.py -q -k "component_output_consumption_packet or a014_executable_adoption_artifact or accepted_artifact_index"`: 11 passed, 96 deselected.
 - `./scripts/task.ps1 ownership`: passed for Agent C paths.
-- `./scripts/task.ps1 test-fast`: 654 passed, 2 skipped, 7 deselected.
+- `./scripts/task.ps1 test-fast`: 657 passed, 2 skipped, 7 deselected.
 - `git diff --check`: passed.
