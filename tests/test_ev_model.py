@@ -4,6 +4,7 @@ from datetime import UTC, datetime, timedelta
 import gzip
 import inspect
 import json
+import subprocess
 from pathlib import Path
 
 import numpy as np
@@ -54,6 +55,15 @@ from src.ev_model import (
     write_ev_integration_readiness_artifact,
 )
 from src.rng import SeedTree
+
+
+def _git_blob_sha256(path: Path) -> str:
+    # The committed JSON artifact is checked out with platform-dependent line endings.
+    # Hash the Git blob so provenance stays stable between Windows worktrees and CI.
+    blob = subprocess.check_output(["git", "show", f"HEAD:{path.as_posix()}"])
+    import hashlib
+
+    return hashlib.sha256(blob).hexdigest()
 
 
 def _payload(n_profiles: int = 3, timesteps: int = EXPECTED_FULL_YEAR_STEPS) -> dict:
@@ -1435,7 +1445,7 @@ def test_ev_candidate_member_selection_manifest_set_materializes_declared_branch
 def test_committed_ev_candidate_member_selection_manifest_set_records_fast_provenance() -> None:
     reference_path = Path("data/metadata/ev_adoption/e2_s2_ev_ic1_candidate_member_reference.json")
     selection_path = Path("data/metadata/ev_adoption/e2_s2_ev005b_candidate_selection_manifests.json.gz")
-    reference_sha = ev_model._sha256_file(reference_path)
+    reference_sha = _git_blob_sha256(reference_path)
     compressed = selection_path.read_bytes()
     committed = json.loads(gzip.decompress(compressed))
 
@@ -1580,7 +1590,7 @@ def test_committed_ev005b_candidate_selection_manifest_set_matches_builder() -> 
         )
     )
     decisions = Path("registers/DECISIONS.md").read_text(encoding="utf-8")
-    reference_sha = ev_model._sha256_file(Path("data/metadata/ev_adoption/e2_s2_ev_ic1_candidate_member_reference.json"))
+    reference_sha = _git_blob_sha256(Path("data/metadata/ev_adoption/e2_s2_ev_ic1_candidate_member_reference.json"))
     expected = ev_candidate_member_selection_manifest_set(
         reference,
         decisions_text=decisions,
