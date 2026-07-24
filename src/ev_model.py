@@ -1108,6 +1108,156 @@ def ev_ic1_adapter_guardrail_packet(readiness_record: Mapping[str, Any]) -> dict
     }
 
 
+def ev_candidate_profile_checksum_preflight_artifact(
+    component_input_scaffold: Mapping[str, Any],
+    readiness_record: Mapping[str, Any],
+    checksum_verifications: Sequence[EVCandidateChecksumVerification],
+    *,
+    verification_timestamp_utc: str,
+) -> dict[str, object]:
+    """Record candidate processed-file checksum readiness before IC-1 array loading.
+
+    This artifact is the last EV-side file-integrity gate before a future IC-1
+    consumer may load generated candidate profile arrays from ignored local
+    storage. It hashes file bytes only and deliberately keeps trajectory arrays
+    unopened.
+    """
+
+    if component_input_scaffold.get("artifact_type") != "ev_ic1_component_input_scaffold":
+        raise ValueError("Expected EV IC-1 component-input scaffold metadata")
+    if component_input_scaffold.get("component_kind") != "ev":
+        raise ValueError("EV checksum preflight requires an EV component scaffold")
+    if component_input_scaffold.get("planning_year") != 2035:
+        raise ValueError("EV checksum preflight currently targets planning year 2035")
+
+    policy = component_input_scaffold.get("policy")
+    if not isinstance(policy, dict):
+        raise ValueError("EV component-input scaffold must include policy flags")
+    required_false_flags = (
+        "held_out_access",
+        "quarantined_access",
+        "profile_arrays_loaded",
+        "integrated_analysis_performed",
+        "event_or_p_e_analysis_performed",
+        "capacity_screen_performed",
+        "manuscript_numbers_produced",
+        "m_sufficiency_claimed",
+        "final_low_middle_high_branch_selected",
+    )
+    for flag in required_false_flags:
+        if policy.get(flag) is not False:
+            raise ValueError(f"EV checksum preflight requires scaffold policy {flag}=False")
+    if policy.get("candidate_libraries_only") is not True:
+        raise ValueError("EV checksum preflight requires candidate-only scaffold metadata")
+
+    calendar = component_input_scaffold.get("calendar_mapping")
+    if not isinstance(calendar, dict) or calendar.get("rule_id") != EV_CALENDAR_MAPPING_RULE_ID:
+        raise ValueError("EV checksum preflight requires EV-CAL-001 calendar metadata")
+    if calendar.get("n_timesteps") != EXPECTED_FULL_YEAR_STEPS:
+        raise ValueError("EV checksum preflight requires complete annual EV profiles")
+
+    expectations = ev_candidate_checksum_expectations(readiness_record)
+    expected_by_key = {
+        (item.component_id, item.library_id, item.seed): item for item in expectations
+    }
+    verified_by_key: dict[tuple[str, str, int], EVCandidateChecksumVerification] = {}
+    for verification in checksum_verifications:
+        key = (
+            verification.expectation.component_id,
+            verification.expectation.library_id,
+            verification.expectation.seed,
+        )
+        if key not in expected_by_key:
+            raise ValueError("EV checksum verification is not tied to a candidate expectation")
+        verified_by_key[key] = verification
+    if set(verified_by_key) != set(expected_by_key):
+        raise ValueError("EV checksum preflight requires verification for every candidate batch")
+
+    _require_non_empty_string(verification_timestamp_utc, "verification_timestamp_utc")
+    verified_records = [
+        verified_by_key[key].manifest_record() for key in sorted(verified_by_key)
+    ]
+    by_component: dict[str, dict[str, int]] = {}
+    by_capacity_class: dict[str, int] = {}
+    for record in verified_records:
+        component_id = str(record["component_id"])
+        component = by_component.setdefault(
+            component_id, {"batch_count": 0, "member_count": 0, "byte_size": 0}
+        )
+        component["batch_count"] += 1
+        component["member_count"] += _require_int(record.get("n_profiles"), "n_profiles")
+        component["byte_size"] += _require_int(record.get("byte_size"), "byte_size")
+        if component_id == EV_PUBLIC_COMPONENT:
+            capacity_class = _require_non_empty_string(record.get("capacity_class"), "capacity_class")
+            by_capacity_class[capacity_class] = by_capacity_class.get(capacity_class, 0) + _require_int(
+                record.get("n_profiles"), "n_profiles"
+            )
+
+    source_artifacts = component_input_scaffold.get("source_artifacts")
+    if not isinstance(source_artifacts, dict):
+        raise ValueError("EV component-input scaffold must include source artifacts")
+
+    return {
+        "schema_version": 1,
+        "artifact_type": "ev_ic1_candidate_profile_checksum_preflight",
+        "artifact_id": "e2_s2_ev_candidate_profile_checksum_preflight",
+        "status": "candidate_processed_checksums_verified_array_loading_still_blocked",
+        "task_id": "E2.S2",
+        "planning_year": 2035,
+        "component_kind": "ev",
+        "decision_ids": ["EV-003", "EV-005", "EV-005B", "EV-007A", "A-014", "EV-008A", "EV-CAL-001", "RNG-001"],
+        "source_artifacts": {
+            "component_input_scaffold": "data/metadata/ev_adoption/e2_s2_ev_ic1_component_input_scaffold.json",
+            "candidate_adapter_artifact": source_artifacts.get("candidate_adapter_artifact"),
+            "candidate_member_reference": source_artifacts.get("candidate_member_reference"),
+            "candidate_selection_manifest_set": source_artifacts.get("candidate_selection_manifest_set"),
+            "readiness_artifact": "data/metadata/ev_adoption/e2_s2_ev_integration_readiness.json",
+        },
+        "calendar_mapping": {
+            "rule_id": EV_CALENDAR_MAPPING_RULE_ID,
+            "rule_version": EV_CALENDAR_MAPPING_RULE_VERSION,
+            "source_calendar_id": EV_SOURCE_CALENDAR_ID,
+            "target_calendar_id": EV_TARGET_CALENDAR_ID,
+            "source_timestep_i_maps_to_target_timestep_i": True,
+            "n_timesteps": EXPECTED_FULL_YEAR_STEPS,
+            "weekday_mismatch_recorded_as_limitation": True,
+        },
+        "verification": {
+            "timestamp_utc": verification_timestamp_utc,
+            "method": "sha256_file_bytes_only_no_npz_array_loading",
+            "candidate_batch_count": len(verified_records),
+            "candidate_member_count": sum(_require_int(row.get("n_profiles"), "n_profiles") for row in verified_records),
+            "candidate_processed_file_count": len(verified_records),
+            "total_byte_size": sum(_require_int(row.get("byte_size"), "byte_size") for row in verified_records),
+            "by_component": dict(sorted(by_component.items())),
+            "public_member_count_by_capacity_class": dict(sorted(by_capacity_class.items())),
+            "all_observed_sha256_match_expected": all(
+                row.get("observed_sha256") == row.get("expected_sha256") for row in verified_records
+            ),
+            "verified_candidate_batches": verified_records,
+        },
+        "ic1_preconditions": {
+            "candidate_processed_checksums_verified_in_agent_c_worktree": True,
+            "future_consumer_must_reverify_ignored_files_before_array_loading": True,
+            "candidate_selection_manifest_must_match_source_member_reference": True,
+            "ev_cal001_mapping_required_before_common_calendar_consumption": True,
+            "agent_a_ic1_consumption_not_performed_here": True,
+        },
+        "policy": {
+            "candidate_libraries_only": True,
+            "held_out_access": False,
+            "quarantined_access": False,
+            "profile_arrays_loaded": False,
+            "integrated_analysis_performed": False,
+            "event_or_p_e_analysis_performed": False,
+            "capacity_screen_performed": False,
+            "final_low_middle_high_branch_selected": False,
+            "m_sufficiency_claimed": False,
+            "manuscript_numbers_produced": False,
+        },
+    }
+
+
 def ev_ic1_candidate_adapter_artifact(
     readiness_record: Mapping[str, Any],
     *,
