@@ -11,6 +11,7 @@ from src.pbox_reporting import (
     probability_rows_from_pbox_family,
 )
 from src.pbox_result_guards import FinalResultPrerequisites, PaperFacingResultKind
+from src.rng import sample_seed
 
 
 def _estimate(probability: float, successes: int = 1) -> ProbabilityEstimate:
@@ -51,6 +52,7 @@ def _complete_prerequisites(*, g3: bool = False) -> FinalResultPrerequisites:
         capacity_convention_approved=True,
         capacity_denominator_provenance="manifested synthetic capacity denominator",
         output_error_endpoint_records_manifested=True,
+        a016_scenario_consistency_manifested=True,
         g3_vertex_shortcut_approved=g3,
     )
 
@@ -96,6 +98,43 @@ def _output_error_record() -> dict[str, object]:
         "sample_endpoint_events": sample_events,
     }
 
+
+def _selective_ac_metadata() -> dict[str, object]:
+    root_seed = 123
+    return {
+        "ac_execution_status": "not-run",
+        "alpha_grid": [0.0, 0.5],
+        "candidates": [
+            {
+                "alpha": 0.0,
+                "lower_event": False,
+                "lower_longest_run_steps": 3,
+                "sample_index": 2,
+                "sample_seed": sample_seed(root_seed, 2),
+                "straddling_timestep_indices": [4, 5],
+                "threshold_pu": 1.0,
+                "upper_event": True,
+                "upper_longest_run_steps": 4,
+            },
+            {
+                "alpha": 0.5,
+                "lower_event": True,
+                "lower_longest_run_steps": 4,
+                "sample_index": 4,
+                "sample_seed": sample_seed(root_seed, 4),
+                "straddling_timestep_indices": [8, 9],
+                "threshold_pu": 1.0,
+                "upper_event": True,
+                "upper_longest_run_steps": 4,
+            },
+        ],
+        "g2_status": "g2-pending-rule-not-approved",
+        "metadata_format": "selective-ac-promotion-metadata-v1",
+        "root_seed": root_seed,
+        "rule_basis": "endpoint-threshold-straddling-candidate",
+        "sample_count": 5,
+        "use_status": "synthetic-only",
+    }
 
 def test_probability_rows_from_pbox_family_are_sorted_alpha_indexed_bounds() -> None:
     rows = probability_rows_from_pbox_family(_pbox_family())
@@ -153,6 +192,78 @@ def test_paper_facing_report_accepts_complete_guarded_fixture() -> None:
 
     assert payload["guard"]["allowed"] is True
     assert payload["output_error_record"]["probability_widening"] == "forbidden"
+
+
+def test_runner_report_boundary_accepts_selective_ac_metadata_with_endpoint_record() -> None:
+    payload = build_runner_report_boundary_record(
+        boundary_id="selective-ac-linked-fixture",
+        pbox_family=_pbox_family(),
+        prerequisites=_complete_prerequisites(),
+        output_error_record=_output_error_record(),
+        selective_ac_promotion_metadata=_selective_ac_metadata(),
+    ).to_mapping()
+
+    guarded_report = payload["guarded_report"]
+
+    assert "selective_ac_promotion_metadata" in guarded_report
+    assert_runner_report_boundary_payload(payload)
+
+
+def test_selective_ac_metadata_requires_output_error_record() -> None:
+    with pytest.raises(ValueError, match="requires output_error_record"):
+        build_runner_report_boundary_record(
+            boundary_id="selective-ac-without-endpoints",
+            pbox_family=_pbox_family(),
+            prerequisites=FinalResultPrerequisites(),
+            selective_ac_promotion_metadata=_selective_ac_metadata(),
+        )
+
+
+def test_selective_ac_metadata_alpha_grid_must_match_probability_rows() -> None:
+    metadata = _selective_ac_metadata()
+    metadata["alpha_grid"] = [0.0, 0.25, 0.5]
+
+    with pytest.raises(ValueError, match="alpha_grid"):
+        build_runner_report_boundary_record(
+            boundary_id="selective-ac-alpha-mismatch",
+            pbox_family=_pbox_family(),
+            prerequisites=_complete_prerequisites(),
+            output_error_record=_output_error_record(),
+            selective_ac_promotion_metadata=metadata,
+        )
+
+
+def test_selective_ac_metadata_sample_count_must_match_endpoint_record() -> None:
+    metadata = _selective_ac_metadata()
+    metadata["sample_count"] = 6
+
+    with pytest.raises(ValueError, match="sample_count"):
+        build_runner_report_boundary_record(
+            boundary_id="selective-ac-sample-count-mismatch",
+            pbox_family=_pbox_family(),
+            prerequisites=_complete_prerequisites(),
+            output_error_record=_output_error_record(),
+            selective_ac_promotion_metadata=metadata,
+        )
+
+
+def test_selective_ac_metadata_candidate_events_must_match_endpoint_record() -> None:
+    payload = build_runner_report_boundary_record(
+        boundary_id="selective-ac-event-mismatch",
+        pbox_family=_pbox_family(),
+        prerequisites=_complete_prerequisites(),
+        output_error_record=_output_error_record(),
+        selective_ac_promotion_metadata=_selective_ac_metadata(),
+    ).to_mapping()
+    guarded_report = dict(payload["guarded_report"])
+    metadata = dict(guarded_report["selective_ac_promotion_metadata"])
+    candidate = dict(metadata["candidates"][0])
+    candidate["lower_event"] = True
+    metadata["candidates"] = [candidate, metadata["candidates"][1]]
+    guarded_report["selective_ac_promotion_metadata"] = metadata
+
+    with pytest.raises(ValueError, match="lower_event must match endpoint record"):
+        assert_runner_report_boundary_payload({**payload, "guarded_report": guarded_report})
 
 
 def test_output_error_record_must_forbid_probability_widening() -> None:
@@ -271,6 +382,7 @@ def test_runner_report_boundary_serializes_blocked_synthetic_guard_state() -> No
     assert "approved capacity convention" in guard["missing_prerequisites"]
     assert "capacity denominator provenance" in guard["missing_prerequisites"]
     assert "manifested output-error endpoint event records" in guard["missing_prerequisites"]
+    assert "manifested A-016 scenario consistency" in guard["missing_prerequisites"]
 
 
 def test_runner_report_boundary_blocks_paper_facing_without_endpoint_record() -> None:
