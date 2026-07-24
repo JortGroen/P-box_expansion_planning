@@ -14,6 +14,33 @@ from typing import Callable, Mapping, Sequence
 from src.pbox import ProbabilityEstimate, _wilson_interval
 from src.rng import sample_seed
 
+RHO_SWEEP_MANIFEST_PROTOCOL = "e4s1-synthetic-rho-sweep-v1"
+RHO_SWEEP_G3_STATUS = "pending-no-paper-facing-vertex-claim"
+RHO_SWEEP_USE_STATUS = "synthetic-only"
+RHO_SWEEP_NON_CLAIMS = (
+    "no real trajectories",
+    "no real P(E)",
+    "no real rho sweep",
+    "no capacity-convention choice",
+    "no G3 vertex-shortcut claim",
+    "no manuscript number",
+)
+_FORBIDDEN_RHO_SWEEP_PAYLOAD_FIELDS = frozenset(
+    {
+        "capacity_screen_result",
+        "defuzzified_probability",
+        "expected_probability",
+        "manuscript_number",
+        "mean_probability",
+        "p_hat",
+        "p_mid",
+        "paper_facing_probability",
+        "paper_facing_result",
+        "pbox_probability",
+        "vertex_shortcut_claim",
+    }
+)
+
 RhoSweepEvaluator = Callable[[float, int], bool]
 
 
@@ -37,11 +64,14 @@ class RhoSweepResult:
     monotone_nonincreasing: bool
     max_upward_violation: float
     sample_count: int
-    use_status: str = "synthetic-only"
+    use_status: str = RHO_SWEEP_USE_STATUS
+    g3_status: str = RHO_SWEEP_G3_STATUS
 
     def __post_init__(self) -> None:
-        if self.use_status != "synthetic-only":
+        if self.use_status != RHO_SWEEP_USE_STATUS:
             raise ValueError("rho sweep scaffold is synthetic-only before G3")
+        if self.g3_status != RHO_SWEEP_G3_STATUS:
+            raise ValueError("rho sweep payload must not claim G3 approval")
         if self.sample_count <= 0:
             raise ValueError("sample_count must be positive")
         if not self.points:
@@ -63,8 +93,11 @@ class RhoSweepResult:
         """Return a manifest-ready synthetic monotonicity diagnostic payload."""
 
         return {
+            "g3_status": self.g3_status,
+            "manifest_protocol": RHO_SWEEP_MANIFEST_PROTOCOL,
             "max_upward_violation": self.max_upward_violation,
             "monotone_nonincreasing": self.monotone_nonincreasing,
+            "non_claims": list(RHO_SWEEP_NON_CLAIMS),
             "points": [
                 {
                     "ci_lower": point.estimate.ci_lower,
@@ -129,25 +162,50 @@ def estimate_dense_rho_sweep(
 def assert_synthetic_rho_sweep_payload(payload: Mapping[str, object]) -> None:
     """Validate a serialized synthetic rho-sweep diagnostic payload."""
 
-    if payload.get("use_status") != "synthetic-only":
+    if not isinstance(payload, Mapping):
+        raise TypeError("rho sweep payload must be a mapping")
+    _reject_forbidden_rho_sweep_fields(payload)
+    required = {
+        "g3_status",
+        "manifest_protocol",
+        "max_upward_violation",
+        "monotone_nonincreasing",
+        "non_claims",
+        "points",
+        "sample_count",
+        "use_status",
+    }
+    missing = required.difference(payload)
+    if missing:
+        raise ValueError(f"rho sweep payload is missing fields: {sorted(missing)}")
+    if payload["manifest_protocol"] != RHO_SWEEP_MANIFEST_PROTOCOL:
+        raise ValueError(f"manifest_protocol must be {RHO_SWEEP_MANIFEST_PROTOCOL!r}")
+    if payload["use_status"] != RHO_SWEEP_USE_STATUS:
         raise ValueError("rho sweep payload must remain synthetic-only before G3")
+    if payload["g3_status"] != RHO_SWEEP_G3_STATUS:
+        raise ValueError("rho sweep payload must not claim G3 approval")
+    non_claims = _expect_string_sequence(payload["non_claims"], name="non_claims")
+    if non_claims != RHO_SWEEP_NON_CLAIMS:
+        raise ValueError("rho sweep non_claims must match the synthetic protocol")
     points = payload.get("points")
     if not isinstance(points, Sequence) or isinstance(points, (str, bytes)):
         raise TypeError("rho sweep payload points must be a sequence")
     reconstructed = tuple(
         RhoSweepPoint(
-            rho=float(point["rho"]),
+            rho=float(point_mapping["rho"]),
             estimate=ProbabilityEstimate(
-                probability=float(point["probability"]),
-                ci_lower=float(point["ci_lower"]),
-                ci_upper=float(point["ci_upper"]),
-                successes=_expect_nonnegative_int(point["successes"], name="successes"),
+                probability=float(point_mapping["probability"]),
+                ci_lower=float(point_mapping["ci_lower"]),
+                ci_upper=float(point_mapping["ci_upper"]),
+                successes=_expect_nonnegative_int(
+                    point_mapping["successes"], name="successes"
+                ),
                 sample_count=_expect_nonnegative_int(
-                    point["sample_count"], name="sample_count"
+                    point_mapping["sample_count"], name="sample_count"
                 ),
             ),
         )
-        for point in points
+        for point_mapping in (_expect_mapping(point, name="rho sweep point") for point in points)
     )
     RhoSweepResult(
         points=reconstructed,
@@ -155,6 +213,7 @@ def assert_synthetic_rho_sweep_payload(payload: Mapping[str, object]) -> None:
         max_upward_violation=float(payload.get("max_upward_violation", -1.0)),
         sample_count=_expect_nonnegative_int(payload.get("sample_count"), name="sample_count"),
         use_status=str(payload.get("use_status")),
+        g3_status=str(payload.get("g3_status")),
     )
 
 
@@ -199,9 +258,38 @@ def _max_upward_violation(points: Sequence[RhoSweepPoint]) -> float:
     return max((violation for violation in violations if violation > 0.0), default=0.0)
 
 
+def _expect_mapping(value: object, *, name: str) -> Mapping[str, object]:
+    if not isinstance(value, Mapping):
+        raise TypeError(f"{name} must be a mapping")
+    return value
+
+
 def _expect_nonnegative_int(value: object, *, name: str) -> int:
     if isinstance(value, bool) or not isinstance(value, int):
         raise TypeError(f"{name} must be a nonnegative integer")
     if value < 0:
         raise ValueError(f"{name} must be nonnegative")
     return value
+
+
+def _expect_string_sequence(value: object, *, name: str) -> tuple[str, ...]:
+    if isinstance(value, (str, bytes)) or not isinstance(value, Sequence):
+        raise TypeError(f"{name} must be a sequence")
+    if any(not isinstance(item, str) for item in value):
+        raise TypeError(f"{name} must contain strings")
+    return tuple(value)
+
+
+def _reject_forbidden_rho_sweep_fields(value: object) -> None:
+    if isinstance(value, Mapping):
+        collapsed = sorted(_FORBIDDEN_RHO_SWEEP_PAYLOAD_FIELDS.intersection(value))
+        if collapsed:
+            raise ValueError(
+                "synthetic rho-sweep payload must not carry paper-facing or "
+                f"collapsed result fields: {collapsed}"
+            )
+        for nested in value.values():
+            _reject_forbidden_rho_sweep_fields(nested)
+    elif isinstance(value, Sequence) and not isinstance(value, (str, bytes)):
+        for nested in value:
+            _reject_forbidden_rho_sweep_fields(nested)
