@@ -47,7 +47,7 @@
     },
     {
       "blocker_id": "EV-CANDIDATE-OUTPUT-CHECKSUMS-NOT-VERIFIED-IN-CONSUMING-WORKTREE",
-      "reason": "The ignored candidate EV component-output NPZ files were not checksummed in this preflight worktree.",
+      "reason": "Candidate EV component-output checksum verification ran and found missing ignored NPZ files.",
       "resolution_required": "Before executable adequacy, verify each candidate output NPZ against the accepted artifact index in the consuming worktree.",
       "source": "candidate_output_manifest",
       "status": "blocked"
@@ -76,24 +76,43 @@
   ],
   "candidate_output_checksum_inputs": [
     {
+      "byte_size": null,
       "expected_sha256": "dd95f30d74da00b6fb87c2ced8f402b4d612c59a28e7d1d33e9e82fcd7a805d5",
       "local_checksum_verified_in_this_preflight": false,
+      "observed_sha256": null,
       "output_npz_path": "data/processed/elaad_profiles/component_outputs/ev_ic1_candidate_component_output_high.npz",
-      "scenario": "high"
+      "scenario": "high",
+      "verification_status": "missing"
     },
     {
+      "byte_size": null,
       "expected_sha256": "a896794ddd9f004fe945c62a5b84b2b1b6e9381cbecd80b17ca7c749de68ce65",
       "local_checksum_verified_in_this_preflight": false,
+      "observed_sha256": null,
       "output_npz_path": "data/processed/elaad_profiles/component_outputs/ev_ic1_candidate_component_output_low.npz",
-      "scenario": "low"
+      "scenario": "low",
+      "verification_status": "missing"
     },
     {
+      "byte_size": null,
       "expected_sha256": "38081c7f849bb679a19560d1a7f7fd6d8428e35ef6cad2087e4d82a46c1e568d",
       "local_checksum_verified_in_this_preflight": false,
+      "observed_sha256": null,
       "output_npz_path": "data/processed/elaad_profiles/component_outputs/ev_ic1_candidate_component_output_middle.npz",
-      "scenario": "middle"
+      "scenario": "middle",
+      "verification_status": "missing"
     }
   ],
+  "candidate_output_checksum_verification": {
+    "all_expected_outputs_verified": false,
+    "artifact_path": "data/metadata/ev_adoption/e3_s2a_ev_candidate_component_output_checksum_preflight.json",
+    "artifact_sha256": "2ba44816cc5f17a4ad69a72501c44ea14a8de25fc6b2d15fa14193c8f3a9646b",
+    "checkpointed_script": "data/get_ev_adequacy_preflight.py --verify-candidate-output-checksums",
+    "checksum_mismatch_count": 0,
+    "missing_output_count": 3,
+    "resume_procedure": "Restore the missing ignored EV component-output NPZ files, then rerun ./.venv/Scripts/python.exe data/get_ev_adequacy_preflight.py --verify-candidate-output-checksums",
+    "status": "blocked_missing_ignored_component_outputs"
+  },
   "governing_decisions": [
     "A-014",
     "A-016",
@@ -146,6 +165,8 @@
   "source_artifacts": {
     "accepted_artifact_index": "data/metadata/ev_adoption/e2_s2_ev_ic1_accepted_artifact_index_preflight.json",
     "accepted_artifact_index_sha256": "d3b87b9a1d85aafd2247118c255f4e9417d07c32c83329f27bb6dc1c3a1239c8",
+    "candidate_output_checksum_verification": "data/metadata/ev_adoption/e3_s2a_ev_candidate_component_output_checksum_preflight.json",
+    "candidate_output_checksum_verification_sha256": "2ba44816cc5f17a4ad69a72501c44ea14a8de25fc6b2d15fa14193c8f3a9646b",
     "candidate_selection_manifest_set": "data/metadata/ev_adoption/e2_s2_ev005b_candidate_selection_manifests.json.gz",
     "candidate_selection_manifest_set_sha256": "da4231595d5a3f66faba1157e10fff17fee936c495b821d20e1b1cd3e0ae6071",
     "checksum_preflight": "data/metadata/ev_adoption/e2_s2_ev_candidate_profile_checksum_preflight.json",

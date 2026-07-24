@@ -1096,7 +1096,7 @@ def ev_ic1_adapter_guardrail_packet(readiness_record: Mapping[str, Any]) -> dict
             "deterministic planning-year calendar mapping must be approved/implemented",
             "candidate processed-file checksums must verify in the consuming worktree",
             "EV source-library adequacy must remain downstream of aggregated net-load analysis",
-            "Q-5 still blocks event-based scientific analysis",
+            "G0-A3 approved threshold semantics must be implemented before event-based scientific analysis",
         ],
         "policy": {
             "candidate_libraries_only": True,
@@ -2631,6 +2631,9 @@ def e3_s2a_ev_heldout_adequacy_preflight_blockers(
     accepted_artifact_index_sha256: str | None = None,
     criterion_packet_path: str = "data/metadata/ev_adoption/e3_s2a_ev_adequacy_criterion_packet.json",
     criterion_packet_sha256: str | None = None,
+    candidate_output_checksum_verification: Mapping[str, Any] | None = None,
+    candidate_output_checksum_verification_path: str | None = None,
+    candidate_output_checksum_verification_sha256: str | None = None,
     ic1_assembly_status: str = "not_accepted",
     held_out_access_status: str = "not_invoked",
     scenario_consistency_status: str = "not_resolved",
@@ -2660,6 +2663,11 @@ def e3_s2a_ev_heldout_adequacy_preflight_blockers(
         )
     if criterion_packet_sha256 is not None:
         criterion_packet_sha256 = _require_sha256(criterion_packet_sha256, "criterion_packet_sha256")
+    if candidate_output_checksum_verification_sha256 is not None:
+        candidate_output_checksum_verification_sha256 = _require_sha256(
+            candidate_output_checksum_verification_sha256,
+            "candidate_output_checksum_verification_sha256",
+        )
 
     policy = accepted_artifact_index.get("policy")
     if not isinstance(policy, dict):
@@ -2739,6 +2747,54 @@ def e3_s2a_ev_heldout_adequacy_preflight_blockers(
         if source_artifacts.get(key) not in (None, ""):
             _require_sha256(source_artifacts.get(key), key)
 
+    checksum_verification_status = "not_run"
+    checksum_verification_records_by_scenario: dict[str, Mapping[str, Any]] = {}
+    checksum_verification_missing: list[object] = []
+    checksum_verification_mismatches: list[object] = []
+    if candidate_output_checksum_verification is not None:
+        if candidate_output_checksum_verification.get("artifact_type") != "ev_candidate_component_output_checksum_verification":
+            raise ValueError("EV candidate output checksum verification artifact has unexpected type")
+        verification_policy = candidate_output_checksum_verification.get("policy")
+        if not isinstance(verification_policy, dict):
+            raise ValueError("EV candidate output checksum verification must include policy")
+        for key in (
+            "held_out_access",
+            "quarantined_access",
+            "profile_arrays_loaded",
+            "integrated_analysis_performed",
+            "event_or_p_e_analysis_performed",
+            "capacity_screen_performed",
+            "m_sufficiency_claimed",
+            "manuscript_numbers_produced",
+        ):
+            if verification_policy.get(key) is not False:
+                raise ValueError(f"EV candidate output checksum verification must keep {key}=False")
+        if verification_policy.get("hash_file_bytes_only") is not True:
+            raise ValueError("EV candidate output checksum verification must hash file bytes only")
+        checksum_verification_status = _require_non_empty_string(
+            candidate_output_checksum_verification.get("status"),
+            "candidate output checksum verification status",
+        )
+        checksum_records = candidate_output_checksum_verification.get("verification_records")
+        if not isinstance(checksum_records, list):
+            raise ValueError("EV candidate output checksum verification must include verification_records")
+        names = [_require_non_empty_string(record.get("scenario"), "checksum scenario") for record in checksum_records if isinstance(record, dict)]
+        duplicates = sorted(name for name, count in Counter(names).items() if count > 1)
+        if duplicates:
+            raise ValueError(f"EV candidate output checksum verification rejects duplicate scenarios: {duplicates}")
+        if set(names) != set(scenario_names):
+            raise ValueError("EV candidate output checksum verification must cover the accepted scenario set")
+        checksum_verification_records_by_scenario = {
+            _require_non_empty_string(record.get("scenario"), "checksum scenario"): record
+            for record in checksum_records
+            if isinstance(record, dict)
+        }
+        checksum_verification_missing = list(candidate_output_checksum_verification.get("missing_outputs", []))
+        checksum_verification_mismatches = list(candidate_output_checksum_verification.get("checksum_mismatches", []))
+        local_candidate_output_checksums_verified = (
+            candidate_output_checksum_verification.get("all_expected_outputs_verified") is True
+        )
+
     output_checksum_records: list[dict[str, object]] = []
     for row in scenario_index:
         if not isinstance(row, dict):
@@ -2748,12 +2804,25 @@ def e3_s2a_ev_heldout_adequacy_preflight_blockers(
         output_sha = _require_sha256(row.get("output_sha256"), f"{scenario} output_sha256")
         if "held_out" in output_path or "quarantined" in output_path:
             raise ValueError("EV E3.S2a preflight candidate output paths must not reference held-out/quarantined data")
+        verification_record = checksum_verification_records_by_scenario.get(scenario)
+        if verification_record is not None:
+            if verification_record.get("output_npz_path") != output_path:
+                raise ValueError("EV candidate output checksum verification path must match accepted index")
+            if verification_record.get("expected_sha256") != output_sha:
+                raise ValueError("EV candidate output checksum verification digest must match accepted index")
         output_checksum_records.append(
             {
                 "scenario": scenario,
                 "output_npz_path": output_path,
                 "expected_sha256": output_sha,
                 "local_checksum_verified_in_this_preflight": bool(local_candidate_output_checksums_verified),
+                "verification_status": (
+                    None if verification_record is None else verification_record.get("status")
+                ),
+                "observed_sha256": (
+                    None if verification_record is None else verification_record.get("observed_sha256")
+                ),
+                "byte_size": None if verification_record is None else verification_record.get("byte_size"),
             }
         )
 
@@ -2806,9 +2875,14 @@ def e3_s2a_ev_heldout_adequacy_preflight_blockers(
             resolution="Select an approved final branch through the signed G5 route; until then, any adequacy design must keep branches explicit.",
         )
     if not local_candidate_output_checksums_verified:
+        reason = "The ignored candidate EV component-output NPZ files were not checksummed in this preflight worktree."
+        if checksum_verification_missing:
+            reason = "Candidate EV component-output checksum verification ran and found missing ignored NPZ files."
+        elif checksum_verification_mismatches:
+            reason = "Candidate EV component-output checksum verification ran and found checksum mismatches."
         add_blocker(
             "EV-CANDIDATE-OUTPUT-CHECKSUMS-NOT-VERIFIED-IN-CONSUMING-WORKTREE",
-            "The ignored candidate EV component-output NPZ files were not checksummed in this preflight worktree.",
+            reason,
             source="candidate_output_manifest",
             resolution="Before executable adequacy, verify each candidate output NPZ against the accepted artifact index in the consuming worktree.",
         )
@@ -2849,6 +2923,8 @@ def e3_s2a_ev_heldout_adequacy_preflight_blockers(
             "accepted_artifact_index_sha256": accepted_artifact_index_sha256,
             "criterion_packet": criterion_packet_path,
             "criterion_packet_sha256": criterion_packet_sha256,
+            "candidate_output_checksum_verification": candidate_output_checksum_verification_path,
+            "candidate_output_checksum_verification_sha256": candidate_output_checksum_verification_sha256,
             "component_output_manifest": source_artifacts.get("component_output_manifest"),
             "component_output_manifest_sha256": source_artifacts.get("component_output_manifest_sha256"),
             "candidate_selection_manifest_set": source_artifacts.get("candidate_selection_manifest_set"),
@@ -2871,6 +2947,19 @@ def e3_s2a_ev_heldout_adequacy_preflight_blockers(
             "final_branch_selected": final_scenario_branch in {"low", "middle", "high"},
         },
         "candidate_output_checksum_inputs": sorted(output_checksum_records, key=lambda row: str(row["scenario"])),
+        "candidate_output_checksum_verification": {
+            "status": checksum_verification_status,
+            "artifact_path": candidate_output_checksum_verification_path,
+            "artifact_sha256": candidate_output_checksum_verification_sha256,
+            "all_expected_outputs_verified": bool(local_candidate_output_checksums_verified),
+            "missing_output_count": len(checksum_verification_missing),
+            "checksum_mismatch_count": len(checksum_verification_mismatches),
+            "checkpointed_script": "data/get_ev_adequacy_preflight.py --verify-candidate-output-checksums",
+            "resume_procedure": (
+                "Restore the missing ignored EV component-output NPZ files, then rerun "
+                "./.venv/Scripts/python.exe data/get_ev_adequacy_preflight.py --verify-candidate-output-checksums"
+            ),
+        },
         "missing_checksum_or_manifest_inputs": missing_inputs,
         "later_runner_scaffold": {
             "candidate_vs_held_out_comparison_planned": True,

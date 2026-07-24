@@ -1,0 +1,65 @@
+{
+  "all_expected_outputs_verified": false,
+  "artifact_id": "e3_s2a_ev_candidate_component_output_checksum_preflight",
+  "artifact_type": "ev_candidate_component_output_checksum_verification",
+  "checkpoint": {
+    "complete": true,
+    "resume_command": "./.venv/Scripts/python.exe data/get_ev_adequacy_preflight.py --verify-candidate-output-checksums",
+    "verified_or_checked_count": 3
+  },
+  "checksum_mismatches": [],
+  "missing_outputs": [
+    {
+      "output_npz_path": "data/processed/elaad_profiles/component_outputs/ev_ic1_candidate_component_output_high.npz",
+      "scenario": "high"
+    },
+    {
+      "output_npz_path": "data/processed/elaad_profiles/component_outputs/ev_ic1_candidate_component_output_low.npz",
+      "scenario": "low"
+    },
+    {
+      "output_npz_path": "data/processed/elaad_profiles/component_outputs/ev_ic1_candidate_component_output_middle.npz",
+      "scenario": "middle"
+    }
+  ],
+  "policy": {
+    "candidate_outputs_only": true,
+    "capacity_screen_performed": false,
+    "event_or_p_e_analysis_performed": false,
+    "hash_file_bytes_only": true,
+    "held_out_access": false,
+    "integrated_analysis_performed": false,
+    "m_sufficiency_claimed": false,
+    "manuscript_numbers_produced": false,
+    "profile_arrays_loaded": false,
+    "quarantined_access": false
+  },
+  "schema_version": 1,
+  "status": "blocked_missing_ignored_component_outputs",
+  "verification_records": [
+    {
+      "byte_size": null,
+      "expected_sha256": "dd95f30d74da00b6fb87c2ced8f402b4d612c59a28e7d1d33e9e82fcd7a805d5",
+      "observed_sha256": null,
+      "output_npz_path": "data/processed/elaad_profiles/component_outputs/ev_ic1_candidate_component_output_high.npz",
+      "scenario": "high",
+      "status": "missing"
+    },
+    {
+      "byte_size": null,
+      "expected_sha256": "a896794ddd9f004fe945c62a5b84b2b1b6e9381cbecd80b17ca7c749de68ce65",
+      "observed_sha256": null,
+      "output_npz_path": "data/processed/elaad_profiles/component_outputs/ev_ic1_candidate_component_output_low.npz",
+      "scenario": "low",
+      "status": "missing"
+    },
+    {
+      "byte_size": null,
+      "expected_sha256": "38081c7f849bb679a19560d1a7f7fd6d8428e35ef6cad2087e4d82a46c1e568d",
+      "observed_sha256": null,
+      "output_npz_path": "data/processed/elaad_profiles/component_outputs/ev_ic1_candidate_component_output_middle.npz",
+      "scenario": "middle",
+      "status": "missing"
+    }
+  ]
+}
