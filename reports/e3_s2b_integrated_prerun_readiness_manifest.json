@@ -1,16 +1,16 @@
 {
   "command": ".\\.venv\\Scripts\\python.exe reports\\e3_s2b_generate_integrated_prerun_readiness.py",
-  "generated_at_utc": "2026-07-24T17:26:20Z",
-  "git_commit": "0becf60985702e5833e5311bbcc29c1c1d744008",
+  "generated_at_utc": "2026-07-24T17:43:31Z",
+  "git_commit": "17d2cad1ba8a855060dc30a70549fedca0fc754c",
   "git_status_short_before_generation": "",
   "input": {
     "path": "reports/e3_s2b_integrated_prerun_readiness_input.json",
     "schema_version": "e3_s2b_integrated_prerun_readiness_input_v1",
-    "sha256": "266182509f6184d6347855fe4a045db1c138375a1eb63c7dff13ae78b935e909"
+    "sha256": "a092038110f56378ae64e2dd0731bc49510076d0e6d462bfc95d69245638a190"
   },
   "outputs": {
     "report_path": "reports/E3_S2B_INTEGRATED_PRERUN_READINESS.md",
-    "report_sha256": "cca58230b0ebb9a0e268fd571159ddd107d466b8ddb52305af37ac17ace5b1eb"
+    "report_sha256": "6887f79777b45d2001b1677cb1f7f9ba3de155ce6fca1033bbb0de85df4bb9b4"
   },
   "preflight": {
     "accepted_artifact_preflight": {
@@ -59,7 +59,9 @@
               "PV-PARAM-001_or_signed_amendment",
               "A-016",
               "future_node_allocation_rule",
-              "FINAL-PAIRED-HP-PV-ACCEPTANCE"
+              "FINAL-PAIRED-HP-PV-ACCEPTANCE",
+              "future_pv_reactive_power_policy",
+              "signed_component_output_manifest_path_policy"
             ],
             "code": "component_artifact_gate_blocked",
             "kind": "pv",
@@ -173,7 +175,7 @@
             "message": "accepted component-output manifest is required before artifact-loader execution"
           },
           {
-            "artifact_id": "D014-PV-FIRST-EXPERIMENT-VALUE-DECISION-PACKET",
+            "artifact_id": "D014-PV-FIRST-EXPERIMENT-VALUE-APPROVAL-PACKET",
             "blocker_ids": [
               "PV-PARAM-001",
               "D-014",
@@ -228,7 +230,7 @@
           "state": "missing"
         },
         {
-          "artifact_id": "D014-PV-FIRST-EXPERIMENT-VALUE-DECISION-PACKET",
+          "artifact_id": "D014-PV-FIRST-EXPERIMENT-VALUE-APPROVAL-PACKET",
           "kind": "pv",
           "path": null,
           "state": "missing"
@@ -246,7 +248,7 @@
           "state": "missing"
         }
       ],
-      "intended_use": "e3_s2b_integrated_prerun_gate_current_main_through_pr268",
+      "intended_use": "e3_s2b_integrated_prerun_gate_current_main_through_pr270",
       "metadata_preflight_only": true,
       "no_capacity_screen_result": true,
       "no_component_array_loading": true,
@@ -283,7 +285,9 @@
               "PV-PARAM-001_or_signed_amendment",
               "A-016",
               "future_node_allocation_rule",
-              "FINAL-PAIRED-HP-PV-ACCEPTANCE"
+              "FINAL-PAIRED-HP-PV-ACCEPTANCE",
+              "future_pv_reactive_power_policy",
+              "signed_component_output_manifest_path_policy"
             ]
           },
           "downstream_gate_blockers": [
@@ -326,7 +330,9 @@
                 "PV-PARAM-001_or_signed_amendment",
                 "A-016",
                 "future_node_allocation_rule",
-                "FINAL-PAIRED-HP-PV-ACCEPTANCE"
+                "FINAL-PAIRED-HP-PV-ACCEPTANCE",
+                "future_pv_reactive_power_policy",
+                "signed_component_output_manifest_path_policy"
               ]
             },
             "downstream_gate_blockers": [
@@ -611,7 +617,7 @@
               "pv": {
                 "accepted_for_gate": false,
                 "artifact": {
-                  "artifact_id": "D014-PV-FIRST-EXPERIMENT-VALUE-DECISION-PACKET",
+                  "artifact_id": "D014-PV-FIRST-EXPERIMENT-VALUE-APPROVAL-PACKET",
                   "artifact_status": "unsigned",
                   "blocking_register_ids": [
                     "D014-PV-CAPACITY-APPROVAL-TEMPLATE_successor",
@@ -619,20 +625,25 @@
                     "PV-PARAM-001_or_signed_amendment",
                     "A-016",
                     "future_node_allocation_rule",
-                    "FINAL-PAIRED-HP-PV-ACCEPTANCE"
+                    "FINAL-PAIRED-HP-PV-ACCEPTANCE",
+                    "future_pv_reactive_power_policy",
+                    "signed_component_output_manifest_path_policy"
                   ],
                   "calendar_id": "calendar_2035_15min_full_year_35040",
                   "kind": "pv",
-                  "manifest_path": "data/metadata/weather_pv/d014_pv_first_experiment_value_decision_packet.json",
-                  "member_id": "pv_first_experiment_value_decisions_blocked",
+                  "manifest_path": "data/metadata/weather_pv/d014_pv_first_experiment_value_approval_packet.json",
+                  "member_id": "pv_first_experiment_value_approval_blocked",
                   "node_ids": [
                     "simbench_1_mv_semiurb_0_sw_all_in_service_load_nodes"
                   ],
                   "provenance": {
-                    "packet_status": "PR #257 PV value-decision packet present; executable PV values/formula/allocation/paired acceptance remain unsigned",
+                    "packet_status": "PR #270 PV value-approval packet present; it proposes PI signature choices but still authorizes no executable PV values, arrays, or component-output manifest.",
                     "readiness_bucket": "proposed_blocked",
+                    "supporting_component_output_artifact_scaffold": "data/metadata/weather_pv/d014_pv_component_output_artifact_scaffold.json",
                     "supporting_executable_preflight_guard": "data/metadata/weather_pv/d014_pv_executable_preflight_guard.json",
-                    "supporting_first_experiment_approval_packet": "data/metadata/weather_pv/d014_pv_first_experiment_approval_packet.json"
+                    "supporting_first_experiment_approval_packet": "data/metadata/weather_pv/d014_pv_first_experiment_approval_packet.json",
+                    "supporting_value_approval_packet": "data/metadata/weather_pv/d014_pv_first_experiment_value_approval_packet.json",
+                    "supporting_value_decision_packet": "data/metadata/weather_pv/d014_pv_first_experiment_value_decision_packet.json"
                   },
                   "shared_weather_driver_id": "d004_alkmaar_berkhout_2014_2023_v1:unselected",
                   "signed_register_ids": [
@@ -642,11 +653,11 @@
                     "PV-CAP-001",
                     "PV-ORIENT-001"
                   ],
-                  "source_id": "d014_pv_first_experiment_value_decision_metadata",
+                  "source_id": "d014_pv_first_experiment_value_approval_metadata",
                   "timestep_seconds": 900,
-                  "version_id": "d014_pv_first_experiment_value_decision_packet_v1"
+                  "version_id": "d014_pv_first_experiment_value_approval_packet_v1"
                 },
-                "artifact_id": "D014-PV-FIRST-EXPERIMENT-VALUE-DECISION-PACKET",
+                "artifact_id": "D014-PV-FIRST-EXPERIMENT-VALUE-APPROVAL-PACKET",
                 "artifact_status": "unsigned",
                 "blocking_register_ids": [
                   "D014-PV-CAPACITY-APPROVAL-TEMPLATE_successor",
@@ -654,10 +665,12 @@
                   "PV-PARAM-001_or_signed_amendment",
                   "A-016",
                   "future_node_allocation_rule",
-                  "FINAL-PAIRED-HP-PV-ACCEPTANCE"
+                  "FINAL-PAIRED-HP-PV-ACCEPTANCE",
+                  "future_pv_reactive_power_policy",
+                  "signed_component_output_manifest_path_policy"
                 ],
                 "kind": "pv",
-                "manifest_path": "data/metadata/weather_pv/d014_pv_first_experiment_value_decision_packet.json",
+                "manifest_path": "data/metadata/weather_pv/d014_pv_first_experiment_value_approval_packet.json",
                 "reason": "artifact_status_not_accepted",
                 "signed_register_ids": [
                   "WEATHER-001",
@@ -684,7 +697,7 @@
                 "no_real_net_load_arrays": true,
                 "planning_year_basis": "G0-A4",
                 "primary_threshold_metadata": "G0-A3: strict L_import > 1.0 p.u. for four consecutive 15-minute import steps over the full year; 1.1 and 1.2 are sensitivities only",
-                "refresh_basis": "origin/main through PR #268; #263 PV component-output scaffold, #265 EV generic multi-node manifests, #266 B hybrid provenance guard, #267 HP profile rebuild runner scaffold, and #268 B alpha event-count scaffold consumed as metadata only; #264 capacity provenance consumed by path and checksum",
+                "refresh_basis": "origin/main through PR #270; #263 PV component-output scaffold, #265 EV generic multi-node manifests, #266 B hybrid provenance guard, #267 HP profile rebuild runner scaffold, #268 B alpha event-count scaffold, and #270 PV value-approval packet consumed as metadata only; #264 capacity provenance consumed by path and checksum",
                 "threshold_basis": "G0-A3 metadata only; not evaluated in this pre-run readiness packet"
               },
               "node_ids": [
@@ -711,7 +724,7 @@
             "dry_run_only": true,
             "executable_input_gate": null,
             "gate_error": null,
-            "intended_use": "e3_s2b_integrated_prerun_gate_current_main_through_pr268",
+            "intended_use": "e3_s2b_integrated_prerun_gate_current_main_through_pr270",
             "missing_component_kinds": [],
             "no_capacity_screen_result": true,
             "no_event_detection": true,
@@ -736,7 +749,7 @@
             ],
             "screen_prerequisite_only": true
           },
-          "intended_use": "e3_s2b_integrated_prerun_gate_current_main_through_pr268",
+          "intended_use": "e3_s2b_integrated_prerun_gate_current_main_through_pr270",
           "manifest_fields": {
             "calendar_id": "calendar_e3_s2b_planned_2030_2033_2035_15min_full_year",
             "capacity_provenance": {
@@ -821,7 +834,7 @@
           }
         },
         "dry_run_only": true,
-        "intended_use": "e3_s2b_integrated_prerun_gate_current_main_through_pr268",
+        "intended_use": "e3_s2b_integrated_prerun_gate_current_main_through_pr270",
         "metadata_preflight_only": true,
         "no_capacity_screen_result": true,
         "no_event_counts": true,
@@ -861,14 +874,14 @@
             "sha256": "14d7a28bfc9c08c35c99cd4622060ee9f9cdfcdde46360d3be71a65726515997"
           },
           {
-            "artifact_id": "D014-PV-FIRST-EXPERIMENT-VALUE-DECISION-PACKET",
+            "artifact_id": "D014-PV-FIRST-EXPERIMENT-VALUE-APPROVAL-PACKET",
             "artifact_status": "unsigned",
             "checksum_match": true,
             "exists": true,
-            "expected_sha256": "3c97678013ae63afdbd678626222f14e5b3df44951f9d4c5d6abe8c879941fdf",
+            "expected_sha256": "b8f2e570d6c50d74be7d430ab14f11d0f1d54d9c097693537d93d3ac3250d2e2",
             "kind": "pv",
-            "path": "data/metadata/weather_pv/d014_pv_first_experiment_value_decision_packet.json",
-            "sha256": "3c97678013ae63afdbd678626222f14e5b3df44951f9d4c5d6abe8c879941fdf"
+            "path": "data/metadata/weather_pv/d014_pv_first_experiment_value_approval_packet.json",
+            "sha256": "b8f2e570d6c50d74be7d430ab14f11d0f1d54d9c097693537d93d3ac3250d2e2"
           },
           {
             "artifact_id": "e2_s6_a014_alkmaar_executable_adoption_artifact",
@@ -903,7 +916,7 @@
         "hp",
         "pv"
       ],
-      "blocker_count": 26,
+      "blocker_count": 25,
       "items": [
         {
           "blocker_ids": [
@@ -939,7 +952,9 @@
             "PV-PARAM-001_or_signed_amendment",
             "A-016",
             "future_node_allocation_rule",
-            "FINAL-PAIRED-HP-PV-ACCEPTANCE"
+            "FINAL-PAIRED-HP-PV-ACCEPTANCE",
+            "future_pv_reactive_power_policy",
+            "signed_component_output_manifest_path_policy"
           ],
           "code": "component_artifact_gate_blocked",
           "kind": "pv",
@@ -1053,7 +1068,7 @@
           "message": "accepted component-output manifest is required before artifact-loader execution"
         },
         {
-          "artifact_id": "D014-PV-FIRST-EXPERIMENT-VALUE-DECISION-PACKET",
+          "artifact_id": "D014-PV-FIRST-EXPERIMENT-VALUE-APPROVAL-PACKET",
           "blocker_ids": [
             "PV-PARAM-001",
             "D-014",
@@ -1163,14 +1178,6 @@
           ],
           "code": "scenario_consistency_not_accepted",
           "message": "A-016 scenario-consistency manifest must be accepted before launch"
-        },
-        {
-          "blocker_ids": [
-            "E3.S2B-SUPPORTING-METADATA"
-          ],
-          "code": "supporting_metadata_missing",
-          "message": "supporting metadata packet is referenced but not present",
-          "path": "reports/agent_logs/agent-b/E4.S1-alpha-probability-estimator-readiness.md"
         }
       ],
       "ready": false
@@ -1321,7 +1328,7 @@
         ]
       }
     },
-    "intended_use": "e3_s2b_integrated_prerun_gate_current_main_through_pr268",
+    "intended_use": "e3_s2b_integrated_prerun_gate_current_main_through_pr270",
     "metadata_preflight_only": true,
     "no_capacity_screen_result": true,
     "no_event_counts": true,
@@ -1430,9 +1437,12 @@
         "sha256": "26994d0b025a07887f0fd17f71cd21ecb78f15601cdf17671e487569e64e2d86"
       },
       {
-        "exists": false,
+        "checksum_match": true,
+        "exists": true,
+        "expected_sha256": "64925ef87a5408582586518a13a5fac45638868243f456f136ce18e0d0d9c1b1",
         "label": "agent_b_alpha_probability_estimator_log",
-        "path": "reports/agent_logs/agent-b/E4.S1-alpha-probability-estimator-readiness.md"
+        "path": "reports/agent_logs/agent-b/E4.S1-alpha-probability-estimator-readiness.md",
+        "sha256": "64925ef87a5408582586518a13a5fac45638868243f456f136ce18e0d0d9c1b1"
       },
       {
         "checksum_match": true,
@@ -1697,6 +1707,22 @@
         "label": "pv_first_experiment_approval_packet",
         "path": "data/metadata/weather_pv/d014_pv_first_experiment_approval_packet.json",
         "sha256": "f2048ffcee50e0e770673d49e74d6ff14f50a0ca9a3e269ec5ba58bcb79482b9"
+      },
+      {
+        "checksum_match": true,
+        "exists": true,
+        "expected_sha256": "b8f2e570d6c50d74be7d430ab14f11d0f1d54d9c097693537d93d3ac3250d2e2",
+        "label": "pv_first_experiment_value_approval_packet",
+        "path": "data/metadata/weather_pv/d014_pv_first_experiment_value_approval_packet.json",
+        "sha256": "b8f2e570d6c50d74be7d430ab14f11d0f1d54d9c097693537d93d3ac3250d2e2"
+      },
+      {
+        "checksum_match": true,
+        "exists": true,
+        "expected_sha256": "5b45ea2067a31b8e91650e511064586c583aa33fa6deb6520da361b8b1376ba2",
+        "label": "pv_first_experiment_value_approval_report",
+        "path": "reports/e2_s4_d014_pv_first_experiment_value_approval_packet.md",
+        "sha256": "5b45ea2067a31b8e91650e511064586c583aa33fa6deb6520da361b8b1376ba2"
       },
       {
         "checksum_match": true,
