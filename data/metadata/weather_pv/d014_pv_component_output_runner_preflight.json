@@ -1,0 +1,58 @@
+{
+  "allow_synthetic_fixture": false,
+  "blocker_ids": [
+    "premature_accepted_status_unsigned_inputs",
+    "missing_signed_artifact:capacity_growth_artifact",
+    "missing_signed_artifact:statistical_orientation_tilt_artifact",
+    "missing_signed_artifact:pv_conversion_artifact",
+    "missing_signed_artifact:node_allocation_artifact",
+    "missing_signed_artifact:reactive_power_policy_artifact",
+    "missing_signed_artifact:component_output_manifest_path_policy_artifact",
+    "missing_signed_artifact:a016_scenario_consistency_artifact",
+    "missing_signed_artifact:final_paired_hp_pv_weather_acceptance_artifact"
+  ],
+  "component_output_manifest": null,
+  "component_output_scaffold_packet_id": "D014-PV-COMPONENT-OUTPUT-ARTIFACT-SCAFFOLD",
+  "data_id": "D-014",
+  "input_metadata": {
+    "component_output_scaffold": {
+      "packet_id": "D014-PV-COMPONENT-OUTPUT-ARTIFACT-SCAFFOLD",
+      "path": "data/metadata/weather_pv/d014_pv_component_output_artifact_scaffold.json",
+      "sha256": "ba4ce8a6e6a7408fb5d2126e9f24c56741c3d00d1d4d29d5cddcbebc8854dd49",
+      "size_bytes": 5622
+    },
+    "signed_artifacts": {},
+    "value_approval_packet": {
+      "packet_id": "D014-PV-FIRST-EXPERIMENT-VALUE-APPROVAL-PACKET",
+      "path": "data/metadata/weather_pv/d014_pv_first_experiment_value_approval_packet.json",
+      "sha256": "b8f2e570d6c50d74be7d430ab14f11d0f1d54d9c097693537d93d3ac3250d2e2",
+      "size_bytes": 9742
+    }
+  },
+  "non_claims": [
+    "No real PV generation is authorized unless every required signed artifact is accepted and checksum-backed.",
+    "Current committed D-014 value packets remain proposed and produce blocker manifests only.",
+    "Synthetic fixture output is unit-test plumbing and is not a PV scientific result.",
+    "No roof, building, location-level, 3DBAG, PV-map, or per-roof geometry workflow is allowed in the first-experiment path.",
+    "No net-load, event detection, P(E), threshold run, capacity screen, manuscript result, or final paired HP/PV acceptance is produced by this preflight."
+  ],
+  "packet_id": "D014-PV-COMPONENT-OUTPUT-RUNNER-PREFLIGHT",
+  "real_pv_arrays_written": false,
+  "real_pv_generation_authorized": false,
+  "requested_artifact_status": "accepted",
+  "required_signed_artifacts": [
+    "capacity_growth_artifact",
+    "statistical_orientation_tilt_artifact",
+    "pv_conversion_artifact",
+    "node_allocation_artifact",
+    "reactive_power_policy_artifact",
+    "component_output_manifest_path_policy_artifact",
+    "a016_scenario_consistency_artifact",
+    "final_paired_hp_pv_weather_acceptance_artifact"
+  ],
+  "status": "blocked_no_pv_component_output",
+  "synthetic_fixture_arrays_written": false,
+  "synthetic_fixture_generation_authorized": false,
+  "value_approval_packet_id": "D014-PV-FIRST-EXPERIMENT-VALUE-APPROVAL-PACKET",
+  "write_output_requested": false
+}

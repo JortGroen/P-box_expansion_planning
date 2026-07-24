@@ -1659,6 +1659,21 @@ def test_d014_first_experiment_value_approval_packet_is_concise_and_fail_closed(
     payload = json.loads(path.read_text(encoding="utf-8"))
     assert path.name == "d014_pv_first_experiment_value_approval_packet.json"
     assert payload["status"].startswith("proposed_first_experiment_pv_value_approval")
+
+def test_d014_pv_component_output_runner_preflight_is_metadata_only(tmp_path: Path) -> None:
+    path = pv_capacity.write_d014_pv_component_output_runner_preflight(tmp_path)
+    payload = json.loads(path.read_text(encoding="utf-8"))
+
+    assert path.name == "d014_pv_component_output_runner_preflight.json"
+    assert payload["packet_id"] == "D014-PV-COMPONENT-OUTPUT-RUNNER-PREFLIGHT"
+    assert payload["status"] == "blocked_no_pv_component_output"
+    assert payload["real_pv_generation_authorized"] is False
+    assert payload["real_pv_arrays_written"] is False
+    assert payload["component_output_manifest"] is None
+    assert "missing_signed_artifact:capacity_growth_artifact" in payload["blocker_ids"]
+    assert payload["input_metadata"]["value_approval_packet"]["packet_id"] == (
+        "D014-PV-FIRST-EXPERIMENT-VALUE-APPROVAL-PACKET"
+    )
 def test_d014_pv_component_output_artifact_scaffold_is_metadata_only(tmp_path: Path) -> None:
     packet = pv_capacity.build_d014_pv_component_output_artifact_scaffold_packet()
 
