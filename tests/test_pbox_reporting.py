@@ -12,9 +12,13 @@ from src.pbox_error import (
 )
 from src.pbox_reporting import (
     RUNNER_REPORT_BOUNDARY_PROTOCOL,
+    AlphaEventCountRecord,
+    assert_alpha_probability_estimator_packet,
     assert_runner_report_boundary_payload,
+    build_alpha_probability_estimator_packet,
     build_guarded_pbox_report,
     build_runner_report_boundary_record,
+    probability_rows_from_alpha_event_counts,
     probability_rows_from_pbox_family,
 )
 from src.pbox_result_guards import FinalResultPrerequisites, PaperFacingResultKind
@@ -165,6 +169,180 @@ def _selective_ac_metadata() -> dict[str, object]:
         "sample_count": 5,
         "use_status": "synthetic-only",
     }
+
+
+def _alpha_event_counts() -> tuple[AlphaEventCountRecord, ...]:
+    sample_ids = tuple(f"sample-{index}" for index in range(10))
+    return (
+        AlphaEventCountRecord(
+            alpha=0.0,
+            lower_successes=1,
+            upper_successes=5,
+            sample_count=10,
+            sample_ids=sample_ids,
+        ),
+        AlphaEventCountRecord(
+            alpha=0.5,
+            lower_successes=2,
+            upper_successes=4,
+            sample_count=10,
+            sample_ids=sample_ids,
+        ),
+        AlphaEventCountRecord(
+            alpha=1.0,
+            lower_successes=3,
+            upper_successes=3,
+            sample_count=10,
+            sample_ids=sample_ids,
+        ),
+    )
+
+
+def _alpha_endpoint_metadata() -> dict[str, object]:
+    return {
+        "a013_grid_error_approval_id": "A-013-synthetic-blocked",
+        "a016_scenario_consistency_id": "A-016-synthetic-blocked",
+        "capacity_convention_linkage": "capacity-convention-synthetic-blocked",
+        "capacity_denominator_provenance": "capacity-provenance-synthetic-blocked",
+        "direction_gate": "unwidened_p_net_import_mask",
+        "endpoint_record_manifest_id": "synthetic-endpoint-records",
+        "error_sampling": OUTPUT_ERROR_SAMPLING,
+        "g2_tier1_envelope_approval_id": "G2-synthetic-blocked",
+        "loading_endpoint_application": OUTPUT_ERROR_APPLICATION,
+        "probability_widening": "forbidden",
+    }
+
+
+def test_alpha_probability_rows_are_recomputed_from_event_counts() -> None:
+    rows = probability_rows_from_alpha_event_counts(_alpha_event_counts())
+
+    assert [row["alpha"] for row in rows] == [0.0, 0.5, 1.0]
+    assert [row["p_lower"] for row in rows] == [0.1, 0.2, 0.3]
+    assert [row["p_upper"] for row in rows] == [0.5, 0.4, 0.3]
+    assert all(row["sample_count"] == 10 for row in rows)
+    assert all("defuzzified_probability" not in row for row in rows)
+    assert (
+        rows[0]["ci_lower_lower"]
+        <= rows[0]["p_lower"]
+        <= rows[0]["ci_lower_upper"]
+    )
+    assert (
+        rows[0]["ci_upper_lower"]
+        <= rows[0]["p_upper"]
+        <= rows[0]["ci_upper_upper"]
+    )
+
+
+def test_alpha_probability_estimator_packet_records_real_use_blockers() -> None:
+    packet = build_alpha_probability_estimator_packet(
+        packet_id="synthetic-alpha-count-estimator",
+        event_count_records=_alpha_event_counts(),
+        endpoint_metadata=_alpha_endpoint_metadata(),
+    )
+    payload = packet.to_mapping()
+
+    assert payload["protocol"] == "e4s1-alpha-event-count-estimator-v1"
+    assert payload["use_status"] == "synthetic-estimator-readiness"
+    assert payload["invariants"]["defuzzification"] == "forbidden"
+    assert payload["invariants"]["probability_widening"] == "forbidden"
+    blockers = payload["real_use_blocker_manifest"]["blockers"]
+    assert "missing_real_endpoint_event_manifests" in blockers
+    assert "missing_signed_g2_tier1_endpoints" in blockers
+    assert "missing_signed_a013_grid_error" in blockers
+    assert "missing_capacity_convention_and_provenance" in blockers
+    assert "missing_a016_scenario_consistency" in blockers
+    assert "missing_g3_monotonicity_approval_if_vertex_shortcut_claimed" in blockers
+    assert "defuzzified_probability" not in str(payload)
+    assert_alpha_probability_estimator_packet(payload)
+
+
+def test_alpha_probability_estimator_rejects_sample_count_or_identity_mismatch() -> None:
+    records = list(_alpha_event_counts())
+    sample_ids = tuple(f"sample-{index}" for index in range(8))
+    records[1] = AlphaEventCountRecord(
+        alpha=0.5,
+        lower_successes=2,
+        upper_successes=4,
+        sample_count=8,
+        sample_ids=sample_ids,
+    )
+    with pytest.raises(ValueError, match="same sample_count"):
+        probability_rows_from_alpha_event_counts(records)
+
+    records = list(_alpha_event_counts())
+    records[1] = AlphaEventCountRecord(
+        alpha=0.5,
+        lower_successes=2,
+        upper_successes=4,
+        sample_count=10,
+        sample_ids=tuple(reversed(records[1].sample_ids)),
+    )
+    with pytest.raises(ValueError, match="same ordered sample_ids"):
+        probability_rows_from_alpha_event_counts(records)
+
+
+def test_alpha_probability_estimator_rejects_non_nested_rows_when_required() -> None:
+    records = list(_alpha_event_counts())
+    records[1] = AlphaEventCountRecord(
+        alpha=0.5,
+        lower_successes=0,
+        upper_successes=6,
+        sample_count=10,
+        sample_ids=records[1].sample_ids,
+    )
+
+    with pytest.raises(ValueError, match="nested"):
+        probability_rows_from_alpha_event_counts(records)
+    rows = probability_rows_from_alpha_event_counts(records, require_nested=False)
+    assert rows[1]["p_lower"] == 0.0
+    assert rows[1]["p_upper"] == 0.6
+
+
+def test_alpha_probability_estimator_rejects_missing_endpoint_metadata_or_relabeling() -> None:
+    metadata = _alpha_endpoint_metadata()
+    metadata.pop("endpoint_record_manifest_id")
+    with pytest.raises(ValueError, match="endpoint_metadata"):
+        build_alpha_probability_estimator_packet(
+            packet_id="missing-endpoint-metadata",
+            event_count_records=_alpha_event_counts(),
+            endpoint_metadata=metadata,
+        )
+
+    payload = build_alpha_probability_estimator_packet(
+        packet_id="synthetic-alpha-count-estimator",
+        event_count_records=_alpha_event_counts(),
+        endpoint_metadata=_alpha_endpoint_metadata(),
+    ).to_mapping()
+    payload["use_status"] = "paper-facing"
+    with pytest.raises(ValueError, match="synthetic-only"):
+        assert_alpha_probability_estimator_packet(payload)
+
+
+def test_alpha_probability_estimator_rejects_collapsed_or_tampered_payloads() -> None:
+    payload = build_alpha_probability_estimator_packet(
+        packet_id="synthetic-alpha-count-estimator",
+        event_count_records=_alpha_event_counts(),
+        endpoint_metadata=_alpha_endpoint_metadata(),
+    ).to_mapping()
+
+    collapsed = dict(payload)
+    collapsed["defuzzified_probability"] = 0.25
+    with pytest.raises(ValueError, match="collapsed"):
+        assert_alpha_probability_estimator_packet(collapsed)
+
+    tampered_rows = dict(payload)
+    probability_rows = [dict(row) for row in payload["probability_rows"]]
+    probability_rows[0]["p_upper"] = 0.9
+    tampered_rows["probability_rows"] = probability_rows
+    with pytest.raises(ValueError, match="recomputable"):
+        assert_alpha_probability_estimator_packet(tampered_rows)
+
+    tampered_metadata = dict(payload)
+    endpoint_metadata = dict(payload["endpoint_metadata"])
+    endpoint_metadata["probability_widening"] = "posthoc-margin"
+    tampered_metadata["endpoint_metadata"] = endpoint_metadata
+    with pytest.raises(ValueError, match="probability widening"):
+        assert_alpha_probability_estimator_packet(tampered_metadata)
 
 def test_probability_rows_from_pbox_family_are_sorted_alpha_indexed_bounds() -> None:
     rows = probability_rows_from_pbox_family(_pbox_family())

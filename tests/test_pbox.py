@@ -9,6 +9,7 @@ from src.pbox import (
     VertexUseMode,
     assert_nested,
     estimate_vertex_pbox,
+    probability_estimate_from_counts,
 )
 from src.rng import sample_seed
 
@@ -17,6 +18,19 @@ def _threshold_evaluator(rho: float, seed: int) -> bool:
     sample_value = seed % 100
     threshold = round(80 - 40 * rho)
     return sample_value < threshold
+
+
+def test_probability_estimate_from_counts_handles_boundary_counts() -> None:
+    zero = probability_estimate_from_counts(0, 10, confidence_level=0.95)
+    full = probability_estimate_from_counts(10, 10, confidence_level=0.95)
+
+    assert zero.probability == 0.0
+    assert zero.ci_lower <= zero.probability <= zero.ci_upper
+    assert full.probability == 1.0
+    assert full.ci_lower <= full.probability <= full.ci_upper
+
+    with pytest.raises(ValueError, match="confidence_level"):
+        probability_estimate_from_counts(1, 10, confidence_level=1.0)
 
 
 def test_vertex_pbox_matches_hand_counted_endpoint_probabilities() -> None:
