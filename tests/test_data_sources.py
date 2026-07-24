@@ -33,7 +33,12 @@ from data.get_elaad_profiles import (
     write_library_plan,
 )
 from data.sources import source_specs, write_metadata
+from src.contracts.net_load import (
+    NetLoadRealizationContext,
+    load_component_adapter_output_from_npz_artifact,
+)
 from src.hp_model import hp001_local_scaling_config_from_value_binding_record
+from src.rng import SeedTree
 
 
 def _case_dir(name: str) -> Path:
@@ -1976,6 +1981,252 @@ def test_hp001_component_output_readiness_blocker_packet_is_not_executable(tmp_p
     payload = json.loads(path.read_text(encoding="utf-8"))
     assert path.name == "hp001_component_output_readiness_blocker_packet.json"
     assert payload["validator"] == "src.hp_model.require_hp001_component_output_readiness_manifest"
+
+
+def _signed_hp001_component_output_readiness_manifest() -> dict[str, object]:
+    weather_identity = {
+        "shared_weather_driver_id": "d004_alkmaar_berkhout_2014_2023_v1",
+        "member_id": "weather-member-001",
+        "source": "D-004 WEATHER-001 signed synthetic fixture",
+        "content_sha256": "a" * 64,
+        "n_timesteps": 35040,
+        "cadence_seconds": 900,
+    }
+    components = [
+        ("SFH", "space", "NL_heat_profile_space_SFH", "NL_COP_ASHP_radiator", 0.1),
+        ("MFH", "space", "NL_heat_profile_space_MFH", "NL_COP_ASHP_radiator", 0.2),
+        ("SFH", "water", "NL_heat_profile_water_SFH", "NL_COP_ASHP_water", 0.03),
+        ("MFH", "water", "NL_heat_profile_water_MFH", "NL_COP_ASHP_water", 0.04),
+    ]
+    return {
+        "status": "approved_for_ic1_component_output_consumption",
+        "synthetic_fixture": True,
+        "approval_ids": {
+            "value_column": "PI-HP001-VALUE-COLUMN-20260724",
+            "denominator": "PI-HP001-DENOMINATOR-20260724",
+            "unit_conversion": "PI-HP001-UNIT-CONVERSION-20260724",
+            "sfh_mfh_split": "PI-HP001-SFH-MFH-SPLIT-20260724",
+            "adoption_electrification": "PI-HP001-ADOPTION-ELECTRIFICATION-20260724",
+            "scenario_source_consistency": "PI-A016-SCENARIO-CONSISTENCY-20260724",
+            "d004_paired_weather_acceptance": "PI-D004-PAIRED-WEATHER-20260724",
+            "cold_spell_tolerances": "PI-HP001-COLD-SPELL-TOLERANCES-20260724",
+        },
+        "source_artifacts": {
+            "when2heat_source": {
+                "data_id": "D-003",
+                "path": "data/raw/when2heat/signed_fixture.csv",
+                "sha256": "b" * 64,
+                "provenance": "signed synthetic test fixture",
+            },
+            "d004_weather_member": {
+                "data_id": "D-004",
+                "path": "data/processed/weather_pv/signed_fixture.parquet",
+                "sha256": "c" * 64,
+                "provenance": "signed synthetic test fixture",
+            },
+            "d013_value_binding_record": {
+                "data_id": "D-013",
+                "path": "data/metadata/hp_scaling/signed_fixture.json",
+                "sha256": "d" * 64,
+                "provenance": "signed synthetic test fixture",
+            },
+        },
+        "profile_artifact": {
+            "path": "data/processed/hp_profiles/signed_fixture_component_output.npz",
+            "sha256": "e" * 64,
+            "n_timesteps": 35040,
+            "cadence_seconds": 900,
+            "electric_power_unit": "kW",
+        },
+        "weather_identity": dict(weather_identity),
+        "paired_pv_weather_identity": dict(weather_identity),
+        "component_traceability": [
+            {
+                "building_class": building_class,
+                "end_use": end_use,
+                "heat_column": heat_column,
+                "cop_column": cop_column,
+                "annual_heat_demand_twh": annual_twh,
+                "provenance": {
+                    "annual_scaling_status": "signed",
+                    "annual_scaling_approval_id": "PI-HP001-SYNTHETIC-ANNUAL-SCALING-20260724",
+                },
+            }
+            for building_class, end_use, heat_column, cop_column, annual_twh in components
+        ],
+        "unresolved_blocker_ids": [],
+    }
+
+
+def test_hp001_component_output_runner_blocks_committed_packet(tmp_path: Path) -> None:
+    readiness_path = hp_scaling.write_hp001_component_output_readiness_blocker_packet(tmp_path)
+    output_path = tmp_path / "component_runner_blocker.json"
+
+    result_path = hp_scaling.write_hp001_component_output_runner_manifest(
+        readiness_path,
+        output_path,
+        request_id="test-component-template-packet",
+        repository_root=Path("."),
+    )
+    payload = json.loads(result_path.read_text(encoding="utf-8"))
+
+    assert payload["packet_id"] == "E2-S3-HP001-COMPONENT-OUTPUT-RUNNER-READINESS"
+    assert payload["status"] == "blocked_fail_closed_no_component_output"
+    assert payload["accepted_for_component_output_handoff"] is False
+    assert payload["component_output_generation_performed"] is False
+    assert payload["real_component_output_generation_performed"] is False
+    assert "source_artifacts_missing_or_not_mapping" in payload["blocker_ids"]
+    assert "stale_or_placeholder_approval:value_column" in payload["blocker_ids"]
+    assert "unsafe_template_token:profile_artifact.path" in payload["blocker_ids"]
+    assert "real_component_output_generation_blocked_by_scaffold" in payload["blocker_ids"]
+
+
+def test_hp001_component_output_runner_rejects_missing_source_checksum(tmp_path: Path) -> None:
+    manifest = _signed_hp001_component_output_readiness_manifest()
+    manifest["source_artifacts"]["d013_value_binding_record"]["sha256"] = ""
+    readiness_path = _write_json(tmp_path / "component_readiness.json", manifest)
+
+    payload = hp_scaling.build_hp001_component_output_runner_manifest(
+        readiness_path,
+        request_id="test-component-missing-checksum",
+        repository_root=Path("."),
+        allow_synthetic_fixture_output=True,
+    )
+
+    assert payload["accepted_for_component_output_handoff"] is False
+    assert "source_artifacts:d013_value_binding_record_sha256_missing" in payload["blocker_ids"]
+
+
+def test_hp001_component_output_runner_rejects_weather_mismatch(tmp_path: Path) -> None:
+    manifest = _signed_hp001_component_output_readiness_manifest()
+    manifest["paired_pv_weather_identity"]["shared_weather_driver_id"] = "different-weather-driver"
+    readiness_path = _write_json(tmp_path / "component_readiness.json", manifest)
+
+    payload = hp_scaling.build_hp001_component_output_runner_manifest(
+        readiness_path,
+        request_id="test-component-weather-mismatch",
+        repository_root=Path("."),
+        allow_synthetic_fixture_output=True,
+    )
+
+    assert "paired_weather_identity_mismatch:shared_weather_driver_id" in payload["blocker_ids"]
+
+
+def test_hp001_component_output_runner_requires_cold_spell_acceptance(tmp_path: Path) -> None:
+    manifest = _signed_hp001_component_output_readiness_manifest()
+    manifest["approval_ids"]["cold_spell_tolerances"] = ""
+    readiness_path = _write_json(tmp_path / "component_readiness.json", manifest)
+
+    payload = hp_scaling.build_hp001_component_output_runner_manifest(
+        readiness_path,
+        request_id="test-component-cold-spell-missing",
+        repository_root=Path("."),
+        allow_synthetic_fixture_output=True,
+    )
+
+    assert "missing_approval:cold_spell_tolerances" in payload["blocker_ids"]
+
+
+def test_hp001_component_output_runner_rejects_unsafe_status_and_path_tokens(tmp_path: Path) -> None:
+    manifest = _signed_hp001_component_output_readiness_manifest()
+    manifest["profile_artifact"]["path"] = "data/processed/hp_profiles/TBD_hp_output.npz"
+    readiness_path = _write_json(tmp_path / "component_readiness.json", manifest)
+
+    payload = hp_scaling.build_hp001_component_output_runner_manifest(
+        readiness_path,
+        request_id="test-component-unsafe-path",
+        repository_root=Path("."),
+        allow_synthetic_fixture_output=True,
+    )
+
+    assert "unsafe_template_token:profile_artifact.path" in payload["blocker_ids"]
+
+
+def test_hp001_component_output_runner_rejects_premature_accepted_status(tmp_path: Path) -> None:
+    manifest = _signed_hp001_component_output_readiness_manifest()
+    manifest["artifact_status"] = "accepted"
+    readiness_path = _write_json(tmp_path / "component_readiness.json", manifest)
+
+    payload = hp_scaling.build_hp001_component_output_runner_manifest(
+        readiness_path,
+        request_id="test-component-premature-accepted",
+        repository_root=Path("."),
+        allow_synthetic_fixture_output=True,
+    )
+
+    assert "premature_accepted_component_output_status" in payload["blocker_ids"]
+
+
+def test_hp001_component_output_runner_requires_space_and_dhw_traceability(tmp_path: Path) -> None:
+    manifest = _signed_hp001_component_output_readiness_manifest()
+    manifest["component_traceability"] = [
+        item for item in manifest["component_traceability"] if item["end_use"] == "space"
+    ]
+    readiness_path = _write_json(tmp_path / "component_readiness.json", manifest)
+
+    payload = hp_scaling.build_hp001_component_output_runner_manifest(
+        readiness_path,
+        request_id="test-component-missing-dhw",
+        repository_root=Path("."),
+        allow_synthetic_fixture_output=True,
+    )
+
+    assert "component_traceability_missing_or_extra_hp001_components" in payload["blocker_ids"]
+
+
+def test_hp001_component_output_runner_writes_ic1_loadable_synthetic_fixture(tmp_path: Path) -> None:
+    manifest = _signed_hp001_component_output_readiness_manifest()
+    readiness_path = _write_json(tmp_path / "component_readiness.json", manifest)
+    output_path = tmp_path / "component_runner_output.json"
+
+    result_path = hp_scaling.write_hp001_component_output_runner_manifest(
+        readiness_path,
+        output_path,
+        request_id="test-component-signed-synthetic",
+        repository_root=tmp_path,
+        allow_synthetic_fixture_output=True,
+        component_array_path="artifacts/hp_synthetic_fixture.npz",
+        component_manifest_path="artifacts/hp_synthetic_fixture_manifest.json",
+        component_node_id="node-a",
+    )
+    payload = json.loads(result_path.read_text(encoding="utf-8"))
+
+    assert payload["status"] == "accepted_synthetic_fixture_component_output_written"
+    assert payload["accepted_for_component_output_handoff"] is True
+    assert payload["synthetic_fixture_output_performed"] is True
+    assert payload["real_component_output_generation_performed"] is False
+    component_manifest = payload["component_output_manifest"]
+    assert component_manifest["artifact_status"] == "synthetic_fixture"
+    assert component_manifest["array_path"] == "artifacts/hp_synthetic_fixture.npz"
+    assert len(component_manifest["array_sha256"]) == 64
+
+    seed_tree = SeedTree(20260724)
+    context = NetLoadRealizationContext(
+        scenario="synthetic-fixture",
+        planning_year=2035,
+        time_domain="full_year",
+        rho=0.0,
+        root_seed=20260724,
+        sample_index=0,
+        sample_seed=seed_tree.sample_seed(0),
+        component_streams=(seed_tree.component_stream(0, "hp"),),
+        shared_weather_driver_id=component_manifest["shared_weather_driver_id"],
+    )
+    adapter_output = load_component_adapter_output_from_npz_artifact(
+        component_manifest,
+        context,
+        repo_root=tmp_path,
+        expected_calendar_id="synthetic_hp001_2035_4step",
+        expected_node_ids=("node-a",),
+        allow_synthetic_fixture=True,
+    )
+
+    assert adapter_output.kind == "hp"
+    assert adapter_output.shared_weather_driver_id == manifest["weather_identity"]["shared_weather_driver_id"]
+    np.testing.assert_allclose(adapter_output.p_kw, np.array([1.0, 1.25, 1.5, 1.75]))
+    np.testing.assert_allclose(adapter_output.q_kvar, np.zeros(4))
+    with pytest.raises(ValueError, match="synthetic_fixture component output artifacts require"):
+        load_component_adapter_output_from_npz_artifact(component_manifest, context, repo_root=tmp_path)
 
 
 def test_d014_pv_executable_readiness_blockers_keep_generation_blocked() -> None:

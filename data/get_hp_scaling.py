@@ -14,12 +14,18 @@ from typing import Any, Mapping, Sequence
 from urllib import parse, request
 import zipfile
 
+import numpy as np
+
 if __package__ in {None, ""}:
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from data.sources import write_metadata
 from src.hp_model import (
+    HP001_COMPONENT_OUTPUT_READY_STATUS,
+    HP001_STALE_APPROVAL_REFERENCE_TOKENS,
+    hp001_component_output_readiness_blockers,
     hp001_profile_rebuild_preflight_blockers,
+    require_hp001_component_output_readiness_manifest,
     require_hp001_profile_rebuild_preflight_manifest,
 )
 
@@ -40,6 +46,7 @@ PROFILE_REBUILD_PREFLIGHT_TEMPLATE_FILENAME = "hp001_profile_artifact_rebuild_pr
 PROFILE_REBUILD_RUNNER_OUTPUT_FILENAME = "hp001_profile_rebuild_runner_blocker_manifest.json"
 
 COMPONENT_OUTPUT_READINESS_BLOCKER_FILENAME = "hp001_component_output_readiness_blocker_packet.json"
+COMPONENT_OUTPUT_RUNNER_OUTPUT_FILENAME = "hp001_component_output_runner_readiness_blocker.json"
 DOWNLOAD_TIMEOUT_S = 120.0
 PBL_HEAT_TERMS = ("warmte", "heat", "gas", "energie", "energy", "verbruik", "demand", "vraag")
 PBL_DHW_TERMS = ("tapwater", "warm_water", "dhw", "water")
@@ -1113,6 +1120,293 @@ def write_default_hp001_profile_rebuild_runner_manifest(
     )
 
 
+def _extract_component_output_readiness_manifest(payload: object) -> tuple[dict[str, Any], str]:
+    if not isinstance(payload, dict):
+        return {}, "invalid_json_payload"
+    nested = payload.get("preflight_manifest_template")
+    if isinstance(nested, dict):
+        return nested, "template_packet_preflight_manifest_template"
+    return payload, "direct_component_output_readiness_manifest"
+
+
+def build_hp001_component_output_runner_manifest(
+    readiness_manifest_path: Path,
+    *,
+    output_manifest_path: Path | None = None,
+    component_manifest: Mapping[str, Any] | None = None,
+    request_id: str = "hp001_component_output_preflight_check",
+    repository_root: Path = Path("."),
+    allow_synthetic_fixture_output: bool = False,
+) -> dict[str, Any]:
+    """Return the fail-closed HP component-output runner/preflight result."""
+    raw_payload = json.loads(readiness_manifest_path.read_text(encoding="utf-8"))
+    readiness_manifest, input_kind = _extract_component_output_readiness_manifest(raw_payload)
+    blocker_ids = list(hp001_component_output_readiness_blockers(readiness_manifest))
+    blocker_ids.extend(_hp001_component_output_runner_extra_blockers(readiness_manifest))
+    if not allow_synthetic_fixture_output or readiness_manifest.get("synthetic_fixture") is not True:
+        blocker_ids.append("real_component_output_generation_blocked_by_scaffold")
+    blocker_ids = list(dict.fromkeys(blocker_ids))
+    accepted = not blocker_ids
+    if accepted:
+        # This validates the handoff metadata only. The only artifact writer in
+        # this scaffold is the explicit synthetic-fixture branch used by tests.
+        require_hp001_component_output_readiness_manifest(readiness_manifest)
+
+    return {
+        "packet_id": "E2-S3-HP001-COMPONENT-OUTPUT-RUNNER-READINESS",
+        "created_utc": _utc_now(),
+        "request_id": str(request_id).strip() or "hp001_component_output_preflight_check",
+        "status": "accepted_synthetic_fixture_component_output_written" if accepted else "blocked_fail_closed_no_component_output",
+        "accepted_for_component_output_handoff": accepted,
+        "component_output_generation_performed": bool(accepted and component_manifest is not None),
+        "real_component_output_generation_performed": False,
+        "synthetic_fixture_output_performed": bool(accepted and component_manifest is not None),
+        "validator": "data.get_hp_scaling.build_hp001_component_output_runner_manifest",
+        "preflight_validator": "src.hp_model.require_hp001_component_output_readiness_manifest",
+        "input_manifest": {
+            "path": readiness_manifest_path.as_posix(),
+            "sha256": _sha256_path(readiness_manifest_path),
+            "size_bytes": readiness_manifest_path.stat().st_size,
+            "kind": input_kind,
+            "preflight_status": str(readiness_manifest.get("status", "")) if isinstance(readiness_manifest, dict) else "",
+        },
+        "output_manifest_path": output_manifest_path.as_posix() if output_manifest_path is not None else None,
+        "blocker_ids": blocker_ids,
+        "blocker_count": len(blocker_ids),
+        "component_output_manifest": dict(component_manifest) if component_manifest is not None else None,
+        "intended_handoff_shape": _hp001_component_output_handoff_shape(readiness_manifest) if accepted else None,
+        "code_identity": _hp001_runner_code_identity(repository_root),
+        "non_claims": [
+            "No real HP component-output artifact is generated or approved.",
+            "No executable annual HP values are created.",
+            "No 2035 HP adoption/electrification/service fraction is approved.",
+            "No D-004 paired-weather or cold-spell final acceptance is signed or run.",
+            "No net-load, event, P(E), threshold, capacity-screen, manuscript, or probability analysis is run.",
+        ],
+    }
+
+
+def write_hp001_component_output_runner_manifest(
+    readiness_manifest_path: Path,
+    output_manifest_path: Path,
+    *,
+    request_id: str = "hp001_component_output_preflight_check",
+    repository_root: Path = Path("."),
+    allow_synthetic_fixture_output: bool = False,
+    component_array_path: str | None = None,
+    component_manifest_path: str | None = None,
+    component_node_id: str = "synthetic-hp-node-a",
+) -> Path:
+    """Write the HP component-output runner result and optional synthetic artifact."""
+    output_manifest_path.parent.mkdir(parents=True, exist_ok=True)
+    raw_payload = json.loads(readiness_manifest_path.read_text(encoding="utf-8"))
+    readiness_manifest, _ = _extract_component_output_readiness_manifest(raw_payload)
+    dry_run = build_hp001_component_output_runner_manifest(
+        readiness_manifest_path,
+        output_manifest_path=output_manifest_path,
+        request_id=request_id,
+        repository_root=repository_root,
+        allow_synthetic_fixture_output=allow_synthetic_fixture_output,
+    )
+    component_manifest: dict[str, Any] | None = None
+    if dry_run["accepted_for_component_output_handoff"]:
+        array_path = component_array_path or "tests/_artifacts/hp001_component_output_runner/synthetic_hp_output.npz"
+        manifest_path = component_manifest_path or "tests/_artifacts/hp001_component_output_runner/synthetic_hp_output_manifest.json"
+        component_manifest = _write_hp001_synthetic_component_output_npz_artifact(
+            readiness_manifest,
+            base_dir=repository_root,
+            array_path=array_path,
+            manifest_path=manifest_path,
+            node_id=component_node_id,
+        )
+    payload = build_hp001_component_output_runner_manifest(
+        readiness_manifest_path,
+        output_manifest_path=output_manifest_path,
+        component_manifest=component_manifest,
+        request_id=request_id,
+        repository_root=repository_root,
+        allow_synthetic_fixture_output=allow_synthetic_fixture_output,
+    )
+    output_manifest_path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    return output_manifest_path
+
+
+def write_default_hp001_component_output_runner_manifest(
+    metadata_dir: Path,
+    *,
+    readiness_manifest_path: Path | None = None,
+    request_id: str = "hp001_component_output_preflight_check",
+    repository_root: Path = Path("."),
+) -> Path:
+    """Write the current fail-closed HP IC-1 component-output runner result."""
+    target_dir = metadata_dir / "hp_scaling"
+    target_dir.mkdir(parents=True, exist_ok=True)
+    input_path = readiness_manifest_path or target_dir / COMPONENT_OUTPUT_READINESS_BLOCKER_FILENAME
+    output_path = target_dir / COMPONENT_OUTPUT_RUNNER_OUTPUT_FILENAME
+    return write_hp001_component_output_runner_manifest(
+        input_path,
+        output_path,
+        request_id=request_id,
+        repository_root=repository_root,
+        allow_synthetic_fixture_output=False,
+    )
+
+
+def _hp001_component_output_runner_extra_blockers(manifest: Mapping[str, Any]) -> list[str]:
+    blockers: list[str] = []
+    source_artifacts = manifest.get("source_artifacts")
+    if not isinstance(source_artifacts, Mapping):
+        blockers.append("source_artifacts_missing_or_not_mapping")
+    else:
+        for key in ("when2heat_source", "d004_weather_member", "d013_value_binding_record"):
+            _append_source_artifact_reference_blockers(source_artifacts.get(key), f"source_artifacts:{key}", blockers)
+    blockers.extend(_hp001_unsafe_token_blockers(manifest))
+    profile_artifact = manifest.get("profile_artifact")
+    profile_artifact_status = profile_artifact.get("artifact_status", "") if isinstance(profile_artifact, Mapping) else ""
+    artifact_status = str(manifest.get("artifact_status", "") or profile_artifact_status).strip()
+    if artifact_status == "accepted":
+        blockers.append("premature_accepted_component_output_status")
+    return blockers
+
+
+def _append_source_artifact_reference_blockers(raw: object, label: str, blockers: list[str]) -> None:
+    if not isinstance(raw, Mapping):
+        blockers.append(f"{label}_missing_or_not_mapping")
+        return
+    for key in ("path", "sha256", "data_id", "provenance"):
+        if not str(raw.get(key, "")).strip():
+            blockers.append(f"{label}_{key}_missing")
+    sha = str(raw.get("sha256", "")).strip()
+    if sha and len(sha) != 64:
+        blockers.append(f"{label}_sha256_missing_or_invalid")
+
+
+def _hp001_unsafe_token_blockers(manifest: Mapping[str, Any]) -> list[str]:
+    fields: list[tuple[str, object]] = [("status", manifest.get("status"))]
+    for section_name in ("profile_artifact", "weather_identity", "paired_pv_weather_identity"):
+        section = manifest.get(section_name)
+        if isinstance(section, Mapping):
+            for key, value in section.items():
+                fields.append((f"{section_name}.{key}", value))
+    components = manifest.get("component_traceability")
+    if isinstance(components, Sequence) and not isinstance(components, (str, bytes)):
+        for index, component in enumerate(components):
+            if isinstance(component, Mapping):
+                fields.append((f"component_traceability[{index}].annual_heat_demand_twh", component.get("annual_heat_demand_twh")))
+                provenance = component.get("provenance")
+                if isinstance(provenance, Mapping):
+                    fields.append((f"component_traceability[{index}].annual_scaling_approval_id", provenance.get("annual_scaling_approval_id")))
+    blockers: list[str] = []
+    for field, value in fields:
+        text = str(value).strip() if value is not None else ""
+        lowered = text.lower()
+        if "<" in text or ">" in text or any(token in lowered for token in HP001_STALE_APPROVAL_REFERENCE_TOKENS):
+            blockers.append(f"unsafe_template_token:{field}")
+    return blockers
+
+
+def _hp001_component_output_handoff_shape(readiness_manifest: Mapping[str, Any]) -> dict[str, Any]:
+    return {
+        "component_kind": "hp",
+        "loader_contract": "single_node_1d_component_output_v1",
+        "required_npz_arrays": ("p_kw", "q_kvar", "timestamps"),
+        "ic1_sign_convention": "HP demand is positive p_kw; q_kvar remains zero unless a signed reactive-power policy is added later.",
+        "weather_identity": readiness_manifest.get("weather_identity", {}),
+        "component_traceability": readiness_manifest.get("component_traceability", ()),
+        "next_runner_boundary": "future signed HP profile/component-output builder; real generation remains blocked by this scaffold",
+    }
+
+
+def _write_hp001_synthetic_component_output_npz_artifact(
+    readiness_manifest: Mapping[str, Any],
+    *,
+    base_dir: Path,
+    array_path: str,
+    manifest_path: str,
+    node_id: str,
+) -> dict[str, Any]:
+    array_rel = _require_repo_relative_output_path(array_path, field_name="component_array_path")
+    manifest_rel = _require_repo_relative_output_path(manifest_path, field_name="component_manifest_path")
+    weather = readiness_manifest.get("weather_identity")
+    if not isinstance(weather, Mapping):
+        raise ValueError("synthetic HP component-output fixture requires weather_identity")
+    artifact_id = "hp001-synthetic-component-output-artifact"
+    component_id = "hp001-synthetic-component-output-node-a"
+    source_id = "HP001_SYNTHETIC_FIXTURE_COMPONENT_OUTPUT"
+    calendar_id = "synthetic_hp001_2035_4step"
+    member_id = str(weather.get("member_id", "synthetic-hp-weather-member"))
+    shared_weather_driver_id = str(weather.get("shared_weather_driver_id", "synthetic-hp-weather-driver"))
+    timestamps = np.array(
+        [
+            "2035-01-01T00:00:00",
+            "2035-01-01T00:15:00",
+            "2035-01-01T00:30:00",
+            "2035-01-01T00:45:00",
+        ],
+        dtype="datetime64[s]",
+    )
+    p_kw = np.array([1.0, 1.25, 1.5, 1.75], dtype=float)
+    q_kvar = np.zeros_like(p_kw)
+    resolved_array = base_dir / array_rel
+    resolved_manifest = base_dir / manifest_rel
+    resolved_array.parent.mkdir(parents=True, exist_ok=True)
+    resolved_manifest.parent.mkdir(parents=True, exist_ok=True)
+    np.savez_compressed(
+        resolved_array,
+        p_kw=p_kw,
+        q_kvar=q_kvar,
+        timestamps=timestamps,
+        artifact_id=np.array(artifact_id),
+        component_id=np.array(component_id),
+        kind=np.array("hp"),
+        node_id=np.array(node_id),
+        member_id=np.array(member_id),
+        source_id=np.array(source_id),
+        calendar_id=np.array(calendar_id),
+        timestep_seconds=np.array("900"),
+        shared_weather_driver_id=np.array(shared_weather_driver_id),
+    )
+    manifest = {
+        "artifact_id": artifact_id,
+        "artifact_status": "synthetic_fixture",
+        "kind": "hp",
+        "component_id": component_id,
+        "node_id": node_id,
+        "member_id": member_id,
+        "source_id": source_id,
+        "calendar_id": calendar_id,
+        "timestep_seconds": 900,
+        "shared_weather_driver_id": shared_weather_driver_id,
+        "array_path": array_rel.as_posix(),
+        "array_sha256": _sha256_path(resolved_array),
+        "timestep_count": int(timestamps.size),
+        "loader_contract": "single_node_1d_component_output_v1",
+        "node_axis_contract": "single_manifest_single_node",
+        "array_shape_contract": "p_kw_q_kvar_timestamps_1d_same_length",
+        "provenance": {
+            "synthetic_fixture": True,
+            "purpose": "unit-test HP component-output runner handoff only",
+            "decision_id": "E2-S3-HP001-COMPONENT-OUTPUT-RUNNER-READINESS",
+        },
+    }
+    resolved_manifest.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    manifest["manifest_path"] = manifest_rel.as_posix()
+    manifest["manifest_sha256"] = _sha256_path(resolved_manifest)
+    return manifest
+
+
+def _require_repo_relative_output_path(value: str, *, field_name: str) -> Path:
+    text = str(value).strip()
+    if not text:
+        raise ValueError(f"{field_name} must be non-empty")
+    path = Path(text)
+    if path.is_absolute() or any(part in {"", ".", ".."} for part in path.parts):
+        raise ValueError(f"{field_name} must be a repository-relative file path")
+    lowered = text.lower()
+    if "<" in text or ">" in text or any(token in lowered for token in HP001_STALE_APPROVAL_REFERENCE_TOKENS):
+        raise ValueError(f"{field_name} must not contain placeholder or unsafe approval text")
+    return path
+
 def _hp001_profile_rebuild_handoff_shape(preflight_manifest: dict[str, Any]) -> dict[str, Any]:
     return {
         "source_artifacts": preflight_manifest.get("source_artifacts", {}),
@@ -1917,6 +2211,9 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--profile-rebuild-runner-output", default=None, help="Output path for the HP profile rebuild runner blocker/output manifest.")
     parser.add_argument("--request-id", default="hp001_profile_rebuild_preflight_check", help="Request identity recorded in runner/checkpoint metadata.")
     parser.add_argument("--write-component-output-readiness-blocker", action="store_true", help="Write the proposed HP-001 IC-1 component-output readiness blocker packet without creating load artifacts.")
+    parser.add_argument("--run-component-output-preflight", action="store_true", help="Run the HP-001 component-output preflight and write a blocker/output manifest.")
+    parser.add_argument("--component-output-readiness-manifest", default=None, help="Component-output readiness manifest or committed blocker packet to validate.")
+    parser.add_argument("--component-output-runner-output", default=None, help="Output path for the HP component-output runner blocker/output manifest.")
     parser.add_argument("--download", action="store_true", help="Retrieve/checksum the approved D-013 public sources; no values are produced.")
     parser.add_argument("--inspect-existing", action="store_true", help="Refresh schema metadata from existing ignored D-013 raw files without network or values.")
     parser.add_argument("--resume", action="store_true", help="Skip completed sources whose raw files match checkpoint byte size and SHA-256.")
@@ -1955,6 +2252,17 @@ def main(argv: Sequence[str] | None = None) -> int:
         )
     elif args.write_component_output_readiness_blocker:
         path = write_hp001_component_output_readiness_blocker_packet(Path(args.metadata_dir))
+    elif args.run_component_output_preflight:
+        metadata_dir = Path(args.metadata_dir)
+        readiness_manifest = Path(args.component_output_readiness_manifest) if args.component_output_readiness_manifest else None
+        output_path = Path(args.component_output_runner_output) if args.component_output_runner_output else metadata_dir / "hp_scaling" / COMPONENT_OUTPUT_RUNNER_OUTPUT_FILENAME
+        path = write_hp001_component_output_runner_manifest(
+            readiness_manifest or metadata_dir / "hp_scaling" / COMPONENT_OUTPUT_READINESS_BLOCKER_FILENAME,
+            output_path,
+            request_id=args.request_id,
+            repository_root=Path("."),
+            allow_synthetic_fixture_output=False,
+        )
     elif args.write_formula_packet:
         path = write_hp001_scaling_formula_config_decision_packet(Path(args.metadata_dir))
     else:

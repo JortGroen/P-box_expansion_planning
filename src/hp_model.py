@@ -956,6 +956,10 @@ def hp001_component_output_readiness_blockers(manifest: Mapping[str, Any]) -> tu
     else:
         approval_ids = approval_ids_raw
     blockers.extend(f"missing_approval:{key}" for key in hp001_final_readiness_missing_approval_keys(approval_ids))
+    blockers.extend(
+        f"stale_or_placeholder_approval:{key}"
+        for key in hp001_stale_or_placeholder_approval_reference_keys(approval_ids)
+    )
 
     _append_profile_artifact_blockers(manifest.get("profile_artifact"), blockers)
     _append_weather_identity_blockers(manifest.get("weather_identity"), manifest.get("paired_pv_weather_identity"), blockers)
