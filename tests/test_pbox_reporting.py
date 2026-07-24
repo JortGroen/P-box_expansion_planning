@@ -56,6 +56,13 @@ def _complete_prerequisites(*, g3: bool = False) -> FinalResultPrerequisites:
 
 
 def _output_error_record() -> dict[str, object]:
+    sample_events = [
+        {"sample_index": 0, "lower_event": False, "upper_event": False},
+        {"sample_index": 1, "lower_event": False, "upper_event": False},
+        {"sample_index": 2, "lower_event": False, "upper_event": True},
+        {"sample_index": 3, "lower_event": False, "upper_event": True},
+        {"sample_index": 4, "lower_event": True, "upper_event": True},
+    ]
     return {
         "config": {
             "event_semantics": {
@@ -66,15 +73,27 @@ def _output_error_record() -> dict[str, object]:
         },
         "event_count_bounds": {
             "lower_successes": 1,
-            "sample_count": 10,
+            "sample_count": 5,
             "upper_successes": 3,
         },
         "probability_bounds": {
-            "lower": {"probability": 0.1},
-            "upper": {"probability": 0.3},
+            "lower": {
+                "ci_lower": 0.05,
+                "ci_upper": 0.45,
+                "probability": 0.2,
+                "sample_count": 5,
+                "successes": 1,
+            },
+            "upper": {
+                "ci_lower": 0.35,
+                "ci_upper": 0.85,
+                "probability": 0.6,
+                "sample_count": 5,
+                "successes": 3,
+            },
         },
         "probability_widening": "forbidden",
-        "sample_endpoint_events": [],
+        "sample_endpoint_events": sample_events,
     }
 
 
@@ -145,6 +164,60 @@ def test_output_error_record_must_forbid_probability_widening() -> None:
                 **_output_error_record(),
                 "probability_widening": "allowed",
             },
+        )
+
+
+def test_output_error_record_rejects_counts_that_do_not_match_sample_events() -> None:
+    record = _output_error_record()
+    bad_counts = dict(record["event_count_bounds"])
+    bad_counts["upper_successes"] = 2
+
+    with pytest.raises(ValueError, match="endpoint event counts"):
+        build_guarded_pbox_report(
+            pbox_family=_pbox_family(),
+            prerequisites=_complete_prerequisites(),
+            output_error_record={**record, "event_count_bounds": bad_counts},
+        )
+
+
+def test_output_error_record_rejects_probability_not_derived_from_counts() -> None:
+    record = _output_error_record()
+    probability_bounds = dict(record["probability_bounds"])
+    upper = dict(probability_bounds["upper"])
+    upper["probability"] = 0.7
+    probability_bounds["upper"] = upper
+
+    with pytest.raises(ValueError, match="successes / sample_count"):
+        build_guarded_pbox_report(
+            pbox_family=_pbox_family(),
+            prerequisites=_complete_prerequisites(),
+            output_error_record={**record, "probability_bounds": probability_bounds},
+        )
+
+
+def test_output_error_record_rejects_lower_event_without_upper_event() -> None:
+    record = _output_error_record()
+    sample_events = [dict(event) for event in record["sample_endpoint_events"]]
+    sample_events[0]["lower_event"] = True
+
+    with pytest.raises(ValueError, match="lower_event cannot exceed upper_event"):
+        build_guarded_pbox_report(
+            pbox_family=_pbox_family(),
+            prerequisites=_complete_prerequisites(),
+            output_error_record={**record, "sample_endpoint_events": sample_events},
+        )
+
+
+def test_output_error_record_rejects_nonconsecutive_sample_identity() -> None:
+    record = _output_error_record()
+    sample_events = [dict(event) for event in record["sample_endpoint_events"]]
+    sample_events[2]["sample_index"] = 99
+
+    with pytest.raises(ValueError, match="sample_index values"):
+        build_guarded_pbox_report(
+            pbox_family=_pbox_family(),
+            prerequisites=_complete_prerequisites(),
+            output_error_record={**record, "sample_endpoint_events": sample_events},
         )
 
 
