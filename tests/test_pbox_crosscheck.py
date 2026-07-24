@@ -11,7 +11,9 @@ from src.pbox_crosscheck import (
     FiniteHybridState,
     GaussianCrosscheckManifest,
     GaussianToyParameters,
+    HybridReproductionReadiness,
     OutputErrorToyTrajectory,
+    assert_hybrid_reproduction_ready_payload,
     bootstrap_probability_interval,
     build_gaussian_crosscheck_manifest,
     estimate_gaussian_toy_pbox,
@@ -168,6 +170,64 @@ def test_gaussian_crosscheck_manifest_rejects_bad_metadata() -> None:
             root_seed=20260721,
             use_status="paper-facing",
         )
+
+
+def test_hybrid_reproduction_readiness_blocks_until_source_is_verified() -> None:
+    readiness = HybridReproductionReadiness(
+        source_id="baudrit-style-source-pending",
+        source_status="pending-source",
+        published_example_id="published-example-pending",
+        example_reproduced=False,
+        qualitative_behavior_checked=True,
+        blockers=("verified published example source is not registered",),
+    )
+    payload = readiness.to_mapping()
+
+    assert json.loads(json.dumps(payload, sort_keys=True)) == payload
+    assert payload["ready"] is False
+    with pytest.raises(RuntimeError, match="not ready"):
+        assert_hybrid_reproduction_ready_payload(payload)
+
+
+def test_hybrid_reproduction_readiness_accepts_verified_reproduction_packet() -> None:
+    readiness = HybridReproductionReadiness(
+        source_id="D-verified-hybrid-example",
+        source_status="verified-approved",
+        published_example_id="example-1",
+        example_reproduced=True,
+        qualitative_behavior_checked=True,
+        blockers=(),
+    )
+
+    assert readiness.ready is True
+    assert_hybrid_reproduction_ready_payload(readiness.to_mapping())
+
+
+def test_hybrid_reproduction_readiness_rejects_serialized_tampering() -> None:
+    readiness = HybridReproductionReadiness(
+        source_id="baudrit-style-source-pending",
+        source_status="pending-source",
+        published_example_id="published-example-pending",
+        example_reproduced=False,
+        qualitative_behavior_checked=True,
+        blockers=("verified published example source is not registered",),
+    )
+    payload = readiness.to_mapping()
+
+    relabeled = dict(payload)
+    relabeled["use_status"] = "paper-facing"
+    with pytest.raises(ValueError, match="source-readiness"):
+        assert_hybrid_reproduction_ready_payload(relabeled)
+
+    collapsed = dict(payload)
+    collapsed["defuzzified_probability"] = 0.5
+    with pytest.raises(ValueError, match="defuzzified"):
+        assert_hybrid_reproduction_ready_payload(collapsed)
+
+    false_ready = dict(payload)
+    false_ready["ready"] = True
+    with pytest.raises(RuntimeError, match="not ready"):
+        assert_hybrid_reproduction_ready_payload(false_ready)
 
 
 def test_finite_hybrid_crosscheck_matches_hand_computed_probability_bounds() -> None:

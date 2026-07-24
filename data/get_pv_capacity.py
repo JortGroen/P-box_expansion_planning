@@ -16,6 +16,8 @@ D014_II3050_GROWTH_EVIDENCE_NAME = "d014_ii3050_pv_growth_evidence.json"
 D014_II3050_GROWTH_EVIDENCE_ID = "D014-II3050-PV-GROWTH-EVIDENCE"
 D014_CAPACITY_VALUE_CHOICE_NAME = "d014_pv_capacity_value_choice_packet.json"
 D014_CAPACITY_VALUE_CHOICE_ID = "D014-PV-CAPACITY-VALUE-CHOICE-PACKET"
+D014_CAPACITY_APPROVAL_TEMPLATE_NAME = "d014_pv_capacity_approval_template.json"
+D014_CAPACITY_APPROVAL_TEMPLATE_ID = "D014-PV-CAPACITY-APPROVAL-TEMPLATE"
 D014_STATISTICAL_ORIENTATION_TILT_NAME = "d014_pv_statistical_orientation_tilt_packet.json"
 D014_STATISTICAL_ORIENTATION_TILT_ID = "D014-PV-STATISTICAL-ORIENTATION-TILT-PACKET"
 D014_ORIENTATION_TILT_SOURCE_CHOICE_NAME = "d014_pv_orientation_tilt_source_choice_packet.json"
@@ -634,6 +636,135 @@ def write_d014_pv_capacity_value_choice_packet(metadata_dir: str | Path = "data/
     path = directory / D014_CAPACITY_VALUE_CHOICE_NAME
     path.write_text(
         json.dumps(build_d014_pv_capacity_value_choice_packet(), indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    return path
+
+
+def build_d014_pv_capacity_approval_template_packet(
+    value_choice_path: str | Path = "data/metadata/weather_pv/d014_pv_capacity_value_choice_packet.json",
+) -> dict[str, Any]:
+    """Return the unsigned template a later PI-signed PV capacity artifact must satisfy."""
+    value_path = Path(value_choice_path)
+    value_bytes = value_path.read_bytes()
+    value_choice = json.loads(value_bytes.decode("utf-8"))
+    if value_choice.get("packet_id") != D014_CAPACITY_VALUE_CHOICE_ID:
+        raise ValueError("capacity approval template must be built from the D-014 value-choice packet")
+
+    recommended = value_choice["pi_recommendation"]
+    return {
+        "packet_id": D014_CAPACITY_APPROVAL_TEMPLATE_ID,
+        "data_id": D014_DATA_ID,
+        "status": "proposed_signed_capacity_artifact_template_no_values",
+        "download_performed": False,
+        "raw_data_committed": False,
+        "upstream_value_choice_packet": {
+            "packet_id": D014_CAPACITY_VALUE_CHOICE_ID,
+            "metadata_path": str(value_path).replace("\\", "/"),
+            "metadata_sha256": hashlib.sha256(value_bytes).hexdigest(),
+            "metadata_size_bytes": len(value_bytes),
+            "recommendation_status": recommended["recommendation_status"],
+            "recommended_equation_id": recommended["primary_equation_id"],
+            "recommended_capacity_convention": recommended["primary_capacity_convention"],
+        },
+        "approved_route_boundary": {
+            "capacity_route_decision": "PV-CAP-001",
+            "capacity_route_status": "approved route only; executable values pending",
+            "scenario_consistency_decision": "A-016",
+            "pv_parameter_decision": "PV-PARAM-001_or_signed_amendment",
+            "orientation_scope_decision": "PV-ORIENT-001",
+            "orientation_scope_boundary": "statistical orientation/tilt only; no building/roof/3DBAG/PV-map extraction before the first experiment",
+        },
+        "required_signed_artifact_fields": {
+            "artifact_identity": [
+                "capacity_artifact_id",
+                "signed_decision_id",
+                "signed_decision_date",
+                "approval_status",
+                "created_from_value_choice_packet_id",
+            ],
+            "capacity_value": [
+                "installed_capacity_value",
+                "installed_capacity_unit",
+                "capacity_convention",
+                "capacity_scope",
+                "planning_year",
+            ],
+            "cbs_anchor_operand": [
+                "cbs_table_id",
+                "alkmaar_geography_key",
+                "cbs_source_period_key",
+                "cbs_sector_category_key",
+                "cbs_capacity_field_key",
+                "cbs_anchor_value",
+                "cbs_anchor_unit",
+                "cbs_evidence_packet_id",
+                "cbs_evidence_metadata_sha256",
+                "cbs_raw_bundle_sha256",
+            ],
+            "ii3050_growth_operand": [
+                "ii3050_evidence_packet_id",
+                "ii3050_evidence_metadata_sha256",
+                "ii3050_raw_bundle_sha256",
+                "ii3050_scenario_column",
+                "ii3050_numerator_year",
+                "ii3050_denominator_year_or_crosswalk_id",
+                "ii3050_growth_factor_formula",
+                "ii3050_growth_factor_value",
+            ],
+            "a016_scenario_consistency": [
+                "scenario_consistency_mapping_id",
+                "ev_source_scenario_label",
+                "hp_source_scenario_label",
+                "pv_ii3050_scenario_label",
+                "consistency_check_status",
+            ],
+            "allocation_and_conversion_dependencies": [
+                "node_allocation_rule_id",
+                "node_allocation_status",
+                "statistical_orientation_tilt_distribution_id",
+                "statistical_orientation_tilt_status",
+                "pv_param_decision_id",
+                "pv_param_status",
+            ],
+            "audit_outputs": [
+                "content_sha256",
+                "source_metadata_paths",
+                "source_metadata_sha256",
+                "non_claims",
+                "blocked_until",
+            ],
+        },
+        "executable_gate": {
+            "accepted_for_executable_pv_capacity_input": False,
+            "signed_capacity_value_approved": False,
+            "requires_pi_signed_decision": True,
+            "blocking_approval_keys": value_choice["pi_approval_keys_before_executable_use"],
+            "guard_message": "Unsigned D-014 capacity templates cannot provide executable PV installed capacity.",
+        },
+        "recommended_pi_path": {
+            "recommended_template_use": "When PI approves the D-014 value choice, instantiate this template as a new signed artifact rather than mutating evidence packets.",
+            "recommended_capacity_label_before_pv_param": "installed_capacity_kwp_dc",
+            "recommended_equation_id_for_review": recommended["primary_equation_id"],
+            "not_approved_by_this_template": True,
+        },
+        "non_claims": [
+            "No final PV installed-capacity value is approved or computed.",
+            "No CBS row, II3050 scenario, growth factor, or DC/AC convention is signed.",
+            "No node allocation, statistical orientation/tilt value, or PV-PARAM conversion treatment is signed.",
+            "No roof, building, 3DBAG, or PV-map geometry source is retrieved or used for the first experiment.",
+            "No PV generation, net-load, event detection, P(E), threshold analysis, capacity screen, manuscript result, or final PV output is produced.",
+        ],
+    }
+
+
+def write_d014_pv_capacity_approval_template_packet(metadata_dir: str | Path = "data/metadata") -> Path:
+    """Write the unsigned D-014 capacity approval-template packet and return its path."""
+    directory = Path(metadata_dir) / "weather_pv"
+    directory.mkdir(parents=True, exist_ok=True)
+    path = directory / D014_CAPACITY_APPROVAL_TEMPLATE_NAME
+    path.write_text(
+        json.dumps(build_d014_pv_capacity_approval_template_packet(), indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
     )
     return path
@@ -1352,6 +1483,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--metadata-dir", default="data/metadata")
     parser.add_argument("--write-d014-source-value-packet", action="store_true")
     parser.add_argument("--write-d014-capacity-value-choice", action="store_true")
+    parser.add_argument("--write-d014-capacity-approval-template", action="store_true")
     parser.add_argument("--write-d014-statistical-orientation-tilt", action="store_true")
     parser.add_argument("--write-d014-orientation-tilt-source-choice", action="store_true")
     parser.add_argument("--write-d014-orientation-tilt-value-choice", action="store_true")
@@ -1359,7 +1491,9 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--retrieve-d014-ii3050-growth-evidence", action="store_true")
     args = parser.parse_args(argv)
 
-    if args.write_d014_capacity_value_choice:
+    if args.write_d014_capacity_approval_template:
+        path = write_d014_pv_capacity_approval_template_packet(args.metadata_dir)
+    elif args.write_d014_capacity_value_choice:
         path = write_d014_pv_capacity_value_choice_packet(args.metadata_dir)
     elif args.retrieve_d014_ii3050_growth_evidence:
         path = retrieve_d014_ii3050_growth_evidence(metadata_dir=args.metadata_dir)

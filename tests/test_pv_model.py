@@ -14,6 +14,7 @@ import data.get_weather_pv as weather_pv
 from src.contracts.net_load import validate_executable_input_gate
 from src.hp_model import HeatPumpProfile
 from src.pv_model import (
+    PVCapacityApprovalTemplatePacket,
     PVCapacitySourcePacket,
     PVCapacityValueChoicePacket,
     PVCBSAnchorEvidencePacket,
@@ -35,6 +36,7 @@ from src.pv_model import (
     check_profile_against_pvgis_reference,
     generate_pv_profile,
     generate_pv_profile_from_input_artifact,
+    load_pv_capacity_approval_template_packet,
     load_pv_capacity_source_packet,
     load_pv_capacity_value_choice_packet,
     load_pv_cbs_anchor_evidence_packet,
@@ -1944,5 +1946,48 @@ def test_orientation_tilt_value_choice_packet_rejects_silent_executable_values()
             candidate_class_sets=payload["candidate_class_sets"],
             pi_recommendation_for_review=payload["pi_recommendation_for_review"],
             pi_approval_keys_before_executable_use=payload["pi_approval_keys_before_executable_use"],
+            non_claims=payload["non_claims"],
+        )
+
+
+def test_committed_d014_capacity_approval_template_is_fail_closed() -> None:
+    packet = load_pv_capacity_approval_template_packet(
+        "data/metadata/weather_pv/d014_pv_capacity_approval_template.json"
+    )
+    record = packet.identity_record()
+
+    assert packet.packet_id == "D014-PV-CAPACITY-APPROVAL-TEMPLATE"
+    assert record["upstream_value_choice_packet_id"] == "D014-PV-CAPACITY-VALUE-CHOICE-PACKET"
+    assert record["capacity_route_decision"] == "PV-CAP-001"
+    assert record["scenario_consistency_decision"] == "A-016"
+    assert record["orientation_scope_decision"] == "PV-ORIENT-001"
+    assert record["recommended_equation_id_for_review"] == "dc_kwp_source_year_matched_ii3050_ratio"
+    assert record["executable_capacity_value_approved"] is False
+    assert "scenario_source_consistency_with_ev_hp_inputs" in packet.missing_approval_keys
+    assert "PV-PARAM-001_or_amended_conversion_decision" in packet.missing_approval_keys
+    with pytest.raises(ValueError, match="unsigned"):
+        packet.require_signed_capacity_artifact()
+
+
+def test_capacity_approval_template_rejects_silent_executable_use() -> None:
+    payload = json.loads(
+        Path("data/metadata/weather_pv/d014_pv_capacity_approval_template.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    payload["executable_gate"]["accepted_for_executable_pv_capacity_input"] = True
+
+    with pytest.raises(ValueError, match="must not allow executable"):
+        PVCapacityApprovalTemplatePacket(
+            packet_id=payload["packet_id"],
+            data_id=payload["data_id"],
+            status=payload["status"],
+            download_performed=payload["download_performed"],
+            raw_data_committed=payload["raw_data_committed"],
+            upstream_value_choice_packet=payload["upstream_value_choice_packet"],
+            approved_route_boundary=payload["approved_route_boundary"],
+            required_signed_artifact_fields=payload["required_signed_artifact_fields"],
+            executable_gate=payload["executable_gate"],
+            recommended_pi_path=payload["recommended_pi_path"],
             non_claims=payload["non_claims"],
         )
