@@ -5,6 +5,8 @@ import pytest
 
 from src.evaluator_sum import (
     DEFAULT_THRESHOLD_PU,
+    LoadingTrajectoryCapacityProvenance,
+    build_tier1_loading_trajectory_scaffold,
     count_import_overload_episodes,
     evaluate_net_load_tier1,
     evaluate_tier1,
@@ -14,6 +16,7 @@ from src.contracts.loading_trajectory import validate_loading_trajectory_result
 from src.contracts.net_load import (
     ComponentProvenance,
     NetLoadComponent,
+    NetLoadLoadingInputReadiness,
     build_net_load_result,
 )
 
@@ -270,3 +273,205 @@ def test_net_load_to_tier1_rejects_invalid_ic1_payload_before_evaluation() -> No
 
     with pytest.raises(ValueError, match="net-load arrays must contain only finite"):
         evaluate_net_load_tier1(invalid, s_nom_agg_kva=1.0)
+
+
+def _capacity_provenance(**overrides: object) -> LoadingTrajectoryCapacityProvenance:
+    values: dict[str, object] = {
+        "s_nom_agg_kva": 10.0,
+        "convention_status": "pending_g1_a2_e3_s2b",
+        "transformer_indices": (0, 1),
+        "unit_nameplate_kva": (5.0, 5.0),
+        "source": "synthetic-headroom-fixture",
+        "metadata": {"scaffold_only": True},
+    }
+    values.update(overrides)
+    return LoadingTrajectoryCapacityProvenance(**values)
+
+
+def _loading_input_readiness(
+    net_load,
+    *,
+    metadata: dict[str, object] | None = None,
+    registry_manifest: dict[str, object] | None = None,
+    time_domain: str = "window_set",
+) -> NetLoadLoadingInputReadiness:
+    return NetLoadLoadingInputReadiness(
+        net_load=net_load,
+        registry_manifest=registry_manifest
+        or {
+            "registry_id": "synthetic-ic2-fixture",
+            "readiness": {"ready_for_real_arrays": True},
+        },
+        realization_context_manifest={
+            "scenario": "synthetic",
+            "planning_year": 2035,
+            "time_domain": time_domain,
+            "aleatory_identity": {"root_seed": 7, "sample_index": 0},
+        },
+        time_domain=time_domain,
+        metadata=metadata or {"scaffold_only": True},
+    )
+
+
+def test_loading_input_readiness_routes_to_trajectory_scaffold_without_events() -> None:
+    net_load = build_net_load_result(
+        [
+            _net_load_component("baseline-a", "baseline", "node-a", [8.0, 8.0, 8.0, 8.0], [6.0, 6.0, 6.0, 6.0]),
+            _net_load_component("ev-a", "ev", "node-a", [1.0, 2.0, 3.0, 4.0], [0.0, 0.0, 0.0, 0.0]),
+            _net_load_component("pv-b", "pv", "node-b", [0.0, -2.0, -4.0, -6.0], [0.0, 0.0, 0.0, 0.0]),
+        ],
+        metadata={"scaffold": "synthetic-loading-input"},
+    )
+
+    result = build_tier1_loading_trajectory_scaffold(
+        _loading_input_readiness(net_load),
+        capacity=_capacity_provenance(),
+        metadata={"route": "synthetic-ic1-to-ic2"},
+    )
+
+    validate_loading_trajectory_result(result)
+    np.testing.assert_allclose(result.p_net_kw, np.array([9.0, 8.0, 7.0, 6.0]))
+    np.testing.assert_allclose(result.q_net_kvar, np.array([6.0, 6.0, 6.0, 6.0]))
+    np.testing.assert_allclose(result.screening_loading_pu, np.hypot(result.p_net_kw, result.q_net_kvar) / 10.0)
+    assert result.import_mask.tolist() == [True, True, True, True]
+    assert result.export_mask.tolist() == [False, False, False, False]
+    assert result.zero_mask.tolist() == [False, False, False, False]
+    assert not hasattr(result, "overload")
+    manifest = result.manifest_metadata()
+    assert manifest["governed_event_metadata"] == {
+        "basis": "G0-A3",
+        "primary_threshold_pu": 1.0,
+        "strict_import_loading_gt_threshold": True,
+        "sensitivity_thresholds_pu": (1.1, 1.2),
+        "min_consecutive_15_minute_steps": 4,
+        "not_evaluated_here": True,
+    }
+    assert manifest["capacity"]["convention_status"] == "pending_g1_a2_e3_s2b"
+    assert manifest["no_event_detection"] is True
+    assert manifest["no_probability_estimate"] is True
+    assert manifest["no_capacity_screen_result"] is True
+    assert "overload" not in manifest
+    assert "event_count" not in manifest
+    assert "p_event" not in manifest
+
+
+def test_loading_trajectory_scaffold_rejects_missing_capacity_provenance() -> None:
+    with pytest.raises(ValueError, match="transformer_indices"):
+        _capacity_provenance(transformer_indices=())
+
+    with pytest.raises(ValueError, match="source"):
+        _capacity_provenance(source="")
+
+    with pytest.raises(TypeError, match="exact nonnegative integers"):
+        _capacity_provenance(transformer_indices=("1",))
+
+
+def test_loading_trajectory_scaffold_rejects_cadence_or_calendar_drift() -> None:
+    bad_cadence = np.array(
+        [
+            "2035-01-01T00:00:00",
+            "2035-01-01T00:10:00",
+            "2035-01-01T00:20:00",
+            "2035-01-01T00:30:00",
+        ],
+        dtype="datetime64[s]",
+    )
+    with pytest.raises(ValueError, match="15-minute calendar"):
+        NetLoadComponent(
+            provenance=ComponentProvenance(
+                component_id="baseline-a",
+                kind="baseline",
+                node_id="node-a",
+                member_id="baseline-member",
+                source_id="synthetic-tier1-fixture",
+            ),
+            p_kw=np.ones(4),
+            q_kvar=np.zeros(4),
+            timestamps=bad_cadence,
+        )
+
+    wrong_year = np.array(
+        [
+            "2034-01-01T00:00:00",
+            "2034-01-01T00:15:00",
+            "2034-01-01T00:30:00",
+            "2034-01-01T00:45:00",
+        ],
+        dtype="datetime64[s]",
+    )
+    net_load = build_net_load_result(
+        [
+            NetLoadComponent(
+                provenance=ComponentProvenance(
+                    component_id="baseline-a",
+                    kind="baseline",
+                    node_id="node-a",
+                    member_id="baseline-member",
+                    source_id="synthetic-tier1-fixture",
+                ),
+                p_kw=np.ones(4),
+                q_kvar=np.zeros(4),
+                timestamps=wrong_year,
+            )
+        ]
+    )
+    with pytest.raises(ValueError, match="planning year"):
+        _loading_input_readiness(net_load)
+
+
+def test_loading_trajectory_scaffold_rejects_legacy_overload_metadata() -> None:
+    net_load = build_net_load_result(
+        [_net_load_component("baseline-a", "baseline", "node-a", [1.0, 1.0, 1.0, 1.0], [0.0, 0.0, 0.0, 0.0])],
+        metadata={"overload": False},
+    )
+
+    with pytest.raises(ValueError, match="legacy event result metadata"):
+        build_tier1_loading_trajectory_scaffold(
+            _loading_input_readiness(net_load),
+            capacity=_capacity_provenance(),
+        )
+
+    clean_net_load = build_net_load_result(
+        [_net_load_component("baseline-a", "baseline", "node-a", [1.0, 1.0, 1.0, 1.0], [0.0, 0.0, 0.0, 0.0])]
+    )
+    with pytest.raises(ValueError, match="event/probability results"):
+        build_tier1_loading_trajectory_scaffold(
+            _loading_input_readiness(clean_net_load, metadata={"probability": 0.0}),
+            capacity=_capacity_provenance(),
+        )
+
+
+def test_loading_trajectory_scaffold_rejects_unsigned_real_project_readiness() -> None:
+    net_load = build_net_load_result(
+        [_net_load_component("baseline-a", "baseline", "node-a", [1.0, 1.0, 1.0, 1.0], [0.0, 0.0, 0.0, 0.0])]
+    )
+    readiness = _loading_input_readiness(
+        net_load,
+        registry_manifest={
+            "registry_id": "current-real-project-readiness",
+            "readiness": {
+                "ready_for_real_arrays": False,
+                "blocking_items_by_kind": {
+                    "hp": ("E2-S3-HP001-EXECUTABLE-VALUE-BINDING-PACKET",),
+                    "pv": ("PV-PARAM-001",),
+                },
+            },
+        },
+    )
+
+    with pytest.raises(ValueError, match="accepted or synthetic fixture input readiness"):
+        build_tier1_loading_trajectory_scaffold(readiness, capacity=_capacity_provenance())
+
+
+def test_loading_trajectory_scaffold_validator_rejects_malformed_direction_masks() -> None:
+    net_load = build_net_load_result(
+        [_net_load_component("baseline-a", "baseline", "node-a", [1.0, -1.0, 0.0, 1.0], [0.0, 0.0, 1.0, 0.0])]
+    )
+    result = build_tier1_loading_trajectory_scaffold(
+        _loading_input_readiness(net_load),
+        capacity=_capacity_provenance(),
+    )
+
+    result.import_mask[0] = False
+    with pytest.raises(ValueError, match="import_mask must match"):
+        validate_loading_trajectory_result(result)

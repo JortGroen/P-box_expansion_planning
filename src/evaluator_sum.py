@@ -8,19 +8,135 @@ episode detection without turning export or zero-flow steps into import events.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import Sequence
+from dataclasses import dataclass, field
+from types import MappingProxyType
+from typing import Literal, Mapping, Sequence
 
 import numpy as np
 
-from src.contracts.loading_trajectory import TimeDomain, validate_loading_trajectory_result
-from src.contracts.net_load import NetLoadResult, validate_net_load_result
+from src.contracts.loading_trajectory import (
+    G0_A3_MIN_CONSECUTIVE_STEPS,
+    G0_A3_PRIMARY_THRESHOLD_PU,
+    G0_A3_SENSITIVITY_THRESHOLDS_PU,
+    IC_TIMESTEP_SECONDS,
+    TimeDomain,
+    validate_loading_trajectory_result,
+)
+from src.contracts.net_load import NetLoadLoadingInputReadiness, NetLoadResult, validate_net_load_result
 
 # G0-A3 makes 1.0 the primary executable default; 1.1/1.2 are
 # predeclared sensitivities that callers must request explicitly.
 DEFAULT_THRESHOLD_PU = 1.0
 DEFAULT_MIN_CONSECUTIVE_STEPS = 4
 
+CapacityConventionStatus = Literal["pending_g1_a2_e3_s2b", "total_nameplate", "firm_n_minus_1", "custom"]
+
+
+@dataclass(frozen=True)
+class LoadingTrajectoryCapacityProvenance:
+    """Capacity denominator metadata required before IC-2 trajectory materialization."""
+
+    s_nom_agg_kva: float
+    convention_status: CapacityConventionStatus
+    transformer_indices: tuple[int, ...]
+    unit_nameplate_kva: tuple[float, ...]
+    source: str
+    metadata: Mapping[str, object] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        if not np.isfinite(float(self.s_nom_agg_kva)) or self.s_nom_agg_kva <= 0.0:
+            raise ValueError("s_nom_agg_kva must be finite and positive")
+        if self.convention_status not in {"pending_g1_a2_e3_s2b", "total_nameplate", "firm_n_minus_1", "custom"}:
+            raise ValueError("convention_status must be a supported capacity status")
+        indices = tuple(_as_nonnegative_integer(index, name="transformer_indices") for index in self.transformer_indices)
+        if not indices:
+            raise ValueError("transformer_indices must not be empty")
+        if len(set(indices)) != len(indices):
+            raise ValueError("transformer_indices must not contain duplicates")
+        if len(indices) != len(self.unit_nameplate_kva):
+            raise ValueError("unit_nameplate_kva must match transformer_indices")
+        nameplates = tuple(float(value) for value in self.unit_nameplate_kva)
+        if any((not np.isfinite(value) or value <= 0.0) for value in nameplates):
+            raise ValueError("unit_nameplate_kva values must be finite and positive")
+        _require_nonempty_text(self.source, name="source")
+        _validate_metadata_mapping(self.metadata, name="metadata")
+        object.__setattr__(self, "s_nom_agg_kva", float(self.s_nom_agg_kva))
+        object.__setattr__(self, "transformer_indices", indices)
+        object.__setattr__(self, "unit_nameplate_kva", nameplates)
+        object.__setattr__(self, "metadata", MappingProxyType(dict(self.metadata)))
+
+    def manifest_metadata(self) -> dict[str, object]:
+        """Return array-free denominator provenance for runner manifests."""
+
+        return {
+            "s_nom_agg_kva": self.s_nom_agg_kva,
+            "convention_status": self.convention_status,
+            "transformer_indices": self.transformer_indices,
+            "unit_nameplate_kva": self.unit_nameplate_kva,
+            "source": self.source,
+            "metadata": dict(self.metadata),
+        }
+
+
+@dataclass(frozen=True)
+class Tier1LoadingTrajectoryScaffold:
+    """Direction-gated Tier-1 loading trajectory without event classification."""
+
+    p_net_kw: np.ndarray
+    q_net_kvar: np.ndarray
+    s_net_kva: np.ndarray
+    screening_loading_pu: np.ndarray
+    import_loading_pu: np.ndarray
+    export_loading_pu: np.ndarray
+    import_mask: np.ndarray
+    export_mask: np.ndarray
+    zero_mask: np.ndarray
+    time_domain: TimeDomain
+    primary_probability_domain: bool
+    threshold_pu: float
+    min_consecutive_steps: int
+    timestep_seconds: int
+    capacity: LoadingTrajectoryCapacityProvenance
+    input_manifest: Mapping[str, object]
+    metadata: Mapping[str, object] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        if self.timestep_seconds != IC_TIMESTEP_SECONDS:
+            raise ValueError("timestep_seconds must be the 900-second IC cadence")
+        validate_loading_trajectory_result(self)
+        _validate_metadata_mapping(self.input_manifest, name="input_manifest")
+        _validate_metadata_mapping(self.metadata, name="metadata")
+        object.__setattr__(self, "metadata", MappingProxyType(dict(self.metadata)))
+        object.__setattr__(self, "input_manifest", MappingProxyType(dict(self.input_manifest)))
+
+    def manifest_metadata(self) -> dict[str, object]:
+        """Return manifest-ready metadata without event/probability results."""
+
+        return {
+            "time_domain": self.time_domain,
+            "primary_probability_domain": self.primary_probability_domain,
+            "timestep_seconds": self.timestep_seconds,
+            "timestep_count": int(np.asarray(self.p_net_kw).size),
+            "governed_event_metadata": {
+                "basis": "G0-A3",
+                "primary_threshold_pu": self.threshold_pu,
+                "strict_import_loading_gt_threshold": True,
+                "sensitivity_thresholds_pu": G0_A3_SENSITIVITY_THRESHOLDS_PU,
+                "min_consecutive_15_minute_steps": self.min_consecutive_steps,
+                "not_evaluated_here": True,
+            },
+            "capacity": self.capacity.manifest_metadata(),
+            "input_manifest": dict(self.input_manifest),
+            "direction_step_counts": {
+                "import": int(np.count_nonzero(self.import_mask)),
+                "export": int(np.count_nonzero(self.export_mask)),
+                "zero": int(np.count_nonzero(self.zero_mask)),
+            },
+            "no_event_detection": True,
+            "no_probability_estimate": True,
+            "no_capacity_screen_result": True,
+            "metadata": dict(self.metadata),
+        }
 
 @dataclass(frozen=True)
 class Tier1Evaluation:
@@ -216,6 +332,58 @@ def evaluate_net_load_tier1(
     )
 
 
+
+
+def build_tier1_loading_trajectory_scaffold(
+    readiness: NetLoadLoadingInputReadiness,
+    *,
+    capacity: LoadingTrajectoryCapacityProvenance,
+    parent_index: Sequence[int | None] | None = None,
+    decision_node: int = 0,
+    metadata: Mapping[str, object] | None = None,
+) -> Tier1LoadingTrajectoryScaffold:
+    """Build IC-2 loading trajectories from validated IC-1 readiness only.
+
+    The scaffold computes P/Q/S and direction-gated loading for a tiny synthetic
+    or already validated IC-1 payload. It deliberately does not count episodes,
+    estimate probabilities, screen capacity, or choose a denominator convention.
+    """
+
+    _validate_loading_input_readiness_for_scaffold(readiness)
+    p_subtree = radial_downstream_sum(readiness.net_load.p_net_kw, parent_index=parent_index)
+    q_subtree = radial_downstream_sum(readiness.net_load.q_net_kvar, parent_index=parent_index)
+    if not 0 <= decision_node < p_subtree.shape[0]:
+        raise IndexError("decision_node is outside the net-load node array")
+
+    p_net = p_subtree[decision_node].copy()
+    q_net = q_subtree[decision_node].copy()
+    s_net = np.hypot(p_net, q_net)
+    screening_loading = s_net / capacity.s_nom_agg_kva
+    import_mask = p_net > 0.0
+    export_mask = p_net < 0.0
+    zero_mask = p_net == 0.0
+    result = Tier1LoadingTrajectoryScaffold(
+        p_net_kw=p_net,
+        q_net_kvar=q_net,
+        s_net_kva=s_net,
+        screening_loading_pu=screening_loading,
+        import_loading_pu=np.where(import_mask, screening_loading, 0.0),
+        export_loading_pu=np.where(export_mask, screening_loading, 0.0),
+        import_mask=import_mask,
+        export_mask=export_mask,
+        zero_mask=zero_mask,
+        time_domain=readiness.time_domain,
+        primary_probability_domain=readiness.time_domain == "full_year",
+        threshold_pu=G0_A3_PRIMARY_THRESHOLD_PU,
+        min_consecutive_steps=G0_A3_MIN_CONSECUTIVE_STEPS,
+        timestep_seconds=readiness.timestep_seconds,
+        capacity=capacity,
+        input_manifest=readiness.manifest_record(),
+        metadata={} if metadata is None else metadata,
+    )
+    return result
+
+
 def radial_downstream_sum(
     nodal_values: Sequence[Sequence[float]] | np.ndarray,
     *,
@@ -287,6 +455,53 @@ def count_import_overload_episodes(
             run_length = 0
             in_episode = False
     return episodes, longest_run
+
+
+
+
+def _validate_loading_input_readiness_for_scaffold(readiness: NetLoadLoadingInputReadiness) -> None:
+    if _contains_forbidden_result_keys(readiness.net_load.metadata):
+        raise ValueError("loading trajectory scaffold input must not contain legacy event result metadata")
+    if _contains_forbidden_result_keys(readiness.metadata):
+        raise ValueError("loading trajectory scaffold metadata must not contain event/probability results")
+    registry_readiness = readiness.registry_manifest.get("readiness")
+    if isinstance(registry_readiness, Mapping) and registry_readiness.get("ready_for_real_arrays") is False:
+        raise ValueError("loading trajectory scaffold requires accepted or synthetic fixture input readiness")
+
+
+def _contains_forbidden_result_keys(value: object) -> bool:
+    forbidden = {"overload", "overload_episode_count", "event_count", "probability", "p_event"}
+    if isinstance(value, Mapping):
+        for key, nested in value.items():
+            if str(key) in forbidden or _contains_forbidden_result_keys(nested):
+                return True
+    elif isinstance(value, (tuple, list)):
+        return any(_contains_forbidden_result_keys(item) for item in value)
+    return False
+
+
+def _as_nonnegative_integer(value: object, *, name: str) -> int:
+    if isinstance(value, bool) or not isinstance(value, (int, np.integer)):
+        raise TypeError(f"{name} must contain exact nonnegative integers")
+    integer = int(value)
+    if integer < 0:
+        raise ValueError(f"{name} must contain exact nonnegative integers")
+    return integer
+
+
+def _require_nonempty_text(value: str, *, name: str) -> str:
+    if not isinstance(value, str) or not value:
+        raise ValueError(f"{name} must be a non-empty string")
+    return value
+
+
+def _validate_metadata_mapping(mapping: Mapping[str, object], *, name: str) -> None:
+    for key, value in mapping.items():
+        _require_nonempty_text(key, name=f"{name} key")
+        if value is None:
+            raise ValueError(f"{name} values must not be None")
+        if isinstance(value, str) and not value:
+            raise ValueError(f"{name} string values must be non-empty")
 
 
 def _validate_inputs(
