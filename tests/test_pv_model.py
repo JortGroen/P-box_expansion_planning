@@ -11,12 +11,14 @@ import numpy as np
 import pytest
 
 import data.get_weather_pv as weather_pv
-from src.contracts.net_load import validate_executable_input_gate
+from src.contracts.net_load import NetLoadRealizationContext, load_component_adapter_output_from_npz_artifact, validate_executable_input_gate
 from src.hp_model import HeatPumpProfile
 from src.pv_model import (
     PVCapacityApprovalTemplatePacket,
     PVCapacitySourcePacket,
     PVCapacityValueChoicePacket,
+    PVComponentOutputArtifactScaffoldPacket,
+    PVComponentOutputArtifactSpec,
     PVCBSAnchorEvidencePacket,
     PVExecutablePreflightGuardPacket,
     PVExecutableReadinessBlockersPacket,
@@ -45,6 +47,7 @@ from src.pv_model import (
     load_pv_capacity_source_packet,
     load_pv_capacity_value_choice_packet,
     load_pv_cbs_anchor_evidence_packet,
+    load_pv_component_output_artifact_scaffold_packet,
     load_pv_executable_preflight_guard_packet,
     load_pv_executable_readiness_blockers_packet,
     load_pv_first_experiment_approval_packet,
@@ -59,7 +62,9 @@ from src.pv_model import (
     seasonal_energy_kwh,
     summarize_pv_profile,
     validate_canonical_15min_calendar,
+    write_pv_component_output_npz_artifact,
 )
+from src.rng import SeedTree
 from src.weather_model import assert_same_weather_realization
 
 
@@ -2220,6 +2225,239 @@ def test_first_experiment_value_decision_packet_rejects_executable_or_roof_claim
             executable_gate=payload["executable_gate"],
             pi_approval_keys_before_executable_use=payload["pi_approval_keys_before_executable_use"],
             non_claims=payload["non_claims"],
+        )
+
+
+def test_committed_d014_pv_component_output_artifact_scaffold_fails_closed() -> None:
+    packet = load_pv_component_output_artifact_scaffold_packet(
+        "data/metadata/weather_pv/d014_pv_component_output_artifact_scaffold.json"
+    )
+    record = packet.identity_record()
+
+    assert packet.packet_id == "D014-PV-COMPONENT-OUTPUT-ARTIFACT-SCAFFOLD"
+    assert packet.component_output_generation_performed is False
+    assert record["component_output_generation_authorized"] is False
+    assert record["input_packet_ids"]["first_experiment_value_decision_packet"] == (
+        "D014-PV-FIRST-EXPERIMENT-VALUE-DECISION-PACKET"
+    )
+    assert packet.current_unsigned_packet_behavior["current_committed_d014_packets_are_executable"] is False
+    assert packet.current_unsigned_packet_behavior["result_if_current_packets_are_invoked"] == (
+        "abort_with_component_output_blocker_manifest"
+    )
+    assert "negative p_kw" in packet.future_component_output_manifest_schema["ic1_sign_convention"]
+    assert "unsigned" in packet.future_component_output_manifest_schema["q_kvar_policy"]
+    assert packet.future_runner_contract["writer_function"] == "src.pv_model.write_pv_component_output_npz_artifact"
+    assert packet.future_runner_contract["checkpoint_resume_policy"]
+    assert "PV-PARAM-001_or_signed_amendment" in packet.blocking_register_ids
+    assert "signed_node_allocation_artifact" in packet.missing_approval_keys
+    assert "signed_pv_reactive_power_policy_or_q_zero_convention" in packet.missing_approval_keys
+    with pytest.raises(ValueError, match="PV component-output artifact generation is blocked"):
+        packet.require_component_output_generation_allowed()
+
+
+def test_pv_component_output_artifact_scaffold_rejects_silent_generation_claim() -> None:
+    payload = json.loads(
+        Path("data/metadata/weather_pv/d014_pv_component_output_artifact_scaffold.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    payload["executable_gate"]["component_output_generation_authorized"] = True
+
+    with pytest.raises(ValueError, match="must not authorize component-output generation"):
+        PVComponentOutputArtifactScaffoldPacket(
+            packet_id=payload["packet_id"],
+            data_id=payload["data_id"],
+            status=payload["status"],
+            download_performed=payload["download_performed"],
+            raw_data_committed=payload["raw_data_committed"],
+            component_output_generation_performed=payload["component_output_generation_performed"],
+            input_metadata=payload["input_metadata"],
+            current_unsigned_packet_behavior=payload["current_unsigned_packet_behavior"],
+            future_component_output_manifest_schema=payload["future_component_output_manifest_schema"],
+            future_runner_contract=payload["future_runner_contract"],
+            executable_gate=payload["executable_gate"],
+            pi_approval_keys_before_executable_use=payload["pi_approval_keys_before_executable_use"],
+            non_claims=payload["non_claims"],
+        )
+
+
+def test_pv_component_output_writer_emits_ic1_compatible_synthetic_fixture(tmp_path: Path) -> None:
+    weather = _short_weather(temperature_c=[20.0, 20.0, 20.0, 20.0], ghi_w_per_m2=[0.0, 500.0, 1000.0, 0.0])
+    config = PVSystemConfig(
+        installed_capacity_kw=2.0,
+        performance_ratio=1.0,
+        reference_irradiance_w_per_m2=1000.0,
+        temperature_coefficient_per_c=0.0,
+        reference_temperature_c=25.0,
+        clip_to_capacity=True,
+        config_id="synthetic-fixture-pv-output-config",
+        parameter_status="approved_for_executable_component_use",
+        signed_parameter_decision_id="SIGNED-FIXTURE-PV-PARAM",
+    )
+    profile = generate_pv_profile(weather, config)
+    spec = PVComponentOutputArtifactSpec(
+        artifact_id="pv-synthetic-output-artifact",
+        artifact_status="synthetic_fixture",
+        component_id="pv-synthetic-node-a",
+        node_id="node-a",
+        member_id=profile.weather_member_id,
+        source_id="synthetic-signed-fixture-pv-source",
+        calendar_id="synthetic_calendar_2025_4step",
+        shared_weather_driver_id=profile.shared_weather_driver_id,
+        approval_ids={
+            "capacity_artifact": "SIGNED-FIXTURE-CAPACITY",
+            "orientation_tilt_artifact": "SIGNED-FIXTURE-ORIENTATION",
+            "pv_param_artifact": "SIGNED-FIXTURE-PV-PARAM",
+            "node_allocation_artifact": "SIGNED-FIXTURE-ALLOCATION",
+            "a016_scenario_consistency_artifact": "SIGNED-FIXTURE-A016",
+            "paired_hp_pv_acceptance_artifact": "SIGNED-FIXTURE-PAIRED",
+            "reactive_power_policy_artifact": "SIGNED-FIXTURE-Q-ZERO",
+            "component_output_manifest_path_policy": "SIGNED-FIXTURE-PATH-POLICY",
+        },
+        provenance={
+            "synthetic_fixture": True,
+            "purpose": "unit-test PV component-output artifact writer only",
+        },
+    )
+    manifest = write_pv_component_output_npz_artifact(
+        profile,
+        spec,
+        array_path="artifacts/pv_synthetic_fixture.npz",
+        manifest_path="artifacts/pv_synthetic_fixture_manifest.json",
+        base_dir=tmp_path,
+    )
+
+    assert manifest["artifact_status"] == "synthetic_fixture"
+    assert manifest["kind"] == "pv"
+    assert manifest["array_path"] == "artifacts/pv_synthetic_fixture.npz"
+    assert len(manifest["array_sha256"]) == 64
+    assert (tmp_path / manifest["array_path"]).is_file()
+    assert (tmp_path / "artifacts/pv_synthetic_fixture_manifest.json").is_file()
+
+    seed_tree = SeedTree(20260724)
+    context = NetLoadRealizationContext(
+        scenario="synthetic-fixture",
+        planning_year=2035,
+        time_domain="full_year",
+        rho=0.0,
+        root_seed=20260724,
+        sample_index=0,
+        sample_seed=seed_tree.sample_seed(0),
+        component_streams=(seed_tree.component_stream(0, "pv"),),
+        shared_weather_driver_id=profile.shared_weather_driver_id,
+    )
+    adapter_output = load_component_adapter_output_from_npz_artifact(
+        manifest,
+        context,
+        repo_root=tmp_path,
+        expected_calendar_id="synthetic_calendar_2025_4step",
+        expected_node_ids=("node-a",),
+        allow_synthetic_fixture=True,
+    )
+
+    assert adapter_output.kind == "pv"
+    assert adapter_output.shared_weather_driver_id == profile.shared_weather_driver_id
+    np.testing.assert_allclose(adapter_output.p_kw, -np.asarray(profile.generation_kw))
+    np.testing.assert_allclose(adapter_output.q_kvar, np.zeros_like(adapter_output.p_kw))
+    with pytest.raises(ValueError, match="synthetic_fixture component output artifacts require"):
+        load_component_adapter_output_from_npz_artifact(manifest, context, repo_root=tmp_path)
+
+
+@pytest.mark.parametrize(
+    ("array_path", "manifest_path"),
+    [
+        ("", "artifacts/pv_manifest.json"),
+        (".", "artifacts/pv_manifest.json"),
+        ("/tmp/pv.npz", "artifacts/pv_manifest.json"),
+        ("artifacts/../pv.npz", "artifacts/pv_manifest.json"),
+        ("artifacts/pv.npz", "../pv_manifest.json"),
+    ],
+)
+def test_pv_component_output_writer_rejects_non_repository_relative_paths(
+    tmp_path: Path,
+    array_path: str,
+    manifest_path: str,
+) -> None:
+    weather = _short_weather(temperature_c=[20.0, 20.0, 20.0, 20.0], ghi_w_per_m2=[0.0, 500.0, 1000.0, 0.0])
+    config = PVSystemConfig(
+        installed_capacity_kw=2.0,
+        performance_ratio=1.0,
+        reference_irradiance_w_per_m2=1000.0,
+        temperature_coefficient_per_c=0.0,
+        reference_temperature_c=25.0,
+        clip_to_capacity=True,
+        config_id="synthetic-fixture-path-guard-config",
+        parameter_status="approved_for_executable_component_use",
+        signed_parameter_decision_id="SIGNED-FIXTURE-PV-PARAM",
+    )
+    profile = generate_pv_profile(weather, config)
+    spec = PVComponentOutputArtifactSpec(
+        artifact_id="pv-synthetic-output-artifact",
+        artifact_status="synthetic_fixture",
+        component_id="pv-synthetic-node-a",
+        node_id="node-a",
+        member_id=profile.weather_member_id,
+        source_id="synthetic-signed-fixture-pv-source",
+        calendar_id="synthetic_calendar_2025_2step",
+        shared_weather_driver_id=profile.shared_weather_driver_id,
+        approval_ids={
+            "capacity_artifact": "SIGNED-FIXTURE-CAPACITY",
+            "orientation_tilt_artifact": "SIGNED-FIXTURE-ORIENTATION",
+            "pv_param_artifact": "SIGNED-FIXTURE-PV-PARAM",
+            "node_allocation_artifact": "SIGNED-FIXTURE-ALLOCATION",
+            "a016_scenario_consistency_artifact": "SIGNED-FIXTURE-A016",
+            "paired_hp_pv_acceptance_artifact": "SIGNED-FIXTURE-PAIRED",
+            "reactive_power_policy_artifact": "SIGNED-FIXTURE-Q-ZERO",
+            "component_output_manifest_path_policy": "SIGNED-FIXTURE-PATH-POLICY",
+        },
+        provenance={"synthetic_fixture": True},
+    )
+
+    with pytest.raises(ValueError, match="repository-relative|path segments"):
+        write_pv_component_output_npz_artifact(
+            profile,
+            spec,
+            array_path=array_path,
+            manifest_path=manifest_path,
+            base_dir=tmp_path,
+        )
+
+
+@pytest.mark.parametrize(
+    "bad_approval_id",
+    [
+        "D014-PV-CAPACITY-APPROVAL-TEMPLATE_successor_unsigned",
+        "future-capacity-choice",
+        "pending-capacity-choice",
+        "TODO-capacity-choice",
+        "TBD-capacity-choice",
+        "not-approved-capacity-choice",
+        "<signed-capacity-artifact>",
+        "&lt;signed-capacity-artifact&gt;",
+    ],
+)
+def test_pv_component_output_accepted_spec_rejects_unsigned_tokens(bad_approval_id: str) -> None:
+    with pytest.raises(ValueError, match="stale or unsigned approval token"):
+        PVComponentOutputArtifactSpec(
+            artifact_id="pv-real-output-artifact",
+            artifact_status="accepted",
+            component_id="pv-node-a",
+            node_id="node-a",
+            member_id="weather-member",
+            source_id="pv-source",
+            calendar_id="calendar-2035",
+            shared_weather_driver_id="weather-driver",
+            approval_ids={
+                "capacity_artifact": bad_approval_id,
+                "orientation_tilt_artifact": "SIGNED-ORIENTATION",
+                "pv_param_artifact": "SIGNED-PV-PARAM",
+                "node_allocation_artifact": "SIGNED-ALLOCATION",
+                "a016_scenario_consistency_artifact": "SIGNED-A016",
+                "paired_hp_pv_acceptance_artifact": "SIGNED-PAIRED",
+                "reactive_power_policy_artifact": "SIGNED-Q",
+                "component_output_manifest_path_policy": "SIGNED-PATH-POLICY",
+            },
+            provenance={"source": "not-used"},
         )
 
 def test_committed_d014_pv_executable_preflight_guard_fails_closed() -> None:

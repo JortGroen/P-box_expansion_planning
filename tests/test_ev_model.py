@@ -17,6 +17,7 @@ from data.get_ev_component_outputs import (
     EVComponentOutputVerificationError,
     rebuild_and_verify_ev_component_outputs,
     verify_existing_ev_component_outputs,
+    write_generic_loader_manifests,
 )
 import src.ev_model as ev_model
 from src.ev_model import (
@@ -51,6 +52,7 @@ from src.ev_model import (
     ev_ic1_component_input_scaffold_artifact,
     ev_ic1_component_output_consumption_packet,
     ev_ic1_accepted_artifact_index_preflight,
+    ev_ic1_generic_component_output_loader_manifests,
     ev_candidate_profile_checksum_preflight_artifact,
     materialize_ev_ic1_candidate_component_outputs,
     ev_library_integration_artifact_from_manifest,
@@ -69,7 +71,13 @@ from src.ev_model import (
     verify_ev_candidate_checksums,
     write_ev_integration_readiness_artifact,
 )
-from src.contracts.net_load import AcceptedComponentAdapterArtifact
+from src.contracts.loading_trajectory import LoadingTrajectoryPreRunConfig
+from src.contracts.net_load import (
+    AcceptedComponentAdapterArtifact,
+    ExecutableInputArtifact,
+    FutureLayerScreenPreflightConfig,
+    build_accepted_artifact_loader_blocker_preflight,
+)
 from src.rng import SeedTree
 
 
@@ -1917,6 +1925,187 @@ def test_ev_candidate_output_checksum_preflight_rejects_bad_scenario_set(tmp_pat
             base_dir=tmp_path,
             checkpoint_path=tmp_path / "checksum.json",
         )
+
+
+def _committed_ev_generic_loader_inputs() -> tuple[dict[str, object], dict[str, object], str, str]:
+    base = Path("data/metadata/ev_adoption")
+    accepted_path = base / "e2_s2_ev_ic1_accepted_artifact_index_preflight.json"
+    recovery_path = base / "e3_s2a_ev_component_output_recovery_preflight.json"
+    return (
+        json.loads(accepted_path.read_text(encoding="utf-8")),
+        json.loads(recovery_path.read_text(encoding="utf-8")),
+        _git_blob_sha256(accepted_path),
+        _git_blob_sha256(recovery_path),
+    )
+
+
+def test_committed_ev_generic_loader_manifest_packet_matches_builder() -> None:
+    accepted_index, recovery, accepted_sha, recovery_sha = _committed_ev_generic_loader_inputs()
+    packet_path = Path("data/metadata/ev_adoption/e3_s2a_ev_ic1_generic_component_output_manifest_packet.json")
+    manifest_paths = [
+        Path("data/metadata/ev_adoption/generic_component_output_manifests") / f"ev_2035_{scenario}.json"
+        for scenario in ("high", "low", "middle")
+    ]
+    sha_by_path = {path.as_posix(): ev_model._sha256_file(path) for path in manifest_paths}
+
+    expected = ev_ic1_generic_component_output_loader_manifests(
+        accepted_index,
+        recovery,
+        accepted_artifact_index_sha256=accepted_sha,
+        recovery_preflight_sha256=recovery_sha,
+        manifest_sha256_by_path=sha_by_path,
+    )
+    committed = json.loads(packet_path.read_text(encoding="utf-8"))
+
+    assert committed == expected
+    assert committed["status"] == "blocked_ev_generic_loader_manifests_multi_node_contract"
+    assert committed["missing_generic_manifest_sha256_paths"] == []
+    assert {row["scenario"] for row in committed["scenario_manifests"]} == {"low", "middle", "high"}
+    assert committed["policy"] == {
+        "candidate_libraries_only": True,
+        "held_out_access": False,
+        "quarantined_access": False,
+        "profile_arrays_loaded_by_manifest_builder": False,
+        "integrated_analysis_performed": False,
+        "event_or_p_e_analysis_performed": False,
+        "capacity_screen_performed": False,
+        "final_low_middle_high_branch_selected": False,
+        "m_sufficiency_claimed": False,
+        "manuscript_numbers_produced": False,
+        "fail_closed_on_unresolved_blockers": True,
+    }
+
+
+def test_ev_generic_loader_manifest_stays_fail_closed_at_agent_a_loader_boundary(tmp_path: Path) -> None:
+    packet = json.loads(
+        Path("data/metadata/ev_adoption/e3_s2a_ev_ic1_generic_component_output_manifest_packet.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    low_record = next(row for row in packet["scenario_manifests"] if row["scenario"] == "low")
+    low_manifest = packet["manifests_by_scenario"]["low"]
+    manifest_path = Path(low_record["path"])
+    (tmp_path / manifest_path).parent.mkdir(parents=True, exist_ok=True)
+    (tmp_path / manifest_path).write_text(json.dumps(low_manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    manifest_sha = ev_model._sha256_file(tmp_path / manifest_path)
+
+    source_path = Path("data/metadata/ev_adoption/e2_s2_ev_ic1_accepted_artifact_index_preflight.json")
+    (tmp_path / source_path).parent.mkdir(parents=True, exist_ok=True)
+    (tmp_path / source_path).write_text("ev accepted artifact source\n", encoding="utf-8")
+    source_sha = ev_model._sha256_file(tmp_path / source_path)
+    artifact = ExecutableInputArtifact(
+        artifact_id="e2_s2_ev_ic1_accepted_artifact_index_preflight",
+        kind="ev",
+        artifact_status="accepted",
+        version_id="e2_s2_ev_ic1_accepted_artifact_index_preflight_v1",
+        source_id="elaadnl_ev_accepted_artifact_index_preflight",
+        member_id="ev005b_candidate_index_root20260722_sample0_all_declared_branches",
+        calendar_id="planning-2035-europe-amsterdam-15min",
+        node_ids=tuple(f"load_{index:03d}" for index in range(115)),
+        signed_register_ids=("A-014", "EV-003", "EV-005", "EV-005B", "EV-007", "EV-007A", "EV-008A", "EV-CAL-001"),
+        blocking_register_ids=(),
+        timestep_seconds=900,
+        manifest_path=source_path.as_posix(),
+        provenance={"fixture": "ev generic loader schema test"},
+    )
+
+    preflight = build_accepted_artifact_loader_blocker_preflight(
+        FutureLayerScreenPreflightConfig(
+            config_id="ev-generic-loader-schema-test",
+            scenario_ids=("low",),
+            planning_years=(2035,),
+            rho_values=(0.0,),
+            node_ids=tuple(f"load_{index:03d}" for index in range(115)),
+            metadata={"calendar_id": "planning-2035-europe-amsterdam-15min"},
+        ),
+        (artifact,),
+        LoadingTrajectoryPreRunConfig(
+            config_id="ev-generic-loader-schema-test",
+            purpose="e3_s2b_future_layer_screen",
+            planning_years=(2035,),
+        ),
+        capacity_provenance={
+            "s_nom_agg_kva": 80000.0,
+            "convention_status": "pending_g1_a2_e3_s2b",
+            "source": "metadata fixture",
+            "metadata": {"not_evaluated_here": True},
+        },
+        artifact_sha256_by_path={source_path.as_posix(): source_sha},
+        component_output_manifest_paths_by_kind={"ev": manifest_path.as_posix()},
+        component_output_manifest_sha256_by_path={manifest_path.as_posix(): manifest_sha},
+        repo_root=tmp_path,
+        required_component_kinds=("ev",),
+        downstream_blocker_ids=(),
+    )
+
+    codes = {item["code"] for item in preflight["blocker_manifest"]["items"]}
+    assert preflight["ready_for_artifact_loader_execution"] is False
+    assert "component_output_manifest_required_keys_missing" not in codes
+    assert "component_output_manifest_not_accepted" in codes
+    assert "component_output_manifest_node_missing" in codes
+    assert preflight["component_output_manifest_records"] == (
+        {
+            "kind": "ev",
+            "artifact_id": "e2_s2_ev_ic1_accepted_artifact_index_preflight",
+            "path": manifest_path.as_posix(),
+            "state": "blocked",
+            "sha256": manifest_sha,
+            "expected_sha256": manifest_sha,
+            "checksum_match": True,
+        },
+    )
+    assert low_manifest["artifact_status"] == "blocked_multi_node_contract"
+    assert low_manifest["node_id"] == "ev_multi_node_axis_115"
+    assert (
+        low_manifest["provenance"]["agent_a_loader_boundary"]["blocker_id"]
+        == "A-LOADER-MULTI-NODE-EV-OUTPUT-CONTRACT-NOT-YET-SIGNED"
+    )
+
+
+def test_ev_generic_loader_manifest_builder_rejects_unverified_recovery() -> None:
+    accepted_index, recovery, accepted_sha, recovery_sha = _committed_ev_generic_loader_inputs()
+    broken = json.loads(json.dumps(recovery))
+    broken["policy"]["held_out_access"] = True
+
+    with pytest.raises(ValueError, match="held_out_access=False"):
+        ev_ic1_generic_component_output_loader_manifests(
+            accepted_index,
+            broken,
+            accepted_artifact_index_sha256=accepted_sha,
+            recovery_preflight_sha256=recovery_sha,
+        )
+
+
+def test_ev_generic_loader_manifest_writer_is_deterministic(tmp_path: Path) -> None:
+    accepted_index, recovery, _accepted_sha, _recovery_sha = _committed_ev_generic_loader_inputs()
+    accepted_path = Path("metadata") / "accepted.json"
+    recovery_path = Path("metadata") / "recovery.json"
+    (tmp_path / accepted_path).parent.mkdir(parents=True, exist_ok=True)
+    (tmp_path / accepted_path).write_text(json.dumps(accepted_index, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    (tmp_path / recovery_path).write_text(json.dumps(recovery, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+    first = write_generic_loader_manifests(
+        accepted_artifact_index=accepted_index,
+        recovery_preflight=recovery,
+        base_dir=tmp_path,
+        manifest_directory=Path("metadata") / "generic",
+        packet_path=Path("metadata") / "packet.json",
+        accepted_artifact_index_path=accepted_path,
+        recovery_preflight_path=recovery_path,
+    )
+    repeated = write_generic_loader_manifests(
+        accepted_artifact_index=accepted_index,
+        recovery_preflight=recovery,
+        base_dir=tmp_path,
+        manifest_directory=Path("metadata") / "generic",
+        packet_path=Path("metadata") / "packet.json",
+        accepted_artifact_index_path=accepted_path,
+        recovery_preflight_path=recovery_path,
+    )
+
+    assert first == repeated
+    assert json.loads((tmp_path / "metadata" / "packet.json").read_text(encoding="utf-8")) == first
+    assert len(first["scenario_manifests"]) == 3
 
 
 def test_ev005_replacement_policy_packet_records_approval_and_profile_free_boundary() -> None:

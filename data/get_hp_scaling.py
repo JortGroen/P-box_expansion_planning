@@ -8,6 +8,7 @@ import hashlib
 import io
 import json
 from pathlib import Path
+import subprocess
 import sys
 from typing import Any, Sequence
 from urllib import parse, request
@@ -17,6 +18,10 @@ if __package__ in {None, ""}:
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from data.sources import write_metadata
+from src.hp_model import (
+    hp001_profile_rebuild_preflight_blockers,
+    require_hp001_profile_rebuild_preflight_manifest,
+)
 
 DATA_ID = "D-013"
 BUNDLE_ID = "hp001_alkmaar_gm0361_source_route_v1"
@@ -31,6 +36,7 @@ EXECUTABLE_VALUE_BINDING_DECISION_PACKET_FILENAME = "hp001_alkmaar_gm0361_execut
 COLD_SPELL_ACCEPTANCE_DECISION_PACKET_FILENAME = "hp001_d004_cold_spell_acceptance_decision_packet.json"
 PROFILE_ARTIFACT_CONSUMPTION_MANIFEST_TEMPLATE_FILENAME = "hp001_profile_artifact_consumption_manifest_template.json"
 PROFILE_REBUILD_PREFLIGHT_TEMPLATE_FILENAME = "hp001_profile_artifact_rebuild_preflight_template.json"
+PROFILE_REBUILD_RUNNER_OUTPUT_FILENAME = "hp001_profile_rebuild_runner_blocker_manifest.json"
 
 COMPONENT_OUTPUT_READINESS_BLOCKER_FILENAME = "hp001_component_output_readiness_blocker_packet.json"
 DOWNLOAD_TIMEOUT_S = 120.0
@@ -895,6 +901,136 @@ def write_hp001_profile_rebuild_preflight_template(metadata_dir: Path) -> Path:
     return path
 
 
+def _extract_profile_rebuild_preflight_manifest(payload: object) -> tuple[dict[str, Any], str]:
+    if not isinstance(payload, dict):
+        return {}, "invalid_json_payload"
+    nested = payload.get("preflight_manifest_template")
+    if isinstance(nested, dict):
+        return nested, "template_packet_preflight_manifest_template"
+    return payload, "direct_preflight_manifest"
+
+
+def build_hp001_profile_rebuild_runner_manifest(
+    preflight_manifest_path: Path,
+    *,
+    output_manifest_path: Path | None = None,
+    request_id: str = "hp001_profile_rebuild_preflight_check",
+    repository_root: Path = Path("."),
+) -> dict[str, Any]:
+    """Return the metadata-only HP profile rebuild preflight runner result."""
+    raw_payload = json.loads(preflight_manifest_path.read_text(encoding="utf-8"))
+    preflight_manifest, input_kind = _extract_profile_rebuild_preflight_manifest(raw_payload)
+    blocker_ids = list(hp001_profile_rebuild_preflight_blockers(preflight_manifest))
+    accepted = not blocker_ids
+    if accepted:
+        # Keep this runner as a handoff gate only; future profile generation must
+        # call a separate signed artifact builder after this manifest passes.
+        require_hp001_profile_rebuild_preflight_manifest(preflight_manifest)
+
+    return {
+        "packet_id": "E2-S3-HP001-PROFILE-REBUILD-RUNNER-SCAFFOLD",
+        "created_utc": _utc_now(),
+        "request_id": str(request_id).strip() or "hp001_profile_rebuild_preflight_check",
+        "status": "accepted_preflight_handoff_no_profile_generation" if accepted else "blocked_fail_closed_no_profile_rebuild",
+        "accepted_for_profile_rebuild_handoff": accepted,
+        "profile_generation_performed": False,
+        "validator": "data.get_hp_scaling.build_hp001_profile_rebuild_runner_manifest",
+        "preflight_validator": "src.hp_model.require_hp001_profile_rebuild_preflight_manifest",
+        "input_manifest": {
+            "path": preflight_manifest_path.as_posix(),
+            "sha256": _sha256_path(preflight_manifest_path),
+            "size_bytes": preflight_manifest_path.stat().st_size,
+            "kind": input_kind,
+            "preflight_status": str(preflight_manifest.get("status", "")) if isinstance(preflight_manifest, dict) else "",
+        },
+        "output_manifest_path": output_manifest_path.as_posix() if output_manifest_path is not None else None,
+        "blocker_ids": blocker_ids,
+        "blocker_count": len(blocker_ids),
+        "intended_handoff_shape": _hp001_profile_rebuild_handoff_shape(preflight_manifest) if accepted else None,
+        "code_identity": _hp001_runner_code_identity(repository_root),
+        "non_claims": [
+            "No HP profile artifact is generated or approved.",
+            "No executable annual HP values are created.",
+            "No 2035 HP adoption/electrification/service fraction is approved.",
+            "No D-004 paired-weather or cold-spell final acceptance is signed or run.",
+            "No net-load, event, P(E), threshold, capacity-screen, manuscript, or probability analysis is run.",
+        ],
+    }
+
+
+def write_hp001_profile_rebuild_runner_manifest(
+    preflight_manifest_path: Path,
+    output_manifest_path: Path,
+    *,
+    request_id: str = "hp001_profile_rebuild_preflight_check",
+    repository_root: Path = Path("."),
+) -> Path:
+    """Write the fail-closed runner result for a future HP profile rebuild request."""
+    output_manifest_path.parent.mkdir(parents=True, exist_ok=True)
+    payload = build_hp001_profile_rebuild_runner_manifest(
+        preflight_manifest_path,
+        output_manifest_path=output_manifest_path,
+        request_id=request_id,
+        repository_root=repository_root,
+    )
+    output_manifest_path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    return output_manifest_path
+
+
+def write_default_hp001_profile_rebuild_runner_manifest(
+    metadata_dir: Path,
+    *,
+    preflight_manifest_path: Path | None = None,
+    request_id: str = "hp001_profile_rebuild_preflight_check",
+    repository_root: Path = Path("."),
+) -> Path:
+    """Write the runner output for the committed or supplied preflight manifest."""
+    target_dir = metadata_dir / "hp_scaling"
+    target_dir.mkdir(parents=True, exist_ok=True)
+    input_path = preflight_manifest_path or target_dir / PROFILE_REBUILD_PREFLIGHT_TEMPLATE_FILENAME
+    output_path = target_dir / PROFILE_REBUILD_RUNNER_OUTPUT_FILENAME
+    return write_hp001_profile_rebuild_runner_manifest(
+        input_path,
+        output_path,
+        request_id=request_id,
+        repository_root=repository_root,
+    )
+
+
+def _hp001_profile_rebuild_handoff_shape(preflight_manifest: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "source_artifacts": preflight_manifest.get("source_artifacts", {}),
+        "weather_identity": preflight_manifest.get("weather_identity", {}),
+        "paired_pv_weather_identity": preflight_manifest.get("paired_pv_weather_identity", {}),
+        "output_plan": preflight_manifest.get("output_plan", {}),
+        "next_runner_boundary": "future signed HP profile artifact builder; not implemented by this scaffold",
+    }
+
+
+def _hp001_runner_code_identity(repository_root: Path) -> dict[str, Any]:
+    root = repository_root.resolve()
+    tracked_files = ("data/get_hp_scaling.py", "src/hp_model.py")
+    return {
+        "git_head": _git_head(root),
+        "tracked_file_sha256": {
+            path: _sha256_path(root / path) for path in tracked_files if (root / path).exists()
+        },
+    }
+
+
+def _git_head(repository_root: Path) -> str:
+    try:
+        result = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            cwd=repository_root,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+    except (OSError, subprocess.CalledProcessError):
+        return "unknown"
+    return result.stdout.strip() or "unknown"
+
 def write_hp001_readiness_approval_checklist_packet(metadata_dir: Path) -> Path:
     """Write the proposed HP-001 approval checklist for PI review."""
     target_dir = metadata_dir / "hp_scaling"
@@ -1325,7 +1461,10 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--write-cold-spell-acceptance-packet", action="store_true", help="Write the proposed HP/D-004 cold-spell tolerance decision packet without running acceptance.")
     parser.add_argument("--write-profile-consumption-template", action="store_true", help="Write the proposed HP-001 profile artifact consumption manifest template without approving values.")
     parser.add_argument("--write-profile-rebuild-preflight", action="store_true", help="Write the proposed HP-001 profile rebuild/checksum preflight template without creating load artifacts.")
-
+    parser.add_argument("--run-profile-rebuild-preflight", action="store_true", help="Run the metadata-only HP-001 profile rebuild preflight and write a blocker/output manifest.")
+    parser.add_argument("--profile-rebuild-preflight-manifest", default=None, help="Preflight manifest or committed template packet to validate for a future HP profile rebuild.")
+    parser.add_argument("--profile-rebuild-runner-output", default=None, help="Output path for the HP profile rebuild runner blocker/output manifest.")
+    parser.add_argument("--request-id", default="hp001_profile_rebuild_preflight_check", help="Request identity recorded in runner/checkpoint metadata.")
     parser.add_argument("--write-component-output-readiness-blocker", action="store_true", help="Write the proposed HP-001 IC-1 component-output readiness blocker packet without creating load artifacts.")
     parser.add_argument("--download", action="store_true", help="Retrieve/checksum the approved D-013 public sources; no values are produced.")
     parser.add_argument("--inspect-existing", action="store_true", help="Refresh schema metadata from existing ignored D-013 raw files without network or values.")
@@ -1348,6 +1487,16 @@ def main(argv: Sequence[str] | None = None) -> int:
         path = write_hp001_profile_artifact_consumption_manifest_template(Path(args.metadata_dir))
     elif args.write_profile_rebuild_preflight:
         path = write_hp001_profile_rebuild_preflight_template(Path(args.metadata_dir))
+    elif args.run_profile_rebuild_preflight:
+        metadata_dir = Path(args.metadata_dir)
+        preflight_manifest = Path(args.profile_rebuild_preflight_manifest) if args.profile_rebuild_preflight_manifest else None
+        output_path = Path(args.profile_rebuild_runner_output) if args.profile_rebuild_runner_output else metadata_dir / "hp_scaling" / PROFILE_REBUILD_RUNNER_OUTPUT_FILENAME
+        path = write_hp001_profile_rebuild_runner_manifest(
+            preflight_manifest or metadata_dir / "hp_scaling" / PROFILE_REBUILD_PREFLIGHT_TEMPLATE_FILENAME,
+            output_path,
+            request_id=args.request_id,
+            repository_root=Path("."),
+        )
     elif args.write_component_output_readiness_blocker:
         path = write_hp001_component_output_readiness_blocker_packet(Path(args.metadata_dir))
     elif args.write_formula_packet:
@@ -1360,4 +1509,3 @@ def main(argv: Sequence[str] | None = None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

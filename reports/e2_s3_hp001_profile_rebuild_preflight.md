@@ -14,6 +14,11 @@ Future HP work will need a deterministic rebuild/checksum step for the HP-001 pr
 - Output targets: the future profile artifact path, profile manifest path, checksum manifest path, 35,040 quarter-hour timesteps, 900-second cadence, four HP-001 components, and kW electric-power units.
 - Explicit blocker IDs: any unresolved blocker keeps the preflight red.
 
+## Runner Scaffold Added 2026-07-24
+
+`data/get_hp_scaling.py --run-profile-rebuild-preflight` now consumes either the committed preflight template packet or a future direct signed preflight manifest. It writes `data/metadata/hp_scaling/hp001_profile_rebuild_runner_blocker_manifest.json` with request ID, input manifest path, byte size, SHA-256, blocker IDs, validator names, git/code identity, and non-claims.
+
+The committed runner output is intentionally blocked because the current template still contains future approval placeholders, missing source artifact checksums, and non-matching placeholder HP/PV weather identities. A signed synthetic fixture can pass the runner in tests only, and the accepted state exposes the intended handoff metadata without creating a real HP profile artifact.
 ## Non-Claims
 
 This packet does not create or approve executable annual HP TWh values, 2035 adoption/electrification/service fractions, D-004 paired-weather final acceptance, cold-spell tolerances, HP profile artifacts, net-load/event/`P(E)`, capacity screens, threshold analysis, manuscript numbers, or probability results.

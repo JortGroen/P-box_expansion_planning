@@ -1,16 +1,16 @@
 {
   "command": ".\\.venv\\Scripts\\python.exe reports\\e3_s2b_generate_integrated_prerun_readiness.py",
-  "generated_at_utc": "2026-07-24T16:59:56Z",
-  "git_commit": "fe7316524720fc3953c48c7dfd2a4ecfbf1e1aa9",
-  "git_status_short_before_generation": "M paper/methods_decisions_and_assumptions.md\n M registers/DECISIONS.md\n M reports/E3_S2B_INTEGRATED_PRERUN_READINESS.md\n M reports/e3_s2b_generate_integrated_prerun_readiness.py\n M reports/e3_s2b_integrated_prerun_readiness_input.json\n M reports/e3_s2b_integrated_prerun_readiness_manifest.json\n M src/contracts/net_load.py\n M tests/test_evaluator_net_load.py",
+  "generated_at_utc": "2026-07-24T17:24:58Z",
+  "git_commit": "ed8e1947570f9432d70166aed63456876c415140",
+  "git_status_short_before_generation": "M  data/get_ev_component_outputs.py\nM  data/get_hp_scaling.py\nM  data/get_pv_capacity.py\nA  data/metadata/ev_adoption/e3_s2a_ev_ic1_generic_component_output_manifest_packet.json\nA  data/metadata/ev_adoption/generic_component_output_manifests/ev_2035_high.json\nA  data/metadata/ev_adoption/generic_component_output_manifests/ev_2035_low.json\nA  data/metadata/ev_adoption/generic_component_output_manifests/ev_2035_middle.json\nA  data/metadata/hp_scaling/hp001_profile_rebuild_runner_blocker_manifest.json\nA  data/metadata/weather_pv/d014_pv_component_output_artifact_scaffold.json\nUU paper/methods_decisions_and_assumptions.md\nM  registers/DATA_REGISTER.md\nM  registers/DECISIONS.md\n M reports/agent_logs/agent-a/E3.S2b-prerun-gate-and-screen-runner.md\nA  reports/agent_logs/agent-b/E5.S4-trust-certificate-analytic-gate.md\nA  reports/agent_logs/agent-c/E2.S3-hp001-profile-rebuild-runner-scaffold.md\nA  reports/agent_logs/agent-c/E3.S2a-ev-generic-loader-manifest.md\nA  reports/agent_logs/agent-c/e2_s4_d014_pv_component_output_artifact_scaffold.md\nM  reports/crosscheck.md\nM  reports/e2_s3_hp001_profile_rebuild_preflight.md\nA  reports/e2_s4_d014_pv_component_output_artifact_scaffold.md\nA  reports/e3_s2a_ev_generic_loader_manifest.md\n M reports/e3_s2b_generate_integrated_prerun_readiness.py\n M reports/e3_s2b_integrated_prerun_readiness_input.json\nM  src/ev_model.py\nM  src/pbox_crosscheck.py\nM  src/pv_model.py\nM  tests/test_data_sources.py\nM  tests/test_ev_model.py\nM  tests/test_pbox_crosscheck.py\nM  tests/test_pv_model.py",
   "input": {
     "path": "reports/e3_s2b_integrated_prerun_readiness_input.json",
     "schema_version": "e3_s2b_integrated_prerun_readiness_input_v1",
-    "sha256": "ec82c103a46115e1a634025756326444392f30ed839598ff7f53e7a373335d2d"
+    "sha256": "266182509f6184d6347855fe4a045db1c138375a1eb63c7dff13ae78b935e909"
   },
   "outputs": {
     "report_path": "reports/E3_S2B_INTEGRATED_PRERUN_READINESS.md",
-    "report_sha256": "2caea7c39107a700fdfcc25bc836906cebf12744a740ced3b1284d03590a47fb"
+    "report_sha256": "6f3e5452e9f7157f45e707c6eaf31708e381dcf025111a48d9b1d3f75ed4fc1d"
   },
   "preflight": {
     "accepted_artifact_preflight": {
@@ -124,30 +124,27 @@
             "message": "accepted component-output manifest is required before artifact-loader execution"
           },
           {
-            "artifact_id": "e2_s2_ev_ic1_accepted_artifact_index_preflight",
+            "artifact_id": "e3_s2a_ev_ic1_generic_component_output_2035_middle",
             "blocker_ids": [
-              "E3.S2-EV-COMPONENT-OUTPUT-SCHEMA"
+              "E3.S2-EV-COMPONENT-OUTPUT-ACCEPTANCE"
             ],
-            "code": "component_output_manifest_required_keys_missing",
+            "code": "component_output_manifest_not_accepted",
             "kind": "ev",
-            "message": "component-output manifest is not in the accepted-artifact loader schema",
-            "missing_keys": [
-              "artifact_status",
-              "kind",
-              "component_id",
-              "node_id",
-              "member_id",
-              "source_id",
-              "calendar_id",
-              "timestep_seconds",
-              "array_path",
-              "array_sha256",
-              "provenance"
-            ],
-            "path": "data/metadata/ev_adoption/e2_s2_ev_ic1_candidate_component_output_manifest.json"
+            "message": "component-output manifest status must be accepted before loader use",
+            "path": "data/metadata/ev_adoption/generic_component_output_manifests/ev_2035_middle.json"
           },
           {
-            "artifact_id": "e2_s2_ev_ic1_accepted_artifact_index_preflight",
+            "artifact_id": "e3_s2a_ev_ic1_generic_component_output_2035_middle",
+            "blocker_ids": [
+              "E3.S2-EV-NODE-MAPPING"
+            ],
+            "code": "component_output_manifest_node_missing",
+            "kind": "ev",
+            "message": "component-output manifest node_id must appear in executable artifact node_ids",
+            "path": "data/metadata/ev_adoption/generic_component_output_manifests/ev_2035_middle.json"
+          },
+          {
+            "artifact_id": "e3_s2a_ev_ic1_generic_component_output_2035_middle",
             "blocker_ids": [
               "E3.S2-EV-COMPONENT-OUTPUT-LOADER-CONTRACT"
             ],
@@ -159,18 +156,7 @@
               "node_axis_contract",
               "array_shape_contract"
             ],
-            "path": "data/metadata/ev_adoption/e2_s2_ev_ic1_candidate_component_output_manifest.json"
-          },
-          {
-            "artifact_id": "e2_s2_ev_ic1_accepted_artifact_index_preflight",
-            "blocker_ids": [
-              "E3.S2-EV-MULTI-NODE-COMPONENT-OUTPUT",
-              "IC-1-NODE-AXIS-CONTRACT"
-            ],
-            "code": "component_output_manifest_multi_node_not_loadable",
-            "kind": "ev",
-            "message": "multi-node component-output artifacts are blocked until A supports a multi-node loader or C emits per-node loadable manifests",
-            "path": "data/metadata/ev_adoption/e2_s2_ev_ic1_candidate_component_output_manifest.json"
+            "path": "data/metadata/ev_adoption/generic_component_output_manifests/ev_2035_middle.json"
           },
           {
             "artifact_id": "E2-S3-HP001-COMPONENT-OUTPUT-READINESS-BLOCKER",
@@ -229,10 +215,10 @@
         {
           "artifact_id": "e2_s2_ev_ic1_accepted_artifact_index_preflight",
           "checksum_match": true,
-          "expected_sha256": "01dcac20e7369a5997bb2a7584cac98e3a62a9ebaff4f44cfc4e6969c3bc4e39",
+          "expected_sha256": "224289519072ce9a858515b4a52b5004e35c405faf65d12cad676d8baf066921",
           "kind": "ev",
-          "path": "data/metadata/ev_adoption/e2_s2_ev_ic1_candidate_component_output_manifest.json",
-          "sha256": "01dcac20e7369a5997bb2a7584cac98e3a62a9ebaff4f44cfc4e6969c3bc4e39",
+          "path": "data/metadata/ev_adoption/generic_component_output_manifests/ev_2035_middle.json",
+          "sha256": "224289519072ce9a858515b4a52b5004e35c405faf65d12cad676d8baf066921",
           "state": "blocked"
         },
         {
@@ -260,7 +246,7 @@
           "state": "missing"
         }
       ],
-      "intended_use": "e3_s2b_integrated_prerun_gate_current_main_through_pr264",
+      "intended_use": "e3_s2b_integrated_prerun_gate_current_main_through_pr268",
       "metadata_preflight_only": true,
       "no_capacity_screen_result": true,
       "no_component_array_loading": true,
@@ -469,11 +455,16 @@
                     "load_000_to_load_114"
                   ],
                   "provenance": {
-                    "boundary_note": "PR #255 reports candidate component-output NPZ files missing in this checkout, so no EV arrays are opened or accepted for integrated assembly.",
-                    "packet_status": "accepted EV metadata index for Agent A preflight; blocked for integrated results",
+                    "boundary_note": "PR #265 exposes low/middle/high 115-node EV generic manifests. The configured Agent A loader probe uses the middle-branch manifest as representative and fails closed on the multi-node contract; no EV arrays are opened or accepted for integrated assembly.",
+                    "packet_status": "accepted EV metadata index for Agent A preflight; #265 generic component-output manifests are present but remain blocked for current single-node loader execution",
                     "readiness_bucket": "accepted_metadata_only",
                     "supporting_candidate_output_checksum_preflight": "data/metadata/ev_adoption/e3_s2a_ev_candidate_component_output_checksum_preflight.json",
-                    "supporting_candidate_output_checksum_preflight_sha256": "7fd8b7f02a753867abcb1c5646d4c288f522e7eaa49ad26e88256a4f7746e508"
+                    "supporting_candidate_output_checksum_preflight_sha256": "7fd8b7f02a753867abcb1c5646d4c288f522e7eaa49ad26e88256a4f7746e508",
+                    "supporting_ev_generic_manifest_high": "data/metadata/ev_adoption/generic_component_output_manifests/ev_2035_high.json",
+                    "supporting_ev_generic_manifest_low": "data/metadata/ev_adoption/generic_component_output_manifests/ev_2035_low.json",
+                    "supporting_ev_generic_manifest_middle": "data/metadata/ev_adoption/generic_component_output_manifests/ev_2035_middle.json",
+                    "supporting_ev_generic_manifest_packet": "data/metadata/ev_adoption/e3_s2a_ev_ic1_generic_component_output_manifest_packet.json",
+                    "supporting_ev_generic_manifest_packet_sha256": "74b0b545194839bbf0186586426b5cd31e48ef94b9b94de79776b26c04ce2019"
                   },
                   "shared_weather_driver_id": null,
                   "signed_register_ids": [
@@ -684,7 +675,7 @@
                 "accepted_artifact_loader_helper": "build_accepted_artifact_loader_blocker_preflight",
                 "calendar_id": "calendar_e3_s2b_planned_2030_2033_2035_15min_full_year",
                 "capacity_provenance_packet_path": "reports/e3_s2b_capacity_provenance_packet.json",
-                "component_output_loader_contract": "single_node_1d_component_output_v1; no spatially collapsed pseudo-node manifests accepted as executable",
+                "component_output_loader_contract": "single_node_1d_component_output_v1; current EV #265 generic manifests are multi-node and fail closed until A supports multi-node loading or C emits per-node loadable manifests",
                 "e3_s2b_prerun_helper": "build_e3_s2b_integrated_prerun_readiness",
                 "no_capacity_screen_result": true,
                 "no_event_detection": true,
@@ -693,7 +684,7 @@
                 "no_real_net_load_arrays": true,
                 "planning_year_basis": "G0-A4",
                 "primary_threshold_metadata": "G0-A3: strict L_import > 1.0 p.u. for four consecutive 15-minute import steps over the full year; 1.1 and 1.2 are sensitivities only",
-                "refresh_basis": "origin/main through PR #264; capacity provenance packet consumed by path and checksum",
+                "refresh_basis": "origin/main through PR #268; #263 PV component-output scaffold, #265 EV generic multi-node manifests, #266 B hybrid provenance guard, #267 HP profile rebuild runner scaffold, and #268 B alpha event-count scaffold consumed as metadata only; #264 capacity provenance consumed by path and checksum",
                 "threshold_basis": "G0-A3 metadata only; not evaluated in this pre-run readiness packet"
               },
               "node_ids": [
@@ -720,7 +711,7 @@
             "dry_run_only": true,
             "executable_input_gate": null,
             "gate_error": null,
-            "intended_use": "e3_s2b_integrated_prerun_gate_current_main_through_pr264",
+            "intended_use": "e3_s2b_integrated_prerun_gate_current_main_through_pr268",
             "missing_component_kinds": [],
             "no_capacity_screen_result": true,
             "no_event_detection": true,
@@ -745,7 +736,7 @@
             ],
             "screen_prerequisite_only": true
           },
-          "intended_use": "e3_s2b_integrated_prerun_gate_current_main_through_pr264",
+          "intended_use": "e3_s2b_integrated_prerun_gate_current_main_through_pr268",
           "manifest_fields": {
             "calendar_id": "calendar_e3_s2b_planned_2030_2033_2035_15min_full_year",
             "capacity_provenance": {
@@ -830,7 +821,7 @@
           }
         },
         "dry_run_only": true,
-        "intended_use": "e3_s2b_integrated_prerun_gate_current_main_through_pr264",
+        "intended_use": "e3_s2b_integrated_prerun_gate_current_main_through_pr268",
         "metadata_preflight_only": true,
         "no_capacity_screen_result": true,
         "no_event_counts": true,
@@ -1013,30 +1004,27 @@
           "message": "accepted component-output manifest is required before artifact-loader execution"
         },
         {
-          "artifact_id": "e2_s2_ev_ic1_accepted_artifact_index_preflight",
+          "artifact_id": "e3_s2a_ev_ic1_generic_component_output_2035_middle",
           "blocker_ids": [
-            "E3.S2-EV-COMPONENT-OUTPUT-SCHEMA"
+            "E3.S2-EV-COMPONENT-OUTPUT-ACCEPTANCE"
           ],
-          "code": "component_output_manifest_required_keys_missing",
+          "code": "component_output_manifest_not_accepted",
           "kind": "ev",
-          "message": "component-output manifest is not in the accepted-artifact loader schema",
-          "missing_keys": [
-            "artifact_status",
-            "kind",
-            "component_id",
-            "node_id",
-            "member_id",
-            "source_id",
-            "calendar_id",
-            "timestep_seconds",
-            "array_path",
-            "array_sha256",
-            "provenance"
-          ],
-          "path": "data/metadata/ev_adoption/e2_s2_ev_ic1_candidate_component_output_manifest.json"
+          "message": "component-output manifest status must be accepted before loader use",
+          "path": "data/metadata/ev_adoption/generic_component_output_manifests/ev_2035_middle.json"
         },
         {
-          "artifact_id": "e2_s2_ev_ic1_accepted_artifact_index_preflight",
+          "artifact_id": "e3_s2a_ev_ic1_generic_component_output_2035_middle",
+          "blocker_ids": [
+            "E3.S2-EV-NODE-MAPPING"
+          ],
+          "code": "component_output_manifest_node_missing",
+          "kind": "ev",
+          "message": "component-output manifest node_id must appear in executable artifact node_ids",
+          "path": "data/metadata/ev_adoption/generic_component_output_manifests/ev_2035_middle.json"
+        },
+        {
+          "artifact_id": "e3_s2a_ev_ic1_generic_component_output_2035_middle",
           "blocker_ids": [
             "E3.S2-EV-COMPONENT-OUTPUT-LOADER-CONTRACT"
           ],
@@ -1048,18 +1036,7 @@
             "node_axis_contract",
             "array_shape_contract"
           ],
-          "path": "data/metadata/ev_adoption/e2_s2_ev_ic1_candidate_component_output_manifest.json"
-        },
-        {
-          "artifact_id": "e2_s2_ev_ic1_accepted_artifact_index_preflight",
-          "blocker_ids": [
-            "E3.S2-EV-MULTI-NODE-COMPONENT-OUTPUT",
-            "IC-1-NODE-AXIS-CONTRACT"
-          ],
-          "code": "component_output_manifest_multi_node_not_loadable",
-          "kind": "ev",
-          "message": "multi-node component-output artifacts are blocked until A supports a multi-node loader or C emits per-node loadable manifests",
-          "path": "data/metadata/ev_adoption/e2_s2_ev_ic1_candidate_component_output_manifest.json"
+          "path": "data/metadata/ev_adoption/generic_component_output_manifests/ev_2035_middle.json"
         },
         {
           "artifact_id": "E2-S3-HP001-COMPONENT-OUTPUT-READINESS-BLOCKER",
@@ -1189,11 +1166,11 @@
         },
         {
           "blocker_ids": [
-            "E3.S2B-SUPPORTING-METADATA-CHECKSUM"
+            "E3.S2B-SUPPORTING-METADATA"
           ],
-          "code": "supporting_metadata_checksum_mismatch",
-          "message": "supporting metadata packet checksum does not match the preflight input",
-          "path": "src/pbox_runner_readiness.py"
+          "code": "supporting_metadata_missing",
+          "message": "supporting metadata packet is referenced but not present",
+          "path": "reports/agent_logs/agent-b/E4.S1-alpha-probability-estimator-readiness.md"
         }
       ],
       "ready": false
@@ -1344,7 +1321,7 @@
         ]
       }
     },
-    "intended_use": "e3_s2b_integrated_prerun_gate_current_main_through_pr264",
+    "intended_use": "e3_s2b_integrated_prerun_gate_current_main_through_pr268",
     "metadata_preflight_only": true,
     "no_capacity_screen_result": true,
     "no_event_counts": true,
@@ -1453,6 +1430,11 @@
         "sha256": "26994d0b025a07887f0fd17f71cd21ecb78f15601cdf17671e487569e64e2d86"
       },
       {
+        "exists": false,
+        "label": "agent_b_alpha_probability_estimator_log",
+        "path": "reports/agent_logs/agent-b/E4.S1-alpha-probability-estimator-readiness.md"
+      },
+      {
         "checksum_match": true,
         "exists": true,
         "expected_sha256": "81fbf9317d638451e22c605f3e8b3caa612222439a6b1ec846a6f4043d7e7d68",
@@ -1471,6 +1453,14 @@
       {
         "checksum_match": true,
         "exists": true,
+        "expected_sha256": "8e906d6ab592f7009e330082ffe5bdfbc6091765f9872c9b97315425b65ec669",
+        "label": "agent_b_hybrid_provenance_guard_log",
+        "path": "reports/agent_logs/agent-b/E5.S4-trust-certificate-analytic-gate.md",
+        "sha256": "8e906d6ab592f7009e330082ffe5bdfbc6091765f9872c9b97315425b65ec669"
+      },
+      {
+        "checksum_match": true,
+        "exists": true,
         "expected_sha256": "6d34e53ec804aca3d55f4f6bc27bc8fd198116fb6ca79d7a7e998a6c8ddbd86d",
         "label": "agent_b_pbox_monotonicity_module",
         "path": "src/pbox_monotonicity.py",
@@ -1485,9 +1475,9 @@
         "sha256": "008048d81de8cf16e0c15beb7966446f209cb57746e240605c27e70407d56013"
       },
       {
-        "checksum_match": false,
+        "checksum_match": true,
         "exists": true,
-        "expected_sha256": "b3302dd95086bd7fba0cc2355cc691397cceca1a317bea541b6cc05d38e673fc",
+        "expected_sha256": "2847f29f0bf11fe475456ab8c3408afa950f7d58ed5104a6a5276454aafc5f13",
         "label": "agent_b_runner_readiness_module",
         "path": "src/pbox_runner_readiness.py",
         "sha256": "2847f29f0bf11fe475456ab8c3408afa950f7d58ed5104a6a5276454aafc5f13"
@@ -1539,6 +1529,38 @@
         "label": "ev_candidate_output_checksum_preflight",
         "path": "data/metadata/ev_adoption/e3_s2a_ev_candidate_component_output_checksum_preflight.json",
         "sha256": "7fd8b7f02a753867abcb1c5646d4c288f522e7eaa49ad26e88256a4f7746e508"
+      },
+      {
+        "checksum_match": true,
+        "exists": true,
+        "expected_sha256": "46e70fe1dddd99a17eee12dc47dccb616f430e88415c9d7a7acd56c2be808894",
+        "label": "ev_generic_component_output_manifest_high",
+        "path": "data/metadata/ev_adoption/generic_component_output_manifests/ev_2035_high.json",
+        "sha256": "46e70fe1dddd99a17eee12dc47dccb616f430e88415c9d7a7acd56c2be808894"
+      },
+      {
+        "checksum_match": true,
+        "exists": true,
+        "expected_sha256": "db79bc0e5fd9810ebaa8675a8e473e2c0b8c4e8ceee5047a5678b282fe6d7914",
+        "label": "ev_generic_component_output_manifest_low",
+        "path": "data/metadata/ev_adoption/generic_component_output_manifests/ev_2035_low.json",
+        "sha256": "db79bc0e5fd9810ebaa8675a8e473e2c0b8c4e8ceee5047a5678b282fe6d7914"
+      },
+      {
+        "checksum_match": true,
+        "exists": true,
+        "expected_sha256": "224289519072ce9a858515b4a52b5004e35c405faf65d12cad676d8baf066921",
+        "label": "ev_generic_component_output_manifest_middle",
+        "path": "data/metadata/ev_adoption/generic_component_output_manifests/ev_2035_middle.json",
+        "sha256": "224289519072ce9a858515b4a52b5004e35c405faf65d12cad676d8baf066921"
+      },
+      {
+        "checksum_match": true,
+        "exists": true,
+        "expected_sha256": "74b0b545194839bbf0186586426b5cd31e48ef94b9b94de79776b26c04ce2019",
+        "label": "ev_generic_component_output_manifest_packet",
+        "path": "data/metadata/ev_adoption/e3_s2a_ev_ic1_generic_component_output_manifest_packet.json",
+        "sha256": "74b0b545194839bbf0186586426b5cd31e48ef94b9b94de79776b26c04ce2019"
       },
       {
         "checksum_match": true,
@@ -1599,6 +1621,22 @@
       {
         "checksum_match": true,
         "exists": true,
+        "expected_sha256": "56b09d7922dd46b9d0f8c7ef6a967dfe46cc66c39c7da2c1d8a8d19ffd969e7a",
+        "label": "hp_profile_rebuild_runner_blocker_manifest",
+        "path": "data/metadata/hp_scaling/hp001_profile_rebuild_runner_blocker_manifest.json",
+        "sha256": "56b09d7922dd46b9d0f8c7ef6a967dfe46cc66c39c7da2c1d8a8d19ffd969e7a"
+      },
+      {
+        "checksum_match": true,
+        "exists": true,
+        "expected_sha256": "36f0bd92fdc526b1e816febeb55dea932071ef06543b68f6895e9bcde8cdf30e",
+        "label": "hp_profile_rebuild_runner_report",
+        "path": "reports/e2_s3_hp001_profile_rebuild_preflight.md",
+        "sha256": "36f0bd92fdc526b1e816febeb55dea932071ef06543b68f6895e9bcde8cdf30e"
+      },
+      {
+        "checksum_match": true,
+        "exists": true,
         "expected_sha256": "4a32bbffaf171660e2f80d4ad8f874f2da58b74390008d8481057df2da00034a",
         "label": "hp_readiness_approval_checklist",
         "path": "data/metadata/hp_scaling/hp001_alkmaar_gm0361_readiness_approval_checklist.json",
@@ -1619,6 +1657,22 @@
         "label": "prior_e3_s2b_e3s3_prerun_skeleton",
         "path": "reports/E3_S2B_E3S3_PRERUN_CONFIG_SKELETON.md",
         "sha256": "27377f319dedaa79ea2a871800602309e77d9087d624ee734410863600344660"
+      },
+      {
+        "checksum_match": true,
+        "exists": true,
+        "expected_sha256": "ba4ce8a6e6a7408fb5d2126e9f24c56741c3d00d1d4d29d5cddcbebc8854dd49",
+        "label": "pv_component_output_artifact_scaffold",
+        "path": "data/metadata/weather_pv/d014_pv_component_output_artifact_scaffold.json",
+        "sha256": "ba4ce8a6e6a7408fb5d2126e9f24c56741c3d00d1d4d29d5cddcbebc8854dd49"
+      },
+      {
+        "checksum_match": true,
+        "exists": true,
+        "expected_sha256": "faad77bdf6b1710fdd15b161c3a222abd9fc2c2818760441f28a3e228cbfe360",
+        "label": "pv_component_output_artifact_scaffold_report",
+        "path": "reports/e2_s4_d014_pv_component_output_artifact_scaffold.md",
+        "sha256": "faad77bdf6b1710fdd15b161c3a222abd9fc2c2818760441f28a3e228cbfe360"
       },
       {
         "checksum_match": true,

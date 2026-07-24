@@ -74,14 +74,14 @@ P_upper(alpha) = sum p_i for states where state_i.value - rho_lo(alpha) > c_fini
 
 The fixture uses three finite states whose probabilities sum to one. The tests hand-check the resulting alpha-indexed intervals, verify nestedness from support to core, and verify that no scalar defuzzified probability is exposed. Aleatory uncertainty stays in state probabilities; epistemic uncertainty stays in alpha-indexed lower/upper probability bounds.
 
-The published Baudrit-style reproduction remains fail-closed until a verified source/example is registered or otherwise PI-approved. The `e5s4-hybrid-reproduction-readiness-v1` packet records source status, the published-example identifier, whether the example has been reproduced, whether qualitative hybrid behavior was checked, and explicit blocker strings. A pending-source packet may document the gap, but `assert_hybrid_reproduction_ready_payload` rejects it before it can satisfy the E5.S4 trust certificate.
+The published Baudrit-style reproduction remains fail-closed until a verified source/example is registered or otherwise PI-approved. The `e5s4-hybrid-reproduction-readiness-v1` packet records source status, the published-example identifier, whether the example has been reproduced, whether qualitative hybrid behavior was checked, explicit blocker strings, and machine-readable provenance IDs for the source, published example, and reproduction evidence. A pending-source packet may document the gap, but `assert_hybrid_reproduction_ready_payload` rejects it before it can satisfy the E5.S4 trust certificate.
 
 
 ## Trust-Certificate Manifest Scaffold
 
 The trust-certificate manifest, `e5s4-math-core-trust-certificate-v1`, records what is green now and what remains blocked before paper-facing math claims. It accepts a valid blocked packet so the PI can see the blocker list, but it rejects payloads that relabel the scaffold as paper-facing, claim readiness while blockers remain, or introduce scalar collapsed fields such as `defuzzified_probability`. The current green checks are the analytic Gaussian tolerance comparison, alpha-indexed nestedness, separate lower/upper confidence-interval containment, and no scalar defuzzification at the serialized boundary.
 
-The published-example blocker remains explicit: no Baudrit-style numerical reproduction is cited or encoded until the exact source/example provenance is verified and register-allowed. G3 also remains pending for any paper-facing vertex-shortcut claim.
+The published-example blocker remains explicit: no Baudrit-style numerical reproduction is cited or encoded until the exact source/example provenance is verified, register-allowed, and tied to reproduction evidence. G3 also remains pending for any paper-facing vertex-shortcut claim.
 
 ## Cross-Check 3: Output-Error Endpoint Ordering Toy
 
@@ -106,7 +106,7 @@ The E5.S4 package lives in `src/pbox_crosscheck.py` with tests in `tests/test_pb
 - `estimate_gaussian_toy_pbox` routes the Gaussian toy through the existing p-box endpoint pathway using canonical RNG sample identities and `PRE_G3_SYNTHETIC` mode.
 - `build_gaussian_crosscheck_manifest` emits a JSON-stable analytic certificate with alpha-indexed oracle/estimate rows, separate lower/upper confidence intervals, nestedness, absolute errors, a tolerance guard, and explicit synthetic-only non-claims.
 - `FiniteHybridState` and `finite_hybrid_bounds` provide a small qualitative hybrid/p-box fixture with exact hand-summed lower/upper event probabilities.
-- `HybridReproductionReadiness`, `build_math_core_trust_certificate_manifest`, and `assert_math_core_trust_certificate_payload` keep the published Baudrit-style reproduction fail-closed until source/example provenance and reproduction evidence are complete, while still making the analytic toy green checks manifestable.
+- `HybridReproductionReadiness`, `build_math_core_trust_certificate_manifest`, and `assert_math_core_trust_certificate_payload` keep the published Baudrit-style reproduction fail-closed until source/example/reproduction provenance IDs and reproduction evidence are complete, while still making the analytic toy green checks manifestable.
 - `OutputErrorToyTrajectory` and `output_error_alpha_crosscheck_records` provide a synthetic output-error ordering check with manifest-ready endpoint counts and alpha-level CRN identity.
 - `bootstrap_probability_interval` and `monotonicity_sweep_from_events` provide synthetic fixed-CRN rho-sweep diagnostics with deterministic rank-bootstrap intervals and explicit violation reporting.
 
@@ -122,7 +122,7 @@ This executable synthetic package does not use real net-load data, the project o
 | Nested alpha intervals | Trapezoidal fuzzy `rho` with multiple alpha levels | Probability intervals contract as alpha increases | yes |
 | CRN identity | Seeded executable Gaussian fixture | Same sample identities across alpha levels and endpoints | yes |
 | Baudrit-style reporting discipline | Finite hybrid toy | Alpha-indexed lower/upper bounds only; no defuzzified answer | yes |
-| Published hybrid reproduction readiness | `e5s4-hybrid-reproduction-readiness-v1` and aggregate `e5s4-math-core-trust-certificate-v1` packets | Pending-source packets are valid blockers but cannot satisfy paper-facing readiness; scalar defuzzification and false-ready tampering are rejected | yes |
+| Published hybrid reproduction readiness | `e5s4-hybrid-reproduction-readiness-v1` and aggregate `e5s4-math-core-trust-certificate-v1` packets | Pending-source packets are valid blockers but cannot satisfy paper-facing readiness; ready packets require source/example/reproduction provenance IDs; scalar defuzzification and false-ready tampering are rejected | yes |
 | Output-error ordering | Synthetic loading trajectories with endpoint envelopes | Error endpoints act before event detection; probabilities are not shifted | yes |
 | Output-error CRN identity | Alpha-indexed synthetic loading samples with explicit sample IDs | Same ordered sample identities are preserved across alpha levels | yes |
 | Synthetic monotonicity sweep | Boolean toy event indicators over a rho grid | Probabilities are ordered, local violations are reported, and no G3 verdict is emitted | yes |
