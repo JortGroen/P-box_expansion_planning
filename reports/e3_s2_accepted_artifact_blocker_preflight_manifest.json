@@ -1,16 +1,16 @@
 {
   "command": ".\\.venv\\Scripts\\python.exe reports\\e3_s2_generate_accepted_artifact_blocker_preflight.py",
-  "generated_at_utc": "2026-07-24T13:19:14Z",
-  "git_commit": "fd279150e552ad0f257c8373cd774b642f61fbc8",
-  "git_status_short_before_generation": "?? reports/E3_S2_ACCEPTED_ARTIFACT_BLOCKER_PREFLIGHT.md\n?? reports/e3_s2_accepted_artifact_blocker_preflight_manifest.json",
+  "generated_at_utc": "2026-07-24T13:25:42Z",
+  "git_commit": "3690fcbf61ab391fce494c067113b85ba7a58c4f",
+  "git_status_short_before_generation": "",
   "input": {
     "path": "reports/e3_s2_accepted_artifact_blocker_preflight_input.json",
     "schema_version": "e3_s2_accepted_artifact_blocker_preflight_input_v1",
-    "sha256": "b87b934c79f2c2a2a73128dc19078f2070d6e598818b4b325bd4b5797230d4f6"
+    "sha256": "d177e275861fc4f85f3376743afaf6ab459872b40120df558c72fbac5707cba8"
   },
   "outputs": {
     "report_path": "reports/E3_S2_ACCEPTED_ARTIFACT_BLOCKER_PREFLIGHT.md",
-    "report_sha256": "7d6f515608d83c2e99d0a6b3d3394a187d2a472ebb169dbbff59eb7d9781291f"
+    "report_sha256": "dc3ca84d1e5c333323409ed92a7e2e651eb2c730ffd913566d5cc96462c3ef1d"
   },
   "preflight": {
     "blocker_manifest": {
@@ -49,14 +49,12 @@
         },
         {
           "blocker_ids": [
-            "PV-PARAM-001",
-            "D-014",
-            "D014-PV-CAPACITY-SOURCE-VALUE-PACKET",
-            "D014-CBS-PV-CAPACITY-ANCHOR-EVIDENCE",
             "D014-PV-CAPACITY-APPROVAL-TEMPLATE",
-            "D014-PV-STATISTICAL-ORIENTATION-TILT-PACKET",
-            "FINAL-PAIRED-HP-PV-ACCEPTANCE",
-            "COLD-SPELL-ACCEPTANCE"
+            "A-016",
+            "PV-ORIENT-001",
+            "PV-PARAM-001",
+            "future_node_allocation_rule",
+            "future_final_paired_acceptance"
           ],
           "code": "component_artifact_gate_blocked",
           "kind": "pv",
@@ -162,7 +160,7 @@
           "message": "accepted component-output manifest is required before artifact-loader execution"
         },
         {
-          "artifact_id": "d004_pv_final_acceptance_gate_packet",
+          "artifact_id": "D014-PV-EXECUTABLE-READINESS-BLOCKERS",
           "blocker_ids": [
             "PV-PARAM-001",
             "D-014",
@@ -218,7 +216,7 @@
         "state": "missing"
       },
       {
-        "artifact_id": "d004_pv_final_acceptance_gate_packet",
+        "artifact_id": "D014-PV-EXECUTABLE-READINESS-BLOCKERS",
         "kind": "pv",
         "path": null,
         "state": "missing"
@@ -236,7 +234,7 @@
         "state": "missing"
       }
     ],
-    "intended_use": "e3_s2_accepted_artifact_loader_blocker_preflight_after_pr234_235_236_237_238",
+    "intended_use": "e3_s2_accepted_artifact_loader_blocker_preflight_after_pr234_to_pr241",
     "metadata_preflight_only": true,
     "no_capacity_screen_result": true,
     "no_component_array_loading": true,
@@ -264,14 +262,12 @@
             "cold_spell_tolerances"
           ],
           "pv": [
-            "PV-PARAM-001",
-            "D-014",
-            "D014-PV-CAPACITY-SOURCE-VALUE-PACKET",
-            "D014-CBS-PV-CAPACITY-ANCHOR-EVIDENCE",
             "D014-PV-CAPACITY-APPROVAL-TEMPLATE",
-            "D014-PV-STATISTICAL-ORIENTATION-TILT-PACKET",
-            "FINAL-PAIRED-HP-PV-ACCEPTANCE",
-            "COLD-SPELL-ACCEPTANCE"
+            "A-016",
+            "PV-ORIENT-001",
+            "PV-PARAM-001",
+            "future_node_allocation_rule",
+            "future_final_paired_acceptance"
           ]
         },
         "downstream_gate_blockers": [
@@ -305,14 +301,12 @@
               "cold_spell_tolerances"
             ],
             "pv": [
-              "PV-PARAM-001",
-              "D-014",
-              "D014-PV-CAPACITY-SOURCE-VALUE-PACKET",
-              "D014-CBS-PV-CAPACITY-ANCHOR-EVIDENCE",
               "D014-PV-CAPACITY-APPROVAL-TEMPLATE",
-              "D014-PV-STATISTICAL-ORIENTATION-TILT-PACKET",
-              "FINAL-PAIRED-HP-PV-ACCEPTANCE",
-              "COLD-SPELL-ACCEPTANCE"
+              "A-016",
+              "PV-ORIENT-001",
+              "PV-PARAM-001",
+              "future_node_allocation_rule",
+              "future_final_paired_acceptance"
             ]
           },
           "downstream_gate_blockers": [
@@ -585,42 +579,32 @@
             "pv": {
               "accepted_for_gate": false,
               "artifact": {
-                "artifact_id": "d004_pv_final_acceptance_gate_packet",
+                "artifact_id": "D014-PV-EXECUTABLE-READINESS-BLOCKERS",
                 "artifact_status": "unsigned",
                 "blocking_register_ids": [
-                  "PV-PARAM-001",
-                  "D-014",
-                  "D014-PV-CAPACITY-SOURCE-VALUE-PACKET",
-                  "D014-CBS-PV-CAPACITY-ANCHOR-EVIDENCE",
                   "D014-PV-CAPACITY-APPROVAL-TEMPLATE",
-                  "D014-PV-STATISTICAL-ORIENTATION-TILT-PACKET",
-                  "FINAL-PAIRED-HP-PV-ACCEPTANCE",
-                  "COLD-SPELL-ACCEPTANCE"
+                  "A-016",
+                  "PV-ORIENT-001",
+                  "PV-PARAM-001",
+                  "future_node_allocation_rule",
+                  "future_final_paired_acceptance"
                 ],
                 "calendar_id": "calendar_2035_15min_full_year_35040",
                 "kind": "pv",
-                "manifest_path": "data/metadata/weather_pv/d004_pv_final_acceptance_gate_packet.json",
-                "member_id": "pv_final_acceptance_unapproved",
+                "manifest_path": "data/metadata/weather_pv/d014_pv_executable_readiness_blockers.json",
+                "member_id": "pv_weather_source_member_ready_pv_generation_blocked",
                 "node_ids": [
                   "simbench_1_mv_semiurb_0_sw_all_in_service_load_nodes"
                 ],
                 "provenance": {
-                  "capacity_source_route": "PV-CAP-001 approved route; PR #222 added D-014 CBS Alkmaar anchor evidence, but executable row/year/field, numeric capacity value, scenario growth factor, capacity convention, and per-node allocation remain pending.",
-                  "classification_note": "PV final-acceptance gate packet remains the current PV/weather gate packet after PR #237. PV-CAP-001 and PV-ORIENT-001 approve route/scope only; concrete D-014 numeric capacity values, scenario growth, capacity convention, per-node allocation, statistical orientation/tilt source/weights, PV-PARAM-001, final paired HP/PV acceptance, and cold-spell acceptance remain unresolved before executable PV/weather input.",
-                  "discovered_path": "data/metadata/weather_pv/d004_pv_final_acceptance_gate_packet.json",
-                  "older_paired_readiness_packet": "data/metadata/weather_pv/d004_pv_paired_readiness_preflight_packet.json",
-                  "orientation_tilt_route": "PV-ORIENT-001 approves statistical orientation/tilt scope only; D014-PV-STATISTICAL-ORIENTATION-TILT-PACKET is proposed and source, bins, weights, and conversion treatment remain pending.",
-                  "packet_status": "blocked pending PV-PARAM-001, D-014 value/source packets including CBS anchor value choice, final paired HP/PV acceptance, and cold-spell acceptance; PV-CAP-001/PV-ORIENT-001 route and scope approved but executable values pending",
+                  "classification_note": "Merged PR #241 records accepted weather source/member readiness but keeps executable PV generation blocked until D-014 capacity, A-016 scenario consistency, PV-ORIENT/PV-PARAM, node allocation, and final paired HP/PV/cold-spell gates are signed.",
+                  "discovered_path": "data/metadata/weather_pv/d014_pv_executable_readiness_blockers.json",
+                  "packet_status": "proposed fail-closed executable PV readiness blockers; executable values unsigned",
                   "readiness_bucket": "proposed_blocked",
                   "supporting_capacity_approval_template": "data/metadata/weather_pv/d014_pv_capacity_approval_template.json",
                   "supporting_capacity_approval_template_sha256": "f4124256525f9004d4a12dce5150bc9ad73935661586884f1ff781073a07a6f7",
-                  "supporting_capacity_source_value_packet": "data/metadata/weather_pv/d014_pv_capacity_source_value_packet.json",
-                  "supporting_cbs_capacity_anchor_evidence": "data/metadata/weather_pv/d014_cbs_85005ned_alkmaar_gm0361_anchor_evidence.json",
-                  "supporting_cbs_capacity_anchor_report": "reports/e2_s4_d014_cbs_capacity_anchor_evidence.md",
-                  "supporting_report": "reports/e2_s4_pv_final_acceptance_gate_packet.md",
-                  "supporting_statistical_orientation_report": "reports/e2_s4_d014_pv_statistical_orientation_tilt_packet.md",
-                  "supporting_statistical_orientation_tilt_packet": "data/metadata/weather_pv/d014_pv_statistical_orientation_tilt_packet.json",
-                  "weather_input_artifact": "data/metadata/weather_pv/d004_alkmaar_berkhout_2014_2023_v1_weather_input_artifact.json"
+                  "supporting_report": "reports/e2_s4_d014_pv_executable_readiness_blockers.md",
+                  "supporting_weather_input_artifact": "data/metadata/weather_pv/d004_alkmaar_berkhout_2014_2023_v1_weather_input_artifact.json"
                 },
                 "shared_weather_driver_id": "d004_alkmaar_berkhout_2014_2023_v1:unselected",
                 "signed_register_ids": [
@@ -630,24 +614,22 @@
                   "PV-CAP-001",
                   "PV-ORIENT-001"
                 ],
-                "source_id": "d004_pv_final_acceptance_gate_metadata",
+                "source_id": "d014_pv_executable_readiness_blockers_metadata",
                 "timestep_seconds": 900,
-                "version_id": "d004_pv_final_acceptance_gate_packet_v1"
+                "version_id": "d014_pv_executable_readiness_blockers_v1"
               },
-              "artifact_id": "d004_pv_final_acceptance_gate_packet",
+              "artifact_id": "D014-PV-EXECUTABLE-READINESS-BLOCKERS",
               "artifact_status": "unsigned",
               "blocking_register_ids": [
-                "PV-PARAM-001",
-                "D-014",
-                "D014-PV-CAPACITY-SOURCE-VALUE-PACKET",
-                "D014-CBS-PV-CAPACITY-ANCHOR-EVIDENCE",
                 "D014-PV-CAPACITY-APPROVAL-TEMPLATE",
-                "D014-PV-STATISTICAL-ORIENTATION-TILT-PACKET",
-                "FINAL-PAIRED-HP-PV-ACCEPTANCE",
-                "COLD-SPELL-ACCEPTANCE"
+                "A-016",
+                "PV-ORIENT-001",
+                "PV-PARAM-001",
+                "future_node_allocation_rule",
+                "future_final_paired_acceptance"
               ],
               "kind": "pv",
-              "manifest_path": "data/metadata/weather_pv/d004_pv_final_acceptance_gate_packet.json",
+              "manifest_path": "data/metadata/weather_pv/d014_pv_executable_readiness_blockers.json",
               "reason": "artifact_status_not_accepted",
               "signed_register_ids": [
                 "WEATHER-001",
@@ -672,7 +654,7 @@
               "no_real_net_load_arrays": true,
               "planning_year_basis": "G0-A4",
               "primary_threshold_metadata": "G0-A3: strict L_import > 1.0 p.u. for four consecutive 15-minute import steps over the full year; 1.1 and 1.2 are sensitivities only",
-              "refresh_basis": "origin/main after PR #234, #235, #236, #237, and #238 merged",
+              "refresh_basis": "origin/main through PR #241 after PR #234, #235, #236, #237, #238, #240, and #241 merged",
               "threshold_basis": "G0-A3 resolved but not evaluated in this preflight"
             },
             "node_ids": [
@@ -697,7 +679,7 @@
           "dry_run_only": true,
           "executable_input_gate": null,
           "gate_error": null,
-          "intended_use": "e3_s2_accepted_artifact_loader_blocker_preflight_after_pr234_235_236_237_238",
+          "intended_use": "e3_s2_accepted_artifact_loader_blocker_preflight_after_pr234_to_pr241",
           "missing_component_kinds": [],
           "no_capacity_screen_result": true,
           "no_event_detection": true,
@@ -722,7 +704,7 @@
           ],
           "screen_prerequisite_only": true
         },
-        "intended_use": "e3_s2_accepted_artifact_loader_blocker_preflight_after_pr234_235_236_237_238",
+        "intended_use": "e3_s2_accepted_artifact_loader_blocker_preflight_after_pr234_to_pr241",
         "manifest_fields": {
           "calendar_id": "calendar_2035_15min_full_year_35040",
           "capacity_provenance": null,
@@ -790,7 +772,7 @@
         }
       },
       "dry_run_only": true,
-      "intended_use": "e3_s2_accepted_artifact_loader_blocker_preflight_after_pr234_235_236_237_238",
+      "intended_use": "e3_s2_accepted_artifact_loader_blocker_preflight_after_pr234_to_pr241",
       "metadata_preflight_only": true,
       "no_capacity_screen_result": true,
       "no_event_counts": true,
@@ -830,14 +812,14 @@
           "sha256": "609a9631498559c6af4926f640e0c00ac9d2cac44aa40e8b3dbf5cd80a952270"
         },
         {
-          "artifact_id": "d004_pv_final_acceptance_gate_packet",
+          "artifact_id": "D014-PV-EXECUTABLE-READINESS-BLOCKERS",
           "artifact_status": "unsigned",
           "checksum_match": true,
           "exists": true,
-          "expected_sha256": "e88761b7735681ea1a3f59445617899d6dcc4f723779661115c3a99d1b85b94a",
+          "expected_sha256": "9bf7ed48cf266e3292d5bafc179becb0326160329056c9845d5ee9f7e9bc5844",
           "kind": "pv",
-          "path": "data/metadata/weather_pv/d004_pv_final_acceptance_gate_packet.json",
-          "sha256": "e88761b7735681ea1a3f59445617899d6dcc4f723779661115c3a99d1b85b94a"
+          "path": "data/metadata/weather_pv/d014_pv_executable_readiness_blockers.json",
+          "sha256": "9bf7ed48cf266e3292d5bafc179becb0326160329056c9845d5ee9f7e9bc5844"
         },
         {
           "artifact_id": "e2_s6_a014_alkmaar_executable_adoption_artifact",
