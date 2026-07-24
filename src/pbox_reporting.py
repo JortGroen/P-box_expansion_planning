@@ -13,6 +13,7 @@ import math
 from typing import Mapping, Sequence
 
 from src.pbox import PBoxFamily, VertexUseMode
+from src.pbox_ac_promotion import assert_selective_ac_promotion_payload
 from src.pbox_result_guards import (
     FinalResultPrerequisites,
     PaperFacingGuardReport,
@@ -34,6 +35,7 @@ class GuardedPBoxReport:
     probability_rows: tuple[dict[str, object], ...]
     use_status: UseStatus = "synthetic-only"
     output_error_record: Mapping[str, object] | None = None
+    selective_ac_promotion_metadata: Mapping[str, object] | None = None
 
     def __post_init__(self) -> None:
         if not isinstance(self.result_kind, PaperFacingResultKind):
@@ -43,6 +45,12 @@ class GuardedPBoxReport:
         assert_alpha_indexed_probability_report(self.probability_rows)
         if self.output_error_record is not None:
             _validate_output_error_record(self.output_error_record)
+        if self.selective_ac_promotion_metadata is not None:
+            _validate_selective_ac_metadata_record(
+                self.selective_ac_promotion_metadata,
+                output_error_record=self.output_error_record,
+                probability_rows=self.probability_rows,
+            )
         if self.use_status == "paper-facing":
             if not self.guard.allowed:
                 missing = "; ".join(self.guard.missing_prerequisites)
@@ -65,6 +73,10 @@ class GuardedPBoxReport:
         }
         if self.output_error_record is not None:
             record["output_error_record"] = dict(self.output_error_record)
+        if self.selective_ac_promotion_metadata is not None:
+            record["selective_ac_promotion_metadata"] = dict(
+                self.selective_ac_promotion_metadata
+            )
         return record
 
 
@@ -133,6 +145,7 @@ def build_guarded_pbox_report(
     result_kind: PaperFacingResultKind = PaperFacingResultKind.PBOX_PROBABILITY,
     use_status: UseStatus = "synthetic-only",
     output_error_record: Mapping[str, object] | None = None,
+    selective_ac_promotion_metadata: Mapping[str, object] | None = None,
 ) -> GuardedPBoxReport:
     """Build a guarded record for synthetic or future paper-facing reporting.
 
@@ -155,6 +168,7 @@ def build_guarded_pbox_report(
         probability_rows=probability_rows_from_pbox_family(pbox_family),
         use_status=use_status,
         output_error_record=output_error_record,
+        selective_ac_promotion_metadata=selective_ac_promotion_metadata,
     )
 
 
@@ -166,6 +180,7 @@ def build_runner_report_boundary_record(
     result_kind: PaperFacingResultKind = PaperFacingResultKind.PBOX_PROBABILITY,
     use_status: UseStatus = "synthetic-only",
     output_error_record: Mapping[str, object] | None = None,
+    selective_ac_promotion_metadata: Mapping[str, object] | None = None,
 ) -> RunnerReportBoundaryRecord:
     """Build the guarded p-box payload future runner/report code should emit.
 
@@ -182,6 +197,7 @@ def build_runner_report_boundary_record(
             result_kind=result_kind,
             use_status=use_status,
             output_error_record=output_error_record,
+            selective_ac_promotion_metadata=selective_ac_promotion_metadata,
         ),
     )
 
@@ -251,9 +267,20 @@ def _validate_guarded_report_mapping(report: Mapping[str, object]) -> None:
     row_mappings = tuple(_expect_mapping(row, name="probability row") for row in rows)
     assert_alpha_indexed_probability_report(row_mappings)
     has_endpoint_record = "output_error_record" in report
+    output_error_record = None
     if has_endpoint_record:
-        _validate_output_error_record(
-            _expect_mapping(report["output_error_record"], name="output_error_record")
+        output_error_record = _expect_mapping(
+            report["output_error_record"], name="output_error_record"
+        )
+        _validate_output_error_record(output_error_record)
+    if "selective_ac_promotion_metadata" in report:
+        _validate_selective_ac_metadata_record(
+            _expect_mapping(
+                report["selective_ac_promotion_metadata"],
+                name="selective_ac_promotion_metadata",
+            ),
+            output_error_record=output_error_record,
+            probability_rows=row_mappings,
         )
     prerequisites = _expect_mapping(
         guard["prerequisites"], name="guard.prerequisites"
@@ -268,6 +295,78 @@ def _validate_guarded_report_mapping(report: Mapping[str, object]) -> None:
                 raise RuntimeError(
                     "vertex boundary payload requires G3-approved vertex rows"
                 )
+
+
+def _validate_selective_ac_metadata_record(
+    metadata: Mapping[str, object],
+    *,
+    output_error_record: Mapping[str, object] | None,
+    probability_rows: Sequence[Mapping[str, object]],
+) -> None:
+    assert_selective_ac_promotion_payload(metadata)
+    if output_error_record is None:
+        raise ValueError(
+            "selective_ac_promotion_metadata requires output_error_record"
+        )
+
+    reported_alpha_grid = tuple(float(row["alpha"]) for row in probability_rows)
+    metadata_alpha_grid = tuple(
+        float(alpha)
+        for alpha in _expect_sequence(
+            metadata["alpha_grid"], name="selective_ac_promotion_metadata.alpha_grid"
+        )
+    )
+    if metadata_alpha_grid != reported_alpha_grid:
+        raise ValueError(
+            "selective_ac_promotion_metadata alpha_grid must match probability_rows"
+        )
+
+    event_counts = _expect_mapping(
+        output_error_record["event_count_bounds"],
+        name="output_error_record.event_count_bounds",
+    )
+    sample_count = _expect_nonnegative_int(
+        event_counts.get("sample_count"), name="output_error_record.sample_count"
+    )
+    metadata_sample_count = _expect_nonnegative_int(
+        metadata["sample_count"], name="selective_ac_promotion_metadata.sample_count"
+    )
+    if metadata_sample_count != sample_count:
+        raise ValueError(
+            "selective_ac_promotion_metadata sample_count must match output_error_record"
+        )
+
+    endpoint_events = {
+        int(event["sample_index"]): event
+        for event in (
+            _expect_mapping(raw_event, name="sample_endpoint_event")
+            for raw_event in _expect_sequence(
+                output_error_record["sample_endpoint_events"],
+                name="output_error_record.sample_endpoint_events",
+            )
+        )
+    }
+    for raw_candidate in _expect_sequence(
+        metadata["candidates"], name="selective_ac_promotion_metadata.candidates"
+    ):
+        candidate = _expect_mapping(raw_candidate, name="selective_ac_promotion_candidate")
+        sample_index = int(candidate["sample_index"])
+        endpoint_event = endpoint_events.get(sample_index)
+        if endpoint_event is None:
+            raise ValueError(
+                "selective_ac_promotion_metadata candidate sample_index must reference an endpoint record"
+            )
+        # Candidate metadata must replay the same endpoint-event facts; otherwise
+        # a future report could promote a sample identity using diagnostics from
+        # a different output-error realization.
+        if candidate["lower_event"] != endpoint_event["lower_event"]:
+            raise ValueError(
+                "selective_ac_promotion_metadata lower_event must match endpoint record"
+            )
+        if candidate["upper_event"] != endpoint_event["upper_event"]:
+            raise ValueError(
+                "selective_ac_promotion_metadata upper_event must match endpoint record"
+            )
 
 
 def _validate_guard_mapping(
@@ -320,6 +419,7 @@ def _expect_sequence(value: object, *, name: str) -> Sequence[object]:
     if isinstance(value, (str, bytes)) or not isinstance(value, Sequence):
         raise TypeError(f"{name} must be a sequence")
     return value
+
 
 def _assert_g3_approved_vertex_family(pbox_family: PBoxFamily) -> None:
     for result in pbox_family.values():
