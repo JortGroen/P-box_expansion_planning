@@ -1,0 +1,98 @@
+{
+  "approved_foundation": {
+    "cold_spell_design": "E2-S3-COLD-SPELL-ACCEPTANCE-DESIGN approves the diagnostic design but not numerical tolerances.",
+    "d004_source_member_use": "D004-SOURCE-MEMBER-ACCEPTANCE approves D-004 source/member use for internal first-screen work only.",
+    "hp001_boundary": "Residential SFH/MFH space heat plus domestic hot water using approved D-003 When2Heat shape/COP columns; COM heat excluded.",
+    "indicator_mapping": "D013-PBL-MAPPING/A-015 approves only the PBL residential indicator mapping.",
+    "scenario_consistency": "A-016 approves the scenario-consistency requirement, but the HP integrated-use binding remains unsigned until an explicit scenario_source_consistency approval ID is recorded.",
+    "weather_contract": "WEATHER-001 requires HP/PV to consume the same shared weather member identity and calendar."
+  },
+  "created_utc": "2026-07-24T15:17:44Z",
+  "current_blockers": [
+    "annual HP TWh values and 2035 adoption/electrification/service fractions are unsigned",
+    "A-016 scenario-source consistency is not signed for a real integrated case",
+    "D-004 final paired-weather acceptance is not signed",
+    "cold-spell numerical tolerances and real acceptance evidence are unsigned",
+    "no real HP profile artifact rebuild/checksum command has approved source artifacts"
+  ],
+  "future_required_manifest_status": "approved_for_hp001_profile_rebuild_preflight",
+  "non_claims": [
+    "No HP profile artifact is generated or approved.",
+    "No executable annual HP values are created.",
+    "No D-004 paired-weather or cold-spell final acceptance is signed or run.",
+    "No net-load, event, P(E), threshold, capacity-screen, manuscript, or probability analysis is run."
+  ],
+  "packet_id": "E2-S3-HP001-PROFILE-REBUILD-PREFLIGHT",
+  "preflight_manifest_template": {
+    "approval_ids": {
+      "adoption_electrification": "<future signed adoption_electrification approval id>",
+      "cold_spell_tolerances": "<future signed cold_spell_tolerances approval id>",
+      "d004_paired_weather_acceptance": "<future signed d004_paired_weather_acceptance approval id>",
+      "denominator": "<future signed denominator approval id>",
+      "scenario_source_consistency": "<future signed scenario_source_consistency approval id>",
+      "sfh_mfh_split": "<future signed sfh_mfh_split approval id>",
+      "unit_conversion": "<future signed unit_conversion approval id>",
+      "value_column": "<future signed value_column approval id>"
+    },
+    "output_plan": {
+      "cadence_seconds": 900,
+      "checksum_manifest_path": "data/metadata/hp_scaling/<future_signed_hp001_profile_checksum_manifest>.json",
+      "component_count": 4,
+      "electric_power_unit": "kW",
+      "n_timesteps": 35040,
+      "profile_artifact_path": "data/processed/hp_profiles/<future_signed_hp001_profile>.npz",
+      "profile_manifest_path": "data/metadata/hp_scaling/<future_signed_hp001_profile_manifest>.json"
+    },
+    "paired_pv_weather_identity": {
+      "cadence_seconds": 900,
+      "content_sha256": "<must match HP weather_identity>",
+      "member_id": "<must match HP weather_identity>",
+      "n_timesteps": 35040,
+      "shared_weather_driver_id": "<must match HP weather_identity>",
+      "source": "<must match HP weather_identity>"
+    },
+    "source_artifacts": {
+      "value_binding_record": {
+        "data_id": "D-013",
+        "path": "data/metadata/hp_scaling/<future signed value-binding record>.json",
+        "provenance": "PI-signed HP-001 annual value/adoption binding",
+        "sha256": "<future value-binding record SHA-256>"
+      },
+      "weather_member": {
+        "data_id": "D-004",
+        "path": "data/processed/weather_pv/<future WEATHER-001 member artifact>",
+        "provenance": "D-004 accepted paired weather member",
+        "sha256": "<future WEATHER-001 member SHA-256>"
+      },
+      "when2heat_source": {
+        "data_id": "D-003",
+        "path": "data/raw/when2heat/<future checked When2Heat file>",
+        "provenance": "When2Heat/OPSD 2023-07-27 CSV accepted by PI",
+        "sha256": "<future D-003 SHA-256>"
+      }
+    },
+    "status": "approved_for_hp001_profile_rebuild_preflight",
+    "unresolved_blocker_ids": [],
+    "weather_identity": {
+      "cadence_seconds": 900,
+      "content_sha256": "<future WEATHER-001 member content SHA-256>",
+      "member_id": "<future accepted D-004 member_id>",
+      "n_timesteps": 35040,
+      "shared_weather_driver_id": "<future accepted D-004 shared_weather_driver_id>",
+      "source": "<future accepted D-004 source/provenance label>"
+    }
+  },
+  "purpose": "Define the signed metadata a future HP profile rebuild/checksum run must carry before generating HP artifacts.",
+  "required_approval_keys_before_rebuild": [
+    "value_column",
+    "denominator",
+    "unit_conversion",
+    "sfh_mfh_split",
+    "adoption_electrification",
+    "scenario_source_consistency",
+    "d004_paired_weather_acceptance",
+    "cold_spell_tolerances"
+  ],
+  "status": "proposed_rebuild_preflight_template_not_executable",
+  "validator": "src.hp_model.require_hp001_profile_rebuild_preflight_manifest"
+}

@@ -30,6 +30,7 @@ READINESS_APPROVAL_CHECKLIST_FILENAME = "hp001_alkmaar_gm0361_readiness_approval
 EXECUTABLE_VALUE_BINDING_DECISION_PACKET_FILENAME = "hp001_alkmaar_gm0361_executable_value_binding_decision_packet.json"
 COLD_SPELL_ACCEPTANCE_DECISION_PACKET_FILENAME = "hp001_d004_cold_spell_acceptance_decision_packet.json"
 PROFILE_ARTIFACT_CONSUMPTION_MANIFEST_TEMPLATE_FILENAME = "hp001_profile_artifact_consumption_manifest_template.json"
+PROFILE_REBUILD_PREFLIGHT_TEMPLATE_FILENAME = "hp001_profile_artifact_rebuild_preflight_template.json"
 
 COMPONENT_OUTPUT_READINESS_BLOCKER_FILENAME = "hp001_component_output_readiness_blocker_packet.json"
 DOWNLOAD_TIMEOUT_S = 120.0
@@ -668,6 +669,85 @@ def build_hp001_profile_artifact_consumption_manifest_template() -> dict[str, An
     }
 
 
+def build_hp001_profile_rebuild_preflight_template() -> dict[str, Any]:
+    """Return a fail-closed template for a future HP profile rebuild request."""
+    readiness = build_hp001_readiness_approval_checklist_packet()
+    required_approval_keys = readiness["fail_closed_handoff"]["required_final_approval_keys"]
+    return {
+        "packet_id": "E2-S3-HP001-PROFILE-REBUILD-PREFLIGHT",
+        "created_utc": _utc_now(),
+        "status": "proposed_rebuild_preflight_template_not_executable",
+        "future_required_manifest_status": "approved_for_hp001_profile_rebuild_preflight",
+        "purpose": "Define the signed metadata a future HP profile rebuild/checksum run must carry before generating HP artifacts.",
+        "validator": "src.hp_model.require_hp001_profile_rebuild_preflight_manifest",
+        "approved_foundation": readiness["approved_foundation"],
+        "required_approval_keys_before_rebuild": required_approval_keys,
+        "preflight_manifest_template": {
+            "status": "approved_for_hp001_profile_rebuild_preflight",
+            "approval_ids": {key: f"<future signed {key} approval id>" for key in required_approval_keys},
+            "source_artifacts": {
+                "when2heat_source": {
+                    "data_id": "D-003",
+                    "path": "data/raw/when2heat/<future checked When2Heat file>",
+                    "sha256": "<future D-003 SHA-256>",
+                    "provenance": "When2Heat/OPSD 2023-07-27 CSV accepted by PI",
+                },
+                "weather_member": {
+                    "data_id": "D-004",
+                    "path": "data/processed/weather_pv/<future WEATHER-001 member artifact>",
+                    "sha256": "<future WEATHER-001 member SHA-256>",
+                    "provenance": "D-004 accepted paired weather member",
+                },
+                "value_binding_record": {
+                    "data_id": "D-013",
+                    "path": "data/metadata/hp_scaling/<future signed value-binding record>.json",
+                    "sha256": "<future value-binding record SHA-256>",
+                    "provenance": "PI-signed HP-001 annual value/adoption binding",
+                },
+            },
+            "weather_identity": {
+                "shared_weather_driver_id": "<future accepted D-004 shared_weather_driver_id>",
+                "member_id": "<future accepted D-004 member_id>",
+                "source": "<future accepted D-004 source/provenance label>",
+                "content_sha256": "<future WEATHER-001 member content SHA-256>",
+                "n_timesteps": 35040,
+                "cadence_seconds": 900,
+            },
+            "paired_pv_weather_identity": {
+                "shared_weather_driver_id": "<must match HP weather_identity>",
+                "member_id": "<must match HP weather_identity>",
+                "source": "<must match HP weather_identity>",
+                "content_sha256": "<must match HP weather_identity>",
+                "n_timesteps": 35040,
+                "cadence_seconds": 900,
+            },
+            "output_plan": {
+                "profile_artifact_path": "data/processed/hp_profiles/<future_signed_hp001_profile>.npz",
+                "profile_manifest_path": "data/metadata/hp_scaling/<future_signed_hp001_profile_manifest>.json",
+                "checksum_manifest_path": "data/metadata/hp_scaling/<future_signed_hp001_profile_checksum_manifest>.json",
+                "n_timesteps": 35040,
+                "cadence_seconds": 900,
+                "component_count": 4,
+                "electric_power_unit": "kW",
+            },
+            "unresolved_blocker_ids": [],
+        },
+        "current_blockers": [
+            "annual HP TWh values and 2035 adoption/electrification/service fractions are unsigned",
+            "A-016 scenario-source consistency is not signed for a real integrated case",
+            "D-004 final paired-weather acceptance is not signed",
+            "cold-spell numerical tolerances and real acceptance evidence are unsigned",
+            "no real HP profile artifact rebuild/checksum command has approved source artifacts",
+        ],
+        "non_claims": [
+            "No HP profile artifact is generated or approved.",
+            "No executable annual HP values are created.",
+            "No D-004 paired-weather or cold-spell final acceptance is signed or run.",
+            "No net-load, event, P(E), threshold, capacity-screen, manuscript, or probability analysis is run.",
+        ],
+    }
+
+
 def build_hp001_component_output_readiness_blocker_packet() -> dict[str, Any]:
     """Return the fail-closed HP component-output blocker packet for IC-1."""
     readiness = build_hp001_readiness_approval_checklist_packet()
@@ -800,6 +880,17 @@ def write_hp001_profile_artifact_consumption_manifest_template(metadata_dir: Pat
     target_dir.mkdir(parents=True, exist_ok=True)
     path = target_dir / PROFILE_ARTIFACT_CONSUMPTION_MANIFEST_TEMPLATE_FILENAME
     payload = build_hp001_profile_artifact_consumption_manifest_template()
+    path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    return path
+
+
+
+def write_hp001_profile_rebuild_preflight_template(metadata_dir: Path) -> Path:
+    """Write the proposed future HP profile rebuild/checksum preflight template."""
+    target_dir = metadata_dir / "hp_scaling"
+    target_dir.mkdir(parents=True, exist_ok=True)
+    path = target_dir / PROFILE_REBUILD_PREFLIGHT_TEMPLATE_FILENAME
+    payload = build_hp001_profile_rebuild_preflight_template()
     path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     return path
 
@@ -1233,6 +1324,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--write-executable-value-binding-packet", action="store_true", help="Write the proposed HP-001 executable value-binding decision packet without approving values.")
     parser.add_argument("--write-cold-spell-acceptance-packet", action="store_true", help="Write the proposed HP/D-004 cold-spell tolerance decision packet without running acceptance.")
     parser.add_argument("--write-profile-consumption-template", action="store_true", help="Write the proposed HP-001 profile artifact consumption manifest template without approving values.")
+    parser.add_argument("--write-profile-rebuild-preflight", action="store_true", help="Write the proposed HP-001 profile rebuild/checksum preflight template without creating load artifacts.")
 
     parser.add_argument("--write-component-output-readiness-blocker", action="store_true", help="Write the proposed HP-001 IC-1 component-output readiness blocker packet without creating load artifacts.")
     parser.add_argument("--download", action="store_true", help="Retrieve/checksum the approved D-013 public sources; no values are produced.")
@@ -1254,6 +1346,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         path = write_hp001_cold_spell_acceptance_decision_packet(Path(args.metadata_dir))
     elif args.write_profile_consumption_template:
         path = write_hp001_profile_artifact_consumption_manifest_template(Path(args.metadata_dir))
+    elif args.write_profile_rebuild_preflight:
+        path = write_hp001_profile_rebuild_preflight_template(Path(args.metadata_dir))
     elif args.write_component_output_readiness_blocker:
         path = write_hp001_component_output_readiness_blocker_packet(Path(args.metadata_dir))
     elif args.write_formula_packet:

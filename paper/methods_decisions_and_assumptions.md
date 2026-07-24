@@ -1812,6 +1812,12 @@ paired-weather cold-spell checks, net-load integration, event analysis, `P(E)`,
 threshold runs, capacity-screen results, manuscript numbers, or probability
 results.
 
+
+<!-- methods-id: E2-S3-HP001-PROFILE-REBUILD-PREFLIGHT -->
+### E2-S3-HP001-PROFILE-REBUILD-PREFLIGHT - HP-001 Profile Artifact Rebuild/Checksum Preflight
+
+**Status: Proposed preflight template; executable HP artifacts unsigned.** The HP-001 profile artifact rebuild/checksum preflight defines the metadata that a future rebuild request must satisfy before any HP profile artifact generation can run. The proposed guard requires signed approval IDs for annual value binding, 2035 adoption/electrification, A-016 scenario-source consistency, D-004 paired-weather acceptance, and cold-spell tolerances, and rejects template or stale approval strings such as `<future ...>`, `placeholder`, `proposed`, `pending`, `unsigned`, `TODO`, `TBD`, or `not-approved`; source artifact records for D-003 When2Heat, D-004 WEATHER-001 member input, and D-013 value binding with path, SHA-256, data ID, and provenance; identical HP/PV WEATHER-001 identity fields; 35,040 quarter-hour output targets; checksum-manifest targets; and an empty unresolved-blocker list. The committed JSON is only a template with placeholders, so the validator rejects it until a later signed manifest replaces the placeholders. This packet does not approve annual HP TWh values, 2035 adoption/electrification/service fractions, final D-004 paired-weather or cold-spell acceptance, a real profile rebuild, net-load/event analysis, `P(E)`, threshold/capacity-screen results, manuscript numbers, or probability results.
+
 <!-- methods-id: E2-S3-HP001-COMPONENT-OUTPUT-READINESS-BLOCKER -->
 ### E2-S3-HP001-COMPONENT-OUTPUT-READINESS-BLOCKER - HP-001 Component-Output Readiness Blocker Packet
 
