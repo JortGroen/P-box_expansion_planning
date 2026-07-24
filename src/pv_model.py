@@ -654,6 +654,163 @@ def load_pv_capacity_value_choice_packet(path: str | Path) -> PVCapacityValueCho
 
 
 @dataclass(frozen=True)
+class PVCapacityApprovalTemplatePacket:
+    """Unsigned D-014 template for a future PI-signed executable PV capacity artifact."""
+
+    packet_id: str
+    data_id: str
+    status: str
+    download_performed: bool
+    raw_data_committed: bool
+    upstream_value_choice_packet: Mapping[str, object]
+    approved_route_boundary: Mapping[str, object]
+    required_signed_artifact_fields: Mapping[str, object]
+    executable_gate: Mapping[str, object]
+    recommended_pi_path: Mapping[str, object]
+    non_claims: Sequence[str]
+
+    def __post_init__(self) -> None:
+        if self.packet_id != "D014-PV-CAPACITY-APPROVAL-TEMPLATE":
+            raise ValueError("PV capacity approval template must identify D014-PV-CAPACITY-APPROVAL-TEMPLATE")
+        if self.data_id != "D-014":
+            raise ValueError("PV capacity approval template must identify D-014")
+        if self.status != "proposed_signed_capacity_artifact_template_no_values":
+            raise ValueError("PV capacity approval template must remain proposed and value-free")
+        if self.download_performed is not False or self.raw_data_committed is not False:
+            raise ValueError("PV capacity approval template must not claim retrieval or raw committed data")
+        upstream = _audit_json_mapping(self.upstream_value_choice_packet, "upstream_value_choice_packet")
+        boundary = _audit_json_mapping(self.approved_route_boundary, "approved_route_boundary")
+        required = _audit_json_mapping(self.required_signed_artifact_fields, "required_signed_artifact_fields")
+        gate = _audit_json_mapping(self.executable_gate, "executable_gate")
+        recommendation = _audit_json_mapping(self.recommended_pi_path, "recommended_pi_path")
+        non_claims = tuple(str(item) for item in self.non_claims)
+
+        if upstream.get("packet_id") != "D014-PV-CAPACITY-VALUE-CHOICE-PACKET":
+            raise ValueError("capacity approval template must derive from the value-choice packet")
+        if len(str(upstream.get("metadata_sha256", ""))) != 64:
+            raise ValueError("capacity approval template must record the value-choice metadata SHA-256")
+        if upstream.get("recommendation_status") != "proposed_unsigned_not_executable":
+            raise ValueError("capacity approval template must preserve unsigned upstream recommendation status")
+        if boundary.get("capacity_route_decision") != "PV-CAP-001":
+            raise ValueError("capacity approval template must be governed by PV-CAP-001")
+        if boundary.get("scenario_consistency_decision") != "A-016":
+            raise ValueError("capacity approval template must preserve A-016 scenario consistency")
+        if boundary.get("orientation_scope_decision") != "PV-ORIENT-001":
+            raise ValueError("capacity approval template must preserve PV-ORIENT-001")
+        if "no building/roof/3DBAG/PV-map" not in str(boundary.get("orientation_scope_boundary", "")):
+            raise ValueError("capacity approval template must not reopen building-level PV geometry")
+
+        field_groups = {str(key): tuple(str(item) for item in value) for key, value in required.items()}
+        required_groups = {
+            "artifact_identity",
+            "capacity_value",
+            "cbs_anchor_operand",
+            "ii3050_growth_operand",
+            "a016_scenario_consistency",
+            "allocation_and_conversion_dependencies",
+            "audit_outputs",
+        }
+        missing_groups = required_groups.difference(field_groups)
+        if missing_groups:
+            raise ValueError(f"capacity approval template missing field groups: {sorted(missing_groups)}")
+        required_fields = {
+            "installed_capacity_value",
+            "installed_capacity_unit",
+            "capacity_convention",
+            "cbs_source_period_key",
+            "cbs_sector_category_key",
+            "cbs_capacity_field_key",
+            "ii3050_scenario_column",
+            "ii3050_growth_factor_value",
+            "scenario_consistency_mapping_id",
+            "node_allocation_rule_id",
+            "statistical_orientation_tilt_distribution_id",
+            "pv_param_decision_id",
+            "content_sha256",
+        }
+        flattened = {item for values in field_groups.values() for item in values}
+        missing_fields = required_fields.difference(flattened)
+        if missing_fields:
+            raise ValueError(f"capacity approval template missing signed fields: {sorted(missing_fields)}")
+
+        if gate.get("accepted_for_executable_pv_capacity_input") is not False:
+            raise ValueError("unsigned capacity approval template must not allow executable capacity input")
+        if gate.get("signed_capacity_value_approved") is not False:
+            raise ValueError("capacity approval template must keep signed capacity approval false")
+        if gate.get("requires_pi_signed_decision") is not True:
+            raise ValueError("capacity approval template must require a PI-signed decision")
+        blocking = tuple(str(item) for item in gate.get("blocking_approval_keys", ()))
+        for required_key in (
+            "ii3050_growth_factor_value",
+            "scenario_source_consistency_with_ev_hp_inputs",
+            "node_allocation_rule",
+            "PV-PARAM-001_or_amended_conversion_decision",
+        ):
+            if required_key not in blocking:
+                raise ValueError(f"capacity approval template missing blocking key {required_key}")
+        if recommendation.get("not_approved_by_this_template") is not True:
+            raise ValueError("capacity approval template recommendation must remain unsigned")
+        if not any("No final PV installed-capacity value" in item for item in non_claims):
+            raise ValueError("capacity approval template must state that no final capacity is approved")
+        if not any("No PV generation" in item for item in non_claims):
+            raise ValueError("capacity approval template must state that no PV generation is produced")
+
+        object.__setattr__(self, "upstream_value_choice_packet", upstream)
+        object.__setattr__(self, "approved_route_boundary", boundary)
+        object.__setattr__(self, "required_signed_artifact_fields", MappingProxyType(field_groups))
+        object.__setattr__(self, "executable_gate", gate)
+        object.__setattr__(self, "recommended_pi_path", recommendation)
+        object.__setattr__(self, "non_claims", non_claims)
+
+    @property
+    def missing_approval_keys(self) -> tuple[str, ...]:
+        return tuple(str(item) for item in self.executable_gate["blocking_approval_keys"])
+
+    def require_signed_capacity_artifact(self) -> None:
+        """Always fail until a later PI-signed capacity artifact replaces this template."""
+        raise ValueError(
+            "D-014 PV capacity approval template is unsigned; executable PV requires a signed capacity "
+            "artifact with CBS row, II3050 growth factor, scenario consistency, allocation, and PV-PARAM approvals"
+        )
+
+    def identity_record(self) -> dict[str, object]:
+        return {
+            "packet_id": self.packet_id,
+            "data_id": self.data_id,
+            "status": self.status,
+            "upstream_value_choice_packet_id": self.upstream_value_choice_packet["packet_id"],
+            "upstream_value_choice_sha256": self.upstream_value_choice_packet["metadata_sha256"],
+            "capacity_route_decision": self.approved_route_boundary["capacity_route_decision"],
+            "scenario_consistency_decision": self.approved_route_boundary["scenario_consistency_decision"],
+            "orientation_scope_decision": self.approved_route_boundary["orientation_scope_decision"],
+            "recommended_equation_id_for_review": self.recommended_pi_path["recommended_equation_id_for_review"],
+            "recommended_capacity_label_before_pv_param": self.recommended_pi_path[
+                "recommended_capacity_label_before_pv_param"
+            ],
+            "missing_approval_keys": self.missing_approval_keys,
+            "executable_capacity_value_approved": False,
+        }
+
+
+def load_pv_capacity_approval_template_packet(path: str | Path) -> PVCapacityApprovalTemplatePacket:
+    """Load the unsigned D-014 PV capacity approval-template packet."""
+    payload = json.loads(Path(path).read_text(encoding="utf-8"))
+    return PVCapacityApprovalTemplatePacket(
+        packet_id=str(payload.get("packet_id", "")),
+        data_id=str(payload.get("data_id", "")),
+        status=str(payload.get("status", "")),
+        download_performed=bool(payload.get("download_performed")),
+        raw_data_committed=bool(payload.get("raw_data_committed")),
+        upstream_value_choice_packet=payload.get("upstream_value_choice_packet", {}),
+        approved_route_boundary=payload.get("approved_route_boundary", {}),
+        required_signed_artifact_fields=payload.get("required_signed_artifact_fields", {}),
+        executable_gate=payload.get("executable_gate", {}),
+        recommended_pi_path=payload.get("recommended_pi_path", {}),
+        non_claims=payload.get("non_claims", ()),
+    )
+
+
+@dataclass(frozen=True)
 class PVStatisticalOrientationTiltPacket:
     """Proposed D-014 statistical orientation/tilt packet that stays fail-closed."""
 

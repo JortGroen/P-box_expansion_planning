@@ -1342,3 +1342,37 @@ def test_d014_orientation_tilt_value_choice_packet_lists_unsigned_candidate_valu
     payload = json.loads(path.read_text(encoding="utf-8"))
     assert path.name == "d014_pv_orientation_tilt_value_choice_packet.json"
     assert payload["status"].startswith("proposed_value_choice_packet")
+
+
+def test_d014_capacity_approval_template_is_value_free_and_fail_closed() -> None:
+    packet = pv_capacity.build_d014_pv_capacity_approval_template_packet()
+
+    assert packet["packet_id"] == "D014-PV-CAPACITY-APPROVAL-TEMPLATE"
+    assert packet["data_id"] == "D-014"
+    assert packet["status"] == "proposed_signed_capacity_artifact_template_no_values"
+    assert packet["download_performed"] is False
+    assert packet["raw_data_committed"] is False
+    assert packet["upstream_value_choice_packet"]["packet_id"] == "D014-PV-CAPACITY-VALUE-CHOICE-PACKET"
+    assert len(packet["upstream_value_choice_packet"]["metadata_sha256"]) == 64
+    assert packet["approved_route_boundary"]["capacity_route_decision"] == "PV-CAP-001"
+    assert packet["approved_route_boundary"]["scenario_consistency_decision"] == "A-016"
+    assert packet["approved_route_boundary"]["orientation_scope_decision"] == "PV-ORIENT-001"
+    assert packet["executable_gate"]["accepted_for_executable_pv_capacity_input"] is False
+    assert packet["executable_gate"]["signed_capacity_value_approved"] is False
+    assert "installed_capacity_value" in packet["required_signed_artifact_fields"]["capacity_value"]
+    assert "ii3050_growth_factor_value" in packet["executable_gate"]["blocking_approval_keys"]
+    assert any("No PV generation" in item for item in packet["non_claims"])
+
+
+def test_committed_d014_capacity_approval_template_records_unsigned_contract() -> None:
+    payload = json.loads(
+        Path("data/metadata/weather_pv/d014_pv_capacity_approval_template.json").read_text(
+            encoding="utf-8"
+        )
+    )
+
+    assert payload["packet_id"] == "D014-PV-CAPACITY-APPROVAL-TEMPLATE"
+    assert payload["upstream_value_choice_packet"]["recommended_equation_id"] == "dc_kwp_source_year_matched_ii3050_ratio"
+    assert payload["recommended_pi_path"]["not_approved_by_this_template"] is True
+    assert payload["executable_gate"]["requires_pi_signed_decision"] is True
+    assert "PV-PARAM-001_or_amended_conversion_decision" in payload["executable_gate"]["blocking_approval_keys"]
