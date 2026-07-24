@@ -19,13 +19,13 @@
     "paired_weather_identity_mismatch:content_sha256"
   ],
   "code_identity": {
-    "git_head": "1256dde4f6778496e6956fbcc709f89295391ad9",
+    "git_head": "8a5af5a2ca4c5c18f295a63501ef5e86fac18200",
     "tracked_file_sha256": {
-      "data/get_hp_scaling.py": "8319325d9ab5b2c3cc739097022de8e5615fe5c36ea9a0ec83c0a9e7a4b29c03",
+      "data/get_hp_scaling.py": "636a3cd1b0f8272843f7b6a68c5a216579fb4ee3f84172a3e9a5590f3508839d",
       "src/hp_model.py": "f496322b81e8d4aab2a661455d8df7c5163984b378b893e587701f211e3d15e4"
     }
   },
-  "created_utc": "2026-07-24T16:42:35Z",
+  "created_utc": "2026-07-24T16:47:51Z",
   "input_manifest": {
     "kind": "template_packet_preflight_manifest_template",
     "path": "data/metadata/hp_scaling/hp001_profile_artifact_rebuild_preflight_template.json",
