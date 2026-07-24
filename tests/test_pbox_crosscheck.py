@@ -275,10 +275,46 @@ def test_hybrid_reproduction_readiness_accepts_verified_reproduction_packet() ->
         example_reproduced=True,
         qualitative_behavior_checked=True,
         blockers=(),
+        provenance_ids=(
+            "source:D-verified-hybrid-example",
+            "published-example:example-4-2",
+            "reproduction-evidence:reports/e5_s4_baudrit_reproduction.json",
+        ),
     )
 
     assert readiness.ready is True
     assert_hybrid_reproduction_ready_payload(readiness.to_mapping())
+
+
+def test_hybrid_reproduction_readiness_rejects_ready_without_exact_provenance_roles() -> None:
+    with pytest.raises(ValueError, match="missing provenance roles"):
+        HybridReproductionReadiness(
+            source_id="D-verified-hybrid-example",
+            source_status="verified-approved",
+            published_example_id="example-1",
+            example_reproduced=True,
+            qualitative_behavior_checked=True,
+            blockers=(),
+            provenance_ids=(
+                "source:D-verified-hybrid-example",
+                "published-example:example-4-2",
+            ),
+        )
+
+    with pytest.raises(ValueError, match="unsigned placeholder"):
+        HybridReproductionReadiness(
+            source_id="D-verified-hybrid-example",
+            source_status="verified-approved",
+            published_example_id="example-1",
+            example_reproduced=True,
+            qualitative_behavior_checked=True,
+            blockers=(),
+            provenance_ids=(
+                "source:D-verified-hybrid-example",
+                "published-example:pending-example",
+                "reproduction-evidence:reports/e5_s4_baudrit_reproduction.json",
+            ),
+        )
 
 
 def test_hybrid_reproduction_readiness_rejects_serialized_tampering() -> None:
@@ -304,8 +340,29 @@ def test_hybrid_reproduction_readiness_rejects_serialized_tampering() -> None:
 
     false_ready = dict(payload)
     false_ready["ready"] = True
-    with pytest.raises(RuntimeError, match="not ready"):
+    with pytest.raises(ValueError, match="ready flag"):
         assert_hybrid_reproduction_ready_payload(false_ready)
+
+
+def test_hybrid_reproduction_readiness_rejects_ready_flag_tamper_on_verified_packet() -> None:
+    readiness = HybridReproductionReadiness(
+        source_id="D-verified-hybrid-example",
+        source_status="verified-approved",
+        published_example_id="example-1",
+        example_reproduced=True,
+        qualitative_behavior_checked=True,
+        blockers=(),
+        provenance_ids=(
+            "source:D-verified-hybrid-example",
+            "published-example:example-4-2",
+            "reproduction-evidence:reports/e5_s4_baudrit_reproduction.json",
+        ),
+    )
+    tampered = readiness.to_mapping()
+    tampered["ready"] = False
+
+    with pytest.raises(ValueError, match="ready flag"):
+        assert_hybrid_reproduction_ready_payload(tampered)
 
 
 def test_math_core_trust_certificate_records_green_analytic_and_blocked_source() -> None:
@@ -392,6 +449,7 @@ def test_math_core_trust_certificate_rejects_ready_and_defuzzified_tampering() -
     relabeled["use_status"] = "paper-facing"
     with pytest.raises(ValueError, match="synthetic-only"):
         assert_math_core_trust_certificate_payload(relabeled)
+
 
 def test_finite_hybrid_crosscheck_matches_hand_computed_probability_bounds() -> None:
     fuzzy = TrapezoidalFuzzyNumber(0.0, 0.2, 0.4, 0.6)
