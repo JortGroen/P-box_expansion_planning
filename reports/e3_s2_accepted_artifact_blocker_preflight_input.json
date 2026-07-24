@@ -1,7 +1,7 @@
 {
   "schema_version": "e3_s2_accepted_artifact_blocker_preflight_input_v1",
   "task_id": "E3.S2",
-  "intended_use": "e3_s2_accepted_artifact_loader_blocker_preflight_after_pr234_to_pr241",
+  "intended_use": "e3_s2_accepted_artifact_loader_blocker_preflight_through_pr243",
   "scope": "metadata_preflight_only_no_arrays_no_ic2_execution_no_events_no_probability_no_capacity_screen",
   "config": {
     "config_id": "e3_s2_accepted_artifact_loader_blocker_preflight_v1",
@@ -31,7 +31,7 @@
       "no_event_detection": true,
       "no_probability_estimate": true,
       "no_capacity_screen_result": true,
-      "refresh_basis": "origin/main through PR #241 after PR #234, #235, #236, #237, #238, #240, and #241 merged",
+      "refresh_basis": "origin/main through PR #243 after EV accepted-artifact index preflight merged",
       "ic2_bridge_preflight_path": "reports/E3_S2_EXECUTABLE_BRIDGE_PREFLIGHT.md",
       "primary_threshold_metadata": "G0-A3: strict L_import > 1.0 p.u. for four consecutive 15-minute import steps over the full year; 1.1 and 1.2 are sensitivities only",
       "accepted_artifact_loader_helper": "build_accepted_artifact_loader_blocker_preflight"
@@ -64,38 +64,41 @@
       }
     },
     {
-      "artifact_id": "e2_s2_ev_ic1_component_output_consumption_packet",
+      "artifact_id": "e2_s2_ev_ic1_accepted_artifact_index_preflight",
       "kind": "ev",
       "artifact_status": "accepted",
-      "version_id": "e2_s2_ev_ic1_component_output_consumption_packet_v1",
-      "source_id": "elaadnl_ev_component_output_consumption_packet",
-      "member_id": "ev005b_candidate_selection_manifest_set_root20260722_sample0",
+      "version_id": "e2_s2_ev_ic1_accepted_artifact_index_preflight_v1",
+      "source_id": "elaadnl_ev_accepted_artifact_index_preflight",
+      "member_id": "ev005b_candidate_index_root20260722_sample0_all_declared_branches",
       "calendar_id": "planning-2035-europe-amsterdam-15min",
       "node_ids": [
         "load_000_to_load_114"
       ],
       "signed_register_ids": [
+        "A-014",
         "EV-003",
-        "EV-004",
         "EV-005",
         "EV-005B",
+        "EV-007",
         "EV-007A",
         "EV-008A",
         "EV-CAL-001",
-        "A-014"
+        "RNG-001"
       ],
       "blocking_register_ids": [],
       "timestep_seconds": 900,
-      "manifest_path": "data/metadata/ev_adoption/e2_s2_ev_ic1_component_output_consumption_packet.json",
+      "manifest_path": "data/metadata/ev_adoption/e2_s2_ev_ic1_accepted_artifact_index_preflight.json",
       "provenance": {
-        "discovered_path": "data/metadata/ev_adoption/e2_s2_ev_ic1_component_output_consumption_packet.json",
-        "supporting_component_input_scaffold": "data/metadata/ev_adoption/e2_s2_ev_ic1_component_input_scaffold.json",
+        "discovered_path": "data/metadata/ev_adoption/e2_s2_ev_ic1_accepted_artifact_index_preflight.json",
+        "supporting_report": "reports/e2_s2_ev_ic1_accepted_artifact_index_preflight.md",
+        "supporting_component_output_consumption_packet": "data/metadata/ev_adoption/e2_s2_ev_ic1_component_output_consumption_packet.json",
+        "supporting_adoption_artifact": "data/metadata/ev_adoption/e2_s6_a014_alkmaar_executable_adoption_artifact.json",
         "supporting_component_output_manifest": "data/metadata/ev_adoption/e2_s2_ev_ic1_candidate_component_output_manifest.json",
         "component_output_manifest_sha256": "01dcac20e7369a5997bb2a7584cac98e3a62a9ebaff4f44cfc4e6969c3bc4e39",
-        "boundary_note": "merged PR #234 consumption packet is available and consumed as metadata only; no held-out data opened and no EV component arrays loaded",
-        "packet_status": "accepted candidate-only EV component-output consumption packet for IC-1 preflight metadata",
+        "boundary_note": "merged PR #243 EV index is available and consumed as metadata only; no held-out data opened and no EV component arrays loaded",
+        "packet_status": "accepted EV metadata index for Agent A preflight; blocked for integrated results",
         "readiness_bucket": "accepted_metadata_only",
-        "ev_output_verifier_status": "merged_pr_234_consumption_packet_available_metadata_only",
+        "ev_output_verifier_status": "merged_pr_243_accepted_artifact_index_available_metadata_only",
         "rng_protocol_id": "RNG-001"
       }
     },
@@ -235,8 +238,8 @@
     }
   ],
   "metadata": {
-    "refresh_basis": "origin/main through PR #241 after PR #234, #235, #236, #237, #238, #240, and #241 merged",
-    "ev_output_verifier_status": "merged_pr_234_consumption_packet_available_metadata_only",
+    "refresh_basis": "origin/main through PR #243 after EV accepted-artifact index preflight merged",
+    "ev_output_verifier_status": "merged_pr_243_accepted_artifact_index_available_metadata_only",
     "checksum_policy": "source and component-output manifest paths require version-controlled expected SHA-256 before accepted-artifact loader execution",
     "no_real_net_load_arrays": true,
     "no_ic2_execution": true,
@@ -245,11 +248,12 @@
     "no_capacity_screen_result": true,
     "accepted_artifact_loader_boundary": "manifest metadata and checksums only; component arrays are not opened",
     "merged_dependency_notes": {
-      "PR-234": "EV component-output consumption packet is present on main and consumed as metadata only.",
+      "PR-234": "EV component-output consumption packet remains a source artifact inside the #243 EV index.",
       "PR-235": "A-014 executable EV adoption artifact is present on main and accepted for declared branch metadata.",
       "PR-236": "synthetic artifact-loader assembly smoke harness is present on main; no real arrays are opened here.",
       "PR-240": "Hybrid source-readiness guard is present on main.",
-      "PR-241": "PV executable-readiness blocker packet is present on main and consumed as metadata only."
+      "PR-241": "PV executable-readiness blocker packet is present on main and consumed as metadata only.",
+      "PR-243": "EV accepted-artifact index preflight is present on main and consumed as current EV metadata."
     }
   },
   "trajectory_config": {
@@ -278,11 +282,11 @@
   "capacity_provenance": null,
   "artifact_sha256_by_path": {
     "reports/e2_s5_baseline_diversity_readiness.md": "35dddc989ff32e313ffcb22c16d26f494596445b6ba1879117168feb285a9d0c",
-    "data/metadata/ev_adoption/e2_s2_ev_ic1_component_output_consumption_packet.json": "05e899f0718b6a527a1350921939f9244274a76440ba65eab83d25b1056ddc9d",
     "data/metadata/hp_scaling/hp001_alkmaar_gm0361_executable_value_binding_decision_packet.json": "609a9631498559c6af4926f640e0c00ac9d2cac44aa40e8b3dbf5cd80a952270",
     "data/metadata/ev_adoption/e2_s6_a014_alkmaar_executable_adoption_artifact.json": "5504d71bda5c388254013690c64407763bb37179a5cd82b6aa1199f216d933ad",
     "src/flex_aggregator.py": "7b07ffb68d8e153593c47cd611f653a2208c37c7836275566e6d783a87a583cb",
-    "data/metadata/weather_pv/d014_pv_executable_readiness_blockers.json": "9bf7ed48cf266e3292d5bafc179becb0326160329056c9845d5ee9f7e9bc5844"
+    "data/metadata/weather_pv/d014_pv_executable_readiness_blockers.json": "9bf7ed48cf266e3292d5bafc179becb0326160329056c9845d5ee9f7e9bc5844",
+    "data/metadata/ev_adoption/e2_s2_ev_ic1_accepted_artifact_index_preflight.json": "927a0c734592ef4defe17c045da9ab14bc6ba8d864fb415262e9811e3ab234b3"
   },
   "downstream_blocker_ids": [
     "A-013",
