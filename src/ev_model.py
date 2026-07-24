@@ -1528,6 +1528,294 @@ def materialize_ev_ic1_candidate_component_outputs(
     }
 
 
+def ev_ic1_component_output_consumption_packet(
+    component_input_scaffold: Mapping[str, Any],
+    component_output_manifest: Mapping[str, Any],
+    *,
+    component_output_manifest_sha256: str | None = None,
+) -> dict[str, object]:
+    """Build a fail-closed IC-1 consumption packet for EV component outputs.
+
+    The packet is metadata only. It tells a future generic IC-1 loader exactly
+    which ignored EV-only NPZ outputs may be consumed after checksum
+    verification, without authorizing held-out access or downstream analysis.
+    """
+
+    if component_input_scaffold.get("artifact_type") != "ev_ic1_component_input_scaffold":
+        raise ValueError("Expected EV IC-1 component-input scaffold metadata")
+    if component_output_manifest.get("artifact_type") != "ev_ic1_candidate_component_output_manifest":
+        raise ValueError("Expected EV IC-1 candidate component-output manifest")
+    if component_input_scaffold.get("status") != "accepted_metadata_only_for_ic1_component_input_scaffold":
+        raise ValueError("EV component-input scaffold must have accepted metadata-only status")
+    if component_output_manifest.get("status") != "candidate_only_ev_component_outputs_materialized_for_ic1_preflight":
+        raise ValueError("EV component-output manifest must have candidate-only preflight status")
+
+    if component_output_manifest_sha256 is not None:
+        component_output_manifest_sha256 = _require_sha256(
+            component_output_manifest_sha256,
+            "component_output_manifest_sha256",
+        )
+
+    scaffold_policy = component_input_scaffold.get("policy")
+    output_policy = component_output_manifest.get("policy")
+    for label, policy in (
+        ("component-input scaffold", scaffold_policy),
+        ("component-output manifest", output_policy),
+    ):
+        if not isinstance(policy, dict):
+            raise ValueError(f"EV {label} must include policy flags")
+        if policy.get("candidate_libraries_only") is not True:
+            raise ValueError(f"EV {label} must be candidate-library only")
+        if policy.get("held_out_access") is not False:
+            raise ValueError(f"EV {label} must block held-out access")
+        if policy.get("quarantined_access") is not False:
+            raise ValueError(f"EV {label} must block quarantined access")
+        if policy.get("integrated_analysis_performed") is not False:
+            raise ValueError(f"EV {label} must not include integrated analysis")
+        if policy.get("event_or_p_e_analysis_performed") is not False:
+            raise ValueError(f"EV {label} must not include event or P(E) analysis")
+        if policy.get("capacity_screen_performed") is not False:
+            raise ValueError(f"EV {label} must not include capacity screens")
+        if policy.get("m_sufficiency_claimed") is not False:
+            raise ValueError(f"EV {label} must not claim EV library sufficiency")
+        if policy.get("manuscript_numbers_produced") is not False:
+            raise ValueError(f"EV {label} must not include manuscript numbers")
+        if policy.get("final_low_middle_high_branch_selected") is not False:
+            raise ValueError(f"EV {label} must not select a final scenario branch")
+
+    if output_policy.get("candidate_profile_arrays_loaded_for_ev_component_output_only") is not True:
+        raise ValueError("EV component-output manifest must identify EV-only candidate array materialization")
+
+    required_decisions = ["EV-003", "EV-005", "EV-005B", "EV-007A", "A-014", "EV-008A", "EV-CAL-001", "RNG-001"]
+    if component_output_manifest.get("decision_ids") != required_decisions:
+        raise ValueError("EV component-output manifest decision IDs must match the approved candidate-only route")
+
+    calendar = component_output_manifest.get("calendar_mapping")
+    scaffold_calendar = component_input_scaffold.get("calendar_mapping")
+    if not isinstance(calendar, dict) or not isinstance(scaffold_calendar, dict):
+        raise ValueError("EV consumption packet requires calendar metadata")
+    if calendar.get("rule_id") != EV_CALENDAR_MAPPING_RULE_ID or scaffold_calendar.get("rule_id") != EV_CALENDAR_MAPPING_RULE_ID:
+        raise ValueError("EV consumption packet requires EV-CAL-001 calendar provenance")
+    if calendar.get("n_timesteps") != EXPECTED_FULL_YEAR_STEPS or scaffold_calendar.get("n_timesteps") != EXPECTED_FULL_YEAR_STEPS:
+        raise ValueError("EV consumption packet requires complete 35,040-step calendar metadata")
+
+    adapter = component_input_scaffold.get("ic1_accepted_component_adapter_artifact")
+    if not isinstance(adapter, dict):
+        raise ValueError("EV component-input scaffold must include IC-1 adapter metadata")
+    node_ids_raw = adapter.get("node_ids")
+    if not isinstance(node_ids_raw, list):
+        raise ValueError("EV IC-1 adapter metadata must include node_ids")
+    node_ids = tuple(_require_non_empty_string(node_id, "node_id") for node_id in node_ids_raw)
+    if len(node_ids) != 115 or len(set(node_ids)) != len(node_ids):
+        raise ValueError("EV consumption packet requires 115 unique node IDs")
+    if adapter.get("calendar_id") != EV_TARGET_CALENDAR_ID or adapter.get("timestep_seconds") != 900:
+        raise ValueError("EV IC-1 adapter metadata must use the approved 2035 15-minute calendar")
+
+    materialization = component_output_manifest.get("materialization")
+    if not isinstance(materialization, dict):
+        raise ValueError("EV component-output manifest must include materialization metadata")
+    if materialization.get("candidate_files_reverified_before_array_loading") is not True:
+        raise ValueError("EV component outputs must record candidate checksum reverification before array loading")
+    output_files = materialization.get("output_files")
+    scenario_outputs = component_output_manifest.get("scenario_outputs")
+    scenario_inputs = component_input_scaffold.get("scenario_inputs")
+    if not isinstance(output_files, list) or not isinstance(scenario_outputs, list) or not isinstance(scenario_inputs, list):
+        raise ValueError("EV consumption packet requires scenario and output-file records")
+
+    output_scenarios = [_require_non_empty_string(row.get("scenario"), "output scenario") for row in output_files if isinstance(row, dict)]
+    scenario_output_names = [_require_non_empty_string(row.get("scenario"), "scenario output") for row in scenario_outputs if isinstance(row, dict)]
+    scenario_input_names = [_require_non_empty_string(row.get("scenario"), "scenario input") for row in scenario_inputs if isinstance(row, dict)]
+    for label, names in (
+        ("output files", output_scenarios),
+        ("scenario outputs", scenario_output_names),
+        ("scenario inputs", scenario_input_names),
+    ):
+        duplicates = sorted(name for name, count in Counter(names).items() if count > 1)
+        if duplicates:
+            raise ValueError(f"EV consumption packet rejects duplicate {label} scenarios: {duplicates}")
+    scenario_set = set(scenario_input_names)
+    if scenario_set != set(output_scenarios) or scenario_set != set(scenario_output_names):
+        raise ValueError("EV consumption packet requires identical scenario coverage across inputs and outputs")
+    if scenario_set != {"low", "middle", "high"}:
+        raise ValueError("EV consumption packet expects the declared low/middle/high branches only")
+
+    outputs_by_scenario = {row["scenario"]: row for row in output_files if isinstance(row, dict)}
+    scenario_outputs_by_scenario = {row["scenario"]: row for row in scenario_outputs if isinstance(row, dict)}
+    scenario_inputs_by_scenario = {row["scenario"]: row for row in scenario_inputs if isinstance(row, dict)}
+    consumption_outputs: list[dict[str, object]] = []
+    for scenario in sorted(scenario_set):
+        output = outputs_by_scenario[scenario]
+        scenario_output = scenario_outputs_by_scenario[scenario]
+        scenario_input = scenario_inputs_by_scenario[scenario]
+        output_file = scenario_output.get("output_file")
+        if output_file != output:
+            raise ValueError("EV scenario output_file records must match materialization output_files")
+        path_value = _require_non_empty_string(output.get("path"), f"{scenario} output path")
+        if not path_value.startswith("data/processed/elaad_profiles/component_outputs/") or "held_out" in path_value or "quarantined" in path_value:
+            raise ValueError("EV consumption output paths must point to candidate component-output NPZs only")
+        if _require_int(output.get("node_count"), f"{scenario} node_count") != len(node_ids):
+            raise ValueError("EV consumption output node_count must match IC-1 node IDs")
+        if _require_int(output.get("n_timesteps"), f"{scenario} n_timesteps") != EXPECTED_FULL_YEAR_STEPS:
+            raise ValueError("EV consumption outputs must preserve 35,040 timesteps")
+        if output.get("array_shape") != [len(node_ids), EXPECTED_FULL_YEAR_STEPS]:
+            raise ValueError("EV consumption output array_shape must be node-major 115 x 35,040")
+        if _require_int(output.get("byte_size"), f"{scenario} byte_size") <= 0:
+            raise ValueError("EV consumption output byte_size must be positive")
+        expected_component_counts = {
+            EV_HOME_COMPONENT: scenario_input.get("home_charge_points"),
+            EV_PUBLIC_COMPONENT: scenario_input.get("public_charge_points"),
+        }
+        if scenario_output.get("selected_member_count_by_component") != expected_component_counts:
+            raise ValueError("EV consumption selected-member counts must match A-014 adoption totals")
+        public_by_class = scenario_output.get("public_selected_member_count_by_capacity_class")
+        if not isinstance(public_by_class, dict):
+            raise ValueError("EV public selected member counts by capacity class must be recorded")
+        consumption_outputs.append(
+            {
+                "scenario": scenario,
+                "planning_year": _require_int(scenario_output.get("planning_year"), f"{scenario} planning_year"),
+                "output_npz_path": path_value,
+                "output_sha256": _require_sha256(output.get("sha256"), f"{scenario} output sha256"),
+                "byte_size": _require_int(output.get("byte_size"), f"{scenario} byte_size"),
+                "node_count": len(node_ids),
+                "n_timesteps": EXPECTED_FULL_YEAR_STEPS,
+                "array_shape": [len(node_ids), EXPECTED_FULL_YEAR_STEPS],
+                "home_charge_points": _require_int(scenario_input.get("home_charge_points"), f"{scenario} home_charge_points"),
+                "public_charge_points": _require_int(scenario_input.get("public_charge_points"), f"{scenario} public_charge_points"),
+                "selected_member_count_by_component": dict(sorted(scenario_output["selected_member_count_by_component"].items())),
+                "duplicate_selected_row_count": _require_int(
+                    scenario_output.get("duplicate_selected_row_count"),
+                    f"{scenario} duplicate_selected_row_count",
+                ),
+                "public_selected_member_count_by_capacity_class": dict(sorted(public_by_class.items())),
+            }
+        )
+
+    source_artifacts = component_input_scaffold.get("source_artifacts")
+    if not isinstance(source_artifacts, dict):
+        raise ValueError("EV component-input scaffold must include source artifacts")
+    output_source_artifacts = component_output_manifest.get("source_artifacts")
+    if not isinstance(output_source_artifacts, dict):
+        raise ValueError("EV component-output manifest must include source artifacts")
+    candidate_member_counts = component_input_scaffold.get("candidate_member_counts")
+    if not isinstance(candidate_member_counts, dict):
+        raise ValueError("EV component-input scaffold must include candidate member counts")
+    selection_summary = component_input_scaffold.get("selection_manifest_summary")
+    if not isinstance(selection_summary, dict):
+        raise ValueError("EV component-input scaffold must include selection manifest summary")
+
+    return {
+        "schema_version": 1,
+        "artifact_type": "ev_ic1_component_output_consumption_packet",
+        "artifact_id": "e2_s2_ev_ic1_component_output_consumption_packet",
+        "status": "candidate_only_component_outputs_ready_for_future_ic1_loader_preflight",
+        "task_id": "E2.S2",
+        "planning_year": 2035,
+        "component_kind": "ev",
+        "component_ids": [EV_HOME_COMPONENT, EV_PUBLIC_COMPONENT],
+        "decision_ids": required_decisions,
+        "source_ids": ["D-002", "D-010", "D-012"],
+        "source_artifacts": {
+            "component_input_scaffold": "data/metadata/ev_adoption/e2_s2_ev_ic1_component_input_scaffold.json",
+            "component_output_manifest": "data/metadata/ev_adoption/e2_s2_ev_ic1_candidate_component_output_manifest.json",
+            "component_output_manifest_sha256": component_output_manifest_sha256,
+            "candidate_adapter_artifact": source_artifacts.get("candidate_adapter_artifact"),
+            "candidate_member_reference": source_artifacts.get("candidate_member_reference"),
+            "candidate_selection_manifest_set": source_artifacts.get("candidate_selection_manifest_set"),
+            "candidate_selection_manifest_set_sha256": source_artifacts.get("candidate_selection_manifest_set_sha256"),
+            "checksum_preflight": output_source_artifacts.get("checksum_preflight"),
+        },
+        "allowed_consumer": {
+            "agent_a_generic_loader_may_consume_after_sha256_verification": True,
+            "agent_a_must_verify_each_output_npz_sha256_before_loading": True,
+            "agent_a_must_keep_scenario_branch_explicit": True,
+            "ic1_preflight_or_real_artifact_assembly_only": True,
+            "paper_facing_integrated_adequacy_use_allowed": False,
+        },
+        "required_status_fields": {
+            "component_input_scaffold.status": "accepted_metadata_only_for_ic1_component_input_scaffold",
+            "component_output_manifest.status": "candidate_only_ev_component_outputs_materialized_for_ic1_preflight",
+            "component_output_manifest.ic1_boundary.component_adapter_output_ready_for_agent_a_preflight": True,
+            "component_output_manifest.ic1_boundary.contains_ev_component_outputs_only": True,
+            "component_output_manifest.ic1_boundary.not_a_net_load_result": True,
+        },
+        "calendar_mapping": {
+            "rule_id": EV_CALENDAR_MAPPING_RULE_ID,
+            "rule_version": EV_CALENDAR_MAPPING_RULE_VERSION,
+            "source_calendar_id": EV_SOURCE_CALENDAR_ID,
+            "target_calendar_id": EV_TARGET_CALENDAR_ID,
+            "source_timestep_i_maps_to_target_timestep_i": True,
+            "n_timesteps": EXPECTED_FULL_YEAR_STEPS,
+            "timestep_seconds": 900,
+            "weekday_mismatch_recorded_as_limitation": True,
+        },
+        "node_axis": {
+            "node_ids": list(node_ids),
+            "node_count": len(node_ids),
+            "node_axis_index_order": "matches_npz_node_ids_array_and_this_packet",
+        },
+        "source_profile_libraries": {
+            EV_HOME_COMPONENT: {
+                "library_id": "A_home_vancar_cp_y2030",
+                "candidate_member_count": 1000,
+                "source_id": "D-002",
+                "profile_type": "cp",
+                "location_type": "home",
+                "simulated_year": 2030,
+                "cp_capacity_kw": 11,
+            },
+            EV_PUBLIC_COMPONENT: {
+                "library_id": EV_PUBLIC_SET_B_LIBRARY_ID,
+                "candidate_member_count": 1200,
+                "source_id": "D-002",
+                "context_source_id": "D-012",
+                "profile_type": "cp",
+                "location_type": "public",
+                "simulated_year": 2030,
+                "capacity_class_member_counts": candidate_member_counts.get("public_by_capacity_class"),
+            },
+        },
+        "a014_allocation_provenance": {
+            "decision_id": "A-014",
+            "local_count_decision_id": "EV-007A",
+            "allocation_rule": "static_p_mw_weights_largest_remainder",
+            "scenario_input_pointer": "data/metadata/ev_adoption/e2_s2_ev_ic1_component_input_scaffold.json#/scenario_inputs",
+            "final_low_middle_high_branch_selected": False,
+        },
+        "selection_manifest_provenance": {
+            "decision_id": "EV-005B",
+            "selection_manifest_set_path": source_artifacts.get("candidate_selection_manifest_set"),
+            "selection_manifest_set_sha256": source_artifacts.get("candidate_selection_manifest_set_sha256"),
+            "root_seed": selection_summary.get("root_seed"),
+            "sample_index": selection_summary.get("sample_index"),
+            "duplicate_summary": selection_summary.get("duplicate_summary"),
+            "replacement": "with_replacement_charge_point_level_candidate_only",
+        },
+        "component_output_contract": {
+            "file_format": "npz",
+            "arrays": {
+                "p_kw_by_node": {"shape": ["node", "timestep"], "unit": "kW"},
+                "q_kvar_by_node": {"shape": ["node", "timestep"], "unit": "kvar"},
+                "timestamps_utc": {"length": EXPECTED_FULL_YEAR_STEPS, "timezone": "UTC"},
+                "node_ids": {"length": len(node_ids), "order": "row order for p_kw_by_node/q_kvar_by_node"},
+            },
+            "scenario_outputs": consumption_outputs,
+        },
+        "policy": {
+            "candidate_libraries_only": True,
+            "held_out_access": False,
+            "quarantined_access": False,
+            "profile_arrays_loaded_in_this_packet": False,
+            "integrated_analysis_performed": False,
+            "event_or_p_e_analysis_performed": False,
+            "capacity_screen_performed": False,
+            "final_low_middle_high_branch_selected": False,
+            "m_sufficiency_claimed": False,
+            "manuscript_numbers_produced": False,
+        },
+    }
+
+
 def ev_ic1_candidate_adapter_artifact(
     readiness_record: Mapping[str, Any],
     *,
