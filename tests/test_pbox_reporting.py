@@ -102,7 +102,8 @@ def _output_error_record() -> dict[str, object]:
             "probability_widening": "forbidden",
             "tier1_error_source": "synthetic-tier1-placeholder",
             "use_status": "synthetic-only",
-        },        "event_count_bounds": {
+        },
+        "event_count_bounds": {
             "lower_successes": 1,
             "sample_count": 5,
             "upper_successes": 3,
