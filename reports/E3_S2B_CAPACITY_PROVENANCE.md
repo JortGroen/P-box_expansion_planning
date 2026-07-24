@@ -12,7 +12,7 @@ This packet does not load component trajectories, aggregate real net load, execu
 - Versioned input: `reports/e3_s2b_capacity_provenance_input.json`
 - Machine-readable capacity packet: `reports/e3_s2b_capacity_provenance_packet.json`
 - Claim-source manifest: `reports/e3_s2b_capacity_provenance_manifest.json`
-- Generated from git commit: `1f9b6a341e31aadb06ebd9e9e6861a6cb3c19b17`
+- Generated from git commit: `0595b829b560a9850d06224546f2cdff80143c5a`
 - Command: `.\.venv\Scripts\python.exe reports\e3_s2b_generate_capacity_provenance.py`
 
 ## Capacity Packet Summary
