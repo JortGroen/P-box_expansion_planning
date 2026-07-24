@@ -7,6 +7,9 @@
       "sfh_mfh_split",
       "adoption_electrification"
     ],
+    "scenario_consistency": [
+      "scenario_source_consistency"
+    ],
     "weather_acceptance": [
       "d004_paired_weather_acceptance",
       "cold_spell_tolerances"
@@ -17,9 +20,10 @@
     "d004_source_member_use": "D004-SOURCE-MEMBER-ACCEPTANCE approves D-004 source/member use for internal first-screen work only.",
     "hp001_boundary": "Residential SFH/MFH space heat plus domestic hot water using approved D-003 When2Heat shape/COP columns; COM heat excluded.",
     "indicator_mapping": "D013-PBL-MAPPING/A-015 approves only the PBL residential indicator mapping.",
+    "scenario_consistency": "A-016 approves the scenario-consistency requirement, but the HP integrated-use binding remains unsigned until an explicit scenario_source_consistency approval ID is recorded.",
     "weather_contract": "WEATHER-001 requires HP/PV to consume the same shared weather member identity and calendar."
   },
-  "created_utc": "2026-07-23T11:16:51Z",
+  "created_utc": "2026-07-24T07:51:19Z",
   "data_ids": [
     "D-003",
     "D-004",
@@ -35,16 +39,18 @@
       "unit_conversion",
       "sfh_mfh_split",
       "adoption_electrification",
+      "scenario_source_consistency",
       "d004_paired_weather_acceptance",
       "cold_spell_tolerances"
     ],
     "value_binding_adapter": "src.hp_model.hp001_local_scaling_config_from_value_binding_record",
     "value_binding_required_status": "approved_for_executable_value_binding"
   },
-  "next_pi_decision": "Approve or amend the five annual value-binding choices, then separately approve final D-004 paired-weather acceptance evidence and cold-spell tolerances before HP profiles enter integrated analysis.",
+  "next_pi_decision": "Approve or amend the five annual value-binding choices, then record explicit A-016 scenario-source consistency for the integrated case, and separately approve final D-004 paired-weather acceptance evidence and cold-spell tolerances before HP profiles enter integrated analysis.",
   "non_claims": [
     "No annual HP TWh values are executable.",
     "No 2035 HP adoption/electrification value is signed.",
+    "No A-016 scenario-source consistency approval for HP integrated use is signed.",
     "No D-004 paired-weather or cold-spell acceptance is signed.",
     "No net-load, event, P(E), threshold, capacity-screen, manuscript, or probability analysis is run."
   ],
@@ -78,6 +84,12 @@
       "candidate": "separate signed 2035 HP service/adoption/electrification scenario",
       "current_status": "unsigned",
       "key": "adoption_electrification"
+    },
+    {
+      "blocks": "Using HP annual values in a coherent integrated 2035 case with EV and PV source branches.",
+      "candidate": "A-016 EV/HP/PV 2035 scenario-source consistency approval",
+      "current_status": "unsigned for final integrated HP use",
+      "key": "scenario_source_consistency"
     },
     {
       "blocks": "Treating HP and PV profiles as driven by an accepted same-weather realization.",

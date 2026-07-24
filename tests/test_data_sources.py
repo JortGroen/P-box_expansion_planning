@@ -1009,6 +1009,9 @@ def test_hp001_readiness_approval_checklist_records_remaining_blockers(tmp_path:
         "sfh_mfh_split",
         "adoption_electrification",
     ]
+    assert packet["approval_groups"]["scenario_consistency"] == [
+        "scenario_source_consistency",
+    ]
     assert packet["approval_groups"]["weather_acceptance"] == [
         "d004_paired_weather_acceptance",
         "cold_spell_tolerances",
@@ -1039,6 +1042,7 @@ def test_hp001_executable_value_binding_packet_is_approval_template_only(tmp_pat
         "unit_conversion",
         "sfh_mfh_split",
         "adoption_electrification",
+        "scenario_source_consistency",
         "d004_paired_weather_acceptance",
         "cold_spell_tolerances",
     }
@@ -1052,6 +1056,7 @@ def test_hp001_executable_value_binding_packet_is_approval_template_only(tmp_pat
         "unit_conversion",
         "sfh_mfh_split",
         "adoption_electrification",
+        "scenario_source_consistency",
         "d004_paired_weather_acceptance",
         "cold_spell_tolerances",
     ]
