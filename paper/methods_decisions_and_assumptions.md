@@ -314,6 +314,16 @@ estimation. The scaffold does not introduce a signed A-013 value or authorize
 integrated event results while Q-5, G2, A-013, and capacity-provenance
 dependencies remain unresolved.
 
+The `output-error-paper-readiness-v1` blocker manifest is a synthetic reporting
+preflight for this same protocol. It records the requested B-owned result kind,
+the final-result prerequisite snapshot, and a checklist for the G1-A2 formula,
+trajectory-before-event application, forbidden probability widening, forbidden
+independent error sampling, A-013 and G2 approval-or-blocker IDs, capacity
+linkage/provenance, and endpoint-record presence. The manifest validator
+recomputes the blocker list and `ready_for_paper` flag from those fields and
+rejects collapsed probability fields, so a blocked readiness packet cannot be
+serialized as a paper-facing p-box result by changing one flag.
+
 <!-- methods-id: RNG-001 -->
 ### RNG-001 - Seed-Tree and CRN Identity Protocol
 
