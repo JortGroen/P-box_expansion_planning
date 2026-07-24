@@ -5,7 +5,7 @@
     "d004_source_member_use": "D004-SOURCE-MEMBER-ACCEPTANCE approves D-004 source/member use for internal first-screen work only.",
     "weather_contract": "WEATHER-001 requires HP and PV profiles to carry the same member_id, shared_weather_driver_id, source/provenance, content hash, and UTC/local calendar identity."
   },
-  "created_utc": "2026-07-24T08:13:17Z",
+  "created_utc": "2026-07-24T13:55:56Z",
   "data_ids": [
     "D-003",
     "D-004"
