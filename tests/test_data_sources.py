@@ -1169,3 +1169,31 @@ def test_d014_orientation_tilt_source_choice_packet_lists_candidates_without_val
     assert path.name == "d014_pv_orientation_tilt_source_choice_packet.json"
     assert payload["status"].startswith("proposed_source_choice_packet")
 
+
+
+def test_d014_orientation_tilt_value_choice_packet_lists_unsigned_candidate_values(tmp_path: Path) -> None:
+    packet = pv_capacity.build_d014_pv_orientation_tilt_value_choice_packet()
+
+    assert packet["packet_id"] == "D014-PV-ORIENTATION-TILT-VALUE-CHOICE-PACKET"
+    assert packet["data_id"] == "D-014"
+    assert packet["download_performed"] is False
+    assert packet["raw_data_committed"] is False
+    assert packet["approved_scope_decision"] == "PV-ORIENT-001"
+    assert packet["source_choice_packet_id"] == "D014-PV-ORIENTATION-TILT-SOURCE-CHOICE-PACKET"
+    assert "PV-CAP-001/D-014 capacity remains separate" in packet["capacity_route_boundary"]
+    assert "PV-PARAM-001 remains proposed" in packet["pv_param_boundary"]
+    assert packet["first_experiment_scope"]["roof_or_location_level_extraction_allowed_now"] is False
+    class_sets = {item["class_set_id"]: item for item in packet["candidate_class_sets"]}
+    assert "killinger_empirical_extraction_pending_v1" in class_sets
+    prior = class_sets["pi_prior_5_class_symmetric_rooftop_candidate_v1"]
+    assert prior["value_status"] == "assumption_only_unsigned_not_executable"
+    assert prior["weight_basis"] == "capacity_weight_fraction_candidate"
+    assert sum(row["capacity_weight_fraction"] for row in prior["class_table"]) == pytest.approx(1.0)
+    assert all("assumption-only" in row["source_value_trace"] for row in prior["class_table"])
+    assert "class_weight_values" in packet["pi_approval_keys_before_executable_use"]
+    assert any("Numeric class weights" in item and "unsigned" in item for item in packet["non_claims"])
+
+    path = pv_capacity.write_d014_pv_orientation_tilt_value_choice_packet(tmp_path)
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    assert path.name == "d014_pv_orientation_tilt_value_choice_packet.json"
+    assert payload["status"].startswith("proposed_value_choice_packet")
