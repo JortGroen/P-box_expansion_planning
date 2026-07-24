@@ -1503,6 +1503,25 @@ def test_hp001_profile_artifact_consumption_template_is_fail_closed(tmp_path: Pa
     assert payload["validator"] == "src.hp_model.require_hp001_profile_artifact_consumption_manifest"
 
 
+def test_hp001_profile_rebuild_preflight_template_is_fail_closed(tmp_path: Path) -> None:
+    packet = hp_scaling.build_hp001_profile_rebuild_preflight_template()
+
+    assert packet["packet_id"] == "E2-S3-HP001-PROFILE-REBUILD-PREFLIGHT"
+    assert packet["status"] == "proposed_rebuild_preflight_template_not_executable"
+    assert packet["future_required_manifest_status"] == "approved_for_hp001_profile_rebuild_preflight"
+    assert packet["validator"] == "src.hp_model.require_hp001_profile_rebuild_preflight_manifest"
+    assert "value_column" in packet["required_approval_keys_before_rebuild"]
+    assert "cold_spell_tolerances" in packet["required_approval_keys_before_rebuild"]
+    assert packet["preflight_manifest_template"]["output_plan"]["component_count"] == 4
+    assert packet["preflight_manifest_template"]["source_artifacts"]["when2heat_source"]["data_id"] == "D-003"
+    assert any("No HP profile artifact" in item for item in packet["non_claims"])
+
+    path = hp_scaling.write_hp001_profile_rebuild_preflight_template(tmp_path)
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    assert path.name == "hp001_profile_artifact_rebuild_preflight_template.json"
+    assert payload["validator"] == "src.hp_model.require_hp001_profile_rebuild_preflight_manifest"
+
+
 def test_d014_capacity_approval_template_is_value_free_and_fail_closed() -> None:
     packet = pv_capacity.build_d014_pv_capacity_approval_template_packet()
 
