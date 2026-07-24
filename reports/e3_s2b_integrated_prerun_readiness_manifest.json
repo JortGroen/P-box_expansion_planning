@@ -1,16 +1,16 @@
 {
   "command": ".\\.venv\\Scripts\\python.exe reports\\e3_s2b_generate_integrated_prerun_readiness.py",
-  "generated_at_utc": "2026-07-24T16:04:45Z",
-  "git_commit": "6b87ff2bbd9950523ee3104ecb43341c61925033",
-  "git_status_short_before_generation": "",
+  "generated_at_utc": "2026-07-24T16:59:56Z",
+  "git_commit": "fe7316524720fc3953c48c7dfd2a4ecfbf1e1aa9",
+  "git_status_short_before_generation": "M paper/methods_decisions_and_assumptions.md\n M registers/DECISIONS.md\n M reports/E3_S2B_INTEGRATED_PRERUN_READINESS.md\n M reports/e3_s2b_generate_integrated_prerun_readiness.py\n M reports/e3_s2b_integrated_prerun_readiness_input.json\n M reports/e3_s2b_integrated_prerun_readiness_manifest.json\n M src/contracts/net_load.py\n M tests/test_evaluator_net_load.py",
   "input": {
     "path": "reports/e3_s2b_integrated_prerun_readiness_input.json",
     "schema_version": "e3_s2b_integrated_prerun_readiness_input_v1",
-    "sha256": "61a8d3c9c944904ef987b587f194feb256b57164f045d7bdc627923125a94733"
+    "sha256": "ec82c103a46115e1a634025756326444392f30ed839598ff7f53e7a373335d2d"
   },
   "outputs": {
     "report_path": "reports/E3_S2B_INTEGRATED_PRERUN_READINESS.md",
-    "report_sha256": "f7e2033c4a060e88d4cc7e87a2d09870a23c1bfd11550efa451eda9a8b91b22c"
+    "report_sha256": "2caea7c39107a700fdfcc25bc836906cebf12744a740ced3b1284d03590a47fb"
   },
   "preflight": {
     "accepted_artifact_preflight": {
@@ -23,7 +23,7 @@
           "hp",
           "pv"
         ],
-        "blocker_count": 17,
+        "blocker_count": 18,
         "items": [
           {
             "blocker_ids": [
@@ -64,13 +64,6 @@
             "code": "component_artifact_gate_blocked",
             "kind": "pv",
             "message": "component executable-input gate is not accepted"
-          },
-          {
-            "blocker_ids": [
-              "G1-A2-CAPACITY-CONVENTION"
-            ],
-            "code": "capacity_provenance_missing",
-            "message": "capacity denominator provenance is required before integrated trajectory acceptance"
           },
           {
             "blocker_ids": [
@@ -151,6 +144,32 @@
               "array_sha256",
               "provenance"
             ],
+            "path": "data/metadata/ev_adoption/e2_s2_ev_ic1_candidate_component_output_manifest.json"
+          },
+          {
+            "artifact_id": "e2_s2_ev_ic1_accepted_artifact_index_preflight",
+            "blocker_ids": [
+              "E3.S2-EV-COMPONENT-OUTPUT-LOADER-CONTRACT"
+            ],
+            "code": "component_output_manifest_loader_contract_missing",
+            "kind": "ev",
+            "message": "component-output manifest must declare the single-node 1D loader contract before executable IC-1 use",
+            "missing_fields": [
+              "loader_contract",
+              "node_axis_contract",
+              "array_shape_contract"
+            ],
+            "path": "data/metadata/ev_adoption/e2_s2_ev_ic1_candidate_component_output_manifest.json"
+          },
+          {
+            "artifact_id": "e2_s2_ev_ic1_accepted_artifact_index_preflight",
+            "blocker_ids": [
+              "E3.S2-EV-MULTI-NODE-COMPONENT-OUTPUT",
+              "IC-1-NODE-AXIS-CONTRACT"
+            ],
+            "code": "component_output_manifest_multi_node_not_loadable",
+            "kind": "ev",
+            "message": "multi-node component-output artifacts are blocked until A supports a multi-node loader or C emits per-node loadable manifests",
             "path": "data/metadata/ev_adoption/e2_s2_ev_ic1_candidate_component_output_manifest.json"
           },
           {
@@ -241,7 +260,7 @@
           "state": "missing"
         }
       ],
-      "intended_use": "e3_s2b_integrated_prerun_readiness_current_main_through_pr250_pr256_pr257_pr259",
+      "intended_use": "e3_s2b_integrated_prerun_gate_current_main_through_pr264",
       "metadata_preflight_only": true,
       "no_capacity_screen_result": true,
       "no_component_array_loading": true,
@@ -253,7 +272,7 @@
       "ready_for_integrated_trajectory_acceptance": false,
       "real_artifact_preflight": {
         "blockers": {
-          "capacity_provenance_missing": true,
+          "capacity_provenance_missing": false,
           "component_artifact_blockers_by_kind": {
             "baseline": [
               "E2.S5-BASELINE-EXECUTABLE-ARTIFACT"
@@ -296,7 +315,7 @@
         },
         "bridge_preflight": {
           "blockers": {
-            "capacity_provenance_missing": true,
+            "capacity_provenance_missing": false,
             "component_artifact_blockers_by_kind": {
               "baseline": [
                 "E2.S5-BASELINE-EXECUTABLE-ARTIFACT"
@@ -334,7 +353,20 @@
             ],
             "register_backing_errors_by_kind": {}
           },
-          "capacity_provenance": null,
+          "capacity_provenance": {
+            "convention_status": "pending_g1_a2_e3_s2b",
+            "metadata": {
+              "busbar_parallel_status": "Closed busbar-parallel transformer bank: busbar/tie switches [0, 5] closed=True; associated transformer circuit-breaker switches [1, 2, 3, 4] closed=True; equal tap positions=True; selected transformer units in service=True.",
+              "decision_asset_id": "g0_decision_transformer",
+              "firm_primary_requires_actual_one_transformer_out_ac_validation": true,
+              "grid_code": "1-MV-semiurb--0-sw",
+              "grid_key": "simbench_semiurb",
+              "grid_source": "simbench",
+              "total_vs_firm_decision_status": "pending_pi_decision_after_e3_s2b_screen"
+            },
+            "s_nom_agg_kva": 80000.0,
+            "source": "E3.S2b capacity provenance collector from selected pandapower network"
+          },
           "dry_run_only": true,
           "executable_input_preflight": {
             "accepted_component_kinds": [
@@ -651,6 +683,8 @@
               "metadata": {
                 "accepted_artifact_loader_helper": "build_accepted_artifact_loader_blocker_preflight",
                 "calendar_id": "calendar_e3_s2b_planned_2030_2033_2035_15min_full_year",
+                "capacity_provenance_packet_path": "reports/e3_s2b_capacity_provenance_packet.json",
+                "component_output_loader_contract": "single_node_1d_component_output_v1; no spatially collapsed pseudo-node manifests accepted as executable",
                 "e3_s2b_prerun_helper": "build_e3_s2b_integrated_prerun_readiness",
                 "no_capacity_screen_result": true,
                 "no_event_detection": true,
@@ -659,7 +693,7 @@
                 "no_real_net_load_arrays": true,
                 "planning_year_basis": "G0-A4",
                 "primary_threshold_metadata": "G0-A3: strict L_import > 1.0 p.u. for four consecutive 15-minute import steps over the full year; 1.1 and 1.2 are sensitivities only",
-                "refresh_basis": "origin/main through PR #250/#256/#257/#259; #250/#251/#252/#253/#254/#255/#256/#257/#259 consumed as metadata only",
+                "refresh_basis": "origin/main through PR #264; capacity provenance packet consumed by path and checksum",
                 "threshold_basis": "G0-A3 metadata only; not evaluated in this pre-run readiness packet"
               },
               "node_ids": [
@@ -686,7 +720,7 @@
             "dry_run_only": true,
             "executable_input_gate": null,
             "gate_error": null,
-            "intended_use": "e3_s2b_integrated_prerun_readiness_current_main_through_pr250_pr256_pr257_pr259",
+            "intended_use": "e3_s2b_integrated_prerun_gate_current_main_through_pr264",
             "missing_component_kinds": [],
             "no_capacity_screen_result": true,
             "no_event_detection": true,
@@ -711,10 +745,23 @@
             ],
             "screen_prerequisite_only": true
           },
-          "intended_use": "e3_s2b_integrated_prerun_readiness_current_main_through_pr250_pr256_pr257_pr259",
+          "intended_use": "e3_s2b_integrated_prerun_gate_current_main_through_pr264",
           "manifest_fields": {
             "calendar_id": "calendar_e3_s2b_planned_2030_2033_2035_15min_full_year",
-            "capacity_provenance": null,
+            "capacity_provenance": {
+              "convention_status": "pending_g1_a2_e3_s2b",
+              "metadata": {
+                "busbar_parallel_status": "Closed busbar-parallel transformer bank: busbar/tie switches [0, 5] closed=True; associated transformer circuit-breaker switches [1, 2, 3, 4] closed=True; equal tap positions=True; selected transformer units in service=True.",
+                "decision_asset_id": "g0_decision_transformer",
+                "firm_primary_requires_actual_one_transformer_out_ac_validation": true,
+                "grid_code": "1-MV-semiurb--0-sw",
+                "grid_key": "simbench_semiurb",
+                "grid_source": "simbench",
+                "total_vs_firm_decision_status": "pending_pi_decision_after_e3_s2b_screen"
+              },
+              "s_nom_agg_kva": 80000.0,
+              "source": "E3.S2b capacity provenance collector from selected pandapower network"
+            },
             "component_artifact_manifest_paths": {},
             "governed_event_metadata": {
               "basis": "G0-A3",
@@ -783,7 +830,7 @@
           }
         },
         "dry_run_only": true,
-        "intended_use": "e3_s2b_integrated_prerun_readiness_current_main_through_pr250_pr256_pr257_pr259",
+        "intended_use": "e3_s2b_integrated_prerun_gate_current_main_through_pr264",
         "metadata_preflight_only": true,
         "no_capacity_screen_result": true,
         "no_event_counts": true,
@@ -865,7 +912,7 @@
         "hp",
         "pv"
       ],
-      "blocker_count": 25,
+      "blocker_count": 26,
       "items": [
         {
           "blocker_ids": [
@@ -906,13 +953,6 @@
           "code": "component_artifact_gate_blocked",
           "kind": "pv",
           "message": "component executable-input gate is not accepted"
-        },
-        {
-          "blocker_ids": [
-            "G1-A2-CAPACITY-CONVENTION"
-          ],
-          "code": "capacity_provenance_missing",
-          "message": "capacity denominator provenance is required before integrated trajectory acceptance"
         },
         {
           "blocker_ids": [
@@ -993,6 +1033,32 @@
             "array_sha256",
             "provenance"
           ],
+          "path": "data/metadata/ev_adoption/e2_s2_ev_ic1_candidate_component_output_manifest.json"
+        },
+        {
+          "artifact_id": "e2_s2_ev_ic1_accepted_artifact_index_preflight",
+          "blocker_ids": [
+            "E3.S2-EV-COMPONENT-OUTPUT-LOADER-CONTRACT"
+          ],
+          "code": "component_output_manifest_loader_contract_missing",
+          "kind": "ev",
+          "message": "component-output manifest must declare the single-node 1D loader contract before executable IC-1 use",
+          "missing_fields": [
+            "loader_contract",
+            "node_axis_contract",
+            "array_shape_contract"
+          ],
+          "path": "data/metadata/ev_adoption/e2_s2_ev_ic1_candidate_component_output_manifest.json"
+        },
+        {
+          "artifact_id": "e2_s2_ev_ic1_accepted_artifact_index_preflight",
+          "blocker_ids": [
+            "E3.S2-EV-MULTI-NODE-COMPONENT-OUTPUT",
+            "IC-1-NODE-AXIS-CONTRACT"
+          ],
+          "code": "component_output_manifest_multi_node_not_loadable",
+          "kind": "ev",
+          "message": "multi-node component-output artifacts are blocked until A supports a multi-node loader or C emits per-node loadable manifests",
           "path": "data/metadata/ev_adoption/e2_s2_ev_ic1_candidate_component_output_manifest.json"
         },
         {
@@ -1123,36 +1189,38 @@
         },
         {
           "blocker_ids": [
-            "G1-A2",
-            "G1-A2-CAPACITY-CONVENTION",
-            "E3.S2B-CAPACITY-PROVENANCE"
+            "E3.S2B-SUPPORTING-METADATA-CHECKSUM"
           ],
-          "code": "capacity_prerun_provenance_incomplete",
-          "message": "E3.S2b must predeclare capacity provenance fields before any screen can launch",
-          "missing_fields": [
-            "s_nom_agg_kva",
-            "convention_status",
-            "source",
-            "transformer_indices",
-            "total_nameplate_kva",
-            "firm_n_minus_1_nameplate_kva",
-            "raw_mva_report_conventions"
-          ]
+          "code": "supporting_metadata_checksum_mismatch",
+          "message": "supporting metadata packet checksum does not match the preflight input",
+          "path": "src/pbox_runner_readiness.py"
         }
       ],
       "ready": false
     },
     "capacity_prerun_provenance": {
-      "missing_fields": [
-        "s_nom_agg_kva",
-        "convention_status",
-        "source",
-        "transformer_indices",
-        "total_nameplate_kva",
-        "firm_n_minus_1_nameplate_kva",
-        "raw_mva_report_conventions"
+      "bridge_capacity_provenance": {
+        "convention_status": "pending_g1_a2_e3_s2b",
+        "metadata": {
+          "busbar_parallel_status": "Closed busbar-parallel transformer bank: busbar/tie switches [0, 5] closed=True; associated transformer circuit-breaker switches [1, 2, 3, 4] closed=True; equal tap positions=True; selected transformer units in service=True.",
+          "decision_asset_id": "g0_decision_transformer",
+          "firm_primary_requires_actual_one_transformer_out_ac_validation": true,
+          "grid_code": "1-MV-semiurb--0-sw",
+          "grid_key": "simbench_semiurb",
+          "grid_source": "simbench",
+          "total_vs_firm_decision_status": "pending_pi_decision_after_e3_s2b_screen"
+        },
+        "s_nom_agg_kva": 80000.0,
+        "source": "E3.S2b capacity provenance collector from selected pandapower network"
+      },
+      "convention_status": "pending_g1_a2_e3_s2b",
+      "firm_n_minus_1_nameplate_kva": 40000.0,
+      "missing_fields": [],
+      "raw_mva_report_conventions": [
+        "total_nameplate",
+        "firm_n_minus_1"
       ],
-      "ready": false,
+      "ready": true,
       "required_fields": [
         "s_nom_agg_kva",
         "convention_status",
@@ -1162,7 +1230,23 @@
         "firm_n_minus_1_nameplate_kva",
         "raw_mva_report_conventions"
       ],
-      "status": "missing"
+      "s_nom_agg_kva": 80000.0,
+      "source": "E3.S2b capacity provenance collector from selected pandapower network",
+      "status": "present",
+      "total_nameplate_kva": 80000.0,
+      "transformer_indices": [
+        0,
+        1
+      ]
+    },
+    "capacity_provenance_source_record": {
+      "checksum_match": true,
+      "expected_sha256": "f980c7a37175514bfcbea503a6981fe60796e81904eefb252b9d16382f7774fa",
+      "path": "reports/e3_s2b_capacity_provenance_packet.json",
+      "schema_version": "e3_s2b_capacity_provenance_v1",
+      "sha256": "f980c7a37175514bfcbea503a6981fe60796e81904eefb252b9d16382f7774fa",
+      "state": "accepted",
+      "status": "ready_for_pi_capacity_provenance_review"
     },
     "component_year_coverage": {
       "adoption": {
@@ -1260,7 +1344,7 @@
         ]
       }
     },
-    "intended_use": "e3_s2b_integrated_prerun_readiness_current_main_through_pr250_pr256_pr257_pr259",
+    "intended_use": "e3_s2b_integrated_prerun_gate_current_main_through_pr264",
     "metadata_preflight_only": true,
     "no_capacity_screen_result": true,
     "no_event_counts": true,
@@ -1401,12 +1485,12 @@
         "sha256": "008048d81de8cf16e0c15beb7966446f209cb57746e240605c27e70407d56013"
       },
       {
-        "checksum_match": true,
+        "checksum_match": false,
         "exists": true,
         "expected_sha256": "b3302dd95086bd7fba0cc2355cc691397cceca1a317bea541b6cc05d38e673fc",
         "label": "agent_b_runner_readiness_module",
         "path": "src/pbox_runner_readiness.py",
-        "sha256": "b3302dd95086bd7fba0cc2355cc691397cceca1a317bea541b6cc05d38e673fc"
+        "sha256": "2847f29f0bf11fe475456ab8c3408afa950f7d58ed5104a6a5276454aafc5f13"
       },
       {
         "checksum_match": true,
@@ -1415,6 +1499,30 @@
         "label": "agent_b_trust_certificate_log",
         "path": "reports/agent_logs/agent-b/E5.S4-trust-certificate-manifest.md",
         "sha256": "4b5b0d09896df272b9c59b081ff2eee65babe02631514af4ae4b5f9d22f3fccb"
+      },
+      {
+        "checksum_match": true,
+        "exists": true,
+        "expected_sha256": "a6496b3b079dd2ece7978325b7f0e8617a3f4e6239db3a258a4a9e0d593530b4",
+        "label": "capacity_provenance_manifest",
+        "path": "reports/e3_s2b_capacity_provenance_manifest.json",
+        "sha256": "a6496b3b079dd2ece7978325b7f0e8617a3f4e6239db3a258a4a9e0d593530b4"
+      },
+      {
+        "checksum_match": true,
+        "exists": true,
+        "expected_sha256": "f980c7a37175514bfcbea503a6981fe60796e81904eefb252b9d16382f7774fa",
+        "label": "capacity_provenance_packet",
+        "path": "reports/e3_s2b_capacity_provenance_packet.json",
+        "sha256": "f980c7a37175514bfcbea503a6981fe60796e81904eefb252b9d16382f7774fa"
+      },
+      {
+        "checksum_match": true,
+        "exists": true,
+        "expected_sha256": "aa97b83b6bb3e237fca9ffce2c3d263b7eef9745c669ac902d57ca630844ddbd",
+        "label": "capacity_provenance_report",
+        "path": "reports/E3_S2B_CAPACITY_PROVENANCE.md",
+        "sha256": "aa97b83b6bb3e237fca9ffce2c3d263b7eef9745c669ac902d57ca630844ddbd"
       },
       {
         "checksum_match": true,

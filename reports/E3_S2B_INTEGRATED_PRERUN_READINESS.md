@@ -1,7 +1,7 @@
 # E3.S2b Integrated Pre-Run Readiness
 
 Task: E3.S2b future-layer capacity/domain screen pre-run design scaffold.
-Status: metadata/preflight only. This packet composes the current Agent A IC-1 accepted-artifact gate with E3.S2b launch-shape checks on current `origin/main` through PR #250/#256/#257/#259. It consumes the merged EV accepted index and checksum preflight, consolidated HP readiness guard packets, PV first-experiment value-decision/approval/preflight blocker packets, the synthetic IC-1 assembly gate, the accepted-artifact blocker refresh, and Agent B trust/readiness plus rho-sweep guard context as metadata only.
+Status: metadata/preflight only. This packet composes the current Agent A IC-1 accepted-artifact gate with E3.S2b launch-shape checks on current `origin/main` through PR #264. It consumes the merged EV accepted index and checksum preflight, consolidated HP readiness guard packets, PV first-experiment value-decision/approval/preflight blocker packets, the synthetic IC-1 assembly gate, the accepted-artifact blocker refresh, Agent B trust/readiness plus rho-sweep guard context, and the #264 capacity-provenance packet as metadata only.
 
 ## Boundary
 
@@ -26,9 +26,17 @@ The version-controlled input is `reports/e3_s2b_integrated_prerun_readiness_inpu
 
 Ready for E3.S2b pre-run launch: `false`.
 Ready for accepted-artifact loader execution: `false`.
-Blocker count: `25`.
+Blocker count: `26`.
 Blocked component families: adoption, baseline, ev, flexibility, hp, pv.
 Executable input gate states: adoption: accepted; baseline: blocked; ev: accepted; flexibility: accepted; hp: blocked; pv: blocked.
+
+## Capacity Provenance Packet
+
+| Packet path | State | Checksum match | Observed SHA-256 | Schema |
+| --- | --- | --- | --- | --- |
+| reports/e3_s2b_capacity_provenance_packet.json | accepted | True | f980c7a37175514bfcbea503a6981fe60796e81904eefb252b9d16382f7774fa | e3_s2b_capacity_provenance_v1 |
+
+Capacity convention status: present. Total and firm nameplate fields are provenance inputs only; no denominator is selected here.
 
 ## Source Metadata Packets
 
@@ -74,8 +82,11 @@ Executable input gate states: adoption: accepted; baseline: blocked; ev: accepte
 | agent_b_e4_s1_rho_sweep_payload_guards | reports/e4_s1_rho_sweep_payload_guards.md | checksum-verified | 98c24865d1cd7b99ba2ea0414d62cc74be2868d7db57d19092c99ca1814594c3 |
 | agent_b_pbox_monotonicity_module | src/pbox_monotonicity.py | checksum-verified | 6d34e53ec804aca3d55f4f6bc27bc8fd198116fb6ca79d7a7e998a6c8ddbd86d |
 | agent_b_pre_experiment_readiness | reports/pre_experiment_readiness_b.md | checksum-verified | 008048d81de8cf16e0c15beb7966446f209cb57746e240605c27e70407d56013 |
-| agent_b_runner_readiness_module | src/pbox_runner_readiness.py | checksum-verified | b3302dd95086bd7fba0cc2355cc691397cceca1a317bea541b6cc05d38e673fc |
+| agent_b_runner_readiness_module | src/pbox_runner_readiness.py | checksum-mismatch | 2847f29f0bf11fe475456ab8c3408afa950f7d58ed5104a6a5276454aafc5f13 |
 | agent_b_trust_certificate_log | reports/agent_logs/agent-b/E5.S4-trust-certificate-manifest.md | checksum-verified | 4b5b0d09896df272b9c59b081ff2eee65babe02631514af4ae4b5f9d22f3fccb |
+| capacity_provenance_manifest | reports/e3_s2b_capacity_provenance_manifest.json | checksum-verified | a6496b3b079dd2ece7978325b7f0e8617a3f4e6239db3a258a4a9e0d593530b4 |
+| capacity_provenance_packet | reports/e3_s2b_capacity_provenance_packet.json | checksum-verified | f980c7a37175514bfcbea503a6981fe60796e81904eefb252b9d16382f7774fa |
+| capacity_provenance_report | reports/E3_S2B_CAPACITY_PROVENANCE.md | checksum-verified | aa97b83b6bb3e237fca9ffce2c3d263b7eef9745c669ac902d57ca630844ddbd |
 | ev_accepted_artifact_index | data/metadata/ev_adoption/e2_s2_ev_ic1_accepted_artifact_index_preflight.json | checksum-verified | 927a0c734592ef4defe17c045da9ab14bc6ba8d864fb415262e9811e3ab234b3 |
 | ev_candidate_output_checksum_preflight | data/metadata/ev_adoption/e3_s2a_ev_candidate_component_output_checksum_preflight.json | checksum-verified | 7fd8b7f02a753867abcb1c5646d4c288f522e7eaa49ad26e88256a4f7746e508 |
 | ev_heldout_adequacy_blocker | data/metadata/ev_adoption/e3_s2a_ev_heldout_adequacy_preflight_blockers.json | checksum-verified | 163b780b5235a280e92da80758ef7835b5fe1163a903a62a2ccdf1607a2df97d |
@@ -104,7 +115,6 @@ Executable input gate states: adoption: accepted; baseline: blocked; ev: accepte
 | baseline | component_artifact_gate_blocked | E2.S5-BASELINE-EXECUTABLE-ARTIFACT | -- | component executable-input gate is not accepted |
 | hp | component_artifact_gate_blocked | E2-S3-HP001-COMPONENT-OUTPUT-READINESS-BLOCKER, E2-S3-HP001-EXECUTABLE-VALUE-BINDING-PACKET, E2-S3-HP001-PROFILE-ARTIFACT-CONSUMPTION-MANIFEST, E2-S3-HP001-COLD-SPELL-ACCEPTANCE-READINESS, value_column, denominator, unit_conversion, sfh_mfh_split, adoption_electrification, scenario_source_consistency, d004_paired_weather_acceptance, cold_spell_tolerances | -- | component executable-input gate is not accepted |
 | pv | component_artifact_gate_blocked | D014-PV-CAPACITY-APPROVAL-TEMPLATE_successor, PV-ORIENT-001_values, PV-PARAM-001_or_signed_amendment, A-016, future_node_allocation_rule, FINAL-PAIRED-HP-PV-ACCEPTANCE | -- | component executable-input gate is not accepted |
-| -- | capacity_provenance_missing | G1-A2-CAPACITY-CONVENTION | -- | capacity denominator provenance is required before integrated trajectory acceptance |
 | -- | downstream_gate_blocked | A-013 | -- | downstream gate remains unresolved before executable integrated analysis |
 | -- | downstream_gate_blocked | G2 | -- | downstream gate remains unresolved before executable integrated analysis |
 | -- | downstream_gate_blocked | G1-A2 | -- | downstream gate remains unresolved before executable integrated analysis |
@@ -114,6 +124,8 @@ Executable input gate states: adoption: accepted; baseline: blocked; ev: accepte
 | -- | calendar_id_mismatch | ALEA-001 | -- | all executable component artifacts must cite one common ALEA-001 calendar before loader use |
 | baseline | component_output_manifest_missing | E2.S5-BASELINE-COMPONENT-OUTPUT-ARTIFACT | -- | accepted component-output manifest is required before artifact-loader execution |
 | ev | component_output_manifest_required_keys_missing | E3.S2-EV-COMPONENT-OUTPUT-SCHEMA | data/metadata/ev_adoption/e2_s2_ev_ic1_candidate_component_output_manifest.json | component-output manifest is not in the accepted-artifact loader schema |
+| ev | component_output_manifest_loader_contract_missing | E3.S2-EV-COMPONENT-OUTPUT-LOADER-CONTRACT | data/metadata/ev_adoption/e2_s2_ev_ic1_candidate_component_output_manifest.json | component-output manifest must declare the single-node 1D loader contract before executable IC-1 use |
+| ev | component_output_manifest_multi_node_not_loadable | E3.S2-EV-MULTI-NODE-COMPONENT-OUTPUT, IC-1-NODE-AXIS-CONTRACT | data/metadata/ev_adoption/e2_s2_ev_ic1_candidate_component_output_manifest.json | multi-node component-output artifacts are blocked until A supports a multi-node loader or C emits per-node loadable manifests |
 | hp | component_output_manifest_missing | HP-001, E2-S3-HP001-COMPONENT-OUTPUT-READINESS-BLOCKER, E2-S3-HP001-EXECUTABLE-VALUE-BINDING-PACKET, E2-S3-HP001-PROFILE-ARTIFACT-CONSUMPTION-MANIFEST, E2-S3-HP001-COLD-SPELL-ACCEPTANCE-READINESS, D004-PAIRED-HP-PV-ACCEPTANCE | -- | accepted component-output manifest is required before artifact-loader execution |
 | pv | component_output_manifest_missing | PV-PARAM-001, D-014, D014-PV-CAPACITY-APPROVAL-TEMPLATE, FINAL-PAIRED-HP-PV-ACCEPTANCE | -- | accepted component-output manifest is required before artifact-loader execution |
 | adoption | component_output_manifest_missing | E3.S2-ADOPTION-COMPONENT-OUTPUT-MANIFEST | -- | accepted component-output manifest is required before artifact-loader execution |
@@ -125,17 +137,17 @@ Executable input gate states: adoption: accepted; baseline: blocked; ev: accepte
 | adoption | component_year_coverage_incomplete | E3.S2B-ADOPTION-YEAR-COVERAGE | -- | component-output manifests must cover every planned E3.S2b screen year before launch |
 | flexibility | component_year_coverage_incomplete | E3.S2B-FLEXIBILITY-YEAR-COVERAGE | -- | component-output manifests must cover every planned E3.S2b screen year before launch |
 | -- | scenario_consistency_not_accepted | A-016, A016-SCENARIO-CONSISTENCY | -- | A-016 scenario-consistency manifest must be accepted before launch |
-| -- | capacity_prerun_provenance_incomplete | G1-A2, G1-A2-CAPACITY-CONVENTION, E3.S2B-CAPACITY-PROVENANCE | -- | E3.S2b must predeclare capacity provenance fields before any screen can launch |
+| -- | supporting_metadata_checksum_mismatch | E3.S2B-SUPPORTING-METADATA-CHECKSUM | src/pbox_runner_readiness.py | supporting metadata packet checksum does not match the preflight input |
 
 ## Interpretation
 
-The useful current-main state is metadata-rich but still fail-closed. EV has an accepted Agent A-facing index and a checksum preflight, but the ignored candidate NPZ outputs are missing locally and no held-out adequacy result is authorized. Adoption metadata is accepted for declared branches, and FLEX-001 is approved as a scaffold protocol. PV now has the first-experiment value-decision packet, approval checklist packets, and executable preflight guard, but PV capacity values, orientation/tilt values, conversion treatment, allocation, A-016 consistency, and final paired HP/PV acceptance remain unsigned. HP now has the consolidated #250 component-output readiness blocker, profile-artifact template, cold-spell acceptance packet, and refreshed value-binding packet, but still lacks signed annual value binding, final A-016 scenario consistency, paired-weather acceptance, cold-spell tolerances, and an accepted component-output manifest. Baseline, HP, PV, adoption, and flexibility still lack accepted generic component-output manifests for the IC-1 loader boundary.
+The useful current-main state is metadata-rich but still fail-closed. EV has an accepted Agent A-facing index and checksum preflight, but the current EV component-output manifest describes 115-node scenario NPZ files while the current A-owned generic NPZ loader accepts only single-node, one-dimensional component-output manifests. That metadata wrapper is therefore reported as a loadability blocker until A adds an explicit multi-node loader or C emits per-node loadable manifests. Adoption metadata is accepted for declared branches, and FLEX-001 is approved as a scaffold protocol. PV now has the first-experiment value-decision packet, approval checklist packets, and executable preflight guard, but PV capacity values, orientation/tilt values, conversion treatment, allocation, A-016 consistency, and final paired HP/PV acceptance remain unsigned. HP now has the consolidated #250 component-output readiness blocker, profile-artifact template, cold-spell acceptance packet, and refreshed value-binding packet, but still lacks signed annual value binding, final A-016 scenario consistency, paired-weather acceptance, cold-spell tolerances, and an accepted component-output manifest. Baseline, HP, PV, adoption, and flexibility still lack accepted generic component-output manifests for the IC-1 loader boundary.
 
-The E3.S2b design also records that the future screen must be a predeclared 2030/2033/2035 by low/middle/high by rho-endpoint plan, but current component metadata does not yet cover all planned years. Capacity provenance is absent, and the screen cannot launch until raw MVA reporting under both total and firm conventions can be manifested without selecting a denominator. A-013 and G2 remain downstream blockers for later model-error and Tier-1 validation; this report does not use their numerical values.
+The E3.S2b design also records that the future screen must be a predeclared 2030/2033/2035 by low/middle/high by rho-endpoint plan, but current component metadata does not yet cover all planned years. The #264 capacity provenance packet is now checksum-verified and supplies total 80 MVA plus firm (n-1) 40 MVA raw-reporting fields, but the denominator convention remains pending and no screen can launch until all component-output, A-016, A-013, G2, and convention prerequisites are satisfied. A-013 and G2 remain downstream blockers for later model-error and Tier-1 validation; this report does not use their numerical values.
 
 ## Reproduction
 
 Command: `.\.venv\Scripts\python.exe reports\e3_s2b_generate_integrated_prerun_readiness.py`
-Input SHA-256: `61a8d3c9c944904ef987b587f194feb256b57164f045d7bdc627923125a94733`
-Generated from git commit: `6b87ff2bbd9950523ee3104ecb43341c61925033`
-Refresh basis: origin/main through PR #250/#256/#257/#259; #250/#251/#252/#253/#254/#255/#256/#257/#259 consumed as metadata only
+Input SHA-256: `ec82c103a46115e1a634025756326444392f30ed839598ff7f53e7a373335d2d`
+Generated from git commit: `fe7316524720fc3953c48c7dfd2a4ecfbf1e1aa9`
+Refresh basis: origin/main through PR #264; #264 capacity provenance consumed as checksum-verified metadata only

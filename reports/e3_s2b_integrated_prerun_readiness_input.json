@@ -1,7 +1,7 @@
 {
   "schema_version": "e3_s2b_integrated_prerun_readiness_input_v1",
   "task_id": "E3.S2b",
-  "intended_use": "e3_s2b_integrated_prerun_readiness_current_main_through_pr250_pr256_pr257_pr259",
+  "intended_use": "e3_s2b_integrated_prerun_gate_current_main_through_pr264",
   "scope": "metadata_preflight_only_no_arrays_no_ic2_execution_no_events_no_probability_no_capacity_screen",
   "config": {
     "config_id": "e3_s2b_integrated_prerun_readiness_v1",
@@ -33,10 +33,12 @@
       "no_event_detection": true,
       "no_probability_estimate": true,
       "no_capacity_screen_result": true,
-      "refresh_basis": "origin/main through PR #250/#256/#257/#259; #250/#251/#252/#253/#254/#255/#256/#257/#259 consumed as metadata only",
+      "refresh_basis": "origin/main through PR #264; capacity provenance packet consumed by path and checksum",
       "accepted_artifact_loader_helper": "build_accepted_artifact_loader_blocker_preflight",
       "e3_s2b_prerun_helper": "build_e3_s2b_integrated_prerun_readiness",
-      "primary_threshold_metadata": "G0-A3: strict L_import > 1.0 p.u. for four consecutive 15-minute import steps over the full year; 1.1 and 1.2 are sensitivities only"
+      "primary_threshold_metadata": "G0-A3: strict L_import > 1.0 p.u. for four consecutive 15-minute import steps over the full year; 1.1 and 1.2 are sensitivities only",
+      "capacity_provenance_packet_path": "reports/e3_s2b_capacity_provenance_packet.json",
+      "component_output_loader_contract": "single_node_1d_component_output_v1; no spatially collapsed pseudo-node manifests accepted as executable"
     }
   },
   "artifacts": [
@@ -222,9 +224,11 @@
     }
   ],
   "metadata": {
-    "refresh_basis": "origin/main through PR #250/#256/#257/#259; #250/#251/#252/#253/#254/#255/#256/#257/#259 consumed as metadata only",
+    "refresh_basis": "origin/main through PR #264; #264 capacity provenance consumed as checksum-verified metadata only",
     "hard_boundary": "no arrays, no IC-2 execution, no events, no P(E), no capacity-screen result, no manuscript numbers",
-    "current_main_commit": "63ae72e824c3b81e9a09266251b9416e6b76677d"
+    "current_main_commit": "a6e1209645676048afc752678bfe2b62c3f8b068",
+    "capacity_provenance_packet_path": "reports/e3_s2b_capacity_provenance_packet.json",
+    "component_output_loader_contract": "single_node_1d_component_output_v1; multi-node component-output artifacts remain blocked until A supports them or C emits per-node manifests"
   },
   "missing_artifact_blockers": {},
   "capacity_provenance": null,
@@ -303,7 +307,10 @@
     "hp_profile_artifact_consumption_report": "reports/e2_s3_hp001_profile_artifact_consumption_manifest.md",
     "hp_cold_spell_acceptance_report": "reports/e2_s3_hp001_cold_spell_acceptance_readiness.md",
     "agent_b_e4_s1_rho_sweep_payload_guards": "reports/e4_s1_rho_sweep_payload_guards.md",
-    "agent_b_pbox_monotonicity_module": "src/pbox_monotonicity.py"
+    "agent_b_pbox_monotonicity_module": "src/pbox_monotonicity.py",
+    "capacity_provenance_packet": "reports/e3_s2b_capacity_provenance_packet.json",
+    "capacity_provenance_report": "reports/E3_S2B_CAPACITY_PROVENANCE.md",
+    "capacity_provenance_manifest": "reports/e3_s2b_capacity_provenance_manifest.json"
   },
   "supporting_metadata_sha256_by_path": {
     "reports/e3_s2_accepted_artifact_blocker_preflight_input.json": "374de84d5899286c28f0f36a6a7d11a60483804c35726e762e6cb4f34346da30",
@@ -334,7 +341,10 @@
     "reports/e2_s3_hp001_profile_artifact_consumption_manifest.md": "b46e0f3bdad2579c0e0470a5b50497fff907dd8080d2727f8b876f78ce4e0aa3",
     "reports/e2_s3_hp001_cold_spell_acceptance_readiness.md": "055cce65ddb92a5cf6a852564ae411c1a0e0dc05e1e28d89e125124953a57d20",
     "reports/e4_s1_rho_sweep_payload_guards.md": "98c24865d1cd7b99ba2ea0414d62cc74be2868d7db57d19092c99ca1814594c3",
-    "src/pbox_monotonicity.py": "6d34e53ec804aca3d55f4f6bc27bc8fd198116fb6ca79d7a7e998a6c8ddbd86d"
+    "src/pbox_monotonicity.py": "6d34e53ec804aca3d55f4f6bc27bc8fd198116fb6ca79d7a7e998a6c8ddbd86d",
+    "reports/E3_S2B_CAPACITY_PROVENANCE.md": "aa97b83b6bb3e237fca9ffce2c3d263b7eef9745c669ac902d57ca630844ddbd",
+    "reports/e3_s2b_capacity_provenance_manifest.json": "a6496b3b079dd2ece7978325b7f0e8617a3f4e6239db3a258a4a9e0d593530b4",
+    "reports/e3_s2b_capacity_provenance_packet.json": "f980c7a37175514bfcbea503a6981fe60796e81904eefb252b9d16382f7774fa"
   },
   "artifact_sha256_by_path": {
     "reports/e2_s5_baseline_diversity_readiness.md": "35dddc989ff32e313ffcb22c16d26f494596445b6ba1879117168feb285a9d0c",
@@ -407,5 +417,7 @@
       "no_probability_estimate": true,
       "no_capacity_screen_result": true
     }
-  }
+  },
+  "capacity_provenance_packet_path": "reports/e3_s2b_capacity_provenance_packet.json",
+  "capacity_provenance_packet_sha256": "f980c7a37175514bfcbea503a6981fe60796e81904eefb252b9d16382f7774fa"
 }

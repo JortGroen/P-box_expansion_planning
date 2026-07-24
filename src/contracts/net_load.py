@@ -62,6 +62,10 @@ DEFAULT_EXECUTABLE_BRIDGE_BLOCKER_IDS: tuple[str, ...] = (
     "G1-A2",
     "A-016",
 )
+COMPONENT_OUTPUT_SINGLE_NODE_LOADER_CONTRACT = "single_node_1d_component_output_v1"
+COMPONENT_OUTPUT_NODE_AXIS_CONTRACT = "single_manifest_single_node"
+COMPONENT_OUTPUT_ARRAY_SHAPE_CONTRACT = "p_kw_q_kvar_timestamps_1d_same_length"
+
 
 REGISTER_FILES: tuple[tuple[str, int, int, int], ...] = (
     ("registers/DECISIONS.md", 0, 6, 7),
@@ -2004,6 +2008,8 @@ def build_e3_s2b_integrated_prerun_readiness(
     trajectory_config: LoadingTrajectoryPreRunConfig,
     *,
     capacity_provenance: Mapping[str, object] | None = None,
+    capacity_provenance_packet_path: str | None = None,
+    capacity_provenance_packet_sha256: str | None = None,
     artifact_sha256_by_path: Mapping[str, str] | None = None,
     component_output_manifest_paths_by_kind: Mapping[str, str] | None = None,
     component_output_manifest_sha256_by_path: Mapping[str, str] | None = None,
@@ -2026,11 +2032,18 @@ def build_e3_s2b_integrated_prerun_readiness(
     counting, probability estimation, or capacity-screen classification.
     """
 
+    root = (Path(repo_root) if repo_root is not None else Path(__file__).resolve().parents[2]).resolve()
+    capacity_source_record, capacity_source_blockers, resolved_capacity_provenance = _e3_s2b_capacity_provenance_from_source(
+        root,
+        inline_record=capacity_provenance,
+        packet_path=capacity_provenance_packet_path,
+        expected_sha256=capacity_provenance_packet_sha256,
+    )
     accepted_loader = build_accepted_artifact_loader_blocker_preflight(
         config,
         artifacts,
         trajectory_config,
-        capacity_provenance=capacity_provenance,
+        capacity_provenance=resolved_capacity_provenance,
         artifact_sha256_by_path=artifact_sha256_by_path,
         component_output_manifest_paths_by_kind=component_output_manifest_paths_by_kind,
         component_output_manifest_sha256_by_path=component_output_manifest_sha256_by_path,
@@ -2041,9 +2054,8 @@ def build_e3_s2b_integrated_prerun_readiness(
         downstream_blocker_ids=downstream_blocker_ids,
         intended_use=intended_use,
     )
-    root = (Path(repo_root) if repo_root is not None else Path(__file__).resolve().parents[2]).resolve()
     required = tuple(required_component_kinds)
-    screen_blockers: list[dict[str, object]] = []
+    screen_blockers: list[dict[str, object]] = list(capacity_source_blockers)
 
     if tuple(config.planning_years) != (2030, 2033, 2035):
         _append_loader_blocker(
@@ -2097,7 +2109,7 @@ def build_e3_s2b_integrated_prerun_readiness(
     )
     screen_blockers.extend(scenario_blockers)
 
-    capacity_record = _e3_s2b_capacity_prerun_record(capacity_provenance)
+    capacity_record = _e3_s2b_capacity_prerun_record(resolved_capacity_provenance)
     if not capacity_record["ready"]:
         _append_loader_blocker(
             screen_blockers,
@@ -2153,6 +2165,7 @@ def build_e3_s2b_integrated_prerun_readiness(
         "accepted_artifact_preflight": accepted_loader,
         "component_year_coverage": component_year_records,
         "scenario_consistency": scenario_record,
+        "capacity_provenance_source_record": capacity_source_record,
         "capacity_prerun_provenance": capacity_record,
         "supporting_metadata_records": tuple(supporting_records),
         "blocker_manifest": {
@@ -2457,6 +2470,15 @@ def load_component_adapter_output_from_npz_artifact(
 
     if not isinstance(manifest, Mapping):
         raise TypeError("component output artifact manifest must be a mapping")
+    loader_contract_blockers = _component_output_manifest_loader_contract_blockers(
+        manifest,
+        kind=str(manifest.get("kind") or manifest.get("component_kind") or "unknown"),
+        artifact_id=str(manifest.get("artifact_id") or "unknown"),
+        path=str(manifest.get("array_path") or "component-output-manifest"),
+        require_explicit=False,
+    )
+    if loader_contract_blockers:
+        raise ValueError(loader_contract_blockers[0]["message"])
     artifact_status = _require_nonempty(
         _require_manifest_text(manifest, "artifact_status"),
         name="artifact_status",
@@ -3223,6 +3245,122 @@ def _e3_s2b_scenario_consistency_record(
     }, tuple(blockers)
 
 
+
+def _e3_s2b_capacity_provenance_from_source(
+    repo_root: Path,
+    *,
+    inline_record: Mapping[str, object] | None,
+    packet_path: str | None,
+    expected_sha256: str | None,
+) -> tuple[dict[str, object] | None, tuple[dict[str, object], ...], Mapping[str, object] | None]:
+    if packet_path is None:
+        return None, (), inline_record
+    blockers: list[dict[str, object]] = []
+    path = _require_nonempty(str(packet_path), name="capacity_provenance_packet_path")
+    record: dict[str, object] = {"path": path, "state": "blocked"}
+    try:
+        resolved = _resolve_repo_relative_path(repo_root, path, field_name="capacity_provenance_packet_path")
+    except ValueError as exc:
+        blockers.append(
+            _loader_blocker_record(
+                "capacity_provenance_packet_path_invalid",
+                str(exc),
+                path=path,
+                blocker_ids=("E3.S2B-CAPACITY-PROVENANCE-PACKET-PATH",),
+            )
+        )
+        return record, tuple(blockers), None
+    if not resolved.is_file():
+        blockers.append(
+            _loader_blocker_record(
+                "capacity_provenance_packet_missing",
+                "capacity provenance packet path is missing from the repository",
+                path=path,
+                blocker_ids=("E3.S2B-CAPACITY-PROVENANCE",),
+            )
+        )
+        return record, tuple(blockers), None
+    observed = _sha256_file(resolved)
+    record["sha256"] = observed
+    if expected_sha256 is None:
+        blockers.append(
+            _loader_blocker_record(
+                "capacity_provenance_packet_expected_checksum_missing",
+                "capacity provenance packet requires a version-controlled expected SHA-256",
+                path=path,
+                blocker_ids=("E3.S2B-CAPACITY-PROVENANCE-CHECKSUM",),
+            )
+        )
+    else:
+        record["expected_sha256"] = expected_sha256
+        record["checksum_match"] = observed == expected_sha256
+        if observed != expected_sha256:
+            blockers.append(
+                _loader_blocker_record(
+                    "capacity_provenance_packet_checksum_mismatch",
+                    "capacity provenance packet SHA-256 does not match the expected value",
+                    path=path,
+                    blocker_ids=("E3.S2B-CAPACITY-PROVENANCE-CHECKSUM",),
+                )
+            )
+    try:
+        packet = json.loads(resolved.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        blockers.append(
+            _loader_blocker_record(
+                "capacity_provenance_packet_json_invalid",
+                f"capacity provenance packet is not valid JSON: {exc.msg}",
+                path=path,
+                blocker_ids=("E3.S2B-CAPACITY-PROVENANCE-JSON",),
+            )
+        )
+        return record, tuple(blockers), None
+    capacity = packet.get("capacity_provenance")
+    if not isinstance(capacity, Mapping):
+        blockers.append(
+            _loader_blocker_record(
+                "capacity_provenance_packet_schema_invalid",
+                "capacity provenance packet must contain a capacity_provenance mapping",
+                path=path,
+                blocker_ids=("E3.S2B-CAPACITY-PROVENANCE-SCHEMA",),
+            )
+        )
+    if packet.get("ready_for_e3_s2b_capacity_prerun") is not True:
+        blockers.append(
+            _loader_blocker_record(
+                "capacity_provenance_packet_not_ready",
+                "capacity provenance packet must be ready for E3.S2b capacity pre-run use",
+                path=path,
+                blocker_ids=("E3.S2B-CAPACITY-PROVENANCE",),
+            )
+        )
+    packet_blockers = packet.get("blocker_manifest", {}).get("items", ()) if isinstance(packet.get("blocker_manifest"), Mapping) else ()
+    if packet_blockers:
+        blockers.append(
+            _loader_blocker_record(
+                "capacity_provenance_packet_contains_blockers",
+                "capacity provenance packet must not contain unresolved blockers before screen pre-run launch",
+                path=path,
+                blocker_ids=("E3.S2B-CAPACITY-PROVENANCE",),
+            )
+        )
+    if inline_record is not None and isinstance(capacity, Mapping) and dict(inline_record) != dict(capacity):
+        blockers.append(
+            _loader_blocker_record(
+                "capacity_provenance_inline_packet_mismatch",
+                "inline capacity provenance must match the checksum-verified packet when both are supplied",
+                path=path,
+                blocker_ids=("E3.S2B-CAPACITY-PROVENANCE-CHECKSUM",),
+            )
+        )
+    if blockers:
+        return record, tuple(blockers), None
+    record["state"] = "accepted"
+    record["schema_version"] = packet.get("schema_version")
+    record["status"] = packet.get("status")
+    return record, (), capacity
+
+
 def _e3_s2b_capacity_prerun_record(record: Mapping[str, object] | None) -> dict[str, object]:
     required_fields = (
         "s_nom_agg_kva",
@@ -3468,6 +3606,15 @@ def _component_output_manifest_schema_blockers(
             blocker_ids=(f"E3.S2-{kind.upper()}-COMPONENT-OUTPUT-SCHEMA",),
         )
         blockers[-1]["missing_keys"] = missing
+        blockers.extend(
+            _component_output_manifest_loader_contract_blockers(
+                manifest,
+                kind=kind,
+                artifact_id=executable_artifact.artifact_id,
+                path=path,
+                require_explicit=True,
+            )
+        )
         return blockers
     legacy_fields = tuple(field for field in _FORBIDDEN_IC1_RESULT_FIELDS if field in manifest)
     if legacy_fields:
@@ -3531,6 +3678,15 @@ def _component_output_manifest_schema_blockers(
             path=path,
             blocker_ids=(f"E3.S2-{kind.upper()}-NODE-MAPPING",),
         )
+    blockers.extend(
+        _component_output_manifest_loader_contract_blockers(
+            manifest,
+            kind=kind,
+            artifact_id=str(manifest["artifact_id"]),
+            path=path,
+            require_explicit=True,
+        )
+    )
     shared_weather_driver_id = manifest.get("shared_weather_driver_id")
     if kind in {"hp", "pv"} and shared_weather_driver_id != executable_artifact.shared_weather_driver_id:
         _append_loader_blocker(
@@ -3580,6 +3736,118 @@ def _component_output_manifest_schema_blockers(
             blocker_ids=(f"E3.S2-{kind.upper()}-ARRAY-PATH",),
         )
     return blockers
+
+
+
+def _component_output_manifest_loader_contract_blockers(
+    manifest: Mapping[str, object],
+    *,
+    kind: str,
+    artifact_id: str,
+    path: str,
+    require_explicit: bool,
+) -> list[dict[str, object]]:
+    blockers: list[dict[str, object]] = []
+    loader_contract = manifest.get("loader_contract")
+    node_axis_contract = manifest.get("node_axis_contract")
+    array_shape_contract = manifest.get("array_shape_contract")
+    expected = {
+        "loader_contract": COMPONENT_OUTPUT_SINGLE_NODE_LOADER_CONTRACT,
+        "node_axis_contract": COMPONENT_OUTPUT_NODE_AXIS_CONTRACT,
+        "array_shape_contract": COMPONENT_OUTPUT_ARRAY_SHAPE_CONTRACT,
+    }
+    observed = {
+        "loader_contract": loader_contract,
+        "node_axis_contract": node_axis_contract,
+        "array_shape_contract": array_shape_contract,
+    }
+    missing = tuple(field for field, value in observed.items() if value is None)
+    if require_explicit and missing:
+        _append_loader_blocker(
+            blockers,
+            "component_output_manifest_loader_contract_missing",
+            "component-output manifest must declare the single-node 1D loader contract before executable IC-1 use",
+            kind=kind,
+            artifact_id=artifact_id,
+            path=path,
+            blocker_ids=(f"E3.S2-{kind.upper()}-COMPONENT-OUTPUT-LOADER-CONTRACT",),
+        )
+        blockers[-1]["missing_fields"] = missing
+    mismatched = tuple(
+        field
+        for field, expected_value in expected.items()
+        if observed[field] is not None and observed[field] != expected_value
+    )
+    if mismatched:
+        _append_loader_blocker(
+            blockers,
+            "component_output_manifest_loader_contract_mismatch",
+            "component-output manifest loader contract does not match the current single-node NPZ loader",
+            kind=kind,
+            artifact_id=artifact_id,
+            path=path,
+            blocker_ids=(f"E3.S2-{kind.upper()}-COMPONENT-OUTPUT-LOADER-CONTRACT",),
+        )
+        blockers[-1]["mismatched_fields"] = mismatched
+    if _declares_multi_node_component_output(manifest):
+        _append_loader_blocker(
+            blockers,
+            "component_output_manifest_multi_node_not_loadable",
+            "multi-node component-output artifacts are blocked until A supports a multi-node loader or C emits per-node loadable manifests",
+            kind=kind,
+            artifact_id=artifact_id,
+            path=path,
+            blocker_ids=(f"E3.S2-{kind.upper()}-MULTI-NODE-COMPONENT-OUTPUT", "IC-1-NODE-AXIS-CONTRACT"),
+        )
+    return blockers
+
+
+def _declares_multi_node_component_output(manifest: Mapping[str, object]) -> bool:
+    node_id = manifest.get("node_id")
+    if isinstance(node_id, str) and _looks_like_collapsed_node_axis(node_id):
+        return True
+    node_ids = manifest.get("node_ids")
+    if isinstance(node_ids, Sequence) and not isinstance(node_ids, (str, bytes)) and len(tuple(node_ids)) != 1:
+        return True
+    node_count = manifest.get("node_count")
+    if isinstance(node_count, int) and not isinstance(node_count, bool) and node_count != 1:
+        return True
+    for shape_key in ("array_shape", "p_kw_shape", "q_kvar_shape", "timestamps_shape"):
+        if _shape_declares_extra_axis(manifest.get(shape_key)):
+            return True
+    materialization = manifest.get("materialization")
+    if isinstance(materialization, Mapping):
+        output_files = materialization.get("output_files", ())
+        if isinstance(output_files, Sequence) and not isinstance(output_files, (str, bytes)):
+            for output in output_files:
+                if isinstance(output, Mapping) and _declares_multi_node_component_output(output):
+                    return True
+    scenario_outputs = manifest.get("scenario_outputs")
+    if isinstance(scenario_outputs, Sequence) and not isinstance(scenario_outputs, (str, bytes)):
+        for output in scenario_outputs:
+            if isinstance(output, Mapping):
+                nested = output.get("output_file")
+                if isinstance(nested, Mapping) and _declares_multi_node_component_output(nested):
+                    return True
+                if _declares_multi_node_component_output(output):
+                    return True
+    return False
+
+
+def _looks_like_collapsed_node_axis(value: str) -> bool:
+    text = value.lower()
+    return "_to_" in text or text.startswith("all_") or text.endswith("_all_nodes")
+
+
+def _shape_declares_extra_axis(value: object) -> bool:
+    if isinstance(value, Sequence) and not isinstance(value, (str, bytes)):
+        shape = tuple(value)
+        if len(shape) > 1:
+            try:
+                return int(shape[0]) != 1
+            except (TypeError, ValueError):
+                return True
+    return False
 
 
 def _unsafe_executable_token_fields(values: Mapping[str, object]) -> tuple[str, ...]:

@@ -259,6 +259,13 @@ def _write_component_output_npz_artifact(
         "shared_weather_driver_id": weather_id,
         "array_path": array_path.relative_to(tmp_path).as_posix(),
         "array_sha256": array_sha256,
+        "loader_contract": "single_node_1d_component_output_v1",
+        "node_axis_contract": "single_manifest_single_node",
+        "array_shape_contract": "p_kw_q_kvar_timestamps_1d_same_length",
+        "node_count": 1,
+        "p_kw_shape": [int(np.asarray(p_kw).size)],
+        "q_kvar_shape": [int(np.asarray(q_kvar).size)],
+        "timestamps_shape": [int(np.asarray(timestamps).size)],
         "provenance": {"readiness_artifact": "synthetic-loader-fixture"},
     }
     if weather_id is None:
@@ -2540,6 +2547,13 @@ def _write_loader_component_manifests(
             "timestep_seconds": artifact.timestep_seconds,
             "array_path": f"data/processed/component_outputs/{artifact.kind}.npz",
             "array_sha256": "a" * 64,
+            "loader_contract": "single_node_1d_component_output_v1",
+            "node_axis_contract": "single_manifest_single_node",
+            "array_shape_contract": "p_kw_q_kvar_timestamps_1d_same_length",
+            "node_count": 1,
+            "p_kw_shape": [4],
+            "q_kvar_shape": [4],
+            "timestamps_shape": [4],
             "provenance": {"source_manifest": artifact.manifest_path or "none"},
         }
         if artifact.shared_weather_driver_id is not None:
@@ -3173,6 +3187,113 @@ def _accepted_scenario_consistency_manifest() -> dict[str, object]:
 
 def _full_component_year_coverage() -> dict[str, tuple[int, ...]]:
     return {kind: (2030, 2033, 2035) for kind in REQUIRED_INTEGRATION_COMPONENT_KINDS}
+
+
+def _write_capacity_packet(tmp_path, *, capacity=None, ready: bool = True) -> tuple[str, str]:
+    capacity = _synthetic_e3_s2b_capacity_prerun_provenance() if capacity is None else capacity
+    packet = {
+        "schema_version": "e3_s2b_capacity_provenance_v1",
+        "task_id": "E3.S2b",
+        "status": "ready_for_pi_capacity_provenance_review" if ready else "blocked_capacity_provenance",
+        "ready_for_e3_s2b_capacity_prerun": ready,
+        "capacity_provenance": capacity,
+        "blocker_manifest": {"ready": ready, "blocker_count": 0 if ready else 1, "items": [] if ready else [{"code": "blocked"}]},
+    }
+    relative = "reports/capacity_packet.json"
+    path = tmp_path / relative
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(packet, sort_keys=True) + "\n", encoding="utf-8")
+    return relative, hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def test_e3_s2b_integrated_prerun_readiness_uses_checksum_verified_capacity_packet(tmp_path) -> None:
+    artifacts = _safe_executable_input_artifacts()
+    source_sha = _write_synthetic_manifest_files(tmp_path, artifacts)
+    component_paths, component_sha = _write_loader_component_manifests(tmp_path, artifacts)
+    capacity_path, capacity_sha = _write_capacity_packet(tmp_path)
+
+    readiness = build_e3_s2b_integrated_prerun_readiness(
+        _screen_preflight_config(),
+        artifacts,
+        _trajectory_prerun_config(),
+        capacity_provenance_packet_path=capacity_path,
+        capacity_provenance_packet_sha256=capacity_sha,
+        artifact_sha256_by_path=source_sha,
+        component_output_manifest_paths_by_kind=component_paths,
+        component_output_manifest_sha256_by_path=component_sha,
+        scenario_consistency_manifest=_accepted_scenario_consistency_manifest(),
+        component_year_coverage_by_kind=_full_component_year_coverage(),
+        repo_root=tmp_path,
+        downstream_blocker_ids=(),
+    )
+
+    assert readiness["ready_for_e3_s2b_prerun_launch"] is True
+    assert readiness["capacity_provenance_source_record"]["state"] == "accepted"
+    assert readiness["capacity_provenance_source_record"]["checksum_match"] is True
+    assert readiness["capacity_prerun_provenance"]["total_nameplate_kva"] == 80000.0
+    assert readiness["capacity_prerun_provenance"]["firm_n_minus_1_nameplate_kva"] == 40000.0
+
+
+def test_e3_s2b_integrated_prerun_readiness_blocks_capacity_packet_checksum_mismatch(tmp_path) -> None:
+    artifacts = _safe_executable_input_artifacts()
+    source_sha = _write_synthetic_manifest_files(tmp_path, artifacts)
+    component_paths, component_sha = _write_loader_component_manifests(tmp_path, artifacts)
+    capacity_path, _capacity_sha = _write_capacity_packet(tmp_path)
+
+    readiness = build_e3_s2b_integrated_prerun_readiness(
+        _screen_preflight_config(),
+        artifacts,
+        _trajectory_prerun_config(),
+        capacity_provenance_packet_path=capacity_path,
+        capacity_provenance_packet_sha256="0" * 64,
+        artifact_sha256_by_path=source_sha,
+        component_output_manifest_paths_by_kind=component_paths,
+        component_output_manifest_sha256_by_path=component_sha,
+        scenario_consistency_manifest=_accepted_scenario_consistency_manifest(),
+        component_year_coverage_by_kind=_full_component_year_coverage(),
+        repo_root=tmp_path,
+        downstream_blocker_ids=(),
+    )
+
+    codes = {item["code"] for item in readiness["blocker_manifest"]["items"]}
+    assert readiness["ready_for_e3_s2b_prerun_launch"] is False
+    assert "capacity_provenance_packet_checksum_mismatch" in codes
+    assert readiness["capacity_provenance_source_record"]["state"] == "blocked"
+
+
+def test_accepted_artifact_loader_blocker_preflight_rejects_multi_node_component_manifest(tmp_path) -> None:
+    artifacts = _safe_executable_input_artifacts()
+    source_sha = _write_synthetic_manifest_files(tmp_path, artifacts)
+    component_paths, component_sha = _write_loader_component_manifests(
+        tmp_path,
+        artifacts,
+        overrides_by_kind={
+            "ev": {
+                "node_id": "load_000_to_load_114",
+                "node_ids": [f"load_{index:03d}" for index in range(115)],
+                "node_count": 115,
+                "array_shape": [115, 35040],
+            }
+        },
+    )
+
+    preflight = build_accepted_artifact_loader_blocker_preflight(
+        _screen_preflight_config(),
+        artifacts,
+        _trajectory_prerun_config(),
+        capacity_provenance=_synthetic_e3_s2b_capacity_prerun_provenance(),
+        artifact_sha256_by_path=source_sha,
+        component_output_manifest_paths_by_kind=component_paths,
+        component_output_manifest_sha256_by_path=component_sha,
+        repo_root=tmp_path,
+        downstream_blocker_ids=(),
+    )
+
+    ev_record = next(record for record in preflight["component_output_manifest_records"] if record["kind"] == "ev")
+    codes = {item["code"] for item in preflight["blocker_manifest"]["items"] if item.get("kind") == "ev"}
+    assert ev_record["state"] == "blocked"
+    assert "component_output_manifest_multi_node_not_loadable" in codes
+    assert preflight["ready_for_artifact_loader_execution"] is False
 
 
 def test_e3_s2b_integrated_prerun_readiness_accepts_complete_synthetic_metadata(tmp_path) -> None:

@@ -76,6 +76,8 @@ def build_dossier_from_payload(
         artifacts,
         trajectory_config,
         capacity_provenance=payload.get("capacity_provenance"),
+        capacity_provenance_packet_path=payload.get("capacity_provenance_packet_path"),
+        capacity_provenance_packet_sha256=payload.get("capacity_provenance_packet_sha256"),
         artifact_sha256_by_path=payload.get("artifact_sha256_by_path", {}),
         component_output_manifest_paths_by_kind=payload.get("component_output_manifest_paths_by_kind", {}),
         component_output_manifest_sha256_by_path=payload.get("component_output_manifest_sha256_by_path", {}),
@@ -129,6 +131,19 @@ def _component_manifest_rows(dossier: Mapping[str, Any]) -> str:
             )
         )
     return "\n".join(rows)
+
+
+def _capacity_source_row(dossier: Mapping[str, Any]) -> str:
+    record = dossier.get("capacity_provenance_source_record")
+    if not record:
+        return "| -- | missing | -- | -- | -- |"
+    return "| {path} | {state} | {checksum} | {sha} | {schema} |".format(
+        path=record.get("path") or "--",
+        state=record.get("state") or "--",
+        checksum=record.get("checksum_match", "--"),
+        sha=record.get("sha256", "--"),
+        schema=record.get("schema_version", "--"),
+    )
 
 
 def _year_rows(dossier: Mapping[str, Any]) -> str:
@@ -189,7 +204,7 @@ def _report_text(
     return f"""# E3.S2b Integrated Pre-Run Readiness
 
 Task: E3.S2b future-layer capacity/domain screen pre-run design scaffold.
-Status: metadata/preflight only. This packet composes the current Agent A IC-1 accepted-artifact gate with E3.S2b launch-shape checks on current `origin/main` through PR #250/#256/#257/#259. It consumes the merged EV accepted index and checksum preflight, consolidated HP readiness guard packets, PV first-experiment value-decision/approval/preflight blocker packets, the synthetic IC-1 assembly gate, the accepted-artifact blocker refresh, and Agent B trust/readiness plus rho-sweep guard context as metadata only.
+Status: metadata/preflight only. This packet composes the current Agent A IC-1 accepted-artifact gate with E3.S2b launch-shape checks on current `origin/main` through PR #264. It consumes the merged EV accepted index and checksum preflight, consolidated HP readiness guard packets, PV first-experiment value-decision/approval/preflight blocker packets, the synthetic IC-1 assembly gate, the accepted-artifact blocker refresh, Agent B trust/readiness plus rho-sweep guard context, and the #264 capacity-provenance packet as metadata only.
 
 ## Boundary
 
@@ -217,6 +232,14 @@ Ready for accepted-artifact loader execution: `{str(dossier['ready_for_artifact_
 Blocker count: `{dossier['blocker_manifest']['blocker_count']}`.
 Blocked component families: {', '.join(dossier['blocker_manifest']['blocked_component_kinds']) or 'none'}.
 Executable input gate states: {_component_state_summary(dossier)}.
+
+## Capacity Provenance Packet
+
+| Packet path | State | Checksum match | Observed SHA-256 | Schema |
+| --- | --- | --- | --- | --- |
+{_capacity_source_row(dossier)}
+
+Capacity convention status: {dossier['capacity_prerun_provenance']['status']}. Total and firm nameplate fields are provenance inputs only; no denominator is selected here.
 
 ## Source Metadata Packets
 
@@ -250,9 +273,9 @@ Executable input gate states: {_component_state_summary(dossier)}.
 
 ## Interpretation
 
-The useful current-main state is metadata-rich but still fail-closed. EV has an accepted Agent A-facing index and a checksum preflight, but the ignored candidate NPZ outputs are missing locally and no held-out adequacy result is authorized. Adoption metadata is accepted for declared branches, and FLEX-001 is approved as a scaffold protocol. PV now has the first-experiment value-decision packet, approval checklist packets, and executable preflight guard, but PV capacity values, orientation/tilt values, conversion treatment, allocation, A-016 consistency, and final paired HP/PV acceptance remain unsigned. HP now has the consolidated #250 component-output readiness blocker, profile-artifact template, cold-spell acceptance packet, and refreshed value-binding packet, but still lacks signed annual value binding, final A-016 scenario consistency, paired-weather acceptance, cold-spell tolerances, and an accepted component-output manifest. Baseline, HP, PV, adoption, and flexibility still lack accepted generic component-output manifests for the IC-1 loader boundary.
+The useful current-main state is metadata-rich but still fail-closed. EV has an accepted Agent A-facing index and checksum preflight, but the current EV component-output manifest describes 115-node scenario NPZ files while the current A-owned generic NPZ loader accepts only single-node, one-dimensional component-output manifests. That metadata wrapper is therefore reported as a loadability blocker until A adds an explicit multi-node loader or C emits per-node loadable manifests. Adoption metadata is accepted for declared branches, and FLEX-001 is approved as a scaffold protocol. PV now has the first-experiment value-decision packet, approval checklist packets, and executable preflight guard, but PV capacity values, orientation/tilt values, conversion treatment, allocation, A-016 consistency, and final paired HP/PV acceptance remain unsigned. HP now has the consolidated #250 component-output readiness blocker, profile-artifact template, cold-spell acceptance packet, and refreshed value-binding packet, but still lacks signed annual value binding, final A-016 scenario consistency, paired-weather acceptance, cold-spell tolerances, and an accepted component-output manifest. Baseline, HP, PV, adoption, and flexibility still lack accepted generic component-output manifests for the IC-1 loader boundary.
 
-The E3.S2b design also records that the future screen must be a predeclared 2030/2033/2035 by low/middle/high by rho-endpoint plan, but current component metadata does not yet cover all planned years. Capacity provenance is absent, and the screen cannot launch until raw MVA reporting under both total and firm conventions can be manifested without selecting a denominator. A-013 and G2 remain downstream blockers for later model-error and Tier-1 validation; this report does not use their numerical values.
+The E3.S2b design also records that the future screen must be a predeclared 2030/2033/2035 by low/middle/high by rho-endpoint plan, but current component metadata does not yet cover all planned years. The #264 capacity provenance packet is now checksum-verified and supplies total 80 MVA plus firm (n-1) 40 MVA raw-reporting fields, but the denominator convention remains pending and no screen can launch until all component-output, A-016, A-013, G2, and convention prerequisites are satisfied. A-013 and G2 remain downstream blockers for later model-error and Tier-1 validation; this report does not use their numerical values.
 
 ## Reproduction
 
