@@ -1,0 +1,182 @@
+{
+  "artifact_id": "e3_s2a_ev_heldout_adequacy_preflight_blockers",
+  "artifact_type": "e3_s2a_ev_heldout_adequacy_preflight_blocker_manifest",
+  "blocked": true,
+  "blockers": [
+    {
+      "blocker_id": "A-016-CROSS-COMPONENT-SCENARIO-CONSISTENCY-NOT-YET-CHECKED",
+      "reason": "EV, HP, PV, and baseline source-lineage consistency must be checked before integrated analysis.",
+      "resolution_required": "Resolve the inherited EV accepted-artifact-index blocker before E3.S2a execution.",
+      "source": "ev_ic1_accepted_artifact_index_preflight",
+      "status": "blocked"
+    },
+    {
+      "blocker_id": "A-016-SCENARIO-CONSISTENCY-NOT-RESOLVED",
+      "reason": "Cross-component 2035 source/scenario consistency has not been resolved for EV, HP, PV, and baseline.",
+      "resolution_required": "Record the A-016 scenario-consistency manifest before integrated adequacy runs.",
+      "source": "A-016",
+      "status": "blocked"
+    },
+    {
+      "blocker_id": "E3.S2-IC1-ASSEMBLY-NOT-ACCEPTED",
+      "reason": "Agent A IC-1 assembly is not accepted as the downstream aggregation surface for adequacy.",
+      "resolution_required": "Agent A delivers and PI accepts the IC-1 assembly path for baseline, EV, HP, PV, adoption, and flexibility on one common calendar.",
+      "source": "ic1_assembly_status",
+      "status": "blocked"
+    },
+    {
+      "blocker_id": "E3.S2A-DOWNSTREAM-AGGREGATE-ADEQUACY-CRITERION-NOT-SIGNED",
+      "reason": "The criterion packet is still unsigned and PI decision values/tolerances are not available.",
+      "resolution_required": "PI signs the downstream integrated criterion and all numerical tolerance fields before any held-out result is inspected.",
+      "source": "e3_s2a_ev_adequacy_criterion_packet",
+      "status": "blocked"
+    },
+    {
+      "blocker_id": "E3.S2a-EV-HELD-OUT-ADEQUACY-NOT-RUN",
+      "reason": "Held-out and quarantined EV batches remain closed until the downstream criterion is frozen and invoked.",
+      "resolution_required": "Resolve the inherited EV accepted-artifact-index blocker before E3.S2a execution.",
+      "source": "ev_ic1_accepted_artifact_index_preflight",
+      "status": "blocked"
+    },
+    {
+      "blocker_id": "EV-005-M-SUFFICIENCY-NOT-CERTIFIED",
+      "reason": "Candidate M=1000 home and M=1200 public are usable source libraries, not adequacy certifications.",
+      "resolution_required": "Resolve the inherited EV accepted-artifact-index blocker before E3.S2a execution.",
+      "source": "ev_ic1_accepted_artifact_index_preflight",
+      "status": "blocked"
+    },
+    {
+      "blocker_id": "EV-CANDIDATE-OUTPUT-CHECKSUMS-NOT-VERIFIED-IN-CONSUMING-WORKTREE",
+      "reason": "Candidate EV component-output checksum verification ran and found missing ignored NPZ files.",
+      "resolution_required": "Before executable adequacy, verify each candidate output NPZ against the accepted artifact index in the consuming worktree.",
+      "source": "candidate_output_manifest",
+      "status": "blocked"
+    },
+    {
+      "blocker_id": "EV-HELD-OUT-ACCESS-NOT-EXPLICITLY-INVOKED",
+      "reason": "Held-out access remains closed in this scaffold and has not been explicitly invoked after criterion approval.",
+      "resolution_required": "Invoke held-out access only in a later manifest after E3.S2a criterion approval and IC-1 readiness.",
+      "source": "held_out_access_status",
+      "status": "blocked"
+    },
+    {
+      "blocker_id": "G5-FINAL-LOW-MIDDLE-HIGH-BRANCH-NOT-SELECTED",
+      "reason": "The final 2035 low/middle/high paper branch has not been selected.",
+      "resolution_required": "Select an approved final branch through the signed G5 route; until then, any adequacy design must keep branches explicit.",
+      "source": "G5",
+      "status": "blocked"
+    },
+    {
+      "blocker_id": "IC-1-INTEGRATED-NET-LOAD-ASSEMBLY-NOT-RUN",
+      "reason": "This index covers EV component metadata only and is not a net-load, event, or P(E) result.",
+      "resolution_required": "Resolve the inherited EV accepted-artifact-index blocker before E3.S2a execution.",
+      "source": "ev_ic1_accepted_artifact_index_preflight",
+      "status": "blocked"
+    }
+  ],
+  "candidate_output_checksum_inputs": [
+    {
+      "byte_size": null,
+      "expected_sha256": "dd95f30d74da00b6fb87c2ced8f402b4d612c59a28e7d1d33e9e82fcd7a805d5",
+      "local_checksum_verified_in_this_preflight": false,
+      "observed_sha256": null,
+      "output_npz_path": "data/processed/elaad_profiles/component_outputs/ev_ic1_candidate_component_output_high.npz",
+      "scenario": "high",
+      "verification_status": "missing"
+    },
+    {
+      "byte_size": null,
+      "expected_sha256": "a896794ddd9f004fe945c62a5b84b2b1b6e9381cbecd80b17ca7c749de68ce65",
+      "local_checksum_verified_in_this_preflight": false,
+      "observed_sha256": null,
+      "output_npz_path": "data/processed/elaad_profiles/component_outputs/ev_ic1_candidate_component_output_low.npz",
+      "scenario": "low",
+      "verification_status": "missing"
+    },
+    {
+      "byte_size": null,
+      "expected_sha256": "38081c7f849bb679a19560d1a7f7fd6d8428e35ef6cad2087e4d82a46c1e568d",
+      "local_checksum_verified_in_this_preflight": false,
+      "observed_sha256": null,
+      "output_npz_path": "data/processed/elaad_profiles/component_outputs/ev_ic1_candidate_component_output_middle.npz",
+      "scenario": "middle",
+      "verification_status": "missing"
+    }
+  ],
+  "candidate_output_checksum_verification": {
+    "all_expected_outputs_verified": false,
+    "artifact_path": "data/metadata/ev_adoption/e3_s2a_ev_candidate_component_output_checksum_preflight.json",
+    "artifact_sha256": "2ba44816cc5f17a4ad69a72501c44ea14a8de25fc6b2d15fa14193c8f3a9646b",
+    "checkpointed_script": "data/get_ev_adequacy_preflight.py --verify-candidate-output-checksums",
+    "checksum_mismatch_count": 0,
+    "missing_output_count": 3,
+    "resume_procedure": "Restore the missing ignored EV component-output NPZ files, then rerun ./.venv/Scripts/python.exe data/get_ev_adequacy_preflight.py --verify-candidate-output-checksums",
+    "status": "blocked_missing_ignored_component_outputs"
+  },
+  "governing_decisions": [
+    "A-014",
+    "A-016",
+    "ALEA-002",
+    "EV-003",
+    "EV-005",
+    "EV-005B",
+    "EV-007",
+    "EV-007A",
+    "EV-008A",
+    "EV-CAL-001",
+    "G0-A3",
+    "G0-A4",
+    "RNG-001"
+  ],
+  "later_runner_scaffold": {
+    "alpha_indexed_bounds_required": true,
+    "candidate_vs_held_out_comparison_planned": true,
+    "compare_after_ic1_net_load_aggregation_only": true,
+    "component_only_adequacy_disallowed": true,
+    "event_metric_requires_signed_criterion": true,
+    "held_out_access_default": false,
+    "quarantined_access_default": false,
+    "runner_manifest_required_for_any_result": true
+  },
+  "missing_checksum_or_manifest_inputs": [],
+  "policy": {
+    "capacity_screen_performed": false,
+    "event_or_p_e_analysis_performed": false,
+    "fail_closed_on_blockers": true,
+    "held_out_access": false,
+    "integrated_analysis_performed": false,
+    "m_sufficiency_claimed": false,
+    "manuscript_numbers_produced": false,
+    "profile_arrays_loaded": false,
+    "quarantined_access": false
+  },
+  "purpose": "Automate EV-side held-out adequacy preflight checks and emit blockers without opening held-out/quarantined batches or producing integrated results.",
+  "scenario_scope": {
+    "declared_branches": [
+      "high",
+      "low",
+      "middle"
+    ],
+    "final_branch_selected": false,
+    "final_scenario_branch": null,
+    "planning_year": 2035
+  },
+  "schema_version": 1,
+  "source_artifacts": {
+    "accepted_artifact_index": "data/metadata/ev_adoption/e2_s2_ev_ic1_accepted_artifact_index_preflight.json",
+    "accepted_artifact_index_sha256": "d3b87b9a1d85aafd2247118c255f4e9417d07c32c83329f27bb6dc1c3a1239c8",
+    "candidate_output_checksum_verification": "data/metadata/ev_adoption/e3_s2a_ev_candidate_component_output_checksum_preflight.json",
+    "candidate_output_checksum_verification_sha256": "2ba44816cc5f17a4ad69a72501c44ea14a8de25fc6b2d15fa14193c8f3a9646b",
+    "candidate_selection_manifest_set": "data/metadata/ev_adoption/e2_s2_ev005b_candidate_selection_manifests.json.gz",
+    "candidate_selection_manifest_set_sha256": "da4231595d5a3f66faba1157e10fff17fee936c495b821d20e1b1cd3e0ae6071",
+    "checksum_preflight": "data/metadata/ev_adoption/e2_s2_ev_candidate_profile_checksum_preflight.json",
+    "component_output_manifest": "data/metadata/ev_adoption/e2_s2_ev_ic1_candidate_component_output_manifest.json",
+    "component_output_manifest_sha256": "2be1c52eca050ee0dd97028d1787a51a4920ee89465328c24032f4e81b56b4fd",
+    "criterion_packet": "data/metadata/ev_adoption/e3_s2a_ev_adequacy_criterion_packet.json",
+    "criterion_packet_sha256": "ed8a0a24bf547f4b1f070abd31134180db310e8ee8f5e2009b240635613fe2eb",
+    "scenario_config": "configs/scenarios.yaml",
+    "scenario_config_sha256": "839e6c4c3430cc5d0e257d112ca3ff2783fe362d0a8a54789a1941c3718cbfd6"
+  },
+  "status": "blocked_before_held_out_access",
+  "task_id": "E3.S2a"
+}

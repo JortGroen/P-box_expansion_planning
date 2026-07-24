@@ -68,12 +68,14 @@ the corresponding register row.
 | D-013/CBS split | HP local heat is split over SFH/MFH using CBS Alkmaar dwelling counts, not measured class-specific heat demand. | Proposed route; count-share versus area-weighted split requires PI sign-off before executable values. |
 | D004-MC-001/D004-SOURCE-MEMBER-ACCEPTANCE | KNMI Berkhout is the realized weather path for Alkmaar; hourly `T` and `Q` are expanded to 15-minute members, and PVGIS remains sanity/provenance only. | Approved for internal source/member use; final paired HP/PV validation and cold-spell tolerances remain pending. |
 | PV-PARAM-001 | Proposed primary first-pass PV conversion uses capacity supplied by a separate signed capacity route such as PV-CAP-001, KNMI GHI as the realized irradiance basis, PR=0.86 from the PVGIS 14% reference loss, no temperature correction, clipping at supplied capacity, and PV-ORIENT-001 statistical orientation/tilt diversity once the distribution and conversion treatment are signed. | Proposed; fail-closed until PI signoff. |
-| PV-CAP-001/D-014 | PV installed capacity is anchored to local Alkmaar CBS photovoltaic capacity and scaled to 2035 through a signed II3050/scenario growth factor; D-014 now has retrieved CBS Alkmaar source evidence, retrieved II3050 appendix evidence, an unsigned capacity value-choice packet, an unsigned capacity approval-template packet, an unsigned executable-readiness blocker packet, and proposed lightweight statistical orientation/tilt packets, while heavy 3DBAG/roof-level geometry is deferred until after the first real experiment. | Approved route; CBS/II3050/value-choice/template/blocker evidence proposed; executable capacity value, capacity convention, II3050 scenario/growth factor, A-016 consistency, per-node allocation, statistical orientation/tilt source, weights, bins, and conversion treatment remain pending. |
+| D014-PV-PARAM-CONVERSION-SOURCE-CHOICE-PACKET | Proposed packet compares PV conversion-source routes after the PI concern with the simple direct-GHI/PR route: pvlib-style statistical-orientation/tilt plane-of-array candidate, PVGIS qualitative calibration/sanity context, and direct-GHI scalar fallback only if explicitly signed. | Proposed packet; formula and values unsigned. |
+| D014-PV-FIRST-EXPERIMENT-APPROVAL-PACKET | Proposed first-experiment approval checklist separates installed capacity, statistical orientation/tilt distribution, irradiance-to-power conversion, and node allocation before executable PV use. | Proposed packet; executable PV blocked. |
+| PV-CAP-001/D-014 | PV installed capacity is anchored to local Alkmaar CBS photovoltaic capacity and scaled to 2035 through a signed II3050/scenario growth factor; D-014 now has retrieved CBS Alkmaar source evidence, retrieved II3050 appendix evidence, an unsigned capacity value-choice packet, an unsigned capacity approval-template packet, an unsigned executable-readiness blocker packet, an unsigned executable preflight guard packet, an unsigned PV-PARAM conversion source-choice packet, an unsigned first-experiment approval packet, and proposed lightweight statistical orientation/tilt packets, while heavy 3DBAG/roof-level geometry is deferred until after the first real experiment. | Approved route; CBS/II3050/value-choice/template/blocker/preflight/conversion-choice/first-experiment approval evidence proposed; executable capacity value, capacity convention, II3050 scenario/growth factor, A-016 consistency, per-node allocation, statistical orientation/tilt source, weights, bins, and conversion treatment remain pending. |
 | PV-ORIENT-001 | For the first real experiment, PV orientation and tilt are represented through a typical/statistical distribution rather than per-building, per-roof, or location-specific geometry; source-choice and value-choice packets now prepare unsigned evidence/assumption candidates for PI review. | Approved scope; packets proposed; exact source, weights, bins, capacity-weighting convention, and conversion treatment remain pending. |
 | A-016/Scenario consistency | EV, HP, and PV may use different best-available sources, but their 2035 branches must be reconciled and manifested before integrated net-load/event analysis. | Approved consistency requirement; unresolved mismatch is a limitation or escalation, not a silent assumption. |
 | EV-007A/A-014/D-010 | Alkmaar municipality is the local proxy for the synthetic SimBench case, and local counts are allocated across grid loads by static `p_mw`. | EV local totals and A-014 allocation are approved; this remains an illustrative-case transfer assumption. |
 | A-013 | The candidate `epsilon_grid = 5%` with `2%`/`10%` sensitivities is not empirical or expert-signed. | Proposed only; E9.S5a evidence review is required before numerical use as a scientific claim. |
-| E5.S4 | The math-core trust certificate requires both the analytic Gaussian cross-check and a published hybrid-propagation reproduction. | The analytic and finite synthetic fixtures are implemented; the published Baudrit-style reproduction remains fail-closed until verified source/example provenance is approved and reproduced. |
+| E5.S4 | The math-core trust certificate requires both the analytic Gaussian cross-check and a published hybrid-propagation reproduction. | The analytic synthetic fixture now records tolerance, alpha-row nestedness, separate lower/upper CI containment, and no-defuzzification guards in `e5s4-math-core-trust-certificate-v1`; the published Baudrit-style reproduction remains fail-closed until verified source/example provenance is approved and reproduced, and G3 remains pending for paper-facing vertex shortcut claims. |
 ## Decisions
 
 <!-- methods-id: G0 -->
@@ -298,10 +300,13 @@ total model-output error; their dependence on inputs, time, and each other is
 unknown, so they are not sampled independently, assumed to cancel, or combined
 by root-sum-of-squares. Their conservative endpoint envelope is composed before
 event detection. Runner configuration and manifests must record timestep
-cadence and transformer capacity/denominator provenance. This approval does
-not resolve Q-5, total-versus-firm capacity, G2 error values, or numerical
-A-013 grid-error values; those remain blocking dependencies for paper-facing
-event results.
+cadence and transformer capacity/denominator provenance. G0-A3 has resolved
+Q-5: the primary executable event is strict `L_import > 1.0 p.u.` for four
+consecutive 15-minute import steps, with `1.1` and `1.2 p.u.` retained as
+sensitivities only. This approval does not resolve total-versus-firm capacity,
+G2 error values, numerical A-013 grid-error values, real endpoint records,
+A-016 scenario consistency, or G3 where the vertex shortcut is claimed; those
+remain blocking dependencies for paper-facing event results.
 
 The E5.S3 T2-T4 scaffold implements this approved endpoint propagation using
 synthetic loading trajectories only. It composes the additive Tier-1 and
@@ -311,8 +316,19 @@ events before estimating probabilities and confidence intervals. Synthetic
 alpha-family estimates are returned as separate alpha-indexed lower/upper
 probability results; no alpha level is collapsed into a scalar or widened after
 estimation. The scaffold does not introduce a signed A-013 value or authorize
-integrated event results while Q-5, G2, A-013, and capacity-provenance
-dependencies remain unresolved.
+integrated event results while G2, A-013, capacity/provenance, real endpoint
+records, A-016 scenario consistency, and G3 where the vertex shortcut is
+claimed remain unresolved.
+
+The `output-error-paper-readiness-v1` blocker manifest is a synthetic reporting
+preflight for this same protocol. It records the requested B-owned result kind,
+the final-result prerequisite snapshot, and a checklist for the G1-A2 formula,
+trajectory-before-event application, forbidden probability widening, forbidden
+independent error sampling, A-013 and G2 approval-or-blocker IDs, capacity
+linkage/provenance, and endpoint-record presence. The manifest validator
+recomputes the blocker list and `ready_for_paper` flag from those fields and
+rejects collapsed probability fields, so a blocked readiness packet cannot be
+serialized as a paper-facing p-box result by changing one flag.
 
 <!-- methods-id: RNG-001 -->
 ### RNG-001 - Seed-Tree and CRN Identity Protocol
@@ -714,6 +730,26 @@ but it does not certify library adequacy or authorize held-out use. The
 acceptance tolerance is fixed before the adequacy results are inspected and
 is tied to transformer-result or reinforcement-decision stability rather than
 to an isolated EV-profile percentile.
+
+The E3.S2a EV held-out adequacy preflight scaffold automates the current
+fail-closed boundary before any held-out use. It consumes the accepted EV IC-1
+artifact index and the unsigned EV downstream adequacy criterion packet, records
+the source metadata checksums and candidate output checksum expectations, and
+emits a blocker manifest rather than opening held-out or quarantined batches.
+The manifest explicitly blocks execution until the downstream aggregate
+criterion is PI-signed, Agent A's IC-1 assembly is accepted, held-out access is
+invoked under that signed route, A-016 scenario consistency is resolved, the
+final low/middle/high branch is selected or kept explicitly branched in a signed
+run design, and candidate output files are verified in the consuming worktree.
+The candidate-output checksum check is automated as a checkpointed script step:
+it hashes ignored EV component-output NPZ bytes only when those files are
+present, writes a resumable verification artifact after each declared scenario,
+and otherwise records exact missing paths as a fail-closed blocker. G0-A3 has
+resolved Q-5 threshold semantics, so EV readiness no longer treats Q-5 itself
+as a blocker; event use still remains blocked by the other unsigned or missing
+integrated prerequisites listed above. It loads no profile arrays, runs no
+net-load/event/`P(E)` analysis, certifies no `M` sufficiency, and produces no
+manuscript number.
 
 <!-- methods-id: EV-005A -->
 ### EV-005A - Low-Cost Held-Out Replacement
@@ -1428,6 +1464,14 @@ integrated HP/PV acceptance.
 ### PV-PARAM-001 - PV Conversion Parameter Signoff Packet
 
 **Status: Proposed; unsigned fail-closed scaffold only.** The PV/weather readiness layer records `PV-PARAM-001` as the proposed primary first-pass PV conversion parameter set after D-004 source/member acceptance. As amended by PV-ORIENT-001, the first-experiment template `pv_param_001_first_pass_statistical_geometry_ghi_pr086_no_temp_clipped_v1` keeps the lightweight route but replaces a single fixed geometry with a typical/statistical orientation-and-tilt distribution once that distribution and its conversion treatment are signed. The template still requires signed `installed_capacity_kw` per node or fleet from a separate capacity route such as PV-CAP-001, uses accepted WEATHER-001 KNMI `Q`-derived `ghi_w_per_m2` as the realized irradiance basis, maps the approved PVGIS reference request loss setting of 14% to `performance_ratio = 0.86`, disables PV temperature correction with `temperature_coefficient_per_c = 0.0` and `reference_temperature_c = 25.0`, and clips nonnegative output at installed capacity. This is a proposed first-screen simplification and not empirical PV performance evidence. Until the PI signs this parameter decision, `PVSystemConfig` can support scaffold and unit-test calculations but its guard method raises before signed executable PV input use. This proposed packet does not approve installed-capacity source, numeric capacity, capacity convention, 2035 scaling, per-node allocation, exact orientation/tilt distribution values, final paired HP/PV acceptance, cold-spell tolerances, net-load/event analysis, `P(E)`, threshold analysis, capacity screens, or manuscript results.
+<!-- methods-id: D014-PV-PARAM-CONVERSION-SOURCE-CHOICE-PACKET -->
+### D014-PV-PARAM-CONVERSION-SOURCE-CHOICE-PACKET - PV-PARAM Conversion Source Choice
+
+**Status: Proposed packet; formula and values unsigned.** This packet prepares a PI-facing choice layer for amending or replacing the disputed first-pass PV-PARAM conversion route before executable PV generation. It compares three unsigned candidates: a pvlib-style plane-of-array route using signed statistical orientation/tilt classes and the realized WEATHER-001 KNMI `ghi_w_per_m2` path, PVGIS-SARAH3 reference output as qualitative calibration/sanity context only, and a direct-GHI scalar fallback only if the PI explicitly signs that simplification. The packet records what each route can and cannot prove, the required approvals for transposition or direct-GHI treatment, decomposition, albedo, losses/performance ratio, temperature correction, clipping and capacity convention, D-014 capacity artifact, node allocation, and A-016 scenario consistency. PVGIS remains provenance/calibration context rather than a realized sampled weather path, and PV-ORIENT-001 continues to block building-, roof-, 3DBAG-, or PV-map-level geometry before the first experiment. This packet does not approve `PR = 0.86`, a direct-GHI formula, pvlib or plane-of-array implementation, any numerical PV capacity/growth/orientation value, allocation, PV output, net-load/event analysis, `P(E)`, threshold analysis, capacity screens, manuscript numbers, or final paired HP/PV acceptance.
+<!-- methods-id: D014-PV-FIRST-EXPERIMENT-APPROVAL-PACKET -->
+### D014-PV-FIRST-EXPERIMENT-APPROVAL-PACKET - First-Experiment PV Approval Packet
+
+**Status: Proposed packet; executable PV blocked.** This packet is a PI-facing approval checklist for the first executable PV experiment. It consumes checksummed proposed inputs for the D-014 capacity approval template, the PV-ORIENT-001 orientation/tilt source and value-choice packets, the PV-PARAM conversion source-choice packet, and the executable PV preflight guard. Its purpose is to keep four decision layers separate before any PV profile can be produced: installed capacity and 2035 growth under PV-CAP-001/D-014, statistical orientation/tilt source and class values under PV-ORIENT-001, irradiance-to-power conversion under PV-PARAM-001 or a signed amendment, and node allocation under a later allocation rule. The executable gate remains false until signed capacity, signed statistical distribution, signed conversion parameters, A-016 scenario consistency, signed node allocation, and final paired HP/PV acceptance exist. The packet preserves the lightweight first-experiment scope: typical/statistical orientation and tilt only, with building-, roof-, 3DBAG-, and PV-map-level geometry deferred to later work. It does not approve a PV capacity value, II3050 growth factor, DC/AC convention, orientation/tilt bins or weights, PR value, efficiency, conversion formula, node allocation, PV output, net-load/event analysis, `P(E)`, threshold analysis, capacity screens, manuscript numbers, or final paired HP/PV acceptance.
 
 <!-- methods-id: PV-CAP-001 -->
 ### PV-CAP-001 - PV Installed-Capacity Source Route
@@ -1464,6 +1508,12 @@ integrated HP/PV acceptance.
 ### D014-PV-EXECUTABLE-READINESS-BLOCKERS - PV Executable Readiness Blockers
 
 **Status: Proposed blocker manifest; executable PV blocked.** This packet records the current boundary between accepted PV/weather component inputs and executable first-experiment PV generation. It checksums the accepted D-004 WEATHER-001 weather input artifact and the unsigned D-014/PV capacity, orientation/tilt, and PV-PARAM review artifacts, then exposes a single fail-closed gate: source/member weather readiness is available, but executable PV generation is not authorized. The remaining blockers are the PI-signed D-014 capacity artifact, A-016 scenario-consistency mapping across EV/HP/PV sources, statistical orientation/tilt source and values under PV-ORIENT-001, PV-PARAM conversion approval or amendment, node allocation provenance, and final paired HP/PV plus HP cold-spell acceptance decisions. This packet does not approve PV capacity, growth factor, orientation/tilt values, allocation, conversion parameters, PV output, net-load/event analysis, `P(E)`, threshold analysis, capacity screens, manuscript numbers, or roof/building/3DBAG/PV-map geometry before the first experiment.
+
+
+<!-- methods-id: D014-PV-EXECUTABLE-PREFLIGHT-GUARD -->
+### D014-PV-EXECUTABLE-PREFLIGHT-GUARD - PV Executable Preflight Guard
+
+**Status: Proposed preflight guard; executable PV blocked.** This packet turns the D014-PV-EXECUTABLE-READINESS-BLOCKERS manifest into a deterministic fail-closed preflight result for future PV/integration wiring. It checksums the blocker manifest, records that D-004 source/member weather readiness is available, and carries the unresolved D-014 capacity, A-016 scenario-consistency, PV-ORIENT, PV-PARAM, allocation, and final paired/cold-spell blocker IDs forward. If invoked as an executable PV preflight, the only authorized behavior is to abort with the blocker manifest; producing a PV profile or any downstream number remains forbidden. Proposed and unsigned tokens are allowed only as non-executable metadata describing the blockers. This packet does not approve PV capacity, growth factor, orientation/tilt values, allocation, conversion parameters, PV output, net-load/event analysis, `P(E)`, threshold analysis, capacity screens, manuscript numbers, or roof/building/3DBAG/PV-map geometry before the first experiment.
 
 <!-- methods-id: D014-PV-CAPACITY-SOURCE-VALUE-PACKET -->
 ### D014-PV-CAPACITY-SOURCE-VALUE-PACKET - PV Capacity Source/Value Packet
@@ -1710,7 +1760,7 @@ net-load/event analysis, estimate `P(E)`, or produce manuscript numbers.
 <!-- methods-id: D-014 -->
 ### D-014 - PV Installed-Capacity Source Bundle
 
-**Status: Proposed source/value packet; CBS anchor and II3050 evidence retrieved; value-choice, approval-template, and executable-readiness blocker packets prepared; executable values pending.** D-014 records the public-source bundle needed to implement PV-CAP-001. The primary candidate local anchor is CBS StatLine/OData table 85005NED for Alkmaar `GM0361`, because it is public, regionally disaggregated, and reports installed PV capacity and installation counts by sector and size class. The D-014 source/value packet records exact schema probes and row-filter templates, and D014-CBS-PV-CAPACITY-ANCHOR-EVIDENCE now records a retrieved/checksummed CBS Alkmaar OData bundle with schema and row candidates; however, the source period, selected sector/category, selected field, units, and DC/AC convention remain unsigned. D014-II3050-PV-GROWTH-EVIDENCE now records a retrieved/checksummed Netbeheer Nederland II3050 appendix PDF with Table A.1 `Zon PV*` candidate 2035 scenario columns; however, the scenario column, denominator, formula, and growth-factor value remain unsigned. D014-PV-CAPACITY-VALUE-CHOICE-PACKET combines those evidence packets into unsigned equations, convention recommendations, and A-016 scenario-consistency approval keys for PI review. D014-PV-CAPACITY-APPROVAL-TEMPLATE defines the fail-closed field contract for the later signed capacity artifact but contains no executable value. D014-PV-EXECUTABLE-READINESS-BLOCKERS records the current guard state: accepted D-004 weather source/member artifacts exist, while PV capacity, scenario consistency, orientation/tilt values, PV-PARAM conversion, allocation, and final paired/cold-spell gates still block executable PV generation. PV-ORIENT-001 approves only the first-experiment scope: represent PV orientation and tilt through a typical/statistical distribution rather than building-specific roof geometry. A separate D-014 statistical orientation/tilt packet proposes the fail-closed class-table artifact shape; it does not approve source, bins, weights, or conversion treatment. 3DBAG, DEGO, CBS building-geography tables, Zonnedakje, and the separate PV-map methodology are deferred roof-geometry or allocation improvement sources unless explicitly registered and signed later. Before executable PV input uses this bundle, the project must record the exact retrieved files or API queries, checksums, selected geography, selected source year, selected capacity field and DC/AC convention, II3050 growth factor, per-node allocation rule, statistical orientation/tilt source and weights, and signed PV-PARAM conversion decision. D-014 does not approve any installed-capacity number, allocation, orientation/tilt distribution value, net-load/event analysis, `P(E)`, capacity-screen result, or manuscript number.
+**Status: Proposed source/value packet; CBS anchor and II3050 evidence retrieved; value-choice, approval-template, executable-readiness blocker, preflight guard, PV-PARAM conversion source-choice, and first-experiment approval packets prepared; executable values pending.** D-014 records the public-source bundle needed to implement PV-CAP-001. The primary candidate local anchor is CBS StatLine/OData table 85005NED for Alkmaar `GM0361`, because it is public, regionally disaggregated, and reports installed PV capacity and installation counts by sector and size class. The D-014 source/value packet records exact schema probes and row-filter templates, and D014-CBS-PV-CAPACITY-ANCHOR-EVIDENCE now records a retrieved/checksummed CBS Alkmaar OData bundle with schema and row candidates; however, the source period, selected sector/category, selected field, units, and DC/AC convention remain unsigned. D014-II3050-PV-GROWTH-EVIDENCE now records a retrieved/checksummed Netbeheer Nederland II3050 appendix PDF with Table A.1 `Zon PV*` candidate 2035 scenario columns; however, the scenario column, denominator, formula, and growth-factor value remain unsigned. D014-PV-CAPACITY-VALUE-CHOICE-PACKET combines those evidence packets into unsigned equations, convention recommendations, and A-016 scenario-consistency approval keys for PI review. D014-PV-CAPACITY-APPROVAL-TEMPLATE defines the fail-closed field contract for the later signed capacity artifact but contains no executable value. D014-PV-EXECUTABLE-READINESS-BLOCKERS records the current guard state: accepted D-004 weather source/member artifacts exist, while PV capacity, scenario consistency, orientation/tilt values, PV-PARAM conversion, allocation, and final paired/cold-spell gates still block executable PV generation. D014-PV-EXECUTABLE-PREFLIGHT-GUARD automates the next fail-closed preflight result and requires abort-with-blocker behavior if executable PV is requested too early. D014-PV-PARAM-CONVERSION-SOURCE-CHOICE-PACKET and D014-PV-FIRST-EXPERIMENT-APPROVAL-PACKET then turn the remaining conversion and first-experiment signoff questions into proposed PI review surfaces without authorizing PV generation. PV-ORIENT-001 approves only the first-experiment scope: represent PV orientation and tilt through a typical/statistical distribution rather than building-specific roof geometry. A separate D-014 statistical orientation/tilt packet proposes the fail-closed class-table artifact shape; it does not approve source, bins, weights, or conversion treatment. 3DBAG, DEGO, CBS building-geography tables, Zonnedakje, and the separate PV-map methodology are deferred roof-geometry or allocation improvement sources unless explicitly registered and signed later. Before executable PV input uses this bundle, the project must record the exact retrieved files or API queries, checksums, selected geography, selected source year, selected capacity field and DC/AC convention, II3050 growth factor, per-node allocation rule, statistical orientation/tilt source and weights, and signed PV-PARAM conversion decision. D-014 does not approve any installed-capacity number, allocation, orientation/tilt distribution value, net-load/event analysis, `P(E)`, capacity-screen result, or manuscript number.
 <!-- methods-id: D-013 -->
 ### D-013 - HP-001 Alkmaar Local Scaling Source Bundle
 

@@ -1,0 +1,19 @@
+{
+  "array_path": "reports/e3_s2_synthetic_assembly_real_gate_fixtures/baseline.npz",
+  "array_sha256": "f7aa77a03f5c4eb1b7a875dbc5408e2954eadc1d6864cdb767145a7ee84b1e3f",
+  "artifact_id": "baseline-synthetic-a-synthetic-array",
+  "artifact_status": "synthetic_fixture",
+  "calendar_id": "synthetic_window_2035_15min_4step",
+  "component_id": "baseline-synthetic-a",
+  "kind": "baseline",
+  "member_id": "baseline-synthetic-member",
+  "node_id": "node-a",
+  "provenance": {
+    "fixture_id": "e3_s2_two_node_four_step_synthetic_ic1_fixture_v1",
+    "not_a_scientific_result": true,
+    "synthetic_fixture_only": true
+  },
+  "source_id": "synthetic-baseline-source",
+  "timestep_count": 4,
+  "timestep_seconds": 900
+}

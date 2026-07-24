@@ -1350,6 +1350,65 @@ def test_d014_orientation_tilt_source_choice_packet_lists_candidates_without_val
 
 
 
+def test_d014_pv_param_conversion_source_choice_packet_is_fail_closed(tmp_path: Path) -> None:
+    packet = pv_capacity.build_d014_pv_param_conversion_source_choice_packet()
+
+    assert packet["packet_id"] == "D014-PV-PARAM-CONVERSION-SOURCE-CHOICE-PACKET"
+    assert packet["data_id"] == "D-014"
+    assert packet["download_performed"] is False
+    assert packet["raw_data_committed"] is False
+    assert "PV-PARAM-001 remains proposed" in packet["governing_decisions"]["pv_param_decision_status"]
+    assert "PV-ORIENT-001 statistical" in packet["governing_decisions"]["orientation_scope"]
+    assert "PVGIS remains qualitative" in packet["governing_decisions"]["weather_basis"]
+    candidates = {candidate["candidate_id"]: candidate for candidate in packet["conversion_source_candidates"]}
+    assert "pvlib_statistical_orientation_tilt_poa_candidate" in candidates
+    assert "pvgis_reference_calibration_sanity_candidate" in candidates
+    assert candidates["direct_ghi_pr_scalar_candidate"]["candidate_status"] == (
+        "disputed_simple_candidate_unsigned_not_executable"
+    )
+    assert packet["executable_gate"]["executable_allowed_now"] is False
+    assert "PV-PARAM-001_or_signed_amendment" in packet["executable_gate"]["blocking_register_ids"]
+    assert "orientation_tilt_value_packet_id" in packet["pi_approval_keys_before_executable_use"]
+    assert any("No PV conversion formula" in item for item in packet["non_claims"])
+    assert any("No PR=0.86" in item and "signed" in item for item in packet["non_claims"])
+
+    path = pv_capacity.write_d014_pv_param_conversion_source_choice_packet(tmp_path)
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    assert path.name == "d014_pv_param_conversion_source_choice_packet.json"
+    assert payload["status"].startswith("proposed_conversion_source_choice")
+
+
+def test_d014_first_experiment_approval_packet_is_metadata_only_and_fail_closed(tmp_path: Path) -> None:
+    packet = pv_capacity.build_d014_pv_first_experiment_approval_packet()
+
+    assert packet["packet_id"] == "D014-PV-FIRST-EXPERIMENT-APPROVAL-PACKET"
+    assert packet["data_id"] == "D-014"
+    assert packet["download_performed"] is False
+    assert packet["raw_data_committed"] is False
+    assert packet["first_experiment_scope"]["orientation_tilt_route"] == "typical/statistical distribution only"
+    assert packet["first_experiment_scope"]["building_roof_location_level_geometry_allowed"] is False
+    assert packet["first_experiment_scope"]["specific_3dbag_or_pv_map_workflow_allowed"] is False
+    assert packet["input_metadata"]["capacity_approval_template"]["packet_id"] == "D014-PV-CAPACITY-APPROVAL-TEMPLATE"
+    assert packet["input_metadata"]["orientation_tilt_value_choice"]["packet_id"] == "D014-PV-ORIENTATION-TILT-VALUE-CHOICE-PACKET"
+    assert packet["input_metadata"]["pv_param_conversion_source_choice"]["packet_id"] == "D014-PV-PARAM-CONVERSION-SOURCE-CHOICE-PACKET"
+    assert packet["input_metadata"]["executable_preflight_guard"]["packet_id"] == "D014-PV-EXECUTABLE-PREFLIGHT-GUARD"
+    assert set(packet["separated_decision_layers"]) == {
+        "installed_capacity_route",
+        "orientation_tilt_distribution",
+        "irradiance_to_power_conversion",
+        "node_allocation",
+    }
+    assert packet["executable_gate"]["executable_pv_generation_authorized"] is False
+    assert "PV-PARAM-001_or_signed_amendment" in packet["executable_gate"]["blocking_register_ids"]
+    assert "signed_node_allocation_rule" in packet["pi_approval_keys_before_executable_use"]
+    assert any("No PV capacity value" in item and "orientation/tilt" in item for item in packet["non_claims"])
+    assert any("No building, roof" in item for item in packet["non_claims"])
+
+    path = pv_capacity.write_d014_pv_first_experiment_approval_packet(tmp_path)
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    assert path.name == "d014_pv_first_experiment_approval_packet.json"
+    assert payload["status"].startswith("proposed_first_experiment_pv_approval_packet")
+
 def test_d014_orientation_tilt_value_choice_packet_lists_unsigned_candidate_values(tmp_path: Path) -> None:
     packet = pv_capacity.build_d014_pv_orientation_tilt_value_choice_packet()
 
@@ -1485,3 +1544,34 @@ def test_committed_d014_pv_executable_readiness_blockers_record_inputs() -> None
     assert payload["executable_gate"]["executable_pv_generation_authorized"] is False
     assert len(payload["input_metadata"]["weather_input_artifact"]["sha256"]) == 64
     assert len(payload["input_metadata"]["pv_parameter_packet"]["sha256"]) == 64
+
+
+def test_d014_pv_executable_preflight_guard_aborts_without_generation() -> None:
+    packet = pv_capacity.build_d014_pv_executable_preflight_guard_packet()
+
+    assert packet["packet_id"] == "D014-PV-EXECUTABLE-PREFLIGHT-GUARD"
+    assert packet["status"] == "proposed_fail_closed_preflight_no_generation"
+    assert packet["input_blocker_manifest"]["packet_id"] == "D014-PV-EXECUTABLE-READINESS-BLOCKERS"
+    assert len(packet["input_blocker_manifest"]["metadata_sha256"]) == 64
+    assert packet["preflight_checks"]["component_source_member_artifact_available"] is True
+    assert packet["preflight_checks"]["executable_pv_generation_authorized"] is False
+    assert packet["preflight_checks"]["all_required_blockers_present"] is True
+    assert packet["executable_gate"]["preflight_ready_for_executable_pv_generation"] is False
+    assert packet["executable_gate"]["result_if_invoked"] == "abort_with_blocker_manifest"
+    assert "placeholder" in packet["token_policy"]["unsafe_tokens_for_executable_outputs"]
+    assert "proposed" in packet["token_policy"]["allowlisted_non_executable_metadata_tokens"]
+    assert any("No executable PV preflight passes" in item for item in packet["non_claims"])
+
+
+def test_committed_d014_pv_executable_preflight_guard_records_blockers() -> None:
+    payload = json.loads(
+        Path("data/metadata/weather_pv/d014_pv_executable_preflight_guard.json").read_text(
+            encoding="utf-8"
+        )
+    )
+
+    assert payload["packet_id"] == "D014-PV-EXECUTABLE-PREFLIGHT-GUARD"
+    assert payload["executable_gate"]["preflight_ready_for_executable_pv_generation"] is False
+    assert payload["executable_gate"]["result_if_invoked"] == "abort_with_blocker_manifest"
+    assert "D014-PV-CAPACITY-APPROVAL-TEMPLATE" in payload["executable_gate"]["blocking_register_ids"]
+    assert "PV-PARAM-001" in payload["executable_gate"]["blocking_register_ids"]

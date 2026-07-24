@@ -939,6 +939,111 @@ def load_pv_executable_readiness_blockers_packet(path: str | Path) -> PVExecutab
 
 
 @dataclass(frozen=True)
+class PVExecutablePreflightGuardPacket:
+    """Fail-closed preflight result for attempts to request executable PV generation."""
+
+    packet_id: str
+    data_id: str
+    status: str
+    download_performed: bool
+    raw_data_committed: bool
+    input_blocker_manifest: Mapping[str, object]
+    preflight_checks: Mapping[str, object]
+    token_policy: Mapping[str, object]
+    executable_gate: Mapping[str, object]
+    non_claims: Sequence[str]
+
+    def __post_init__(self) -> None:
+        if self.packet_id != "D014-PV-EXECUTABLE-PREFLIGHT-GUARD":
+            raise ValueError("PV executable preflight guard must identify D014-PV-EXECUTABLE-PREFLIGHT-GUARD")
+        if self.data_id != "D-014":
+            raise ValueError("PV executable preflight guard must identify D-014")
+        if self.status != "proposed_fail_closed_preflight_no_generation":
+            raise ValueError("PV executable preflight guard must remain proposed/fail-closed")
+        if self.download_performed is not False or self.raw_data_committed is not False:
+            raise ValueError("PV executable preflight guard must not claim retrieval or raw committed data")
+        blocker = _audit_json_mapping(self.input_blocker_manifest, "input_blocker_manifest")
+        checks = _audit_json_mapping(self.preflight_checks, "preflight_checks")
+        token_policy = _audit_json_mapping(self.token_policy, "token_policy")
+        gate = _audit_json_mapping(self.executable_gate, "executable_gate")
+        non_claims = tuple(str(item) for item in self.non_claims)
+        if blocker.get("packet_id") != "D014-PV-EXECUTABLE-READINESS-BLOCKERS":
+            raise ValueError("PV executable preflight guard must consume the readiness-blocker manifest")
+        if len(str(blocker.get("metadata_sha256", ""))) != 64:
+            raise ValueError("PV executable preflight guard must record the blocker manifest SHA-256")
+        if checks.get("component_source_member_artifact_available") is not True:
+            raise ValueError("PV executable preflight guard must preserve weather source/member readiness")
+        if checks.get("executable_pv_generation_authorized") is not False:
+            raise ValueError("PV executable preflight guard must keep executable generation unauthorized")
+        if checks.get("all_required_blockers_present") is not True:
+            raise ValueError("PV executable preflight guard must record all required blockers")
+        unsafe_tokens = tuple(str(item) for item in token_policy.get("unsafe_tokens_for_executable_outputs", ()))
+        for token in ("TODO", "TBD", "placeholder", "synthetic", "proposed", "unsigned", "not-approved"):
+            if token not in unsafe_tokens:
+                raise ValueError(f"PV executable preflight guard missing unsafe token policy entry {token}")
+        if token_policy.get("policy_result") != "blocked_metadata_only_no_executable_output":
+            raise ValueError("PV executable preflight guard must produce only a blocked metadata result")
+        if gate.get("preflight_ready_for_executable_pv_generation") is not False:
+            raise ValueError("PV executable preflight guard must not pass executable preflight")
+        if gate.get("result_if_invoked") != "abort_with_blocker_manifest":
+            raise ValueError("PV executable preflight guard must abort with the blocker manifest")
+        blockers = tuple(str(item) for item in gate.get("blocking_register_ids", ()))
+        for blocker_id in ("D014-PV-CAPACITY-APPROVAL-TEMPLATE", "A-016", "PV-ORIENT-001", "PV-PARAM-001"):
+            if blocker_id not in blockers:
+                raise ValueError(f"PV executable preflight guard missing blocker {blocker_id}")
+        if not any("No executable PV preflight passes" in item for item in non_claims):
+            raise ValueError("PV executable preflight guard must state that no executable preflight passes")
+        if not any("No PV generation" in item for item in non_claims):
+            raise ValueError("PV executable preflight guard must state that no PV generation is produced")
+
+        object.__setattr__(self, "input_blocker_manifest", blocker)
+        object.__setattr__(self, "preflight_checks", checks)
+        object.__setattr__(self, "token_policy", token_policy)
+        object.__setattr__(self, "executable_gate", gate)
+        object.__setattr__(self, "non_claims", non_claims)
+
+    @property
+    def blocking_register_ids(self) -> tuple[str, ...]:
+        return tuple(str(item) for item in self.executable_gate["blocking_register_ids"])
+
+    def require_executable_preflight_passed(self) -> None:
+        """Always fail while the preflight packet represents unresolved blockers."""
+        raise ValueError(
+            "PV executable preflight did not pass; unresolved D-014/PV-PARAM/PV-ORIENT/A-016/"
+            "allocation/paired-weather blockers must be signed before PV generation"
+        )
+
+    def identity_record(self) -> dict[str, object]:
+        return {
+            "packet_id": self.packet_id,
+            "data_id": self.data_id,
+            "status": self.status,
+            "input_blocker_packet_id": self.input_blocker_manifest["packet_id"],
+            "input_blocker_sha256": self.input_blocker_manifest["metadata_sha256"],
+            "preflight_ready_for_executable_pv_generation": False,
+            "result_if_invoked": self.executable_gate["result_if_invoked"],
+            "blocking_register_ids": self.blocking_register_ids,
+        }
+
+
+def load_pv_executable_preflight_guard_packet(path: str | Path) -> PVExecutablePreflightGuardPacket:
+    """Load the fail-closed executable PV preflight guard packet."""
+    payload = json.loads(Path(path).read_text(encoding="utf-8"))
+    return PVExecutablePreflightGuardPacket(
+        packet_id=str(payload.get("packet_id", "")),
+        data_id=str(payload.get("data_id", "")),
+        status=str(payload.get("status", "")),
+        download_performed=bool(payload.get("download_performed")),
+        raw_data_committed=bool(payload.get("raw_data_committed")),
+        input_blocker_manifest=payload.get("input_blocker_manifest", {}),
+        preflight_checks=payload.get("preflight_checks", {}),
+        token_policy=payload.get("token_policy", {}),
+        executable_gate=payload.get("executable_gate", {}),
+        non_claims=payload.get("non_claims", ()),
+    )
+
+
+@dataclass(frozen=True)
 class PVStatisticalOrientationTiltPacket:
     """Proposed D-014 statistical orientation/tilt packet that stays fail-closed."""
 
@@ -1360,6 +1465,275 @@ def load_pv_orientation_tilt_value_choice_packet(path: str | Path) -> PVOrientat
     )
 
 
+@dataclass(frozen=True)
+class PVParamConversionSourceChoicePacket:
+    """Proposed PV-PARAM conversion route choices that remain fail-closed."""
+
+    packet_id: str
+    data_id: str
+    status: str
+    download_performed: bool
+    raw_data_committed: bool
+    governing_decisions: Mapping[str, object]
+    input_dependencies: Mapping[str, object]
+    conversion_source_candidates: Sequence[Mapping[str, object]]
+    recommendation_for_pi_review: Mapping[str, object]
+    executable_gate: Mapping[str, object]
+    pi_approval_keys_before_executable_use: Sequence[str]
+    non_claims: Sequence[str]
+
+    def __post_init__(self) -> None:
+        if self.packet_id != "D014-PV-PARAM-CONVERSION-SOURCE-CHOICE-PACKET":
+            raise ValueError("PV-PARAM conversion source-choice packet must identify D014-PV-PARAM-CONVERSION-SOURCE-CHOICE-PACKET")
+        if self.data_id != "D-014":
+            raise ValueError("PV-PARAM conversion source-choice packet must identify D-014")
+        if not str(self.status).startswith("proposed_"):
+            raise ValueError("PV-PARAM conversion source-choice packet must remain proposed until PI approval")
+        if self.download_performed is not False or self.raw_data_committed is not False:
+            raise ValueError("PV-PARAM conversion source-choice packet must not claim raw retrieval or committed raw data")
+        governing = _audit_json_mapping(self.governing_decisions, "governing_decisions")
+        dependencies = _audit_json_mapping(self.input_dependencies, "input_dependencies")
+        recommendation = _audit_json_mapping(self.recommendation_for_pi_review, "recommendation_for_pi_review")
+        gate = _audit_json_mapping(self.executable_gate, "executable_gate")
+        candidates = tuple(_audit_json_mapping(item, "conversion_source_candidate") for item in self.conversion_source_candidates)
+        approval_keys = tuple(str(item) for item in self.pi_approval_keys_before_executable_use)
+        non_claims = tuple(str(item) for item in self.non_claims)
+
+        if "PV-PARAM-001 remains proposed" not in str(governing.get("pv_param_decision_status", "")):
+            raise ValueError("PV-PARAM conversion source-choice packet must keep PV-PARAM-001 proposed")
+        if "PV-ORIENT-001 statistical" not in str(governing.get("orientation_scope", "")):
+            raise ValueError("PV-PARAM conversion source-choice packet must preserve PV-ORIENT-001 statistical scope")
+        if "no building/roof/3DBAG/PV-map" not in str(governing.get("orientation_scope", "")):
+            raise ValueError("PV-PARAM conversion source-choice packet must defer heavy roof/building geometry")
+        if "PV-CAP-001/D-014 capacity remains separate" not in str(governing.get("capacity_route", "")):
+            raise ValueError("PV-PARAM conversion source-choice packet must keep capacity separate")
+        if "PVGIS remains qualitative" not in str(governing.get("weather_basis", "")):
+            raise ValueError("PV-PARAM conversion source-choice packet must preserve the PVGIS boundary")
+        if "D014-PV-ORIENTATION-TILT-VALUE-CHOICE-PACKET" not in str(dependencies.get("orientation_tilt_values", "")):
+            raise ValueError("PV-PARAM conversion source-choice packet must depend on signed orientation/tilt values")
+        if gate.get("executable_allowed_now") is not False:
+            raise ValueError("PV-PARAM conversion source-choice packet must not allow executable conversion")
+        if gate.get("result_if_invoked") != "abort_until_signed_pv_param_conversion_choice":
+            raise ValueError("PV-PARAM conversion source-choice packet must abort until signed")
+        blocker_ids = tuple(str(item) for item in gate.get("blocking_register_ids", ()))
+        for blocker in ("PV-PARAM-001_or_signed_amendment", "PV-ORIENT-001_values", "A-016"):
+            if blocker not in blocker_ids:
+                raise ValueError(f"PV-PARAM conversion source-choice packet missing blocker {blocker}")
+        candidate_ids = {str(item.get("candidate_id")) for item in candidates}
+        required_candidates = {
+            "pvlib_statistical_orientation_tilt_poa_candidate",
+            "pvgis_reference_calibration_sanity_candidate",
+            "direct_ghi_pr_scalar_candidate",
+        }
+        missing_candidates = required_candidates.difference(candidate_ids)
+        if missing_candidates:
+            raise ValueError(f"PV-PARAM conversion source-choice packet missing candidates: {sorted(missing_candidates)}")
+        for candidate in candidates:
+            status = str(candidate.get("candidate_status", ""))
+            if "unsigned" not in status or "not_executable" not in status:
+                raise ValueError("PV-PARAM conversion candidates must remain unsigned and not executable")
+        required_keys = {
+            "pv_param_decision_id_or_signed_amendment",
+            "conversion_formula_id",
+            "orientation_tilt_value_packet_id",
+            "transposition_model_or_direct_ghi_simplification",
+            "performance_ratio_or_loss_model_source",
+            "temperature_model_and_coefficients",
+            "clipping_rule_and_capacity_convention",
+            "d014_capacity_approval_artifact",
+            "a016_scenario_consistency_mapping",
+        }
+        missing_keys = required_keys.difference(approval_keys)
+        if missing_keys:
+            raise ValueError(f"PV-PARAM conversion source-choice packet missing approval keys: {sorted(missing_keys)}")
+        if recommendation.get("do_not_use_as_final_without_signature") is not True:
+            raise ValueError("PV-PARAM conversion source-choice packet must not allow final use without signature")
+        if not any("No PV conversion formula is approved" in item for item in non_claims):
+            raise ValueError("PV-PARAM conversion source-choice packet must state no formula is approved")
+        if not any("No PR=0.86" in item and "signed" in item for item in non_claims):
+            raise ValueError("PV-PARAM conversion source-choice packet must keep PR/direct-GHI unsigned")
+        if not any("No roof, building, 3DBAG" in item for item in non_claims):
+            raise ValueError("PV-PARAM conversion source-choice packet must defer heavy geometry")
+
+        object.__setattr__(self, "governing_decisions", governing)
+        object.__setattr__(self, "input_dependencies", dependencies)
+        object.__setattr__(self, "conversion_source_candidates", candidates)
+        object.__setattr__(self, "recommendation_for_pi_review", recommendation)
+        object.__setattr__(self, "executable_gate", gate)
+        object.__setattr__(self, "pi_approval_keys_before_executable_use", approval_keys)
+        object.__setattr__(self, "non_claims", non_claims)
+
+    @property
+    def missing_approval_keys(self) -> tuple[str, ...]:
+        return self.pi_approval_keys_before_executable_use
+
+    def require_executable_conversion_approval(self) -> None:
+        """Always fail until the PI signs a PV-PARAM conversion route."""
+        raise ValueError(
+            "PV-PARAM conversion source choice is unsigned; executable PV requires signed conversion formula, "
+            "orientation/tilt values, capacity artifact, scenario consistency, and allocation"
+        )
+
+    def identity_record(self) -> dict[str, object]:
+        return {
+            "packet_id": self.packet_id,
+            "data_id": self.data_id,
+            "status": self.status,
+            "candidate_ids": tuple(str(item["candidate_id"]) for item in self.conversion_source_candidates),
+            "blocking_register_ids": tuple(str(item) for item in self.executable_gate["blocking_register_ids"]),
+            "missing_approval_keys": self.missing_approval_keys,
+            "executable_allowed_now": False,
+        }
+
+
+def load_pv_param_conversion_source_choice_packet(path: str | Path) -> PVParamConversionSourceChoicePacket:
+    """Load the proposed D-014 PV-PARAM conversion source-choice packet."""
+    payload = json.loads(Path(path).read_text(encoding="utf-8"))
+    return PVParamConversionSourceChoicePacket(
+        packet_id=str(payload.get("packet_id", "")),
+        data_id=str(payload.get("data_id", "")),
+        status=str(payload.get("status", "")),
+        download_performed=bool(payload.get("download_performed")),
+        raw_data_committed=bool(payload.get("raw_data_committed")),
+        governing_decisions=payload.get("governing_decisions", {}),
+        input_dependencies=payload.get("input_dependencies", {}),
+        conversion_source_candidates=payload.get("conversion_source_candidates", ()),
+        recommendation_for_pi_review=payload.get("recommendation_for_pi_review", {}),
+        executable_gate=payload.get("executable_gate", {}),
+        pi_approval_keys_before_executable_use=payload.get("pi_approval_keys_before_executable_use", ()),
+        non_claims=payload.get("non_claims", ()),
+    )
+
+
+
+@dataclass(frozen=True)
+class PVFirstExperimentApprovalPacket:
+    """Fail-closed PI decision packet for first-experiment PV readiness."""
+
+    packet_id: str
+    data_id: str
+    status: str
+    download_performed: bool
+    raw_data_committed: bool
+    input_metadata: Mapping[str, object]
+    first_experiment_scope: Mapping[str, object]
+    separated_decision_layers: Mapping[str, object]
+    pi_approval_keys_before_executable_use: Sequence[str]
+    executable_gate: Mapping[str, object]
+    non_claims: Sequence[str]
+
+    def __post_init__(self) -> None:
+        if self.packet_id != "D014-PV-FIRST-EXPERIMENT-APPROVAL-PACKET":
+            raise ValueError("first-experiment PV approval packet must identify D014-PV-FIRST-EXPERIMENT-APPROVAL-PACKET")
+        if self.data_id != "D-014":
+            raise ValueError("first-experiment PV approval packet must identify D-014")
+        if not str(self.status).startswith("proposed_"):
+            raise ValueError("first-experiment PV approval packet must remain proposed until PI approval")
+        if self.download_performed is not False or self.raw_data_committed is not False:
+            raise ValueError("first-experiment PV approval packet must not claim raw retrieval or committed raw data")
+        inputs = _audit_json_mapping(self.input_metadata, "input_metadata")
+        scope = _audit_json_mapping(self.first_experiment_scope, "first_experiment_scope")
+        layers = _audit_json_mapping(self.separated_decision_layers, "separated_decision_layers")
+        gate = _audit_json_mapping(self.executable_gate, "executable_gate")
+        approval_keys = tuple(str(item) for item in self.pi_approval_keys_before_executable_use)
+        non_claims = tuple(str(item) for item in self.non_claims)
+
+        required_inputs = {
+            "capacity_approval_template": "D014-PV-CAPACITY-APPROVAL-TEMPLATE",
+            "orientation_tilt_source_choice": "D014-PV-ORIENTATION-TILT-SOURCE-CHOICE-PACKET",
+            "orientation_tilt_value_choice": "D014-PV-ORIENTATION-TILT-VALUE-CHOICE-PACKET",
+            "pv_param_conversion_source_choice": "D014-PV-PARAM-CONVERSION-SOURCE-CHOICE-PACKET",
+            "executable_preflight_guard": "D014-PV-EXECUTABLE-PREFLIGHT-GUARD",
+        }
+        for key, packet_id in required_inputs.items():
+            record = _audit_json_mapping(inputs.get(key, {}), f"input_metadata.{key}")
+            if record.get("packet_id") != packet_id:
+                raise ValueError(f"first-experiment PV approval packet input {key} must reference {packet_id}")
+            if len(str(record.get("sha256", ""))) != 64:
+                raise ValueError(f"first-experiment PV approval packet input {key} must record SHA-256")
+        if scope.get("building_roof_location_level_geometry_allowed") is not False:
+            raise ValueError("first-experiment PV approval packet must block roof/building/location geometry")
+        if scope.get("specific_3dbag_or_pv_map_workflow_allowed") is not False:
+            raise ValueError("first-experiment PV approval packet must block 3DBAG/PV-map workflow")
+        required_layers = {
+            "installed_capacity_route",
+            "orientation_tilt_distribution",
+            "irradiance_to_power_conversion",
+            "node_allocation",
+        }
+        missing_layers = required_layers.difference(layers)
+        if missing_layers:
+            raise ValueError(f"first-experiment PV approval packet missing separated layers: {sorted(missing_layers)}")
+        if gate.get("executable_pv_generation_authorized") is not False:
+            raise ValueError("first-experiment PV approval packet must not authorize executable PV generation")
+        blockers = tuple(str(item) for item in gate.get("blocking_register_ids", ()))
+        for blocker in ("PV-PARAM-001_or_signed_amendment", "PV-ORIENT-001_values", "A-016"):
+            if blocker not in blockers:
+                raise ValueError(f"first-experiment PV approval packet missing blocker {blocker}")
+        required_keys = {
+            "signed_d014_capacity_artifact",
+            "signed_statistical_orientation_tilt_bins_representative_angles_and_weights",
+            "signed_pv_param_conversion_formula_or_amendment",
+            "signed_node_allocation_rule",
+            "signed_final_paired_hp_pv_acceptance_prerequisite",
+        }
+        missing_keys = required_keys.difference(approval_keys)
+        if missing_keys:
+            raise ValueError(f"first-experiment PV approval packet missing approval keys: {sorted(missing_keys)}")
+        if not any("No PV capacity value" in item and "orientation/tilt" in item for item in non_claims):
+            raise ValueError("first-experiment PV approval packet must state no values are approved")
+        if not any("No building, roof" in item for item in non_claims):
+            raise ValueError("first-experiment PV approval packet must defer heavy geometry")
+
+        object.__setattr__(self, "input_metadata", inputs)
+        object.__setattr__(self, "first_experiment_scope", scope)
+        object.__setattr__(self, "separated_decision_layers", layers)
+        object.__setattr__(self, "pi_approval_keys_before_executable_use", approval_keys)
+        object.__setattr__(self, "executable_gate", gate)
+        object.__setattr__(self, "non_claims", non_claims)
+
+    @property
+    def missing_approval_keys(self) -> tuple[str, ...]:
+        return self.pi_approval_keys_before_executable_use
+
+    def require_executable_first_experiment_pv_approval(self) -> None:
+        """Always fail until all first-experiment PV approvals are signed."""
+        raise ValueError(
+            "First-experiment PV approval packet is unsigned; executable PV requires signed capacity, "
+            "statistical orientation/tilt values, PV-PARAM conversion, A-016 mapping, allocation, and paired acceptance"
+        )
+
+    def identity_record(self) -> dict[str, object]:
+        return {
+            "packet_id": self.packet_id,
+            "data_id": self.data_id,
+            "status": self.status,
+            "input_packet_ids": {
+                key: _audit_json_mapping(value, f"input_metadata.{key}")["packet_id"]
+                for key, value in self.input_metadata.items()
+            },
+            "blocking_register_ids": tuple(str(item) for item in self.executable_gate["blocking_register_ids"]),
+            "missing_approval_keys": self.missing_approval_keys,
+            "executable_pv_generation_authorized": False,
+        }
+
+
+def load_pv_first_experiment_approval_packet(path: str | Path) -> PVFirstExperimentApprovalPacket:
+    """Load the proposed first-experiment PV approval packet."""
+    payload = json.loads(Path(path).read_text(encoding="utf-8"))
+    return PVFirstExperimentApprovalPacket(
+        packet_id=str(payload.get("packet_id", "")),
+        data_id=str(payload.get("data_id", "")),
+        status=str(payload.get("status", "")),
+        download_performed=bool(payload.get("download_performed")),
+        raw_data_committed=bool(payload.get("raw_data_committed")),
+        input_metadata=payload.get("input_metadata", {}),
+        first_experiment_scope=payload.get("first_experiment_scope", {}),
+        separated_decision_layers=payload.get("separated_decision_layers", {}),
+        pi_approval_keys_before_executable_use=payload.get("pi_approval_keys_before_executable_use", ()),
+        executable_gate=payload.get("executable_gate", {}),
+        non_claims=payload.get("non_claims", ()),
+    )
 @dataclass(frozen=True)
 class PVGenerationProfile:
     """PV generation produced from one validated paired weather member."""

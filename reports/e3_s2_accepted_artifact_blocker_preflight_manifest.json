@@ -1,0 +1,867 @@
+{
+  "command": ".\\.venv\\Scripts\\python.exe reports\\e3_s2_generate_accepted_artifact_blocker_preflight.py",
+  "generated_at_utc": "2026-07-24T14:14:59Z",
+  "git_commit": "1aa1b759cafb4e07e0493b49206f4f22ce1d6cd9",
+  "git_status_short_before_generation": "",
+  "input": {
+    "path": "reports/e3_s2_accepted_artifact_blocker_preflight_input.json",
+    "schema_version": "e3_s2_accepted_artifact_blocker_preflight_input_v1",
+    "sha256": "374de84d5899286c28f0f36a6a7d11a60483804c35726e762e6cb4f34346da30"
+  },
+  "outputs": {
+    "report_path": "reports/E3_S2_ACCEPTED_ARTIFACT_BLOCKER_PREFLIGHT.md",
+    "report_sha256": "26994d0b025a07887f0fd17f71cd21ecb78f15601cdf17671e487569e64e2d86"
+  },
+  "preflight": {
+    "blocker_manifest": {
+      "blocked_component_kinds": [
+        "adoption",
+        "baseline",
+        "ev",
+        "flexibility",
+        "hp",
+        "pv"
+      ],
+      "blocker_count": 17,
+      "items": [
+        {
+          "blocker_ids": [
+            "E2.S5-BASELINE-EXECUTABLE-ARTIFACT"
+          ],
+          "code": "component_artifact_gate_blocked",
+          "kind": "baseline",
+          "message": "component executable-input gate is not accepted"
+        },
+        {
+          "blocker_ids": [
+            "E2-S3-HP001-EXECUTABLE-VALUE-BINDING-PACKET",
+            "value_column",
+            "denominator",
+            "unit_conversion",
+            "sfh_mfh_split",
+            "adoption_electrification",
+            "d004_paired_weather_acceptance",
+            "cold_spell_tolerances"
+          ],
+          "code": "component_artifact_gate_blocked",
+          "kind": "hp",
+          "message": "component executable-input gate is not accepted"
+        },
+        {
+          "blocker_ids": [
+            "D014-PV-CAPACITY-APPROVAL-TEMPLATE",
+            "A-016",
+            "PV-ORIENT-001",
+            "PV-PARAM-001",
+            "future_node_allocation_rule",
+            "future_final_paired_acceptance"
+          ],
+          "code": "component_artifact_gate_blocked",
+          "kind": "pv",
+          "message": "component executable-input gate is not accepted"
+        },
+        {
+          "blocker_ids": [
+            "G1-A2-CAPACITY-CONVENTION"
+          ],
+          "code": "capacity_provenance_missing",
+          "message": "capacity denominator provenance is required before integrated trajectory acceptance"
+        },
+        {
+          "blocker_ids": [
+            "A-013"
+          ],
+          "code": "downstream_gate_blocked",
+          "message": "downstream gate remains unresolved before executable integrated analysis"
+        },
+        {
+          "blocker_ids": [
+            "G2"
+          ],
+          "code": "downstream_gate_blocked",
+          "message": "downstream gate remains unresolved before executable integrated analysis"
+        },
+        {
+          "blocker_ids": [
+            "G1-A2"
+          ],
+          "code": "downstream_gate_blocked",
+          "message": "downstream gate remains unresolved before executable integrated analysis"
+        },
+        {
+          "blocker_ids": [
+            "A-016"
+          ],
+          "code": "downstream_gate_blocked",
+          "message": "downstream gate remains unresolved before executable integrated analysis"
+        },
+        {
+          "blocker_ids": [
+            "G1-A2-CAPACITY-CONVENTION"
+          ],
+          "code": "downstream_gate_blocked",
+          "message": "downstream gate remains unresolved before executable integrated analysis"
+        },
+        {
+          "blocker_ids": [
+            "A016-SCENARIO-CONSISTENCY"
+          ],
+          "code": "downstream_gate_blocked",
+          "message": "downstream gate remains unresolved before executable integrated analysis"
+        },
+        {
+          "blocker_ids": [
+            "ALEA-001"
+          ],
+          "code": "calendar_id_mismatch",
+          "message": "all executable component artifacts must cite one common ALEA-001 calendar before loader use"
+        },
+        {
+          "artifact_id": "e2_s5_baseline_diversity_readiness_report",
+          "blocker_ids": [
+            "E2.S5-BASELINE-COMPONENT-OUTPUT-ARTIFACT"
+          ],
+          "code": "component_output_manifest_missing",
+          "kind": "baseline",
+          "message": "accepted component-output manifest is required before artifact-loader execution"
+        },
+        {
+          "artifact_id": "e2_s2_ev_ic1_accepted_artifact_index_preflight",
+          "blocker_ids": [
+            "E3.S2-EV-COMPONENT-OUTPUT-SCHEMA"
+          ],
+          "code": "component_output_manifest_required_keys_missing",
+          "kind": "ev",
+          "message": "component-output manifest is not in the accepted-artifact loader schema",
+          "missing_keys": [
+            "artifact_status",
+            "kind",
+            "component_id",
+            "node_id",
+            "member_id",
+            "source_id",
+            "calendar_id",
+            "timestep_seconds",
+            "array_path",
+            "array_sha256",
+            "provenance"
+          ],
+          "path": "data/metadata/ev_adoption/e2_s2_ev_ic1_candidate_component_output_manifest.json"
+        },
+        {
+          "artifact_id": "hp001_alkmaar_gm0361_executable_value_binding_decision_packet",
+          "blocker_ids": [
+            "HP-001",
+            "E2-S3-HP001-EXECUTABLE-VALUE-BINDING-PACKET",
+            "D004-PAIRED-HP-PV-ACCEPTANCE"
+          ],
+          "code": "component_output_manifest_missing",
+          "kind": "hp",
+          "message": "accepted component-output manifest is required before artifact-loader execution"
+        },
+        {
+          "artifact_id": "D014-PV-EXECUTABLE-READINESS-BLOCKERS",
+          "blocker_ids": [
+            "PV-PARAM-001",
+            "D-014",
+            "D014-PV-CAPACITY-SOURCE-VALUE-PACKET",
+            "D014-PV-CAPACITY-APPROVAL-TEMPLATE",
+            "FINAL-PAIRED-HP-PV-ACCEPTANCE"
+          ],
+          "code": "component_output_manifest_missing",
+          "kind": "pv",
+          "message": "accepted component-output manifest is required before artifact-loader execution"
+        },
+        {
+          "artifact_id": "e2_s6_a014_alkmaar_executable_adoption_artifact",
+          "blocker_ids": [
+            "E3.S2-ADOPTION-COMPONENT-OUTPUT-MANIFEST"
+          ],
+          "code": "component_output_manifest_missing",
+          "kind": "adoption",
+          "message": "accepted component-output manifest is required before artifact-loader execution"
+        },
+        {
+          "artifact_id": "flex001_scaffold_protocol",
+          "blocker_ids": [
+            "E3.S1-FLEX-REAL-VALUES-NOT-SIGNED"
+          ],
+          "code": "component_output_manifest_missing",
+          "kind": "flexibility",
+          "message": "accepted component-output manifest is required before artifact-loader execution"
+        }
+      ],
+      "ready": false
+    },
+    "component_output_manifest_records": [
+      {
+        "artifact_id": "e2_s5_baseline_diversity_readiness_report",
+        "kind": "baseline",
+        "path": null,
+        "state": "missing"
+      },
+      {
+        "artifact_id": "e2_s2_ev_ic1_accepted_artifact_index_preflight",
+        "checksum_match": true,
+        "expected_sha256": "01dcac20e7369a5997bb2a7584cac98e3a62a9ebaff4f44cfc4e6969c3bc4e39",
+        "kind": "ev",
+        "path": "data/metadata/ev_adoption/e2_s2_ev_ic1_candidate_component_output_manifest.json",
+        "sha256": "01dcac20e7369a5997bb2a7584cac98e3a62a9ebaff4f44cfc4e6969c3bc4e39",
+        "state": "blocked"
+      },
+      {
+        "artifact_id": "hp001_alkmaar_gm0361_executable_value_binding_decision_packet",
+        "kind": "hp",
+        "path": null,
+        "state": "missing"
+      },
+      {
+        "artifact_id": "D014-PV-EXECUTABLE-READINESS-BLOCKERS",
+        "kind": "pv",
+        "path": null,
+        "state": "missing"
+      },
+      {
+        "artifact_id": "e2_s6_a014_alkmaar_executable_adoption_artifact",
+        "kind": "adoption",
+        "path": null,
+        "state": "missing"
+      },
+      {
+        "artifact_id": "flex001_scaffold_protocol",
+        "kind": "flexibility",
+        "path": null,
+        "state": "missing"
+      }
+    ],
+    "intended_use": "e3_s2_accepted_artifact_loader_blocker_preflight_through_pr248_current_main",
+    "metadata_preflight_only": true,
+    "no_capacity_screen_result": true,
+    "no_component_array_loading": true,
+    "no_event_counts": true,
+    "no_event_detection": true,
+    "no_probability_estimate": true,
+    "no_real_net_load_arrays": true,
+    "ready_for_artifact_loader_execution": false,
+    "ready_for_integrated_trajectory_acceptance": false,
+    "real_artifact_preflight": {
+      "blockers": {
+        "capacity_provenance_missing": true,
+        "component_artifact_blockers_by_kind": {
+          "baseline": [
+            "E2.S5-BASELINE-EXECUTABLE-ARTIFACT"
+          ],
+          "hp": [
+            "E2-S3-HP001-EXECUTABLE-VALUE-BINDING-PACKET",
+            "value_column",
+            "denominator",
+            "unit_conversion",
+            "sfh_mfh_split",
+            "adoption_electrification",
+            "d004_paired_weather_acceptance",
+            "cold_spell_tolerances"
+          ],
+          "pv": [
+            "D014-PV-CAPACITY-APPROVAL-TEMPLATE",
+            "A-016",
+            "PV-ORIENT-001",
+            "PV-PARAM-001",
+            "future_node_allocation_rule",
+            "future_final_paired_acceptance"
+          ]
+        },
+        "downstream_gate_blockers": [
+          "A-013",
+          "G2",
+          "G1-A2",
+          "A-016",
+          "G1-A2-CAPACITY-CONVENTION",
+          "A016-SCENARIO-CONSISTENCY"
+        ],
+        "register_backing_errors_by_kind": {},
+        "source_manifest_checksum_mismatches": [],
+        "source_manifest_paths_missing": [],
+        "unmatched_expected_checksum_paths": []
+      },
+      "bridge_preflight": {
+        "blockers": {
+          "capacity_provenance_missing": true,
+          "component_artifact_blockers_by_kind": {
+            "baseline": [
+              "E2.S5-BASELINE-EXECUTABLE-ARTIFACT"
+            ],
+            "hp": [
+              "E2-S3-HP001-EXECUTABLE-VALUE-BINDING-PACKET",
+              "value_column",
+              "denominator",
+              "unit_conversion",
+              "sfh_mfh_split",
+              "adoption_electrification",
+              "d004_paired_weather_acceptance",
+              "cold_spell_tolerances"
+            ],
+            "pv": [
+              "D014-PV-CAPACITY-APPROVAL-TEMPLATE",
+              "A-016",
+              "PV-ORIENT-001",
+              "PV-PARAM-001",
+              "future_node_allocation_rule",
+              "future_final_paired_acceptance"
+            ]
+          },
+          "downstream_gate_blockers": [
+            "A-013",
+            "G2",
+            "G1-A2",
+            "A-016",
+            "G1-A2-CAPACITY-CONVENTION",
+            "A016-SCENARIO-CONSISTENCY"
+          ],
+          "register_backing_errors_by_kind": {}
+        },
+        "capacity_provenance": null,
+        "dry_run_only": true,
+        "executable_input_preflight": {
+          "accepted_component_kinds": [
+            "adoption",
+            "ev",
+            "flexibility"
+          ],
+          "blocked_component_kinds": [
+            "baseline",
+            "hp",
+            "pv"
+          ],
+          "component_reports": {
+            "adoption": {
+              "accepted_for_gate": true,
+              "artifact": {
+                "artifact_id": "e2_s6_a014_alkmaar_executable_adoption_artifact",
+                "artifact_status": "accepted",
+                "blocking_register_ids": [],
+                "calendar_id": "planning-2035-europe-amsterdam-15min",
+                "kind": "adoption",
+                "manifest_path": "data/metadata/ev_adoption/e2_s6_a014_alkmaar_executable_adoption_artifact.json",
+                "member_id": "ev007a_declared_low_middle_high_branches_no_final_selection",
+                "node_ids": [
+                  "load_000_to_load_114"
+                ],
+                "provenance": {
+                  "classification_note": "merged PR #235 provides accepted per-node EV adoption allocation metadata for declared low/middle/high branches without choosing the final paper branch",
+                  "component_output_boundary_note": "The A-014 allocation artifact is accepted metadata; a loader-facing component-output manifest remains a separate IC-1 assembly boundary artifact.",
+                  "discovered_path": "data/metadata/ev_adoption/e2_s6_a014_alkmaar_executable_adoption_artifact.json",
+                  "packet_status": "accepted executable per-node EV adoption allocation artifact; no final branch selected",
+                  "readiness_bucket": "accepted_metadata_only",
+                  "supporting_report": "reports/e2_s6_a014_executable_adoption_artifact.md"
+                },
+                "shared_weather_driver_id": null,
+                "signed_register_ids": [
+                  "EV-007",
+                  "EV-007A",
+                  "A-014"
+                ],
+                "source_id": "alkmaar_ev_adoption_counts_and_a014_allocation",
+                "timestep_seconds": 900,
+                "version_id": "e2_s6_a014_alkmaar_executable_adoption_artifact_v1"
+              },
+              "artifact_id": "e2_s6_a014_alkmaar_executable_adoption_artifact",
+              "artifact_status": "accepted",
+              "blocking_register_ids": [],
+              "kind": "adoption",
+              "manifest_path": "data/metadata/ev_adoption/e2_s6_a014_alkmaar_executable_adoption_artifact.json",
+              "signed_register_ids": [
+                "EV-007",
+                "EV-007A",
+                "A-014"
+              ],
+              "state": "accepted"
+            },
+            "baseline": {
+              "accepted_for_gate": false,
+              "artifact": {
+                "artifact_id": "e2_s5_baseline_diversity_readiness_report",
+                "artifact_status": "scaffold",
+                "blocking_register_ids": [
+                  "E2.S5-BASELINE-EXECUTABLE-ARTIFACT"
+                ],
+                "calendar_id": "calendar_2035_15min_full_year_35040",
+                "kind": "baseline",
+                "manifest_path": "reports/e2_s5_baseline_diversity_readiness.md",
+                "member_id": "baseline_member_unmaterialized",
+                "node_ids": [
+                  "simbench_1_mv_semiurb_0_sw_all_in_service_load_nodes"
+                ],
+                "provenance": {
+                  "classification_note": "readiness report present; accepted executable IC-1 baseline artifact not present",
+                  "discovered_path": "reports/e2_s5_baseline_diversity_readiness.md",
+                  "packet_status": "scaffold present; accepted executable artifact missing",
+                  "readiness_bucket": "blocked"
+                },
+                "shared_weather_driver_id": null,
+                "signed_register_ids": [],
+                "source_id": "simbench_baseline_readiness_metadata_only",
+                "timestep_seconds": 900,
+                "version_id": "e2_s5_baseline_readiness_report_v1"
+              },
+              "artifact_id": "e2_s5_baseline_diversity_readiness_report",
+              "artifact_status": "scaffold",
+              "blocking_register_ids": [
+                "E2.S5-BASELINE-EXECUTABLE-ARTIFACT"
+              ],
+              "kind": "baseline",
+              "manifest_path": "reports/e2_s5_baseline_diversity_readiness.md",
+              "reason": "artifact_status_not_accepted",
+              "signed_register_ids": [],
+              "state": "blocked"
+            },
+            "ev": {
+              "accepted_for_gate": true,
+              "artifact": {
+                "artifact_id": "e2_s2_ev_ic1_accepted_artifact_index_preflight",
+                "artifact_status": "accepted",
+                "blocking_register_ids": [],
+                "calendar_id": "planning-2035-europe-amsterdam-15min",
+                "kind": "ev",
+                "manifest_path": "data/metadata/ev_adoption/e2_s2_ev_ic1_accepted_artifact_index_preflight.json",
+                "member_id": "ev005b_candidate_index_root20260722_sample0_all_declared_branches",
+                "node_ids": [
+                  "load_000_to_load_114"
+                ],
+                "provenance": {
+                  "boundary_note": "merged PR #243 EV accepted-artifact index is available and consumed as metadata only; merged PR #248 EV held-out blocker is also recorded, no held-out data opened, and no EV component arrays loaded",
+                  "component_output_manifest_sha256": "01dcac20e7369a5997bb2a7584cac98e3a62a9ebaff4f44cfc4e6969c3bc4e39",
+                  "discovered_path": "data/metadata/ev_adoption/e2_s2_ev_ic1_accepted_artifact_index_preflight.json",
+                  "ev_output_verifier_status": "merged_pr_243_accepted_artifact_index_available; merged_pr_248_heldout_blocker_available_metadata_only",
+                  "packet_status": "accepted EV metadata index for Agent A preflight; blocked for integrated results",
+                  "readiness_bucket": "accepted_metadata_only",
+                  "rng_protocol_id": "RNG-001",
+                  "supporting_adoption_artifact": "data/metadata/ev_adoption/e2_s6_a014_alkmaar_executable_adoption_artifact.json",
+                  "supporting_component_output_consumption_packet": "data/metadata/ev_adoption/e2_s2_ev_ic1_component_output_consumption_packet.json",
+                  "supporting_component_output_manifest": "data/metadata/ev_adoption/e2_s2_ev_ic1_candidate_component_output_manifest.json",
+                  "supporting_heldout_adequacy_preflight_blockers": "data/metadata/ev_adoption/e3_s2a_ev_heldout_adequacy_preflight_blockers.json",
+                  "supporting_heldout_adequacy_preflight_blockers_sha256": "8bafdcd8c2a55efc03fbf34f634e84bd00f9194aac14437e95b7acb69613543f",
+                  "supporting_report": "reports/e2_s2_ev_ic1_accepted_artifact_index_preflight.md"
+                },
+                "shared_weather_driver_id": null,
+                "signed_register_ids": [
+                  "A-014",
+                  "EV-003",
+                  "EV-005",
+                  "EV-005B",
+                  "EV-007",
+                  "EV-007A",
+                  "EV-008A",
+                  "EV-CAL-001"
+                ],
+                "source_id": "elaadnl_ev_accepted_artifact_index_preflight",
+                "timestep_seconds": 900,
+                "version_id": "e2_s2_ev_ic1_accepted_artifact_index_preflight_v1"
+              },
+              "artifact_id": "e2_s2_ev_ic1_accepted_artifact_index_preflight",
+              "artifact_status": "accepted",
+              "blocking_register_ids": [],
+              "kind": "ev",
+              "manifest_path": "data/metadata/ev_adoption/e2_s2_ev_ic1_accepted_artifact_index_preflight.json",
+              "signed_register_ids": [
+                "A-014",
+                "EV-003",
+                "EV-005",
+                "EV-005B",
+                "EV-007",
+                "EV-007A",
+                "EV-008A",
+                "EV-CAL-001"
+              ],
+              "state": "accepted"
+            },
+            "flexibility": {
+              "accepted_for_gate": true,
+              "artifact": {
+                "artifact_id": "flex001_scaffold_protocol",
+                "artifact_status": "accepted",
+                "blocking_register_ids": [],
+                "calendar_id": "calendar_2035_15min_full_year_35040",
+                "kind": "flexibility",
+                "manifest_path": "src/flex_aggregator.py",
+                "member_id": "rho_endpoint_protocol_no_real_values",
+                "node_ids": [
+                  "simbench_1_mv_semiurb_0_sw_all_in_service_load_nodes"
+                ],
+                "provenance": {
+                  "boundary_note": "approved scaffold protocol only; no flexibility-factor values, fuzzy corners, or real flexibility result are signed here",
+                  "discovered_path": "src/flex_aggregator.py",
+                  "packet_status": "approved scaffold protocol; real flexibility values/results pending",
+                  "readiness_bucket": "accepted",
+                  "supporting_report": "reports/E3_S1_FLEX_EXPORT_HARDENING.md"
+                },
+                "shared_weather_driver_id": null,
+                "signed_register_ids": [
+                  "FLEX-001"
+                ],
+                "source_id": "flex_aggregator_scaffold_protocol",
+                "timestep_seconds": 900,
+                "version_id": "flex001_scaffold_protocol_v1"
+              },
+              "artifact_id": "flex001_scaffold_protocol",
+              "artifact_status": "accepted",
+              "blocking_register_ids": [],
+              "kind": "flexibility",
+              "manifest_path": "src/flex_aggregator.py",
+              "signed_register_ids": [
+                "FLEX-001"
+              ],
+              "state": "accepted"
+            },
+            "hp": {
+              "accepted_for_gate": false,
+              "artifact": {
+                "artifact_id": "hp001_alkmaar_gm0361_executable_value_binding_decision_packet",
+                "artifact_status": "unsigned",
+                "blocking_register_ids": [
+                  "E2-S3-HP001-EXECUTABLE-VALUE-BINDING-PACKET",
+                  "value_column",
+                  "denominator",
+                  "unit_conversion",
+                  "sfh_mfh_split",
+                  "adoption_electrification",
+                  "d004_paired_weather_acceptance",
+                  "cold_spell_tolerances"
+                ],
+                "calendar_id": "calendar_2035_15min_full_year_35040",
+                "kind": "hp",
+                "manifest_path": "data/metadata/hp_scaling/hp001_alkmaar_gm0361_executable_value_binding_decision_packet.json",
+                "member_id": "hp001_executable_value_binding_unapproved",
+                "node_ids": [
+                  "simbench_1_mv_semiurb_0_sw_all_in_service_load_nodes"
+                ],
+                "provenance": {
+                  "classification_note": "newest HP packet is a proposed executable value-binding approval template; it does not approve annual HP values or integrated HP use, and final readiness also requires D-004 paired-weather acceptance and cold-spell tolerances",
+                  "discovered_path": "data/metadata/hp_scaling/hp001_alkmaar_gm0361_executable_value_binding_decision_packet.json",
+                  "packet_status": "proposed executable-value-binding decision packet; approval template only",
+                  "readiness_bucket": "proposed_blocked",
+                  "supporting_final_readiness_checklist": "data/metadata/hp_scaling/hp001_alkmaar_gm0361_readiness_approval_checklist.json",
+                  "supporting_report": "reports/e2_s3_hp001_executable_value_binding_decision_packet.md"
+                },
+                "shared_weather_driver_id": "d004_alkmaar_berkhout_2014_2023_v1:unselected",
+                "signed_register_ids": [
+                  "HP-001",
+                  "D-013",
+                  "D013-PBL-MAPPING",
+                  "A-015",
+                  "WEATHER-001",
+                  "D004-SOURCE-MEMBER-ACCEPTANCE"
+                ],
+                "source_id": "hp001_executable_value_binding_decision_packet_metadata",
+                "timestep_seconds": 900,
+                "version_id": "hp001_executable_value_binding_decision_packet_v1"
+              },
+              "artifact_id": "hp001_alkmaar_gm0361_executable_value_binding_decision_packet",
+              "artifact_status": "unsigned",
+              "blocking_register_ids": [
+                "E2-S3-HP001-EXECUTABLE-VALUE-BINDING-PACKET",
+                "value_column",
+                "denominator",
+                "unit_conversion",
+                "sfh_mfh_split",
+                "adoption_electrification",
+                "d004_paired_weather_acceptance",
+                "cold_spell_tolerances"
+              ],
+              "kind": "hp",
+              "manifest_path": "data/metadata/hp_scaling/hp001_alkmaar_gm0361_executable_value_binding_decision_packet.json",
+              "reason": "artifact_status_not_accepted",
+              "signed_register_ids": [
+                "HP-001",
+                "D-013",
+                "D013-PBL-MAPPING",
+                "A-015",
+                "WEATHER-001",
+                "D004-SOURCE-MEMBER-ACCEPTANCE"
+              ],
+              "state": "blocked"
+            },
+            "pv": {
+              "accepted_for_gate": false,
+              "artifact": {
+                "artifact_id": "D014-PV-EXECUTABLE-READINESS-BLOCKERS",
+                "artifact_status": "unsigned",
+                "blocking_register_ids": [
+                  "D014-PV-CAPACITY-APPROVAL-TEMPLATE",
+                  "A-016",
+                  "PV-ORIENT-001",
+                  "PV-PARAM-001",
+                  "future_node_allocation_rule",
+                  "future_final_paired_acceptance"
+                ],
+                "calendar_id": "calendar_2035_15min_full_year_35040",
+                "kind": "pv",
+                "manifest_path": "data/metadata/weather_pv/d014_pv_executable_readiness_blockers.json",
+                "member_id": "pv_weather_source_member_ready_pv_generation_blocked",
+                "node_ids": [
+                  "simbench_1_mv_semiurb_0_sw_all_in_service_load_nodes"
+                ],
+                "provenance": {
+                  "classification_note": "Merged PR #241 records accepted weather source/member readiness and PR #246 adds the executable PV preflight guard, but executable PV generation remains blocked until D-014 capacity, A-016 scenario consistency, PV-ORIENT/PV-PARAM, node allocation, and final paired HP/PV/cold-spell gates are signed.",
+                  "discovered_path": "data/metadata/weather_pv/d014_pv_executable_readiness_blockers.json",
+                  "packet_status": "proposed fail-closed executable PV readiness blockers; executable values unsigned",
+                  "readiness_bucket": "proposed_blocked",
+                  "supporting_capacity_approval_template": "data/metadata/weather_pv/d014_pv_capacity_approval_template.json",
+                  "supporting_capacity_approval_template_sha256": "f4124256525f9004d4a12dce5150bc9ad73935661586884f1ff781073a07a6f7",
+                  "supporting_executable_preflight_guard": "data/metadata/weather_pv/d014_pv_executable_preflight_guard.json",
+                  "supporting_executable_preflight_guard_sha256": "9a1df205142f29853b3250f7aa9af882ca818817a7b488a402ef036aee14a5c5",
+                  "supporting_report": "reports/e2_s4_d014_pv_executable_readiness_blockers.md",
+                  "supporting_weather_input_artifact": "data/metadata/weather_pv/d004_alkmaar_berkhout_2014_2023_v1_weather_input_artifact.json"
+                },
+                "shared_weather_driver_id": "d004_alkmaar_berkhout_2014_2023_v1:unselected",
+                "signed_register_ids": [
+                  "WEATHER-001",
+                  "D004-MC-001",
+                  "D004-SOURCE-MEMBER-ACCEPTANCE",
+                  "PV-CAP-001",
+                  "PV-ORIENT-001"
+                ],
+                "source_id": "d014_pv_executable_readiness_blockers_metadata",
+                "timestep_seconds": 900,
+                "version_id": "d014_pv_executable_readiness_blockers_v1"
+              },
+              "artifact_id": "D014-PV-EXECUTABLE-READINESS-BLOCKERS",
+              "artifact_status": "unsigned",
+              "blocking_register_ids": [
+                "D014-PV-CAPACITY-APPROVAL-TEMPLATE",
+                "A-016",
+                "PV-ORIENT-001",
+                "PV-PARAM-001",
+                "future_node_allocation_rule",
+                "future_final_paired_acceptance"
+              ],
+              "kind": "pv",
+              "manifest_path": "data/metadata/weather_pv/d014_pv_executable_readiness_blockers.json",
+              "reason": "artifact_status_not_accepted",
+              "signed_register_ids": [
+                "WEATHER-001",
+                "D004-MC-001",
+                "D004-SOURCE-MEMBER-ACCEPTANCE",
+                "PV-CAP-001",
+                "PV-ORIENT-001"
+              ],
+              "state": "blocked"
+            }
+          },
+          "config_manifest": {
+            "config_id": "e3_s2_accepted_artifact_loader_blocker_preflight_v1",
+            "metadata": {
+              "accepted_artifact_loader_helper": "build_accepted_artifact_loader_blocker_preflight",
+              "calendar_id": "calendar_2035_15min_full_year_35040",
+              "gate": "accepted_artifact_loader_blocker_preflight",
+              "ic2_bridge_preflight_path": "reports/E3_S2_EXECUTABLE_BRIDGE_PREFLIGHT.md",
+              "no_capacity_screen_result": true,
+              "no_event_detection": true,
+              "no_probability_estimate": true,
+              "no_real_net_load_arrays": true,
+              "planning_year_basis": "G0-A4",
+              "primary_threshold_metadata": "G0-A3: strict L_import > 1.0 p.u. for four consecutive 15-minute import steps over the full year; 1.1 and 1.2 are sensitivities only",
+              "refresh_basis": "origin/main through PR #248 EV held-out blocker and PR #249 methods cleanup; no real arrays opened",
+              "threshold_basis": "G0-A3 resolved but not evaluated in this preflight"
+            },
+            "node_ids": [
+              "simbench_1_mv_semiurb_0_sw_all_in_service_load_nodes"
+            ],
+            "planned_case_count": 6,
+            "planning_years": [
+              2035
+            ],
+            "rho_values": [
+              0.0,
+              1.0
+            ],
+            "scenario_ids": [
+              "low",
+              "middle",
+              "high"
+            ],
+            "time_domain": "full_year",
+            "timestep_seconds": 900
+          },
+          "dry_run_only": true,
+          "executable_input_gate": null,
+          "gate_error": null,
+          "intended_use": "e3_s2_accepted_artifact_loader_blocker_preflight_through_pr248_current_main",
+          "missing_component_kinds": [],
+          "no_capacity_screen_result": true,
+          "no_event_detection": true,
+          "no_probability_estimate": true,
+          "no_real_net_load_arrays": true,
+          "present_component_kinds": [
+            "adoption",
+            "baseline",
+            "ev",
+            "flexibility",
+            "hp",
+            "pv"
+          ],
+          "ready_for_input_assembly": false,
+          "required_component_kinds": [
+            "baseline",
+            "ev",
+            "hp",
+            "pv",
+            "adoption",
+            "flexibility"
+          ],
+          "screen_prerequisite_only": true
+        },
+        "intended_use": "e3_s2_accepted_artifact_loader_blocker_preflight_through_pr248_current_main",
+        "manifest_fields": {
+          "calendar_id": "calendar_2035_15min_full_year_35040",
+          "capacity_provenance": null,
+          "component_artifact_manifest_paths": {},
+          "governed_event_metadata": {
+            "basis": "G0-A3",
+            "min_consecutive_15_minute_steps": 4,
+            "not_evaluated_here": true,
+            "primary_threshold_pu": 1.0,
+            "sensitivity_thresholds_pu": [
+              1.1,
+              1.2
+            ],
+            "strict_import_loading_gt_threshold": true
+          },
+          "planning_years": [
+            2035
+          ],
+          "required_component_kinds": [
+            "baseline",
+            "ev",
+            "hp",
+            "pv",
+            "adoption",
+            "flexibility"
+          ],
+          "timestep_seconds": 900
+        },
+        "metadata_preflight_only": true,
+        "no_capacity_screen_result": true,
+        "no_event_counts": true,
+        "no_event_detection": true,
+        "no_probability_estimate": true,
+        "no_real_net_load_arrays": true,
+        "ready_for_first_real_experiment": false,
+        "ready_for_ic1_input_assembly": false,
+        "ready_for_synthetic_loading_manifest": false,
+        "trajectory_prerun_manifest": {
+          "capacity_convention_status": "pending_g1_a2_e3_s2b",
+          "config_id": "e3_s2_current_main_loading_trajectory_prerun_v1",
+          "fixture_time_domain": "window_set",
+          "governed_event_metadata": {
+            "basis": "G0-A3",
+            "min_consecutive_15_minute_steps": 4,
+            "not_evaluated_here": true,
+            "primary_threshold_pu": 1.0,
+            "sensitivity_thresholds_pu": [
+              1.1,
+              1.2
+            ],
+            "strict_import_loading_gt_threshold": true
+          },
+          "metadata": {
+            "basis": "G0-A3 metadata only; not evaluated here",
+            "no_capacity_screen_result": true,
+            "no_event_detection": true,
+            "no_loading_trajectory_arrays": true,
+            "no_probability_estimate": true
+          },
+          "planning_years": [
+            2035
+          ],
+          "purpose": "e3_s2b_future_layer_screen",
+          "timestep_seconds": 900
+        }
+      },
+      "dry_run_only": true,
+      "intended_use": "e3_s2_accepted_artifact_loader_blocker_preflight_through_pr248_current_main",
+      "metadata_preflight_only": true,
+      "no_capacity_screen_result": true,
+      "no_event_counts": true,
+      "no_event_detection": true,
+      "no_probability_estimate": true,
+      "no_real_net_load_arrays": true,
+      "ready_for_real_artifact_assembly": false,
+      "source_artifact_records": [
+        {
+          "artifact_id": "e2_s5_baseline_diversity_readiness_report",
+          "artifact_status": "scaffold",
+          "checksum_match": true,
+          "exists": true,
+          "expected_sha256": "35dddc989ff32e313ffcb22c16d26f494596445b6ba1879117168feb285a9d0c",
+          "kind": "baseline",
+          "path": "reports/e2_s5_baseline_diversity_readiness.md",
+          "sha256": "35dddc989ff32e313ffcb22c16d26f494596445b6ba1879117168feb285a9d0c"
+        },
+        {
+          "artifact_id": "e2_s2_ev_ic1_accepted_artifact_index_preflight",
+          "artifact_status": "accepted",
+          "checksum_match": true,
+          "exists": true,
+          "expected_sha256": "927a0c734592ef4defe17c045da9ab14bc6ba8d864fb415262e9811e3ab234b3",
+          "kind": "ev",
+          "path": "data/metadata/ev_adoption/e2_s2_ev_ic1_accepted_artifact_index_preflight.json",
+          "sha256": "927a0c734592ef4defe17c045da9ab14bc6ba8d864fb415262e9811e3ab234b3"
+        },
+        {
+          "artifact_id": "hp001_alkmaar_gm0361_executable_value_binding_decision_packet",
+          "artifact_status": "unsigned",
+          "checksum_match": true,
+          "exists": true,
+          "expected_sha256": "609a9631498559c6af4926f640e0c00ac9d2cac44aa40e8b3dbf5cd80a952270",
+          "kind": "hp",
+          "path": "data/metadata/hp_scaling/hp001_alkmaar_gm0361_executable_value_binding_decision_packet.json",
+          "sha256": "609a9631498559c6af4926f640e0c00ac9d2cac44aa40e8b3dbf5cd80a952270"
+        },
+        {
+          "artifact_id": "D014-PV-EXECUTABLE-READINESS-BLOCKERS",
+          "artifact_status": "unsigned",
+          "checksum_match": true,
+          "exists": true,
+          "expected_sha256": "9bf7ed48cf266e3292d5bafc179becb0326160329056c9845d5ee9f7e9bc5844",
+          "kind": "pv",
+          "path": "data/metadata/weather_pv/d014_pv_executable_readiness_blockers.json",
+          "sha256": "9bf7ed48cf266e3292d5bafc179becb0326160329056c9845d5ee9f7e9bc5844"
+        },
+        {
+          "artifact_id": "e2_s6_a014_alkmaar_executable_adoption_artifact",
+          "artifact_status": "accepted",
+          "checksum_match": true,
+          "exists": true,
+          "expected_sha256": "5504d71bda5c388254013690c64407763bb37179a5cd82b6aa1199f216d933ad",
+          "kind": "adoption",
+          "path": "data/metadata/ev_adoption/e2_s6_a014_alkmaar_executable_adoption_artifact.json",
+          "sha256": "5504d71bda5c388254013690c64407763bb37179a5cd82b6aa1199f216d933ad"
+        },
+        {
+          "artifact_id": "flex001_scaffold_protocol",
+          "artifact_status": "accepted",
+          "checksum_match": true,
+          "exists": true,
+          "expected_sha256": "7b07ffb68d8e153593c47cd611f653a2208c37c7836275566e6d783a87a583cb",
+          "kind": "flexibility",
+          "path": "src/flex_aggregator.py",
+          "sha256": "7b07ffb68d8e153593c47cd611f653a2208c37c7836275566e6d783a87a583cb"
+        }
+      ],
+      "source_artifacts_ready": true
+    }
+  },
+  "runtime": {
+    "packages": {
+      "lightsim2grid": "0.13.1",
+      "numpy": "2.3.5",
+      "pandapower": "3.5.3",
+      "simbench": "1.6.2"
+    },
+    "platform": "Windows-11-10.0.26200-SP0",
+    "python": "3.12.7"
+  },
+  "schema_version": "e3_s2_accepted_artifact_blocker_preflight_manifest_v1",
+  "scope": "metadata_preflight_only_no_arrays_no_ic2_execution_no_events_no_probability_no_capacity_screen",
+  "task_id": "E3.S2"
+}

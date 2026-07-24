@@ -1,0 +1,63 @@
+{
+  "data_id": "D-014",
+  "download_performed": false,
+  "executable_gate": {
+    "blocking_register_ids": [
+      "D014-PV-CAPACITY-APPROVAL-TEMPLATE",
+      "A-016",
+      "PV-ORIENT-001",
+      "PV-PARAM-001",
+      "future_node_allocation_rule",
+      "future_final_paired_acceptance"
+    ],
+    "guard_message": "Executable PV preflight is blocked by unresolved D-014/PV-PARAM/PV-ORIENT/A-016/allocation/paired-weather gates.",
+    "preflight_ready_for_executable_pv_generation": false,
+    "result_if_invoked": "abort_with_blocker_manifest"
+  },
+  "input_blocker_manifest": {
+    "metadata_path": "data/metadata/weather_pv/d014_pv_executable_readiness_blockers.json",
+    "metadata_sha256": "9bf7ed48cf266e3292d5bafc179becb0326160329056c9845d5ee9f7e9bc5844",
+    "metadata_size_bytes": 4188,
+    "packet_id": "D014-PV-EXECUTABLE-READINESS-BLOCKERS",
+    "status": "proposed_fail_closed_executable_pv_readiness_blockers"
+  },
+  "non_claims": [
+    "No executable PV preflight passes in this packet.",
+    "No final PV capacity value, growth factor, orientation/tilt distribution, allocation, or conversion formula is approved.",
+    "No PV generation, net-load, event detection, P(E), threshold analysis, capacity screen, manuscript result, or final PV output is produced.",
+    "No roof, building, 3DBAG, or PV-map geometry source is retrieved or used for the first experiment."
+  ],
+  "packet_id": "D014-PV-EXECUTABLE-PREFLIGHT-GUARD",
+  "preflight_checks": {
+    "all_required_blockers_present": true,
+    "component_source_member_artifact_available": true,
+    "executable_pv_generation_authorized": false,
+    "metadata_checksum_recorded": true,
+    "required_blocking_register_ids": [
+      "D014-PV-CAPACITY-APPROVAL-TEMPLATE",
+      "A-016",
+      "PV-ORIENT-001",
+      "PV-PARAM-001",
+      "future_node_allocation_rule",
+      "future_final_paired_acceptance"
+    ]
+  },
+  "raw_data_committed": false,
+  "status": "proposed_fail_closed_preflight_no_generation",
+  "token_policy": {
+    "allowlisted_non_executable_metadata_tokens": [
+      "proposed",
+      "unsigned"
+    ],
+    "policy_result": "blocked_metadata_only_no_executable_output",
+    "unsafe_tokens_for_executable_outputs": [
+      "TODO",
+      "TBD",
+      "placeholder",
+      "synthetic",
+      "proposed",
+      "unsigned",
+      "not-approved"
+    ]
+  }
+}
