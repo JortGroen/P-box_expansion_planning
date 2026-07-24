@@ -1,0 +1,73 @@
+{
+  "accepted_for_component_output_handoff": false,
+  "blocker_count": 34,
+  "blocker_ids": [
+    "stale_or_placeholder_approval:value_column",
+    "stale_or_placeholder_approval:denominator",
+    "stale_or_placeholder_approval:unit_conversion",
+    "stale_or_placeholder_approval:sfh_mfh_split",
+    "stale_or_placeholder_approval:adoption_electrification",
+    "stale_or_placeholder_approval:scenario_source_consistency",
+    "stale_or_placeholder_approval:d004_paired_weather_acceptance",
+    "stale_or_placeholder_approval:cold_spell_tolerances",
+    "profile_artifact_sha256_missing_or_invalid",
+    "paired_weather_identity_mismatch:shared_weather_driver_id",
+    "paired_weather_identity_mismatch:member_id",
+    "paired_weather_identity_mismatch:source",
+    "paired_weather_identity_mismatch:content_sha256",
+    "component_traceability_annual_heat_demand_not_numeric",
+    "source_artifacts_missing_or_not_mapping",
+    "unsafe_template_token:profile_artifact.path",
+    "unsafe_template_token:profile_artifact.sha256",
+    "unsafe_template_token:weather_identity.content_sha256",
+    "unsafe_template_token:weather_identity.member_id",
+    "unsafe_template_token:weather_identity.shared_weather_driver_id",
+    "unsafe_template_token:weather_identity.source",
+    "unsafe_template_token:paired_pv_weather_identity.content_sha256",
+    "unsafe_template_token:paired_pv_weather_identity.member_id",
+    "unsafe_template_token:paired_pv_weather_identity.shared_weather_driver_id",
+    "unsafe_template_token:paired_pv_weather_identity.source",
+    "unsafe_template_token:component_traceability[0].annual_heat_demand_twh",
+    "unsafe_template_token:component_traceability[0].annual_scaling_approval_id",
+    "unsafe_template_token:component_traceability[1].annual_heat_demand_twh",
+    "unsafe_template_token:component_traceability[1].annual_scaling_approval_id",
+    "unsafe_template_token:component_traceability[2].annual_heat_demand_twh",
+    "unsafe_template_token:component_traceability[2].annual_scaling_approval_id",
+    "unsafe_template_token:component_traceability[3].annual_heat_demand_twh",
+    "unsafe_template_token:component_traceability[3].annual_scaling_approval_id",
+    "real_component_output_generation_blocked_by_scaffold"
+  ],
+  "code_identity": {
+    "git_head": "60af4d48ef3676eb6d0058e0104d653f597b9b5a",
+    "tracked_file_sha256": {
+      "data/get_hp_scaling.py": "5042302dc32b87f35e909825cf55d4dc9fc56d9b80558b065a0d9f5384493db9",
+      "src/hp_model.py": "bbacbe31e1f835fd146746989adf912c8eef3f58368333cc608f1df31753366c"
+    }
+  },
+  "component_output_generation_performed": false,
+  "component_output_manifest": null,
+  "created_utc": "2026-07-24T18:16:21Z",
+  "input_manifest": {
+    "kind": "template_packet_preflight_manifest_template",
+    "path": "data/metadata/hp_scaling/hp001_component_output_readiness_blocker_packet.json",
+    "preflight_status": "approved_for_ic1_component_output_consumption",
+    "sha256": "99166bda2d6024d6e08cc0498087ae0e2925d592c64c2c7b6b6c93f1ed532041",
+    "size_bytes": 5866
+  },
+  "intended_handoff_shape": null,
+  "non_claims": [
+    "No real HP component-output artifact is generated or approved.",
+    "No executable annual HP values are created.",
+    "No 2035 HP adoption/electrification/service fraction is approved.",
+    "No D-004 paired-weather or cold-spell final acceptance is signed or run.",
+    "No net-load, event, P(E), threshold, capacity-screen, manuscript, or probability analysis is run."
+  ],
+  "output_manifest_path": "data/metadata/hp_scaling/hp001_component_output_runner_readiness_blocker.json",
+  "packet_id": "E2-S3-HP001-COMPONENT-OUTPUT-RUNNER-READINESS",
+  "preflight_validator": "src.hp_model.require_hp001_component_output_readiness_manifest",
+  "real_component_output_generation_performed": false,
+  "request_id": "hp001_component_output_preflight_current_main",
+  "status": "blocked_fail_closed_no_component_output",
+  "synthetic_fixture_output_performed": false,
+  "validator": "data.get_hp_scaling.build_hp001_component_output_runner_manifest"
+}
