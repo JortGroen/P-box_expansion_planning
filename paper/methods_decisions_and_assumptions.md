@@ -455,6 +455,8 @@ paragraph must report the dense controllability sweep, tested regime, numerical
 tolerance, any counterexamples, and whether endpoint propagation or interior
 sampling is required.
 
+The E4.S1 dense-rho sweep scaffold remains synthetic-only before G3. Its serialized payload is versioned as `e4s1-synthetic-rho-sweep-v1` and carries an explicit pending-G3 status plus non-claims for real trajectories, real `P(E)`, capacity screening, vertex-shortcut authorization, and manuscript numbers. The validator rejects paper-facing relabeling and collapsed probability fields so the synthetic diagnostic cannot become a paper-facing result by serialization alone.
+
 The E4.S2 scaffold provides a deterministic interior alpha-cut sampling path
 for synthetic validation and possible activation if G3 rejects endpoint-only
 propagation. It reuses the same canonical sample identities for every rho
