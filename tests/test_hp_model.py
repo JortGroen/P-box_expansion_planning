@@ -23,22 +23,30 @@ from data.get_when2heat import (
 )
 from src.hp_model import (
     HP001_FINAL_READINESS_REQUIRED_APPROVAL_KEYS,
+    HP001_PROFILE_ARTIFACT_CONSUMPTION_APPROVED_STATUS,
     HP001LocalScalingConfig,
     HeatPumpProfile,
     HeatPumpComponentSeries,
+    ColdSpellAcceptanceTolerances,
     When2HeatComponent,
     When2HeatHourlyProfile,
     align_heat_pump_profile,
     build_executable_hp001_profile_from_when2heat_csv,
     build_heat_pump_profile_from_when2heat_csv,
     cold_week_sanity_check,
+    evaluate_hp001_cold_spell_acceptance,
     default_when2heat_components,
     downscale_hourly_to_15min,
+    hp001_component_output_readiness_blockers,
     hp001_components_from_local_scaling_config,
+    hp001_profile_artifact_consumption_manifest_from_profile,
+    hp001_profile_artifact_consumption_missing_approval_keys,
     hp001_final_readiness_missing_approval_keys,
     hp001_local_scaling_config_from_value_binding_record,
     hp001_residential_when2heat_components,
+    require_hp001_component_output_readiness_manifest,
     require_hp001_final_readiness_approvals,
+    require_hp001_profile_artifact_consumption_manifest,
     require_signed_hp001_local_scaling_config,
     load_when2heat_hourly_csv,
     require_signed_annual_scaling,
@@ -651,7 +659,16 @@ def test_hp001_value_binding_record_adapter_requires_all_approval_ids() -> None:
         "approval_state": {
             **packet["approval_state"],
             "approval_ids": {"value_column": "HP-SCALING-VALUE-COLUMN"},
+            "missing_approval_keys": [],
+            "executable_binding_allowed": True,
         },
+        "component_value_drafts_unsigned_before_2035_adoption": [
+            {
+                **component,
+                "annual_twh_status": "approved_for_executable_value_binding",
+            }
+            for component in packet["component_value_drafts_unsigned_before_2035_adoption"]
+        ],
     }
 
     with pytest.raises(ValueError, match="remaining choices"):
@@ -665,6 +682,8 @@ def test_hp001_value_binding_record_adapter_builds_signed_config_only() -> None:
         "status": "approved_for_executable_value_binding",
         "approval_state": {
             **packet["approval_state"],
+            "missing_approval_keys": [],
+            "executable_binding_allowed": True,
             "approval_ids": {
                 "value_column": "HP-SCALING-VALUE-COLUMN",
                 "denominator": "HP-SCALING-DENOMINATOR",
@@ -673,6 +692,13 @@ def test_hp001_value_binding_record_adapter_builds_signed_config_only() -> None:
                 "adoption_electrification": "HP-SCALING-ADOPTION",
             },
         },
+        "component_value_drafts_unsigned_before_2035_adoption": [
+            {
+                **component,
+                "annual_twh_status": "approved_for_executable_value_binding",
+            }
+            for component in packet["component_value_drafts_unsigned_before_2035_adoption"]
+        ],
     }
 
     config = hp001_local_scaling_config_from_value_binding_record(packet)
@@ -684,6 +710,58 @@ def test_hp001_value_binding_record_adapter_builds_signed_config_only() -> None:
     assert config.water_heat_twh_by_class == {"MFH": 0.038099269, "SFH": 0.059798509}
     assert config.provenance["value_binding_packet_id"] == "E2-S3-HP001-VALUE-BINDING-READINESS"
 
+
+def test_hp001_value_binding_record_requires_executable_flag_even_with_approvals() -> None:
+    packet = hp_scaling.build_hp001_value_binding_readiness_packet()
+    packet = {
+        **packet,
+        "status": "approved_for_executable_value_binding",
+        "approval_state": {
+            **packet["approval_state"],
+            "approval_ids": {
+                "value_column": "HP-SCALING-VALUE-COLUMN",
+                "denominator": "HP-SCALING-DENOMINATOR",
+                "unit_conversion": "HP-SCALING-CONVERSION",
+                "sfh_mfh_split": "HP-SCALING-SPLIT",
+                "adoption_electrification": "HP-SCALING-ADOPTION",
+            },
+            "missing_approval_keys": [],
+            "executable_binding_allowed": False,
+        },
+        "component_value_drafts_unsigned_before_2035_adoption": [
+            {
+                **component,
+                "annual_twh_status": "approved_for_executable_value_binding",
+            }
+            for component in packet["component_value_drafts_unsigned_before_2035_adoption"]
+        ],
+    }
+
+    with pytest.raises(ValueError, match="executable_binding_allowed"):
+        hp001_local_scaling_config_from_value_binding_record(packet)
+
+
+def test_hp001_value_binding_record_requires_component_approval_status() -> None:
+    packet = hp_scaling.build_hp001_value_binding_readiness_packet()
+    packet = {
+        **packet,
+        "status": "approved_for_executable_value_binding",
+        "approval_state": {
+            **packet["approval_state"],
+            "approval_ids": {
+                "value_column": "HP-SCALING-VALUE-COLUMN",
+                "denominator": "HP-SCALING-DENOMINATOR",
+                "unit_conversion": "HP-SCALING-CONVERSION",
+                "sfh_mfh_split": "HP-SCALING-SPLIT",
+                "adoption_electrification": "HP-SCALING-ADOPTION",
+            },
+            "missing_approval_keys": [],
+            "executable_binding_allowed": True,
+        },
+    }
+
+    with pytest.raises(ValueError, match="annual_twh_status"):
+        hp001_local_scaling_config_from_value_binding_record(packet)
 
 def test_default_components_require_explicit_scales() -> None:
     with pytest.raises(ValueError, match="explicit annual heat TWh scale"):
@@ -822,6 +900,100 @@ def test_cold_week_sanity_peak_coincides_with_cold_spell() -> None:
     assert sanity.max_load_outside_cold_week_kw == 1.0
 
 
+def _synthetic_acceptance_profile(*, member_id: str = "design-cold-week") -> HeatPumpProfile:
+    timestamps = _quarter_timestamps(14 * 96)
+    temperature = np.full(len(timestamps), 6.0)
+    cold_start = 3 * 96
+    cold_stop = 10 * 96
+    temperature[cold_start:cold_stop] = -5.0
+    temperature[2 * 96 : 3 * 96] = 0.0
+    electric = np.full(len(timestamps), 1.0)
+    electric[2 * 96 : 3 * 96] = 2.0
+    electric[cold_start:cold_stop] = 4.0
+    cop = np.full(len(timestamps), 3.0)
+    cop[2 * 96 : 3 * 96] = 2.6
+    cop[cold_start:cold_stop] = 2.0
+    return HeatPumpProfile(
+        shared_weather_driver_id="knmi_synthetic:design-cold-week",
+        weather_member_id=member_id,
+        weather_source="knmi_synthetic",
+        timestamps_utc=timestamps,
+        electric_kw=electric,
+        thermal_demand_kw=electric * cop,
+        cop=cop,
+        temperature_c=temperature,
+        source_columns=("synthetic_heat", "synthetic_cop"),
+        source_path=None,
+        downscaling_method="test_15min_native",
+        pv_weather_field_names=("ghi_w_per_m2",),
+        weather_content_sha256="0" * 64,
+        weather_provenance={"acceptance_evidence": "synthetic_unit_test_only"},
+    )
+
+
+def _synthetic_signed_tolerances() -> ColdSpellAcceptanceTolerances:
+    return ColdSpellAcceptanceTolerances(
+        tolerance_set_id="synthetic-cold-spell-fixture-v1",
+        approval_id="HP-COLD-SPELL-TOLERANCE-FIXTURE",
+        cold_window_days=(3, 7),
+        near_freezing_band_c=(-1.0, 1.0),
+        max_outside_to_inside_peak_ratio=1.0,
+        max_near_freezing_step_change_fraction_of_peak=0.50,
+        provenance={"scope": "synthetic unit test only"},
+    )
+
+
+def test_hp001_cold_spell_acceptance_refuses_unsigned_tolerances() -> None:
+    profile = _synthetic_acceptance_profile()
+    tolerances = ColdSpellAcceptanceTolerances(
+        tolerance_set_id="unsigned-template",
+        approval_id="",
+        cold_window_days=(3, 7),
+        near_freezing_band_c=(-1.0, 1.0),
+        max_outside_to_inside_peak_ratio=1.0,
+        max_near_freezing_step_change_fraction_of_peak=0.50,
+    )
+
+    with pytest.raises(ValueError, match="signed numerical tolerances"):
+        evaluate_hp001_cold_spell_acceptance(
+            profile,
+            pv_weather_identity_record=profile.weather_identity_record(),
+            tolerances=tolerances,
+        )
+
+
+def test_hp001_cold_spell_acceptance_refuses_mismatched_weather_identity() -> None:
+    profile = _synthetic_acceptance_profile()
+    pv_identity = dict(profile.weather_identity_record())
+    pv_identity["shared_weather_driver_id"] = "knmi_synthetic:different-member"
+
+    with pytest.raises(ValueError, match="weather realization mismatch"):
+        evaluate_hp001_cold_spell_acceptance(
+            profile,
+            pv_weather_identity_record=pv_identity,
+            tolerances=_synthetic_signed_tolerances(),
+        )
+
+
+def test_hp001_cold_spell_acceptance_records_cold_and_near_freezing_diagnostics() -> None:
+    profile = _synthetic_acceptance_profile()
+
+    result = evaluate_hp001_cold_spell_acceptance(
+        profile,
+        pv_weather_identity_record=profile.weather_identity_record(),
+        tolerances=_synthetic_signed_tolerances(),
+    )
+
+    assert result.accepted is True
+    assert result.checks["paired_weather_identity_equal"] is True
+    assert result.cold_window_diagnostics[0]["window_days"] == 3
+    assert result.cold_window_diagnostics[1]["window_days"] == 7
+    assert result.cold_window_diagnostics[1]["max_load_inside_kw"] == 4.0
+    assert result.near_freezing_diagnostics["band_c"] == (-1.0, 1.0)
+    assert result.near_freezing_diagnostics["n_timesteps"] == 96
+    assert result.near_freezing_diagnostics["mean_cop"] == pytest.approx(2.6)
+    assert "annual HP TWh values" in result.non_claims[1]
+
 def test_alignment_requires_shared_weather_driver_identity() -> None:
     hourly = When2HeatHourlyProfile(
         timestamps_utc=_hourly_timestamps(1),
@@ -925,3 +1097,234 @@ def test_hp001_executable_value_binding_template_stays_fail_closed() -> None:
             packet["unsigned_candidate_binding_record"]
         )
 
+
+def _signed_hp001_fixture_profile() -> HeatPumpProfile:
+    timestamps = tuple(
+        datetime(2035, 1, 1, tzinfo=UTC) + timedelta(minutes=15 * index)
+        for index in range(4)
+    )
+    components = []
+    for building_class, end_use, heat_column, cop_column, annual_twh in (
+        ("SFH", "space", "NL_heat_profile_space_SFH", "NL_COP_ASHP_radiator", 0.1),
+        ("MFH", "space", "NL_heat_profile_space_MFH", "NL_COP_ASHP_radiator", 0.2),
+        ("SFH", "water", "NL_heat_profile_water_SFH", "NL_COP_ASHP_water", 0.03),
+        ("MFH", "water", "NL_heat_profile_water_MFH", "NL_COP_ASHP_water", 0.04),
+    ):
+        thermal_kw = np.full(4, annual_twh * 100.0)
+        cop = np.full(4, 2.5 if end_use == "space" else 2.0)
+        components.append(
+            HeatPumpComponentSeries(
+                heat_column=heat_column,
+                cop_column=cop_column,
+                annual_heat_demand_twh=annual_twh,
+                end_use=end_use,
+                building_class=building_class,
+                thermal_demand_kw=thermal_kw,
+                electric_kw=thermal_kw / cop,
+                cop=cop,
+                interval_hours=0.25,
+                provenance={
+                    "annual_scaling_status": "signed",
+                    "annual_scaling_approval_id": "HP-SCALING-FIXTURE",
+                },
+            )
+        )
+    electric_kw = sum(component.electric_kw for component in components)
+    thermal_kw = sum(component.thermal_demand_kw for component in components)
+    return HeatPumpProfile(
+        shared_weather_driver_id="d004_alkmaar_berkhout_2014_2023_v1:2035-fixture",
+        weather_member_id="d004_fixture_2035",
+        weather_source="D-004 fixture",
+        timestamps_utc=timestamps,
+        electric_kw=electric_kw,
+        thermal_demand_kw=thermal_kw,
+        cop=thermal_kw / electric_kw,
+        temperature_c=np.linspace(-2.0, 1.0, 4),
+        source_columns=(
+            "NL_heat_profile_space_SFH",
+            "NL_COP_ASHP_radiator",
+            "NL_heat_profile_space_MFH",
+            "NL_COP_ASHP_radiator",
+            "NL_heat_profile_water_SFH",
+            "NL_COP_ASHP_water",
+            "NL_heat_profile_water_MFH",
+            "NL_COP_ASHP_water",
+        ),
+        source_path="data/raw/when2heat/when2heat.csv",
+        downscaling_method="hourly_zero_order_hold_to_15min_energy_preserving",
+        pv_weather_field_names=("ghi_w_per_m2",),
+        component_series=tuple(components),
+        weather_content_sha256="0" * 64,
+        weather_provenance={"data_id": "D-004", "acceptance_status": "fixture_only"},
+    )
+
+
+def _signed_final_hp001_approvals() -> dict[str, str]:
+    return {
+        "value_column": "HP-VALUE-COLUMN-FIXTURE",
+        "denominator": "HP-DENOMINATOR-FIXTURE",
+        "unit_conversion": "HP-CONVERSION-FIXTURE",
+        "sfh_mfh_split": "HP-SPLIT-FIXTURE",
+        "adoption_electrification": "HP-ADOPTION-FIXTURE",
+        "scenario_source_consistency": "A016-FIXTURE",
+        "d004_paired_weather_acceptance": "D004-PAIRED-FIXTURE",
+        "cold_spell_tolerances": "HP-COLD-SPELL-FIXTURE",
+    }
+
+
+def test_hp001_profile_consumption_manifest_fails_closed_without_final_approvals() -> None:
+    profile = _signed_hp001_fixture_profile()
+    manifest = hp001_profile_artifact_consumption_manifest_from_profile(
+        profile,
+        profile_artifact_path="data/processed/hp_profiles/hp001_fixture.npz",
+        profile_artifact_sha256="1" * 64,
+        approval_ids={"value_column": "HP-VALUE-COLUMN-FIXTURE"},
+    )
+
+    assert hp001_profile_artifact_consumption_missing_approval_keys(manifest) == (
+        "denominator",
+        "unit_conversion",
+        "sfh_mfh_split",
+        "adoption_electrification",
+        "scenario_source_consistency",
+        "d004_paired_weather_acceptance",
+        "cold_spell_tolerances",
+    )
+    with pytest.raises(ValueError, match="not approved for integrated consumption"):
+        require_hp001_profile_artifact_consumption_manifest(manifest)
+
+
+def test_hp001_profile_consumption_manifest_validates_signed_fixture_manifest() -> None:
+    profile = _signed_hp001_fixture_profile()
+    manifest = hp001_profile_artifact_consumption_manifest_from_profile(
+        profile,
+        profile_artifact_path="data/processed/hp_profiles/hp001_fixture.npz",
+        profile_artifact_sha256="1" * 64,
+        approval_ids=_signed_final_hp001_approvals(),
+        status=HP001_PROFILE_ARTIFACT_CONSUMPTION_APPROVED_STATUS,
+    )
+
+    require_hp001_profile_artifact_consumption_manifest(manifest)
+    assert manifest["missing_approval_keys"] == ()
+    assert {item["end_use"] for item in manifest["component_traceability"]} == {"space", "water"}
+    assert manifest["weather_identity"]["shared_weather_driver_id"].startswith("d004_")
+
+
+def test_hp001_profile_consumption_manifest_rejects_missing_component_trace() -> None:
+    profile = _signed_hp001_fixture_profile()
+    manifest = hp001_profile_artifact_consumption_manifest_from_profile(
+        profile,
+        profile_artifact_path="data/processed/hp_profiles/hp001_fixture.npz",
+        profile_artifact_sha256="1" * 64,
+        approval_ids=_signed_final_hp001_approvals(),
+        status=HP001_PROFILE_ARTIFACT_CONSUMPTION_APPROVED_STATUS,
+    )
+    manifest["component_traceability"] = manifest["component_traceability"][:-1]
+
+    with pytest.raises(ValueError, match="exactly the HP-001"):
+        require_hp001_profile_artifact_consumption_manifest(manifest)
+
+def _signed_hp001_component_output_manifest() -> dict[str, object]:
+    approval_ids = {key: f"SIGNED-{key}" for key in HP001_FINAL_READINESS_REQUIRED_APPROVAL_KEYS}
+    weather_identity = {
+        "shared_weather_driver_id": "d004_alkmaar_berkhout_2014_2023_v1:2020",
+        "member_id": "d004_alkmaar_berkhout_2020_v1",
+        "source": "D-004 KNMI station 249 Berkhout",
+        "content_sha256": "a" * 64,
+        "n_timesteps": 35040,
+        "cadence_seconds": 900,
+    }
+    return {
+        "status": "approved_for_ic1_component_output_consumption",
+        "approval_ids": approval_ids,
+        "profile_artifact": {
+            "path": "data/processed/hp_profiles/hp001_component_output_fixture.npz",
+            "sha256": "b" * 64,
+            "n_timesteps": 35040,
+            "cadence_seconds": 900,
+        },
+        "weather_identity": dict(weather_identity),
+        "paired_pv_weather_identity": dict(weather_identity),
+        "component_traceability": [
+            {
+                "building_class": "SFH",
+                "end_use": "space",
+                "heat_column": "NL_heat_profile_space_SFH",
+                "cop_column": "NL_COP_ASHP_radiator",
+                "annual_heat_demand_twh": 0.1,
+                "provenance": {
+                    "annual_scaling_status": "signed",
+                    "annual_scaling_approval_id": "HP-SCALING-SIGNED",
+                },
+            },
+            {
+                "building_class": "MFH",
+                "end_use": "space",
+                "heat_column": "NL_heat_profile_space_MFH",
+                "cop_column": "NL_COP_ASHP_radiator",
+                "annual_heat_demand_twh": 0.2,
+                "provenance": {
+                    "annual_scaling_status": "signed",
+                    "annual_scaling_approval_id": "HP-SCALING-SIGNED",
+                },
+            },
+            {
+                "building_class": "SFH",
+                "end_use": "water",
+                "heat_column": "NL_heat_profile_water_SFH",
+                "cop_column": "NL_COP_ASHP_water",
+                "annual_heat_demand_twh": 0.03,
+                "provenance": {
+                    "annual_scaling_status": "signed",
+                    "annual_scaling_approval_id": "HP-SCALING-SIGNED",
+                },
+            },
+            {
+                "building_class": "MFH",
+                "end_use": "water",
+                "heat_column": "NL_heat_profile_water_MFH",
+                "cop_column": "NL_COP_ASHP_water",
+                "annual_heat_demand_twh": 0.04,
+                "provenance": {
+                    "annual_scaling_status": "signed",
+                    "annual_scaling_approval_id": "HP-SCALING-SIGNED",
+                },
+            },
+        ],
+        "unresolved_blocker_ids": [],
+    }
+
+
+def test_hp001_component_output_readiness_packet_stays_blocked() -> None:
+    packet = hp_scaling.build_hp001_component_output_readiness_blocker_packet()
+    template = packet["preflight_manifest_template"]
+
+    assert packet["status"] == "proposed_blocker_packet_not_executable"
+    assert packet["future_required_manifest_status"] == "approved_for_ic1_component_output_consumption"
+    assert packet["required_approval_keys_before_ic1_consumption"] == list(
+        HP001_FINAL_READINESS_REQUIRED_APPROVAL_KEYS
+    )
+    assert "No HP component-output artifact is created or approved." in packet["non_claims"]
+    with pytest.raises(ValueError, match="not ready for IC-1 consumption"):
+        require_hp001_component_output_readiness_manifest(template)
+
+
+def test_hp001_component_output_readiness_accepts_complete_signed_fixture() -> None:
+    manifest = _signed_hp001_component_output_manifest()
+
+    assert hp001_component_output_readiness_blockers(manifest) == ()
+    require_hp001_component_output_readiness_manifest(manifest)
+
+
+def test_hp001_component_output_readiness_rejects_weather_mismatch() -> None:
+    manifest = _signed_hp001_component_output_manifest()
+    manifest["paired_pv_weather_identity"] = {
+        **manifest["paired_pv_weather_identity"],
+        "shared_weather_driver_id": "d004_alkmaar_berkhout_2014_2023_v1:2021",
+    }
+
+    blockers = hp001_component_output_readiness_blockers(manifest)
+
+    assert "paired_weather_identity_mismatch:shared_weather_driver_id" in blockers
+    with pytest.raises(ValueError, match="paired_weather_identity_mismatch"):
+        require_hp001_component_output_readiness_manifest(manifest)

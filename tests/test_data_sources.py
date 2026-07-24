@@ -1060,6 +1060,20 @@ def test_hp001_executable_value_binding_packet_is_approval_template_only(tmp_pat
         "d004_paired_weather_acceptance",
         "cold_spell_tolerances",
     ]
+    handoff = packet["future_executable_handoff_if_pi_signs"]
+    assert handoff["required_approval_state"] == {
+        "executable_binding_allowed": True,
+        "missing_approval_keys": [],
+        "required_before_executable_binding": [
+            "value_column",
+            "denominator",
+            "unit_conversion",
+            "sfh_mfh_split",
+            "adoption_electrification",
+        ],
+        "approved_indicator_mapping_ids_must_include": ["D013-PBL-MAPPING", "A-015"],
+        "component_annual_twh_status": "approved_for_executable_value_binding",
+    }
     assert "No annual HP TWh values are executable." in packet["non_claims"]
 
     path = hp_scaling.write_hp001_executable_value_binding_decision_packet(tmp_path)
@@ -1112,6 +1126,26 @@ def test_d014_cbs_odata_url_builder_is_official_and_encoded() -> None:
     with pytest.raises(ValueError, match="entity"):
         pv_capacity.build_cbs_odata_url("TypedDataSet?$filter=bad")
 
+def test_hp001_cold_spell_acceptance_decision_packet_is_proposal_only(tmp_path: Path) -> None:
+    packet = hp_scaling.build_hp001_cold_spell_acceptance_decision_packet()
+
+    assert packet["decision_packet_id"] == "E2-S3-HP001-COLD-SPELL-ACCEPTANCE-READINESS"
+    assert packet["design_id"] == "E2-S3-COLD-SPELL-ACCEPTANCE-DESIGN"
+    assert packet["status"].endswith("no real paired acceptance run")
+    assert [item["gate"] for item in packet["gate_separation"]] == [
+        "source/member identity",
+        "paired HP/PV weather equality",
+        "cold-spell numerical tolerances",
+    ]
+    assert packet["fail_closed_runner"]["runner"] == "src.hp_model.evaluate_hp001_cold_spell_acceptance"
+    assert packet["fail_closed_runner"]["identity_check"] == "src.weather_model.assert_same_weather_realization"
+    assert any("near-freezing" in item for item in packet["diagnostics_to_report_before_final_acceptance"]["near_freezing_defrost_risk"])
+    assert any(item["option"] == "B" for item in packet["pi_approval_options"])
+    assert "No D-004 paired-weather or cold-spell acceptance is signed or run." in packet["non_claims"]
+
+    path = hp_scaling.write_hp001_cold_spell_acceptance_decision_packet(tmp_path)
+    written = json.loads(path.read_text(encoding="utf-8"))
+    assert written["decision_packet_id"] == packet["decision_packet_id"]
 
 def test_d014_cbs_anchor_query_urls_are_narrow_and_official() -> None:
     urls = pv_capacity.build_d014_cbs_anchor_query_urls()
@@ -1375,6 +1409,45 @@ def test_d014_first_experiment_approval_packet_is_metadata_only_and_fail_closed(
     assert path.name == "d014_pv_first_experiment_approval_packet.json"
     assert payload["status"].startswith("proposed_first_experiment_pv_approval_packet")
 
+
+def test_d014_first_experiment_value_decision_packet_narrows_options_without_values(tmp_path: Path) -> None:
+    packet = pv_capacity.build_d014_pv_first_experiment_value_decision_packet()
+
+    assert packet["packet_id"] == "D014-PV-FIRST-EXPERIMENT-VALUE-DECISION-PACKET"
+    assert packet["data_id"] == "D-014"
+    assert packet["download_performed"] is False
+    assert packet["raw_data_committed"] is False
+    assert packet["input_metadata"]["first_experiment_approval_packet"]["packet_id"] == "D014-PV-FIRST-EXPERIMENT-APPROVAL-PACKET"
+    assert packet["input_metadata"]["capacity_value_choice_packet"]["packet_id"] == "D014-PV-CAPACITY-VALUE-CHOICE-PACKET"
+    assert packet["input_metadata"]["orientation_tilt_value_choice_packet"]["packet_id"] == "D014-PV-ORIENTATION-TILT-VALUE-CHOICE-PACKET"
+    assert packet["input_metadata"]["pv_param_conversion_source_choice_packet"]["packet_id"] == "D014-PV-PARAM-CONVERSION-SOURCE-CHOICE-PACKET"
+    assert packet["scope_guardrails"]["roof_building_location_specific_geometry_allowed"] is False
+    assert packet["scope_guardrails"]["three_dbag_pv_map_or_per_roof_workflow_allowed"] is False
+    assert "PVGIS remains qualitative" in packet["scope_guardrails"]["weather_realization_boundary"]
+    assert set(packet["decision_options_for_pi"]) == {
+        "statistical_orientation_tilt_distribution",
+        "irradiance_to_power_conversion",
+        "performance_loss_treatment",
+        "temperature_and_clipping_treatment",
+        "capacity_convention",
+        "node_allocation",
+        "scenario_consistency",
+    }
+    assert packet["recommended_first_experiment_route_for_review"]["route_status"] == (
+        "recommendation_only_unsigned_not_executable"
+    )
+    assert packet["executable_gate"]["executable_pv_generation_authorized"] is False
+    assert packet["executable_gate"]["result_if_invoked"] == "abort_until_value_decisions_signed"
+    assert "PV-PARAM-001_or_signed_amendment" in packet["executable_gate"]["blocking_register_ids"]
+    assert "signed_node_allocation_rule_and_normalization_denominator" in packet["pi_approval_keys_before_executable_use"]
+    assert any("No PV capacity value" in item and "orientation/tilt" in item for item in packet["non_claims"])
+    assert any("No building, roof" in item and "PV-map" in item for item in packet["non_claims"])
+
+    path = pv_capacity.write_d014_pv_first_experiment_value_decision_packet(tmp_path)
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    assert path.name == "d014_pv_first_experiment_value_decision_packet.json"
+    assert payload["status"].startswith("proposed_first_experiment_pv_value_decision_support")
+
 def test_d014_orientation_tilt_value_choice_packet_lists_unsigned_candidate_values(tmp_path: Path) -> None:
     packet = pv_capacity.build_d014_pv_orientation_tilt_value_choice_packet()
 
@@ -1401,6 +1474,33 @@ def test_d014_orientation_tilt_value_choice_packet_lists_unsigned_candidate_valu
     payload = json.loads(path.read_text(encoding="utf-8"))
     assert path.name == "d014_pv_orientation_tilt_value_choice_packet.json"
     assert payload["status"].startswith("proposed_value_choice_packet")
+
+
+def test_hp001_profile_artifact_consumption_template_is_fail_closed(tmp_path: Path) -> None:
+    packet = hp_scaling.build_hp001_profile_artifact_consumption_manifest_template()
+
+    assert packet["manifest_id"] == "E2-S3-HP001-PROFILE-ARTIFACT-CONSUMPTION-MANIFEST"
+    assert packet["status"] == "proposed_template_not_approved_for_integrated_consumption"
+    assert packet["future_required_status"] == "approved_for_integrated_hp_profile_consumption"
+    assert packet["profile_artifact"]["cadence_seconds"] == 900
+    assert packet["weather_identity"]["identity_rule"].startswith("Must match the PV profile")
+    assert {component["end_use"] for component in packet["component_traceability"]} == {"space", "water"}
+    assert set(packet["missing_approval_keys"]) == {
+        "value_column",
+        "denominator",
+        "unit_conversion",
+        "sfh_mfh_split",
+        "adoption_electrification",
+        "scenario_source_consistency",
+        "d004_paired_weather_acceptance",
+        "cold_spell_tolerances",
+    }
+    assert "No annual HP TWh values are executable." in packet["non_claims"]
+
+    path = hp_scaling.write_hp001_profile_artifact_consumption_manifest_template(tmp_path)
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    assert path.name == "hp001_profile_artifact_consumption_manifest_template.json"
+    assert payload["validator"] == "src.hp_model.require_hp001_profile_artifact_consumption_manifest"
 
 
 def test_d014_capacity_approval_template_is_value_free_and_fail_closed() -> None:
@@ -1435,6 +1535,25 @@ def test_committed_d014_capacity_approval_template_records_unsigned_contract() -
     assert payload["recommended_pi_path"]["not_approved_by_this_template"] is True
     assert payload["executable_gate"]["requires_pi_signed_decision"] is True
     assert "PV-PARAM-001_or_amended_conversion_decision" in payload["executable_gate"]["blocking_approval_keys"]
+
+
+def test_hp001_component_output_readiness_blocker_packet_is_not_executable(tmp_path: Path) -> None:
+    packet = hp_scaling.build_hp001_component_output_readiness_blocker_packet()
+
+    assert packet["packet_id"] == "E2-S3-HP001-COMPONENT-OUTPUT-READINESS-BLOCKER"
+    assert packet["status"] == "proposed_blocker_packet_not_executable"
+    assert packet["future_required_manifest_status"] == "approved_for_ic1_component_output_consumption"
+    assert "value_column" in packet["required_approval_keys_before_ic1_consumption"]
+    assert "d004_paired_weather_acceptance" in packet["required_approval_keys_before_ic1_consumption"]
+    assert packet["preflight_manifest_template"]["unresolved_blocker_ids"] == []
+    assert {item["end_use"] for item in packet["preflight_manifest_template"]["component_traceability"]} == {"space", "water"}
+    assert any("no real HP component-output artifact" in item for item in packet["current_blockers"])
+    assert "No executable annual HP values are created." in packet["non_claims"]
+
+    path = hp_scaling.write_hp001_component_output_readiness_blocker_packet(tmp_path)
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    assert path.name == "hp001_component_output_readiness_blocker_packet.json"
+    assert payload["validator"] == "src.hp_model.require_hp001_component_output_readiness_manifest"
 
 
 def test_d014_pv_executable_readiness_blockers_keep_generation_blocked() -> None:
