@@ -2185,6 +2185,66 @@ def test_real_artifact_assembly_preflight_fails_closed_on_checksum_mismatch(tmp_
     assert dossier["no_event_counts"] is True
 
 
+def test_real_artifact_assembly_preflight_rejects_absolute_manifest_path(tmp_path) -> None:
+    artifacts = _executable_input_artifacts()
+    absolute_path = tmp_path / "data" / "metadata" / "synthetic" / "ev.json"
+    artifacts[1] = ExecutableInputArtifact(
+        artifact_id=artifacts[1].artifact_id,
+        kind=artifacts[1].kind,
+        artifact_status=artifacts[1].artifact_status,
+        version_id=artifacts[1].version_id,
+        source_id=artifacts[1].source_id,
+        member_id=artifacts[1].member_id,
+        calendar_id=artifacts[1].calendar_id,
+        node_ids=artifacts[1].node_ids,
+        signed_register_ids=artifacts[1].signed_register_ids,
+        blocking_register_ids=artifacts[1].blocking_register_ids,
+        timestep_seconds=artifacts[1].timestep_seconds,
+        shared_weather_driver_id=artifacts[1].shared_weather_driver_id,
+        manifest_path=str(absolute_path),
+        provenance=artifacts[1].provenance,
+    )
+
+    with pytest.raises(ValueError, match="repository-relative"):
+        build_real_artifact_assembly_preflight(
+            _screen_preflight_config(),
+            artifacts,
+            _trajectory_prerun_config(),
+            capacity_provenance=_synthetic_capacity_provenance(),
+            repo_root=tmp_path,
+            downstream_blocker_ids=(),
+        )
+
+
+def test_real_artifact_assembly_preflight_rejects_manifest_parent_traversal(tmp_path) -> None:
+    artifacts = _executable_input_artifacts()
+    artifacts[1] = ExecutableInputArtifact(
+        artifact_id=artifacts[1].artifact_id,
+        kind=artifacts[1].kind,
+        artifact_status=artifacts[1].artifact_status,
+        version_id=artifacts[1].version_id,
+        source_id=artifacts[1].source_id,
+        member_id=artifacts[1].member_id,
+        calendar_id=artifacts[1].calendar_id,
+        node_ids=artifacts[1].node_ids,
+        signed_register_ids=artifacts[1].signed_register_ids,
+        blocking_register_ids=artifacts[1].blocking_register_ids,
+        timestep_seconds=artifacts[1].timestep_seconds,
+        shared_weather_driver_id=artifacts[1].shared_weather_driver_id,
+        manifest_path="../outside.json",
+        provenance=artifacts[1].provenance,
+    )
+
+    with pytest.raises(ValueError, match="within repo_root"):
+        build_real_artifact_assembly_preflight(
+            _screen_preflight_config(),
+            artifacts,
+            _trajectory_prerun_config(),
+            capacity_provenance=_synthetic_capacity_provenance(),
+            repo_root=tmp_path,
+            downstream_blocker_ids=(),
+        )
+
 def test_real_artifact_assembly_preflight_reports_current_project_blockers_without_arrays(tmp_path) -> None:
     artifacts = _executable_input_artifacts()
     artifacts[0] = _executable_input_artifact(

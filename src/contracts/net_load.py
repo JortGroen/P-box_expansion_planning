@@ -1782,7 +1782,7 @@ def build_real_artifact_assembly_preflight(
         downstream_blocker_ids=downstream_blocker_ids,
         intended_use=intended_use,
     )
-    root = Path(repo_root) if repo_root is not None else Path(__file__).resolve().parents[2]
+    root = (Path(repo_root) if repo_root is not None else Path(__file__).resolve().parents[2]).resolve()
     expected_checksums = dict(artifact_sha256_by_path or {})
     manifest_paths = {
         artifact.manifest_path
@@ -1796,8 +1796,7 @@ def build_real_artifact_assembly_preflight(
         if artifact.manifest_path is None:
             continue
         relative_path = _require_nonempty(artifact.manifest_path, name="artifact manifest_path")
-        path = Path(relative_path)
-        full_path = path if path.is_absolute() else root / path
+        full_path = _resolve_repo_metadata_path(root, relative_path)
         exists = full_path.is_file()
         record: dict[str, object] = {
             "kind": artifact.kind,
@@ -2150,6 +2149,18 @@ def validate_net_load_result(result: NetLoadResult) -> None:
 _VALID_COMPONENT_KINDS = frozenset(ComponentKind.__args__)
 _VALID_EXECUTABLE_INPUT_STATUSES = frozenset(ExecutableInputArtifactStatus.__args__)
 
+
+def _resolve_repo_metadata_path(repo_root: Path, relative_path: str) -> Path:
+    path = Path(relative_path)
+    if path.is_absolute():
+        raise ValueError("artifact manifest_path must be repository-relative")
+    resolved_root = repo_root.resolve()
+    resolved = (resolved_root / path).resolve()
+    try:
+        resolved.relative_to(resolved_root)
+    except ValueError as exc:
+        raise ValueError("artifact manifest_path must stay within repo_root") from exc
+    return resolved
 
 def _sha256_file(path: Path) -> str:
     digest = hashlib.sha256()

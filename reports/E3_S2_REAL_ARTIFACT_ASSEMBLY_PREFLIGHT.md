@@ -6,7 +6,7 @@ Status: scaffold/preflight only. This branch adds a path/checksum-aware dossier 
 
 ## What Changed
 
-`build_real_artifact_assembly_preflight(...)` composes the merged executable-input dry run with the loading-trajectory bridge metadata. It validates metadata packet paths, optional SHA-256 expectations, downstream blocker IDs, capacity provenance presence, and the existing accepted/blocked component states. Synthetic tests show a tiny accepted fixture can pass this dossier, while checksum mismatches and current-project-style unsigned baseline/HP/PV/adoption blockers fail closed.
+`build_real_artifact_assembly_preflight(...)` composes the merged executable-input dry run with the loading-trajectory bridge metadata. It validates metadata packet paths, optional SHA-256 expectations, downstream blocker IDs, capacity provenance presence, and the existing accepted/blocked component states. Manifest paths must be repository-relative and resolve inside the repository root before any source-artifact existence or checksum validation runs. Synthetic tests show a tiny accepted fixture can pass this dossier, while checksum mismatches and current-project-style unsigned baseline/HP/PV/adoption blockers fail closed.
 
 ## Boundary
 
