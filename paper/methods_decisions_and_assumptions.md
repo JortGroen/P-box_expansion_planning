@@ -77,7 +77,7 @@ the corresponding register row.
 | EV-007A/A-014/D-010 | Alkmaar municipality is the local proxy for the synthetic SimBench case, and local counts are allocated across grid loads by static `p_mw`. | EV local totals and A-014 allocation are approved; this remains an illustrative-case transfer assumption. |
 | A-013 | The candidate `epsilon_grid = 5%` with `2%`/`10%` sensitivities is not empirical or expert-signed. | Proposed only; E9.S5a evidence review is required before numerical use as a scientific claim. |
 | E5.S4 | The math-core trust certificate requires both the analytic Gaussian cross-check and a published hybrid-propagation reproduction. | The analytic synthetic fixture now records tolerance, alpha-row nestedness, separate lower/upper CI containment, and no-defuzzification guards in `e5s4-math-core-trust-certificate-v1`; the published Baudrit-style reproduction remains fail-closed until verified source/example provenance is approved and reproduced, and G3 remains pending for paper-facing vertex shortcut claims. |
-| E4-E5-RUNNER-READINESS | The pre-real-data runner boundary for E4.S1/E5.S3 remains synthetic and fail-closed. | `e4-e5-synthetic-runner-readiness-v1` combines synthetic output-error endpoint counts and optional synthetic rho-sweep diagnostics while preserving alpha-indexed lower/upper reporting, CRN sample identity, unwidened direction gating, endpoint-before-event semantics, and no defuzzification; `e4-e5-real-runner-blocker-v1` keeps real use blocked on signed G2 endpoints, A-013 value/form, capacity provenance/convention, real LoadingTrajectoryResult/output-error endpoint manifests, A-016 consistency, and G3 where vertex shortcut is claimed. |
+| E4-E5-RUNNER-READINESS | The pre-real-data runner boundary for E4.S1/E5.S3 remains synthetic and fail-closed. | `e4-e5-synthetic-runner-readiness-v1` combines synthetic output-error endpoint counts and optional synthetic rho-sweep diagnostics while preserving alpha-indexed lower/upper reporting, CRN sample identity, unwidened direction gating, endpoint-before-event semantics, and no defuzzification; `e4-e5-real-runner-blocker-v1` keeps real use blocked on signed G2 endpoints, A-013 value/form, capacity provenance/convention, real LoadingTrajectoryResult/output-error endpoint manifests, A-016 consistency, and G3 where vertex shortcut is claimed. The companion `e4-e5-real-input-readiness-v1` preflight adds machine-readable blocker keys and rejects stale proposed approval IDs, scalarized probability outputs, mismatched output-error metadata, and missing alpha-indexed endpoint records before any future real runner/report surface can be marked ready. |
 ## Decisions
 
 <!-- methods-id: G0 -->
@@ -748,12 +748,21 @@ run design, and candidate output files are verified in the consuming worktree.
 The candidate-output checksum check is automated as a checkpointed script step:
 it hashes ignored EV component-output NPZ bytes only when those files are
 present, writes a resumable verification artifact after each declared scenario,
-and otherwise records exact missing paths as a fail-closed blocker. G0-A3 has
+and otherwise records exact missing paths as a fail-closed blocker. The
+candidate component-output recovery protocol is likewise candidate-only: it
+restores only manifest-declared processed-profile files from an explicit local
+artifact root, hashes each source file before copying, and skips an existing
+target file only when its SHA-256 matches the committed checksum preflight.
+Its checkpoint records config identity, expected component-output checksums,
+restored source-member batch metadata, and resume instructions, but deliberately
+does not commit an absolute artifact-root path. Held-out access, quarantined
+access, ElaadNL API calls, integrated analysis, adequacy certification, and any
+`M` sufficiency claim remain false in this recovery manifest. G0-A3 has
 resolved Q-5 threshold semantics, so EV readiness no longer treats Q-5 itself
 as a blocker; event use still remains blocked by the other unsigned or missing
-integrated prerequisites listed above. It loads no profile arrays, runs no
-net-load/event/`P(E)` analysis, certifies no `M` sufficiency, and produces no
-manuscript number.
+integrated prerequisites listed above. It loads no profile arrays for adequacy,
+runs no net-load/event/`P(E)` analysis, certifies no `M` sufficiency, and
+produces no manuscript number.
 
 <!-- methods-id: EV-005A -->
 ### EV-005A - Low-Cost Held-Out Replacement
