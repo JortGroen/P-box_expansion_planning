@@ -1934,8 +1934,8 @@ def _committed_ev_generic_loader_inputs() -> tuple[dict[str, object], dict[str, 
     return (
         json.loads(accepted_path.read_text(encoding="utf-8")),
         json.loads(recovery_path.read_text(encoding="utf-8")),
-        ev_model._sha256_file(accepted_path),
-        ev_model._sha256_file(recovery_path),
+        _git_blob_sha256(accepted_path),
+        _git_blob_sha256(recovery_path),
     )
 
 

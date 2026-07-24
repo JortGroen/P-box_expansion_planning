@@ -426,7 +426,7 @@
           "a014_executable_adoption_artifact": "data/metadata/ev_adoption/e2_s6_a014_alkmaar_executable_adoption_artifact.json",
           "a014_executable_adoption_artifact_sha256": "c42dcf2cbff8da6b9adea15240def762f8bc279693cb29eda280b572e0fe115a",
           "accepted_artifact_index": "data/metadata/ev_adoption/e2_s2_ev_ic1_accepted_artifact_index_preflight.json",
-          "accepted_artifact_index_sha256": "927a0c734592ef4defe17c045da9ab14bc6ba8d864fb415262e9811e3ab234b3",
+          "accepted_artifact_index_sha256": "d3b87b9a1d85aafd2247118c255f4e9417d07c32c83329f27bb6dc1c3a1239c8",
           "candidate_member_reference": "data/metadata/ev_adoption/e2_s2_ev_ic1_candidate_member_reference.json",
           "candidate_selection_manifest_set": "data/metadata/ev_adoption/e2_s2_ev005b_candidate_selection_manifests.json.gz",
           "candidate_selection_manifest_set_sha256": "da4231595d5a3f66faba1157e10fff17fee936c495b821d20e1b1cd3e0ae6071",
@@ -436,7 +436,7 @@
           "component_output_manifest": "data/metadata/ev_adoption/e2_s2_ev_ic1_candidate_component_output_manifest.json",
           "component_output_manifest_sha256": "2be1c52eca050ee0dd97028d1787a51a4920ee89465328c24032f4e81b56b4fd",
           "component_output_recovery_preflight": "data/metadata/ev_adoption/e3_s2a_ev_component_output_recovery_preflight.json",
-          "component_output_recovery_preflight_sha256": "5696b27818d36d05c96bf87340b508c8bb2c75a46b7a2663eac080fd1017e484",
+          "component_output_recovery_preflight_sha256": "b3bae48b3e1e99b02863f15e2e137bbe1d5fd91f0c4967084a1f66ec2e278c28",
           "local_count_metadata": "data/metadata/ev_adoption/e2_s6_local_adoption_counts_metadata.json",
           "scenario_config": "configs/scenarios.yaml",
           "scenario_config_sha256": "839e6c4c3430cc5d0e257d112ca3ff2783fe362d0a8a54789a1941c3718cbfd6"
@@ -865,7 +865,7 @@
           "a014_executable_adoption_artifact": "data/metadata/ev_adoption/e2_s6_a014_alkmaar_executable_adoption_artifact.json",
           "a014_executable_adoption_artifact_sha256": "c42dcf2cbff8da6b9adea15240def762f8bc279693cb29eda280b572e0fe115a",
           "accepted_artifact_index": "data/metadata/ev_adoption/e2_s2_ev_ic1_accepted_artifact_index_preflight.json",
-          "accepted_artifact_index_sha256": "927a0c734592ef4defe17c045da9ab14bc6ba8d864fb415262e9811e3ab234b3",
+          "accepted_artifact_index_sha256": "d3b87b9a1d85aafd2247118c255f4e9417d07c32c83329f27bb6dc1c3a1239c8",
           "candidate_member_reference": "data/metadata/ev_adoption/e2_s2_ev_ic1_candidate_member_reference.json",
           "candidate_selection_manifest_set": "data/metadata/ev_adoption/e2_s2_ev005b_candidate_selection_manifests.json.gz",
           "candidate_selection_manifest_set_sha256": "da4231595d5a3f66faba1157e10fff17fee936c495b821d20e1b1cd3e0ae6071",
@@ -875,7 +875,7 @@
           "component_output_manifest": "data/metadata/ev_adoption/e2_s2_ev_ic1_candidate_component_output_manifest.json",
           "component_output_manifest_sha256": "2be1c52eca050ee0dd97028d1787a51a4920ee89465328c24032f4e81b56b4fd",
           "component_output_recovery_preflight": "data/metadata/ev_adoption/e3_s2a_ev_component_output_recovery_preflight.json",
-          "component_output_recovery_preflight_sha256": "5696b27818d36d05c96bf87340b508c8bb2c75a46b7a2663eac080fd1017e484",
+          "component_output_recovery_preflight_sha256": "b3bae48b3e1e99b02863f15e2e137bbe1d5fd91f0c4967084a1f66ec2e278c28",
           "local_count_metadata": "data/metadata/ev_adoption/e2_s6_local_adoption_counts_metadata.json",
           "scenario_config": "configs/scenarios.yaml",
           "scenario_config_sha256": "839e6c4c3430cc5d0e257d112ca3ff2783fe362d0a8a54789a1941c3718cbfd6"
@@ -1304,7 +1304,7 @@
           "a014_executable_adoption_artifact": "data/metadata/ev_adoption/e2_s6_a014_alkmaar_executable_adoption_artifact.json",
           "a014_executable_adoption_artifact_sha256": "c42dcf2cbff8da6b9adea15240def762f8bc279693cb29eda280b572e0fe115a",
           "accepted_artifact_index": "data/metadata/ev_adoption/e2_s2_ev_ic1_accepted_artifact_index_preflight.json",
-          "accepted_artifact_index_sha256": "927a0c734592ef4defe17c045da9ab14bc6ba8d864fb415262e9811e3ab234b3",
+          "accepted_artifact_index_sha256": "d3b87b9a1d85aafd2247118c255f4e9417d07c32c83329f27bb6dc1c3a1239c8",
           "candidate_member_reference": "data/metadata/ev_adoption/e2_s2_ev_ic1_candidate_member_reference.json",
           "candidate_selection_manifest_set": "data/metadata/ev_adoption/e2_s2_ev005b_candidate_selection_manifests.json.gz",
           "candidate_selection_manifest_set_sha256": "da4231595d5a3f66faba1157e10fff17fee936c495b821d20e1b1cd3e0ae6071",
@@ -1314,7 +1314,7 @@
           "component_output_manifest": "data/metadata/ev_adoption/e2_s2_ev_ic1_candidate_component_output_manifest.json",
           "component_output_manifest_sha256": "2be1c52eca050ee0dd97028d1787a51a4920ee89465328c24032f4e81b56b4fd",
           "component_output_recovery_preflight": "data/metadata/ev_adoption/e3_s2a_ev_component_output_recovery_preflight.json",
-          "component_output_recovery_preflight_sha256": "5696b27818d36d05c96bf87340b508c8bb2c75a46b7a2663eac080fd1017e484",
+          "component_output_recovery_preflight_sha256": "b3bae48b3e1e99b02863f15e2e137bbe1d5fd91f0c4967084a1f66ec2e278c28",
           "local_count_metadata": "data/metadata/ev_adoption/e2_s6_local_adoption_counts_metadata.json",
           "scenario_config": "configs/scenarios.yaml",
           "scenario_config_sha256": "839e6c4c3430cc5d0e257d112ca3ff2783fe362d0a8a54789a1941c3718cbfd6"
@@ -1399,14 +1399,14 @@
           "ev": "data/metadata/ev_adoption/generic_component_output_manifests/ev_2035_high.json"
         },
         "component_output_manifest_sha256_by_path": {
-          "data/metadata/ev_adoption/generic_component_output_manifests/ev_2035_high.json": "66adc962be63f455426017509e00e8d13002e504b55ca7a9768f5ce83d8c706b"
+          "data/metadata/ev_adoption/generic_component_output_manifests/ev_2035_high.json": "3f0c944f66ae8c0200e3e55e58df487f0e40b6867a8f761aa1792f13a30be77d"
         }
       },
       "array_path": "data/processed/elaad_profiles/component_outputs/ev_ic1_candidate_component_output_high.npz",
       "array_sha256": "dd95f30d74da00b6fb87c2ced8f402b4d612c59a28e7d1d33e9e82fcd7a805d5",
       "path": "data/metadata/ev_adoption/generic_component_output_manifests/ev_2035_high.json",
       "scenario": "high",
-      "sha256": "66adc962be63f455426017509e00e8d13002e504b55ca7a9768f5ce83d8c706b"
+      "sha256": "3f0c944f66ae8c0200e3e55e58df487f0e40b6867a8f761aa1792f13a30be77d"
     },
     {
       "agent_a_loader_inputs": {
@@ -1414,14 +1414,14 @@
           "ev": "data/metadata/ev_adoption/generic_component_output_manifests/ev_2035_low.json"
         },
         "component_output_manifest_sha256_by_path": {
-          "data/metadata/ev_adoption/generic_component_output_manifests/ev_2035_low.json": "5108be271c7c6a8641091c0eeb5f4483a81f9d7ca1c00a038a3086810f066a5c"
+          "data/metadata/ev_adoption/generic_component_output_manifests/ev_2035_low.json": "d3edde0cdc73f926fea965ce78746bf430477a3443d899c0b7a37915a6a4249e"
         }
       },
       "array_path": "data/processed/elaad_profiles/component_outputs/ev_ic1_candidate_component_output_low.npz",
       "array_sha256": "a896794ddd9f004fe945c62a5b84b2b1b6e9381cbecd80b17ca7c749de68ce65",
       "path": "data/metadata/ev_adoption/generic_component_output_manifests/ev_2035_low.json",
       "scenario": "low",
-      "sha256": "5108be271c7c6a8641091c0eeb5f4483a81f9d7ca1c00a038a3086810f066a5c"
+      "sha256": "d3edde0cdc73f926fea965ce78746bf430477a3443d899c0b7a37915a6a4249e"
     },
     {
       "agent_a_loader_inputs": {
@@ -1429,22 +1429,22 @@
           "ev": "data/metadata/ev_adoption/generic_component_output_manifests/ev_2035_middle.json"
         },
         "component_output_manifest_sha256_by_path": {
-          "data/metadata/ev_adoption/generic_component_output_manifests/ev_2035_middle.json": "511ed1886f3d63eadaf824777d43e07c6f4490257273aec741c7d1a9c84dc229"
+          "data/metadata/ev_adoption/generic_component_output_manifests/ev_2035_middle.json": "1ee2e222815e42da576d74a785de24c3920d5a2f400dea859c73307fb6fd4fe2"
         }
       },
       "array_path": "data/processed/elaad_profiles/component_outputs/ev_ic1_candidate_component_output_middle.npz",
       "array_sha256": "38081c7f849bb679a19560d1a7f7fd6d8428e35ef6cad2087e4d82a46c1e568d",
       "path": "data/metadata/ev_adoption/generic_component_output_manifests/ev_2035_middle.json",
       "scenario": "middle",
-      "sha256": "511ed1886f3d63eadaf824777d43e07c6f4490257273aec741c7d1a9c84dc229"
+      "sha256": "1ee2e222815e42da576d74a785de24c3920d5a2f400dea859c73307fb6fd4fe2"
     }
   ],
   "schema_version": 1,
   "source_artifacts": {
     "accepted_artifact_index": "data/metadata/ev_adoption/e2_s2_ev_ic1_accepted_artifact_index_preflight.json",
-    "accepted_artifact_index_sha256": "927a0c734592ef4defe17c045da9ab14bc6ba8d864fb415262e9811e3ab234b3",
+    "accepted_artifact_index_sha256": "d3b87b9a1d85aafd2247118c255f4e9417d07c32c83329f27bb6dc1c3a1239c8",
     "component_output_recovery_preflight": "data/metadata/ev_adoption/e3_s2a_ev_component_output_recovery_preflight.json",
-    "component_output_recovery_preflight_sha256": "5696b27818d36d05c96bf87340b508c8bb2c75a46b7a2663eac080fd1017e484"
+    "component_output_recovery_preflight_sha256": "b3bae48b3e1e99b02863f15e2e137bbe1d5fd91f0c4967084a1f66ec2e278c28"
   },
   "source_ids": [
     "D-002",

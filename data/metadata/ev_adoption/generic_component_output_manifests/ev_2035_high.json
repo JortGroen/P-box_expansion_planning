@@ -392,7 +392,7 @@
       "a014_executable_adoption_artifact": "data/metadata/ev_adoption/e2_s6_a014_alkmaar_executable_adoption_artifact.json",
       "a014_executable_adoption_artifact_sha256": "c42dcf2cbff8da6b9adea15240def762f8bc279693cb29eda280b572e0fe115a",
       "accepted_artifact_index": "data/metadata/ev_adoption/e2_s2_ev_ic1_accepted_artifact_index_preflight.json",
-      "accepted_artifact_index_sha256": "927a0c734592ef4defe17c045da9ab14bc6ba8d864fb415262e9811e3ab234b3",
+      "accepted_artifact_index_sha256": "d3b87b9a1d85aafd2247118c255f4e9417d07c32c83329f27bb6dc1c3a1239c8",
       "candidate_member_reference": "data/metadata/ev_adoption/e2_s2_ev_ic1_candidate_member_reference.json",
       "candidate_selection_manifest_set": "data/metadata/ev_adoption/e2_s2_ev005b_candidate_selection_manifests.json.gz",
       "candidate_selection_manifest_set_sha256": "da4231595d5a3f66faba1157e10fff17fee936c495b821d20e1b1cd3e0ae6071",
@@ -402,7 +402,7 @@
       "component_output_manifest": "data/metadata/ev_adoption/e2_s2_ev_ic1_candidate_component_output_manifest.json",
       "component_output_manifest_sha256": "2be1c52eca050ee0dd97028d1787a51a4920ee89465328c24032f4e81b56b4fd",
       "component_output_recovery_preflight": "data/metadata/ev_adoption/e3_s2a_ev_component_output_recovery_preflight.json",
-      "component_output_recovery_preflight_sha256": "5696b27818d36d05c96bf87340b508c8bb2c75a46b7a2663eac080fd1017e484",
+      "component_output_recovery_preflight_sha256": "b3bae48b3e1e99b02863f15e2e137bbe1d5fd91f0c4967084a1f66ec2e278c28",
       "local_count_metadata": "data/metadata/ev_adoption/e2_s6_local_adoption_counts_metadata.json",
       "scenario_config": "configs/scenarios.yaml",
       "scenario_config_sha256": "839e6c4c3430cc5d0e257d112ca3ff2783fe362d0a8a54789a1941c3718cbfd6"

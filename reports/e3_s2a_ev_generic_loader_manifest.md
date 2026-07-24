@@ -8,9 +8,9 @@ This packet converts the candidate-only EV component-output handoff into Agent A
 
 | Scenario | Generic manifest | Generic manifest SHA-256 | Ignored EV NPZ | NPZ SHA-256 |
 |---|---|---|---|---|
-| high | `data/metadata/ev_adoption/generic_component_output_manifests/ev_2035_high.json` | `66adc962be63f455426017509e00e8d13002e504b55ca7a9768f5ce83d8c706b` | `data/processed/elaad_profiles/component_outputs/ev_ic1_candidate_component_output_high.npz` | `dd95f30d74da00b6fb87c2ced8f402b4d612c59a28e7d1d33e9e82fcd7a805d5` |
-| low | `data/metadata/ev_adoption/generic_component_output_manifests/ev_2035_low.json` | `5108be271c7c6a8641091c0eeb5f4483a81f9d7ca1c00a038a3086810f066a5c` | `data/processed/elaad_profiles/component_outputs/ev_ic1_candidate_component_output_low.npz` | `a896794ddd9f004fe945c62a5b84b2b1b6e9381cbecd80b17ca7c749de68ce65` |
-| middle | `data/metadata/ev_adoption/generic_component_output_manifests/ev_2035_middle.json` | `511ed1886f3d63eadaf824777d43e07c6f4490257273aec741c7d1a9c84dc229` | `data/processed/elaad_profiles/component_outputs/ev_ic1_candidate_component_output_middle.npz` | `38081c7f849bb679a19560d1a7f7fd6d8428e35ef6cad2087e4d82a46c1e568d` |
+| high | `data/metadata/ev_adoption/generic_component_output_manifests/ev_2035_high.json` | `3f0c944f66ae8c0200e3e55e58df487f0e40b6867a8f761aa1792f13a30be77d` | `data/processed/elaad_profiles/component_outputs/ev_ic1_candidate_component_output_high.npz` | `dd95f30d74da00b6fb87c2ced8f402b4d612c59a28e7d1d33e9e82fcd7a805d5` |
+| low | `data/metadata/ev_adoption/generic_component_output_manifests/ev_2035_low.json` | `d3edde0cdc73f926fea965ce78746bf430477a3443d899c0b7a37915a6a4249e` | `data/processed/elaad_profiles/component_outputs/ev_ic1_candidate_component_output_low.npz` | `a896794ddd9f004fe945c62a5b84b2b1b6e9381cbecd80b17ca7c749de68ce65` |
+| middle | `data/metadata/ev_adoption/generic_component_output_manifests/ev_2035_middle.json` | `1ee2e222815e42da576d74a785de24c3920d5a2f400dea859c73307fb6fd4fe2` | `data/processed/elaad_profiles/component_outputs/ev_ic1_candidate_component_output_middle.npz` | `38081c7f849bb679a19560d1a7f7fd6d8428e35ef6cad2087e4d82a46c1e568d` |
 
 The packet at `data/metadata/ev_adoption/e3_s2a_ev_ic1_generic_component_output_manifest_packet.json` gives Agent A the exact `component_output_manifest_paths_by_kind` and `component_output_manifest_sha256_by_path` values for each branch. A future IC-1 call must choose the branch explicitly.
 

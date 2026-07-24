@@ -5,6 +5,7 @@ import gzip
 import json
 from pathlib import Path
 import shutil
+import subprocess
 import sys
 from typing import Any, Mapping, Sequence
 
@@ -77,6 +78,19 @@ def _sha256_file(path: Path) -> str:
         for chunk in iter(lambda: handle.read(1024 * 1024), b""):
             digest.update(chunk)
     return digest.hexdigest()
+
+
+def _repo_blob_or_file_sha256(base_dir: Path, relative_path: Path) -> str:
+    try:
+        blob = subprocess.check_output(
+            ["git", "-C", str(base_dir), "show", f"HEAD:{relative_path.as_posix()}"],
+            stderr=subprocess.DEVNULL,
+        )
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        return _sha256_file(base_dir / relative_path)
+    import hashlib
+
+    return hashlib.sha256(blob).hexdigest()
 
 
 def _require_output_records(manifest: Mapping[str, Any]) -> list[dict[str, Any]]:
@@ -543,8 +557,8 @@ def write_generic_loader_manifests(
 ) -> dict[str, object]:
     """Write generic Agent A-loader EV manifests and their packet."""
 
-    index_sha = _sha256_file(base_dir / accepted_artifact_index_path)
-    recovery_sha = _sha256_file(base_dir / recovery_preflight_path)
+    index_sha = _repo_blob_or_file_sha256(base_dir, accepted_artifact_index_path)
+    recovery_sha = _repo_blob_or_file_sha256(base_dir, recovery_preflight_path)
     initial = ev_ic1_generic_component_output_loader_manifests(
         accepted_artifact_index,
         recovery_preflight,
