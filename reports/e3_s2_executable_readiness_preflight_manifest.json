@@ -1,16 +1,16 @@
 {
   "command": ".\\.venv\\Scripts\\python.exe reports\\e3_s2_generate_executable_readiness_preflight.py",
-  "generated_at_utc": "2026-07-23T13:30:26Z",
-  "git_commit": "7408e5b52c2126e6c57f86856749515876a84825",
+  "generated_at_utc": "2026-07-24T10:12:40Z",
+  "git_commit": "a8b31567acb5714abf34c3644251087d98478a6d",
   "git_status_short_before_generation": "",
   "input": {
     "path": "reports/e3_s2_executable_readiness_preflight_input.json",
-    "schema_version": "e3_s2_executable_readiness_preflight_input_v4",
-    "sha256": "339d6144b521e955e99353aad58a7c048f61ec119f90d1f358eb62975afda646"
+    "schema_version": "e3_s2_executable_readiness_preflight_input_v5",
+    "sha256": "bd560b23aff38ab47ddb9625fe2ae4dbb9662516e1b3373edd85f635d85914d7"
   },
   "outputs": {
     "report_path": "reports/E3_S2_EXECUTABLE_READINESS_PREFLIGHT.md",
-    "report_sha256": "66f9ae462aed75d72d0483230dcddfecf1963d5b7c1fceeb65876c6dc382e755"
+    "report_sha256": "c1ef4825047a6143efdab0e60ef7cf9b6e39cc60c1becd7c15f3e29a679cc5a7"
   },
   "preflight": {
     "accepted_component_kinds": [
@@ -110,46 +110,57 @@
       "ev": {
         "accepted_for_gate": true,
         "artifact": {
-          "artifact_id": "e2_s2_ev_ic1_candidate_adapter_artifact",
+          "artifact_id": "e2_s2_ev_ic1_component_input_scaffold",
           "artifact_status": "accepted",
           "blocking_register_ids": [],
-          "calendar_id": "calendar_2035_15min_full_year_35040",
+          "calendar_id": "planning-2035-europe-amsterdam-15min",
           "kind": "ev",
-          "manifest_path": "data/metadata/ev_adoption/e2_s2_ev_ic1_candidate_adapter_artifact.json",
-          "member_id": "candidate_member_reference_unselected",
+          "manifest_path": "data/metadata/ev_adoption/e2_s2_ev_ic1_component_input_scaffold.json",
+          "member_id": "ev005b_candidate_selection_manifest_set_root20260722_sample0",
           "node_ids": [
-            "simbench_1_mv_semiurb_0_sw_all_in_service_load_nodes"
+            "load_000_to_load_114"
           ],
           "provenance": {
-            "boundary_note": "candidate metadata only; no held-out data opened and no member trajectories loaded",
-            "discovered_path": "data/metadata/ev_adoption/e2_s2_ev_ic1_candidate_adapter_artifact.json",
+            "boundary_note": "accepted metadata-only IC-1 component input scaffold; candidate processed file checksums were verified by SHA-256, but no held-out data opened and no member trajectories loaded",
+            "candidate_member_reference_sha256": "bea4d66834fbb43df9a65ea8405b0d8ead252d1f617cbbf1826388ae822b86d7",
+            "candidate_selection_manifest_set": "data/metadata/ev_adoption/e2_s2_ev005b_candidate_selection_manifests.json.gz",
+            "candidate_selection_manifest_set_sha256": "da4231595d5a3f66faba1157e10fff17fee936c495b821d20e1b1cd3e0ae6071",
+            "checksum_preflight_status": "candidate_processed_checksums_verified_array_loading_still_blocked",
+            "discovered_path": "data/metadata/ev_adoption/e2_s2_ev_ic1_component_input_scaffold.json",
+            "rng_protocol_id": "RNG-001",
+            "supporting_candidate_adapter_artifact": "data/metadata/ev_adoption/e2_s2_ev_ic1_candidate_adapter_artifact.json",
+            "supporting_checksum_preflight": "data/metadata/ev_adoption/e2_s2_ev_candidate_profile_checksum_preflight.json",
             "supporting_member_reference": "data/metadata/ev_adoption/e2_s2_ev_ic1_candidate_member_reference.json"
           },
           "shared_weather_driver_id": null,
           "signed_register_ids": [
             "EV-003",
             "EV-004",
+            "EV-005",
             "EV-005B",
             "EV-007A",
             "EV-008A",
-            "EV-CAL-001"
+            "EV-CAL-001",
+            "A-014"
           ],
-          "source_id": "elaadnl_candidate_ev_ic1_adapter_metadata",
+          "source_id": "elaadnl_ev_candidate_component_input_scaffold",
           "timestep_seconds": 900,
-          "version_id": "e2_s2_ev_ic1_candidate_adapter_artifact_v1"
+          "version_id": "e2_s2_ev_ic1_component_input_scaffold_v1"
         },
-        "artifact_id": "e2_s2_ev_ic1_candidate_adapter_artifact",
+        "artifact_id": "e2_s2_ev_ic1_component_input_scaffold",
         "artifact_status": "accepted",
         "blocking_register_ids": [],
         "kind": "ev",
-        "manifest_path": "data/metadata/ev_adoption/e2_s2_ev_ic1_candidate_adapter_artifact.json",
+        "manifest_path": "data/metadata/ev_adoption/e2_s2_ev_ic1_component_input_scaffold.json",
         "signed_register_ids": [
           "EV-003",
           "EV-004",
+          "EV-005",
           "EV-005B",
           "EV-007A",
           "EV-008A",
-          "EV-CAL-001"
+          "EV-CAL-001",
+          "A-014"
         ],
         "state": "accepted"
       },
@@ -266,6 +277,9 @@
           "artifact_status": "unsigned",
           "blocking_register_ids": [
             "PV-PARAM-001",
+            "D-014",
+            "D014-PV-CAPACITY-SOURCE-VALUE-PACKET",
+            "D014-PV-STATISTICAL-ORIENTATION-TILT-PACKET",
             "FINAL-PAIRED-HP-PV-ACCEPTANCE",
             "COLD-SPELL-ACCEPTANCE"
           ],
@@ -277,13 +291,17 @@
             "simbench_1_mv_semiurb_0_sw_all_in_service_load_nodes"
           ],
           "provenance": {
-            "capacity_source_route": "PV-CAP-001 approved route; concrete D-014 retrieval, numeric capacity value, scenario growth factor, capacity convention, and per-node allocation remain pending",
-            "classification_note": "PV final-acceptance gate packet remains the current PV/weather gate packet; PV-CAP-001 is now an approved source route only, while executable PV remains blocked by parameter signoff, final paired HP/PV acceptance, cold-spell acceptance, and later D-014/value/allocation approvals",
+            "capacity_source_route": "PV-CAP-001 approved route; D014-PV-CAPACITY-SOURCE-VALUE-PACKET is proposed and concrete D-014 retrieval, numeric capacity value, scenario growth factor, capacity convention, and per-node allocation remain pending.",
+            "classification_note": "PV final-acceptance gate packet remains the current PV/weather gate packet. PV-CAP-001 and PV-ORIENT-001 approve the route/scope only; concrete D-014 retrieval, numeric capacity values, scenario growth, capacity convention, per-node allocation, statistical orientation/tilt source/weights, PV-PARAM-001, final paired HP/PV acceptance, and cold-spell acceptance remain unresolved before executable PV/weather input.",
             "discovered_path": "data/metadata/weather_pv/d004_pv_final_acceptance_gate_packet.json",
             "older_paired_readiness_packet": "data/metadata/weather_pv/d004_pv_paired_readiness_preflight_packet.json",
-            "packet_status": "blocked pending PV-PARAM-001, final paired HP/PV acceptance, and cold-spell acceptance; PV-CAP-001 route approved but executable values pending",
+            "orientation_tilt_route": "PV-ORIENT-001 approves statistical orientation/tilt scope only; D014-PV-STATISTICAL-ORIENTATION-TILT-PACKET is proposed and source, bins, weights, and conversion treatment remain pending.",
+            "packet_status": "blocked pending PV-PARAM-001, D-014 value/source packets, final paired HP/PV acceptance, and cold-spell acceptance; PV-CAP-001/PV-ORIENT-001 route and scope approved but executable values pending",
             "readiness_bucket": "proposed_blocked",
+            "supporting_capacity_source_value_packet": "data/metadata/weather_pv/d014_pv_capacity_source_value_packet.json",
             "supporting_report": "reports/e2_s4_pv_final_acceptance_gate_packet.md",
+            "supporting_statistical_orientation_report": "reports/e2_s4_d014_pv_statistical_orientation_tilt_packet.md",
+            "supporting_statistical_orientation_tilt_packet": "data/metadata/weather_pv/d014_pv_statistical_orientation_tilt_packet.json",
             "weather_input_artifact": "data/metadata/weather_pv/d004_alkmaar_berkhout_2014_2023_v1_weather_input_artifact.json"
           },
           "shared_weather_driver_id": "d004_alkmaar_berkhout_2014_2023_v1:unselected",
@@ -291,7 +309,8 @@
             "WEATHER-001",
             "D004-MC-001",
             "D004-SOURCE-MEMBER-ACCEPTANCE",
-            "PV-CAP-001"
+            "PV-CAP-001",
+            "PV-ORIENT-001"
           ],
           "source_id": "d004_pv_final_acceptance_gate_metadata",
           "timestep_seconds": 900,
@@ -301,6 +320,9 @@
         "artifact_status": "unsigned",
         "blocking_register_ids": [
           "PV-PARAM-001",
+          "D-014",
+          "D014-PV-CAPACITY-SOURCE-VALUE-PACKET",
+          "D014-PV-STATISTICAL-ORIENTATION-TILT-PACKET",
           "FINAL-PAIRED-HP-PV-ACCEPTANCE",
           "COLD-SPELL-ACCEPTANCE"
         ],
@@ -311,22 +333,25 @@
           "WEATHER-001",
           "D004-MC-001",
           "D004-SOURCE-MEMBER-ACCEPTANCE",
-          "PV-CAP-001"
+          "PV-CAP-001",
+          "PV-ORIENT-001"
         ],
         "state": "blocked"
       }
     },
     "config_manifest": {
-      "config_id": "e3_s2_current_packet_executable_readiness_preflight_v4",
+      "config_id": "e3_s2_current_packet_executable_readiness_preflight_v5",
       "metadata": {
         "calendar_id": "calendar_2035_15min_full_year_35040",
         "gate": "register_backed_executable_input_gate",
+        "ic2_bridge_preflight_path": "reports/E3_S2_EXECUTABLE_BRIDGE_PREFLIGHT.md",
         "no_capacity_screen_result": true,
         "no_event_detection": true,
         "no_probability_estimate": true,
         "no_real_net_load_arrays": true,
         "planning_year_basis": "G0-A4",
-        "refresh_basis": "origin/main after PRs #192 and #193 merged on top of PR #189",
+        "primary_threshold_metadata": "G0-A3: strict L_import > 1.0 p.u. for four consecutive 15-minute import steps over the full year; 1.1 and 1.2 are sensitivities only",
+        "refresh_basis": "origin/main after PRs #200, #204, #205, #206, #208, #209, #210, #211, #212, #213, and #214 merged",
         "threshold_basis": "G0-A3 resolved but not evaluated in this preflight"
       },
       "node_ids": [
