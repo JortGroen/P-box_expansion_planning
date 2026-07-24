@@ -17,6 +17,7 @@ from src.pv_model import (
     PVCapacitySourcePacket,
     PVGISReference,
     PVOrientationTiltSourceChoicePacket,
+    PVOrientationTiltValueChoicePacket,
     PVStatisticalOrientationTiltPacket,
     PVSystemConfig,
     PVWeatherInputArtifact,
@@ -33,6 +34,7 @@ from src.pv_model import (
     generate_pv_profile_from_input_artifact,
     load_pv_capacity_source_packet,
     load_pv_orientation_tilt_source_choice_packet,
+    load_pv_orientation_tilt_value_choice_packet,
     load_pv_statistical_orientation_tilt_packet,
     load_pv_weather_input_artifact,
     parse_pvgis_monthly_reference,
@@ -60,6 +62,16 @@ def _short_weather(
         pv_weather_fields={"ghi_w_per_m2": ghi_w_per_m2 or [0.0, 1000.0, 1000.0, 2000.0]},
         provenance={"fixture": "pv_model_short_weather"},
     )
+
+
+def _write_text_with_parents(path: Path, text: str) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(text, encoding="utf-8")
+
+
+def _write_bytes_with_parents(path: Path, payload: bytes) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(payload)
 
 
 def test_canonical_15min_axis_preserves_local_year_and_dst() -> None:
@@ -459,7 +471,7 @@ def test_committed_d004_source_selection_packet_pins_sources_and_guards_tmy() ->
 
 def test_record_local_weather_pv_file_records_checksum_without_register_update(tmp_path: Path) -> None:
     source = tmp_path / "knmi_sample.nc"
-    source.write_bytes(b"sample weather bytes")
+    _write_bytes_with_parents(source, b"sample weather bytes")
 
     manifest_path = weather_pv.record_local_file(
         file_path=source,
@@ -581,7 +593,7 @@ def test_d004_member_readiness_diagnostics_can_validate_metadata_without_raw_fil
         weather_pv.D004_MEMBER_MANIFEST_NAME,
         *[weather_pv.D004_MEMBER_METADATA_TEMPLATE.format(year=year) for year in range(2014, 2024)],
     ]:
-        (metadata_dst / name).write_text((metadata_src / name).read_text(encoding="utf-8"), encoding="utf-8")
+        _write_text_with_parents(metadata_dst / name, (metadata_src / name).read_text(encoding="utf-8"))
 
     diagnostics = weather_pv.build_d004_member_readiness_diagnostics(
         root_dir=tmp_path,
@@ -654,8 +666,8 @@ def _write_d004_fixture_manifest(root: Path, metadata_dir: Path, *, year: int) -
     _write_knmi_fixture_zip(knmi_one, year=year)
     _write_empty_knmi_fixture_zip(knmi_two)
     pvgis_series.parent.mkdir(parents=True, exist_ok=True)
-    pvgis_series.write_text('{"fixture":"series"}\n', encoding="utf-8")
-    pvgis_tmy.write_text('{"fixture":"tmy"}\n', encoding="utf-8")
+    _write_text_with_parents(pvgis_series, '{"fixture":"series"}\n')
+    _write_text_with_parents(pvgis_tmy, '{"fixture":"tmy"}\n')
 
     def item(path: Path, source_kind: str, file_role: str) -> dict[str, object]:
         return {
@@ -680,7 +692,7 @@ def _write_d004_fixture_manifest(root: Path, metadata_dir: Path, *, year: int) -
     }
     out_dir = metadata_dir / "weather_pv"
     out_dir.mkdir(parents=True, exist_ok=True)
-    (out_dir / weather_pv.D004_RETRIEVAL_MANIFEST).write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+    _write_text_with_parents(out_dir / weather_pv.D004_RETRIEVAL_MANIFEST, json.dumps(manifest, indent=2) + "\n")
 
 def test_committed_d004_acceptance_packet_keeps_decisions_with_pi() -> None:
     path = Path("data/metadata/weather_pv/d004_alkmaar_berkhout_2014_2023_v1_acceptance_packet.json")
@@ -716,7 +728,7 @@ def test_d004_paired_weather_acceptance_scaffold_is_metadata_only(tmp_path: Path
         weather_pv.D004_MEMBER_READINESS_DIAGNOSTICS_NAME,
         weather_pv.D004_MEMBER_MANIFEST_NAME,
     ]:
-        (metadata_dst / name).write_text((metadata_src / name).read_text(encoding="utf-8"), encoding="utf-8")
+        _write_text_with_parents(metadata_dst / name, (metadata_src / name).read_text(encoding="utf-8"))
 
     payload = weather_pv.build_d004_paired_weather_acceptance_scaffold(metadata_dir=tmp_path / "metadata")
 
@@ -771,7 +783,7 @@ def test_d004_acceptance_tolerance_packet_is_metadata_only(tmp_path: Path) -> No
         weather_pv.D004_PAIRED_WEATHER_ACCEPTANCE_SCAFFOLD_NAME,
         weather_pv.D004_MEMBER_READINESS_DIAGNOSTICS_NAME,
     ]:
-        (metadata_dst / name).write_text((metadata_src / name).read_text(encoding="utf-8"), encoding="utf-8")
+        _write_text_with_parents(metadata_dst / name, (metadata_src / name).read_text(encoding="utf-8"))
 
     payload = weather_pv.build_d004_acceptance_tolerance_packet(metadata_dir=tmp_path / "metadata")
 
@@ -838,7 +850,7 @@ def test_d004_pi_recommendation_packet_is_concise_and_unsigned(tmp_path: Path) -
         weather_pv.D004_ACCEPTANCE_TOLERANCE_PACKET_NAME,
         weather_pv.D004_ACCEPTANCE_PACKET_NAME,
     ]:
-        (metadata_dst / name).write_text((metadata_src / name).read_text(encoding="utf-8"), encoding="utf-8")
+        _write_text_with_parents(metadata_dst / name, (metadata_src / name).read_text(encoding="utf-8"))
 
     payload = weather_pv.build_d004_pi_recommendation_packet(metadata_dir=tmp_path / "metadata")
 
@@ -921,7 +933,7 @@ def test_d004_weather_input_artifact_builds_from_accepted_source_member_metadata
         weather_pv.D004_MEMBER_MANIFEST_NAME,
         weather_pv.D004_MEMBER_READINESS_DIAGNOSTICS_NAME,
     ]:
-        (metadata_dst / name).write_text((metadata_src / name).read_text(encoding="utf-8"), encoding="utf-8")
+        _write_text_with_parents(metadata_dst / name, (metadata_src / name).read_text(encoding="utf-8"))
 
     payload = weather_pv.build_d004_weather_input_artifact(metadata_dir=tmp_path / "metadata")
     first_member = payload["members"][0]
@@ -1017,14 +1029,14 @@ def test_pv_weather_input_artifact_rejects_pvgis_as_realized_or_unblocked_final_
         )
     )
     pvgis_path = tmp_path / "pvgis_realized.json"
-    pvgis_path.write_text(json.dumps({**payload, "pvgis_realized_weather_path": True}), encoding="utf-8")
+    _write_text_with_parents(pvgis_path, json.dumps({**payload, "pvgis_realized_weather_path": True}))
     with pytest.raises(ValueError, match="PVGIS"):
         load_pv_weather_input_artifact(pvgis_path)
 
     unsafe = json.loads(json.dumps(payload))
     unsafe["blocked_acceptance_gates"]["final_paired_hp_pv_acceptance"]["blocked"] = False
     unsafe_path = tmp_path / "final_gate_unblocked.json"
-    unsafe_path.write_text(json.dumps(unsafe), encoding="utf-8")
+    _write_text_with_parents(unsafe_path, json.dumps(unsafe))
     with pytest.raises(ValueError, match="final_paired_hp_pv_acceptance"):
         load_pv_weather_input_artifact(unsafe_path)
 
@@ -1712,3 +1724,62 @@ def test_orientation_tilt_source_choice_packet_rejects_roof_level_scope() -> Non
             non_claims=payload["non_claims"],
         )
 
+
+
+def test_committed_d014_orientation_tilt_value_choice_packet_is_fail_closed() -> None:
+    packet = load_pv_orientation_tilt_value_choice_packet(
+        "data/metadata/weather_pv/d014_pv_orientation_tilt_value_choice_packet.json"
+    )
+    record = packet.identity_record()
+
+    assert packet.packet_id == "D014-PV-ORIENTATION-TILT-VALUE-CHOICE-PACKET"
+    assert packet.approved_scope_decision == "PV-ORIENT-001"
+    assert packet.source_choice_packet_id == "D014-PV-ORIENTATION-TILT-SOURCE-CHOICE-PACKET"
+    assert packet.download_performed is False
+    assert packet.raw_data_committed is False
+    assert record["executable_allowed_now"] is False
+    assert record["roof_or_location_level_extraction_allowed_now"] is False
+    assert "PV-CAP-001/D-014 capacity remains separate" in packet.capacity_route_boundary
+    assert "PV-PARAM-001 remains proposed" in packet.pv_param_boundary
+    assert "pi_prior_5_class_symmetric_rooftop_candidate_v1" in record["candidate_class_set_ids"]
+    prior = next(
+        item
+        for item in packet.candidate_class_sets
+        if item["class_set_id"] == "pi_prior_5_class_symmetric_rooftop_candidate_v1"
+    )
+    weights = [row["capacity_weight_fraction"] for row in prior["class_table"]]
+    assert sum(weights) == pytest.approx(1.0)
+    assert all("assumption-only" in row["source_value_trace"] for row in prior["class_table"])
+    assert "class_weight_values" in packet.missing_approval_keys
+    assert "pv_param_001_or_amended_conversion_decision" in packet.missing_approval_keys
+    with pytest.raises(ValueError, match="orientation/tilt values are unsigned"):
+        packet.require_executable_orientation_tilt_values_approval()
+
+
+def test_orientation_tilt_value_choice_packet_rejects_silent_executable_values() -> None:
+    payload = json.loads(
+        Path("data/metadata/weather_pv/d014_pv_orientation_tilt_value_choice_packet.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    payload["candidate_class_sets"][1]["value_status"] = "approved_executable"
+
+    with pytest.raises(ValueError, match="must not claim approval"):
+        PVOrientationTiltValueChoicePacket(
+            packet_id=payload["packet_id"],
+            data_id=payload["data_id"],
+            status=payload["status"],
+            download_performed=payload["download_performed"],
+            raw_data_committed=payload["raw_data_committed"],
+            approved_scope_decision=payload["approved_scope_decision"],
+            source_choice_packet_id=payload["source_choice_packet_id"],
+            capacity_route_boundary=payload["capacity_route_boundary"],
+            pv_param_boundary=payload["pv_param_boundary"],
+            first_experiment_scope=payload["first_experiment_scope"],
+            angle_conventions_for_review=payload["angle_conventions_for_review"],
+            source_backing_summary=payload["source_backing_summary"],
+            candidate_class_sets=payload["candidate_class_sets"],
+            pi_recommendation_for_review=payload["pi_recommendation_for_review"],
+            pi_approval_keys_before_executable_use=payload["pi_approval_keys_before_executable_use"],
+            non_claims=payload["non_claims"],
+        )
