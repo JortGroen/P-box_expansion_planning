@@ -1,0 +1,126 @@
+{
+  "schema_version": "e3_s2_synthetic_assembly_real_gate_input_v1",
+  "task_id": "E3.S2",
+  "assembly_id": "e3_s2_synthetic_ic1_assembly_real_input_gate_v1",
+  "intended_use": "e3_s2_synthetic_ic1_assembly_and_real_input_gate_through_pr248",
+  "scope": "metadata_preflight_only_synthetic_fixtures_no_real_arrays_no_ic2_no_events_no_probability_no_capacity_screen",
+  "current_main_metadata_refs": {
+    "refresh_basis": "origin/main through PR #248",
+    "accepted_artifact_blocker_preflight_input": "reports/e3_s2_accepted_artifact_blocker_preflight_input.json",
+    "ev_accepted_artifact_index": "data/metadata/ev_adoption/e2_s2_ev_ic1_accepted_artifact_index_preflight.json",
+    "ev_heldout_adequacy_preflight_blockers": "data/metadata/ev_adoption/e3_s2a_ev_heldout_adequacy_preflight_blockers.json",
+    "pv_executable_preflight_guard": "data/metadata/weather_pv/d014_pv_executable_preflight_guard.json",
+    "pv_executable_readiness_blockers": "data/metadata/weather_pv/d014_pv_executable_readiness_blockers.json",
+    "hp_readiness_packet": "data/metadata/hp_scaling/hp001_alkmaar_gm0361_executable_value_binding_decision_packet.json"
+  },
+  "synthetic_context": {
+    "scenario": "synthetic_smoke",
+    "year": 2035,
+    "time_domain": "window_set",
+    "rho": 0.5,
+    "seed": 7001,
+    "sample_index": 0,
+    "shared_weather_driver_id": "synthetic_weather_driver_e3_s2_smoke_v1",
+    "component_names": [
+      "baseline",
+      "ev",
+      "hp",
+      "pv",
+      "adoption",
+      "flexibility"
+    ],
+    "calendar_metadata": {
+      "calendar_id": "synthetic_window_2035_15min_4step",
+      "timestep_seconds": 900,
+      "synthetic_fixture_only": true
+    },
+    "mapping_version_metadata": {
+      "node_mapping_version": "synthetic_two_node_fixture_v1",
+      "synthetic_fixture_only": true
+    }
+  },
+  "synthetic_plan": {
+    "node_ids": [
+      "node-a",
+      "node-b"
+    ],
+    "required_component_kinds": [
+      "baseline",
+      "ev",
+      "hp",
+      "pv",
+      "adoption",
+      "flexibility"
+    ],
+    "metadata": {
+      "synthetic_fixture_only": true,
+      "not_a_scientific_result": true
+    }
+  },
+  "synthetic_fixture": {
+    "fixture_id": "e3_s2_two_node_four_step_synthetic_ic1_fixture_v1",
+    "calendar_id": "synthetic_window_2035_15min_4step",
+    "timestamps": [
+      "2035-01-01T00:00:00",
+      "2035-01-01T00:15:00",
+      "2035-01-01T00:30:00",
+      "2035-01-01T00:45:00"
+    ],
+    "components": [
+      {
+        "kind": "baseline",
+        "component_id": "baseline-synthetic-a",
+        "node_id": "node-a",
+        "member_id": "baseline-synthetic-member",
+        "source_id": "synthetic-baseline-source",
+        "p_kw": [10.0, 8.0, 0.0, -1.0],
+        "q_kvar": [1.0, 0.8, 0.0, -0.1]
+      },
+      {
+        "kind": "ev",
+        "component_id": "ev-synthetic-a",
+        "node_id": "node-a",
+        "member_id": "ev-synthetic-member",
+        "source_id": "synthetic-ev-source",
+        "p_kw": [1.0, 1.0, 0.0, 0.0],
+        "q_kvar": [0.1, 0.1, 0.0, 0.0]
+      },
+      {
+        "kind": "hp",
+        "component_id": "hp-synthetic-b",
+        "node_id": "node-b",
+        "member_id": "hp-synthetic-member",
+        "source_id": "synthetic-hp-source",
+        "p_kw": [2.0, 2.0, 2.0, 2.0],
+        "q_kvar": [0.2, 0.2, 0.2, 0.2]
+      },
+      {
+        "kind": "pv",
+        "component_id": "pv-synthetic-b",
+        "node_id": "node-b",
+        "member_id": "pv-synthetic-member",
+        "source_id": "synthetic-pv-source",
+        "p_kw": [-3.0, -1.0, 0.0, 0.0],
+        "q_kvar": [-0.3, -0.1, 0.0, 0.0]
+      },
+      {
+        "kind": "adoption",
+        "component_id": "adoption-synthetic-a",
+        "node_id": "node-a",
+        "member_id": "adoption-synthetic-member",
+        "source_id": "synthetic-adoption-source",
+        "p_kw": [0.0, 0.0, 0.0, 0.0],
+        "q_kvar": [0.0, 0.0, 0.0, 0.0]
+      },
+      {
+        "kind": "flexibility",
+        "component_id": "flexibility-synthetic-a",
+        "node_id": "node-a",
+        "member_id": "flexibility-synthetic-member",
+        "source_id": "synthetic-flexibility-source",
+        "p_kw": [-0.5, -0.5, 0.0, 0.0],
+        "q_kvar": [0.0, 0.0, 0.0, 0.0]
+      }
+    ]
+  }
+}
