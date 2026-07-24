@@ -1958,7 +1958,7 @@ def test_committed_ev_generic_loader_manifest_packet_matches_builder() -> None:
     committed = json.loads(packet_path.read_text(encoding="utf-8"))
 
     assert committed == expected
-    assert committed["status"] == "accepted_ev_generic_loader_manifests_candidate_only_blocked_for_integrated_results"
+    assert committed["status"] == "blocked_ev_generic_loader_manifests_multi_node_contract"
     assert committed["missing_generic_manifest_sha256_paths"] == []
     assert {row["scenario"] for row in committed["scenario_manifests"]} == {"low", "middle", "high"}
     assert committed["policy"] == {
@@ -1976,7 +1976,7 @@ def test_committed_ev_generic_loader_manifest_packet_matches_builder() -> None:
     }
 
 
-def test_ev_generic_loader_manifest_satisfies_agent_a_required_schema(tmp_path: Path) -> None:
+def test_ev_generic_loader_manifest_stays_fail_closed_at_agent_a_loader_boundary(tmp_path: Path) -> None:
     packet = json.loads(
         Path("data/metadata/ev_adoption/e3_s2a_ev_ic1_generic_component_output_manifest_packet.json").read_text(
             encoding="utf-8"
@@ -2001,7 +2001,7 @@ def test_ev_generic_loader_manifest_satisfies_agent_a_required_schema(tmp_path: 
         source_id="elaadnl_ev_accepted_artifact_index_preflight",
         member_id="ev005b_candidate_index_root20260722_sample0_all_declared_branches",
         calendar_id="planning-2035-europe-amsterdam-15min",
-        node_ids=("load_000_to_load_114",),
+        node_ids=tuple(f"load_{index:03d}" for index in range(115)),
         signed_register_ids=("A-014", "EV-003", "EV-005", "EV-005B", "EV-007", "EV-007A", "EV-008A", "EV-CAL-001"),
         blocking_register_ids=(),
         timestep_seconds=900,
@@ -2015,7 +2015,7 @@ def test_ev_generic_loader_manifest_satisfies_agent_a_required_schema(tmp_path: 
             scenario_ids=("low",),
             planning_years=(2035,),
             rho_values=(0.0,),
-            node_ids=("load_000_to_load_114",),
+            node_ids=tuple(f"load_{index:03d}" for index in range(115)),
             metadata={"calendar_id": "planning-2035-europe-amsterdam-15min"},
         ),
         (artifact,),
@@ -2039,18 +2039,26 @@ def test_ev_generic_loader_manifest_satisfies_agent_a_required_schema(tmp_path: 
     )
 
     codes = {item["code"] for item in preflight["blocker_manifest"]["items"]}
+    assert preflight["ready_for_artifact_loader_execution"] is False
     assert "component_output_manifest_required_keys_missing" not in codes
-    assert "component_output_manifest_not_accepted" not in codes
+    assert "component_output_manifest_not_accepted" in codes
+    assert "component_output_manifest_node_missing" in codes
     assert preflight["component_output_manifest_records"] == (
         {
             "kind": "ev",
             "artifact_id": "e2_s2_ev_ic1_accepted_artifact_index_preflight",
             "path": manifest_path.as_posix(),
-            "state": "accepted",
+            "state": "blocked",
             "sha256": manifest_sha,
             "expected_sha256": manifest_sha,
             "checksum_match": True,
         },
+    )
+    assert low_manifest["artifact_status"] == "blocked_multi_node_contract"
+    assert low_manifest["node_id"] == "ev_multi_node_axis_115"
+    assert (
+        low_manifest["provenance"]["agent_a_loader_boundary"]["blocker_id"]
+        == "A-LOADER-MULTI-NODE-EV-OUTPUT-CONTRACT-NOT-YET-SIGNED"
     )
 
 

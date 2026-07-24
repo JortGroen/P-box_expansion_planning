@@ -2,12 +2,12 @@
   "array_path": "data/processed/elaad_profiles/component_outputs/ev_ic1_candidate_component_output_high.npz",
   "array_sha256": "dd95f30d74da00b6fb87c2ced8f402b4d612c59a28e7d1d33e9e82fcd7a805d5",
   "artifact_id": "e3_s2a_ev_ic1_generic_component_output_2035_high",
-  "artifact_status": "accepted",
+  "artifact_status": "blocked_multi_node_contract",
   "calendar_id": "planning-2035-europe-amsterdam-15min",
   "component_id": "ev_component_output_2035_high",
   "kind": "ev",
   "member_id": "ev005b_root20260722_sample0_high_branch",
-  "node_id": "load_000_to_load_114",
+  "node_id": "ev_multi_node_axis_115",
   "provenance": {
     "a014_allocation_provenance": {
       "adoption_artifact_status": "accepted_executable_per_node_ev_adoption_allocation",
@@ -50,8 +50,13 @@
         "name": "Alkmaar"
       }
     },
+    "agent_a_loader_boundary": {
+      "blocker_id": "A-LOADER-MULTI-NODE-EV-OUTPUT-CONTRACT-NOT-YET-SIGNED",
+      "ready_for_current_npz_loader": false,
+      "reason": "EV currently stores one 115-node component-output NPZ per scenario, while the current Agent A NPZ artifact loader expects a one-node one-dimensional payload.",
+      "required_resolution": "Agent A signs a multi-node component-output loader contract or Agent C exports per-node EV manifests before real IC-1 loading."
+    },
     "agent_a_schema_target": "build_accepted_artifact_loader_blocker_preflight",
-    "aggregate_node_id_note": "The generic loader schema has a single node_id field; the EV NPZ carries the full 115-row node axis recorded here.",
     "artifact_type": "ev_generic_ic1_component_output_manifest",
     "calendar_mapping": {
       "n_timesteps": 35040,
@@ -70,6 +75,7 @@
     "held_out_access": false,
     "integrated_analysis_performed": false,
     "m_sufficiency_claimed": false,
+    "multi_node_axis_note": "The node_id field is a non-loadable axis marker for schema-shaped metadata only; the EV NPZ carries the full 115-row node axis recorded here.",
     "node_axis": {
       "a014_node_axis_order": "sorted_node_id",
       "node_axis_order": "matches_npz_node_ids_array_and_this_packet",

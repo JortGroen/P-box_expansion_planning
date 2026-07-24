@@ -2136,7 +2136,8 @@ EV_GENERIC_COMPONENT_OUTPUT_MANIFEST_DIR = "data/metadata/ev_adoption/generic_co
 EV_GENERIC_COMPONENT_OUTPUT_PACKET_PATH = (
     "data/metadata/ev_adoption/e3_s2a_ev_ic1_generic_component_output_manifest_packet.json"
 )
-EV_AGENT_A_AGGREGATE_NODE_ID = "load_000_to_load_114"
+EV_MULTI_NODE_OUTPUT_CONTRACT_BLOCKER_ID = "A-LOADER-MULTI-NODE-EV-OUTPUT-CONTRACT-NOT-YET-SIGNED"
+EV_MULTI_NODE_OUTPUT_NODE_ID = "ev_multi_node_axis_115"
 
 
 def ev_ic1_generic_component_output_loader_manifests(
@@ -2256,10 +2257,10 @@ def ev_ic1_generic_component_output_loader_manifests(
         member_id = f"ev005b_root20260722_sample0_{scenario}_branch"
         manifest = {
             "artifact_id": f"e3_s2a_ev_ic1_generic_component_output_2035_{scenario}",
-            "artifact_status": "accepted",
+            "artifact_status": "blocked_multi_node_contract",
             "kind": "ev",
             "component_id": f"ev_component_output_2035_{scenario}",
-            "node_id": EV_AGENT_A_AGGREGATE_NODE_ID,
+            "node_id": EV_MULTI_NODE_OUTPUT_NODE_ID,
             "member_id": member_id,
             "source_id": "D-002_D-010_D-012",
             "calendar_id": calendar.get("target_calendar_id"),
@@ -2280,9 +2281,21 @@ def ev_ic1_generic_component_output_loader_manifests(
                 "final_low_middle_high_branch_selected": False,
                 "profile_arrays_loaded_by_manifest_builder": False,
                 "agent_a_schema_target": "build_accepted_artifact_loader_blocker_preflight",
-                "aggregate_node_id_note": (
-                    "The generic loader schema has a single node_id field; the EV NPZ carries the full "
-                    "115-row node axis recorded here."
+                "agent_a_loader_boundary": {
+                    "ready_for_current_npz_loader": False,
+                    "blocker_id": EV_MULTI_NODE_OUTPUT_CONTRACT_BLOCKER_ID,
+                    "reason": (
+                        "EV currently stores one 115-node component-output NPZ per scenario, while the "
+                        "current Agent A NPZ artifact loader expects a one-node one-dimensional payload."
+                    ),
+                    "required_resolution": (
+                        "Agent A signs a multi-node component-output loader contract or Agent C exports "
+                        "per-node EV manifests before real IC-1 loading."
+                    ),
+                },
+                "multi_node_axis_note": (
+                    "The node_id field is a non-loadable axis marker for schema-shaped metadata only; "
+                    "the EV NPZ carries the full 115-row node axis recorded here."
                 ),
                 "node_axis": node_axis,
                 "calendar_mapping": calendar,
@@ -2320,18 +2333,36 @@ def ev_ic1_generic_component_output_loader_manifests(
         )
 
     missing_manifest_sha = [record["path"] for record in scenario_manifest_records if not record.get("sha256")]
+    multi_node_contract_blocker = {
+        "blocker_id": EV_MULTI_NODE_OUTPUT_CONTRACT_BLOCKER_ID,
+        "status": "blocked",
+        "reason": (
+            "EV component-output NPZs are multi-node arrays over 115 SimBench load nodes, but the current "
+            "Agent A accepted NPZ artifact loader expects one-dimensional p_kw/q_kvar/timestamps for one node."
+        ),
+        "required_resolution": (
+            "Use an A-owned multi-node component-output loader or an EV-owned per-node manifest/export strategy "
+            "before real IC-1 loading."
+        ),
+    }
+    remaining_blockers = list(accepted_artifact_index.get("remaining_blockers") or [])
+    if not any(row.get("blocker_id") == EV_MULTI_NODE_OUTPUT_CONTRACT_BLOCKER_ID for row in remaining_blockers if isinstance(row, Mapping)):
+        remaining_blockers.append(multi_node_contract_blocker)
+
     return {
         "artifact_type": "ev_ic1_generic_component_output_manifest_packet",
         "artifact_id": "e3_s2a_ev_ic1_generic_component_output_manifest_packet",
         "schema_version": 1,
         "task_id": "E3.S2a",
-        "status": "accepted_ev_generic_loader_manifests_candidate_only_blocked_for_integrated_results",
+        "status": "blocked_ev_generic_loader_manifests_multi_node_contract",
         "component_kind": "ev",
         "planning_year": 2035,
         "decision_ids": accepted_artifact_index.get("decision_ids"),
         "source_ids": accepted_artifact_index.get("source_ids"),
         "generic_loader_schema": {
-            "compatible_with": "build_accepted_artifact_loader_blocker_preflight",
+            "compatible_with": "build_accepted_artifact_loader_blocker_preflight_schema_keys_only",
+            "ready_for_current_agent_a_npz_loader": False,
+            "blocker_id": EV_MULTI_NODE_OUTPUT_CONTRACT_BLOCKER_ID,
             "required_keys_present_in_each_manifest": [
                 "artifact_id",
                 "artifact_status",
@@ -2356,7 +2387,8 @@ def ev_ic1_generic_component_output_loader_manifests(
             "component_output_recovery_preflight": recovery_preflight_path,
             "component_output_recovery_preflight_sha256": recovery_preflight_sha256,
         },
-        "remaining_blockers": accepted_artifact_index.get("remaining_blockers"),
+        "loader_contract_blocker": multi_node_contract_blocker,
+        "remaining_blockers": remaining_blockers,
         "missing_generic_manifest_sha256_paths": missing_manifest_sha,
         "policy": {
             "candidate_libraries_only": True,

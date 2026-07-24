@@ -14,7 +14,9 @@
     "RNG-001"
   ],
   "generic_loader_schema": {
-    "compatible_with": "build_accepted_artifact_loader_blocker_preflight",
+    "blocker_id": "A-LOADER-MULTI-NODE-EV-OUTPUT-CONTRACT-NOT-YET-SIGNED",
+    "compatible_with": "build_accepted_artifact_loader_blocker_preflight_schema_keys_only",
+    "ready_for_current_agent_a_npz_loader": false,
     "required_keys_present_in_each_manifest": [
       "artifact_id",
       "artifact_status",
@@ -31,17 +33,23 @@
     ],
     "scenario_branch_must_be_explicit": true
   },
+  "loader_contract_blocker": {
+    "blocker_id": "A-LOADER-MULTI-NODE-EV-OUTPUT-CONTRACT-NOT-YET-SIGNED",
+    "reason": "EV component-output NPZs are multi-node arrays over 115 SimBench load nodes, but the current Agent A accepted NPZ artifact loader expects one-dimensional p_kw/q_kvar/timestamps for one node.",
+    "required_resolution": "Use an A-owned multi-node component-output loader or an EV-owned per-node manifest/export strategy before real IC-1 loading.",
+    "status": "blocked"
+  },
   "manifests_by_scenario": {
     "high": {
       "array_path": "data/processed/elaad_profiles/component_outputs/ev_ic1_candidate_component_output_high.npz",
       "array_sha256": "dd95f30d74da00b6fb87c2ced8f402b4d612c59a28e7d1d33e9e82fcd7a805d5",
       "artifact_id": "e3_s2a_ev_ic1_generic_component_output_2035_high",
-      "artifact_status": "accepted",
+      "artifact_status": "blocked_multi_node_contract",
       "calendar_id": "planning-2035-europe-amsterdam-15min",
       "component_id": "ev_component_output_2035_high",
       "kind": "ev",
       "member_id": "ev005b_root20260722_sample0_high_branch",
-      "node_id": "load_000_to_load_114",
+      "node_id": "ev_multi_node_axis_115",
       "provenance": {
         "a014_allocation_provenance": {
           "adoption_artifact_status": "accepted_executable_per_node_ev_adoption_allocation",
@@ -84,8 +92,13 @@
             "name": "Alkmaar"
           }
         },
+        "agent_a_loader_boundary": {
+          "blocker_id": "A-LOADER-MULTI-NODE-EV-OUTPUT-CONTRACT-NOT-YET-SIGNED",
+          "ready_for_current_npz_loader": false,
+          "reason": "EV currently stores one 115-node component-output NPZ per scenario, while the current Agent A NPZ artifact loader expects a one-node one-dimensional payload.",
+          "required_resolution": "Agent A signs a multi-node component-output loader contract or Agent C exports per-node EV manifests before real IC-1 loading."
+        },
         "agent_a_schema_target": "build_accepted_artifact_loader_blocker_preflight",
-        "aggregate_node_id_note": "The generic loader schema has a single node_id field; the EV NPZ carries the full 115-row node axis recorded here.",
         "artifact_type": "ev_generic_ic1_component_output_manifest",
         "calendar_mapping": {
           "n_timesteps": 35040,
@@ -104,6 +117,7 @@
         "held_out_access": false,
         "integrated_analysis_performed": false,
         "m_sufficiency_claimed": false,
+        "multi_node_axis_note": "The node_id field is a non-loadable axis marker for schema-shaped metadata only; the EV NPZ carries the full 115-row node axis recorded here.",
         "node_axis": {
           "a014_node_axis_order": "sorted_node_id",
           "node_axis_order": "matches_npz_node_ids_array_and_this_packet",
@@ -475,12 +489,12 @@
       "array_path": "data/processed/elaad_profiles/component_outputs/ev_ic1_candidate_component_output_low.npz",
       "array_sha256": "a896794ddd9f004fe945c62a5b84b2b1b6e9381cbecd80b17ca7c749de68ce65",
       "artifact_id": "e3_s2a_ev_ic1_generic_component_output_2035_low",
-      "artifact_status": "accepted",
+      "artifact_status": "blocked_multi_node_contract",
       "calendar_id": "planning-2035-europe-amsterdam-15min",
       "component_id": "ev_component_output_2035_low",
       "kind": "ev",
       "member_id": "ev005b_root20260722_sample0_low_branch",
-      "node_id": "load_000_to_load_114",
+      "node_id": "ev_multi_node_axis_115",
       "provenance": {
         "a014_allocation_provenance": {
           "adoption_artifact_status": "accepted_executable_per_node_ev_adoption_allocation",
@@ -523,8 +537,13 @@
             "name": "Alkmaar"
           }
         },
+        "agent_a_loader_boundary": {
+          "blocker_id": "A-LOADER-MULTI-NODE-EV-OUTPUT-CONTRACT-NOT-YET-SIGNED",
+          "ready_for_current_npz_loader": false,
+          "reason": "EV currently stores one 115-node component-output NPZ per scenario, while the current Agent A NPZ artifact loader expects a one-node one-dimensional payload.",
+          "required_resolution": "Agent A signs a multi-node component-output loader contract or Agent C exports per-node EV manifests before real IC-1 loading."
+        },
         "agent_a_schema_target": "build_accepted_artifact_loader_blocker_preflight",
-        "aggregate_node_id_note": "The generic loader schema has a single node_id field; the EV NPZ carries the full 115-row node axis recorded here.",
         "artifact_type": "ev_generic_ic1_component_output_manifest",
         "calendar_mapping": {
           "n_timesteps": 35040,
@@ -543,6 +562,7 @@
         "held_out_access": false,
         "integrated_analysis_performed": false,
         "m_sufficiency_claimed": false,
+        "multi_node_axis_note": "The node_id field is a non-loadable axis marker for schema-shaped metadata only; the EV NPZ carries the full 115-row node axis recorded here.",
         "node_axis": {
           "a014_node_axis_order": "sorted_node_id",
           "node_axis_order": "matches_npz_node_ids_array_and_this_packet",
@@ -914,12 +934,12 @@
       "array_path": "data/processed/elaad_profiles/component_outputs/ev_ic1_candidate_component_output_middle.npz",
       "array_sha256": "38081c7f849bb679a19560d1a7f7fd6d8428e35ef6cad2087e4d82a46c1e568d",
       "artifact_id": "e3_s2a_ev_ic1_generic_component_output_2035_middle",
-      "artifact_status": "accepted",
+      "artifact_status": "blocked_multi_node_contract",
       "calendar_id": "planning-2035-europe-amsterdam-15min",
       "component_id": "ev_component_output_2035_middle",
       "kind": "ev",
       "member_id": "ev005b_root20260722_sample0_middle_branch",
-      "node_id": "load_000_to_load_114",
+      "node_id": "ev_multi_node_axis_115",
       "provenance": {
         "a014_allocation_provenance": {
           "adoption_artifact_status": "accepted_executable_per_node_ev_adoption_allocation",
@@ -962,8 +982,13 @@
             "name": "Alkmaar"
           }
         },
+        "agent_a_loader_boundary": {
+          "blocker_id": "A-LOADER-MULTI-NODE-EV-OUTPUT-CONTRACT-NOT-YET-SIGNED",
+          "ready_for_current_npz_loader": false,
+          "reason": "EV currently stores one 115-node component-output NPZ per scenario, while the current Agent A NPZ artifact loader expects a one-node one-dimensional payload.",
+          "required_resolution": "Agent A signs a multi-node component-output loader contract or Agent C exports per-node EV manifests before real IC-1 loading."
+        },
         "agent_a_schema_target": "build_accepted_artifact_loader_blocker_preflight",
-        "aggregate_node_id_note": "The generic loader schema has a single node_id field; the EV NPZ carries the full 115-row node axis recorded here.",
         "artifact_type": "ev_generic_ic1_component_output_manifest",
         "calendar_mapping": {
           "n_timesteps": 35040,
@@ -982,6 +1007,7 @@
         "held_out_access": false,
         "integrated_analysis_performed": false,
         "m_sufficiency_claimed": false,
+        "multi_node_axis_note": "The node_id field is a non-loadable axis marker for schema-shaped metadata only; the EV NPZ carries the full 115-row node axis recorded here.",
         "node_axis": {
           "a014_node_axis_order": "sorted_node_id",
           "node_axis_order": "matches_npz_node_ids_array_and_this_packet",
@@ -1390,6 +1416,12 @@
       "blocker_id": "A-016-CROSS-COMPONENT-SCENARIO-CONSISTENCY-NOT-YET-CHECKED",
       "reason": "EV, HP, PV, and baseline source-lineage consistency must be checked before integrated analysis.",
       "status": "blocked"
+    },
+    {
+      "blocker_id": "A-LOADER-MULTI-NODE-EV-OUTPUT-CONTRACT-NOT-YET-SIGNED",
+      "reason": "EV component-output NPZs are multi-node arrays over 115 SimBench load nodes, but the current Agent A accepted NPZ artifact loader expects one-dimensional p_kw/q_kvar/timestamps for one node.",
+      "required_resolution": "Use an A-owned multi-node component-output loader or an EV-owned per-node manifest/export strategy before real IC-1 loading.",
+      "status": "blocked"
     }
   ],
   "scenario_manifests": [
@@ -1399,14 +1431,14 @@
           "ev": "data/metadata/ev_adoption/generic_component_output_manifests/ev_2035_high.json"
         },
         "component_output_manifest_sha256_by_path": {
-          "data/metadata/ev_adoption/generic_component_output_manifests/ev_2035_high.json": "3f0c944f66ae8c0200e3e55e58df487f0e40b6867a8f761aa1792f13a30be77d"
+          "data/metadata/ev_adoption/generic_component_output_manifests/ev_2035_high.json": "14071413ade198201822263c033e52ced58408a708e9f6bcaef070a7fa7344e9"
         }
       },
       "array_path": "data/processed/elaad_profiles/component_outputs/ev_ic1_candidate_component_output_high.npz",
       "array_sha256": "dd95f30d74da00b6fb87c2ced8f402b4d612c59a28e7d1d33e9e82fcd7a805d5",
       "path": "data/metadata/ev_adoption/generic_component_output_manifests/ev_2035_high.json",
       "scenario": "high",
-      "sha256": "3f0c944f66ae8c0200e3e55e58df487f0e40b6867a8f761aa1792f13a30be77d"
+      "sha256": "14071413ade198201822263c033e52ced58408a708e9f6bcaef070a7fa7344e9"
     },
     {
       "agent_a_loader_inputs": {
@@ -1414,14 +1446,14 @@
           "ev": "data/metadata/ev_adoption/generic_component_output_manifests/ev_2035_low.json"
         },
         "component_output_manifest_sha256_by_path": {
-          "data/metadata/ev_adoption/generic_component_output_manifests/ev_2035_low.json": "d3edde0cdc73f926fea965ce78746bf430477a3443d899c0b7a37915a6a4249e"
+          "data/metadata/ev_adoption/generic_component_output_manifests/ev_2035_low.json": "249ba0f52d50d82f392cb80042001bae271043cebdc4f151dd8b981d56d3e43b"
         }
       },
       "array_path": "data/processed/elaad_profiles/component_outputs/ev_ic1_candidate_component_output_low.npz",
       "array_sha256": "a896794ddd9f004fe945c62a5b84b2b1b6e9381cbecd80b17ca7c749de68ce65",
       "path": "data/metadata/ev_adoption/generic_component_output_manifests/ev_2035_low.json",
       "scenario": "low",
-      "sha256": "d3edde0cdc73f926fea965ce78746bf430477a3443d899c0b7a37915a6a4249e"
+      "sha256": "249ba0f52d50d82f392cb80042001bae271043cebdc4f151dd8b981d56d3e43b"
     },
     {
       "agent_a_loader_inputs": {
@@ -1429,14 +1461,14 @@
           "ev": "data/metadata/ev_adoption/generic_component_output_manifests/ev_2035_middle.json"
         },
         "component_output_manifest_sha256_by_path": {
-          "data/metadata/ev_adoption/generic_component_output_manifests/ev_2035_middle.json": "1ee2e222815e42da576d74a785de24c3920d5a2f400dea859c73307fb6fd4fe2"
+          "data/metadata/ev_adoption/generic_component_output_manifests/ev_2035_middle.json": "38a1aa41c11736476fa9a8d0aa8d9119f1dac711f819dad9302da762de1152c4"
         }
       },
       "array_path": "data/processed/elaad_profiles/component_outputs/ev_ic1_candidate_component_output_middle.npz",
       "array_sha256": "38081c7f849bb679a19560d1a7f7fd6d8428e35ef6cad2087e4d82a46c1e568d",
       "path": "data/metadata/ev_adoption/generic_component_output_manifests/ev_2035_middle.json",
       "scenario": "middle",
-      "sha256": "1ee2e222815e42da576d74a785de24c3920d5a2f400dea859c73307fb6fd4fe2"
+      "sha256": "38a1aa41c11736476fa9a8d0aa8d9119f1dac711f819dad9302da762de1152c4"
     }
   ],
   "schema_version": 1,
@@ -1451,6 +1483,6 @@
     "D-010",
     "D-012"
   ],
-  "status": "accepted_ev_generic_loader_manifests_candidate_only_blocked_for_integrated_results",
+  "status": "blocked_ev_generic_loader_manifests_multi_node_contract",
   "task_id": "E3.S2a"
 }
