@@ -298,10 +298,13 @@ total model-output error; their dependence on inputs, time, and each other is
 unknown, so they are not sampled independently, assumed to cancel, or combined
 by root-sum-of-squares. Their conservative endpoint envelope is composed before
 event detection. Runner configuration and manifests must record timestep
-cadence and transformer capacity/denominator provenance. This approval does
-not resolve Q-5, total-versus-firm capacity, G2 error values, or numerical
-A-013 grid-error values; those remain blocking dependencies for paper-facing
-event results.
+cadence and transformer capacity/denominator provenance. G0-A3 has resolved
+Q-5: the primary executable event is strict `L_import > 1.0 p.u.` for four
+consecutive 15-minute import steps, with `1.1` and `1.2 p.u.` retained as
+sensitivities only. This approval does not resolve total-versus-firm capacity,
+G2 error values, numerical A-013 grid-error values, real endpoint records,
+A-016 scenario consistency, or G3 where the vertex shortcut is claimed; those
+remain blocking dependencies for paper-facing event results.
 
 The E5.S3 T2-T4 scaffold implements this approved endpoint propagation using
 synthetic loading trajectories only. It composes the additive Tier-1 and
@@ -311,8 +314,9 @@ events before estimating probabilities and confidence intervals. Synthetic
 alpha-family estimates are returned as separate alpha-indexed lower/upper
 probability results; no alpha level is collapsed into a scalar or widened after
 estimation. The scaffold does not introduce a signed A-013 value or authorize
-integrated event results while Q-5, G2, A-013, and capacity-provenance
-dependencies remain unresolved.
+integrated event results while G2, A-013, capacity/provenance, real endpoint
+records, A-016 scenario consistency, and G3 where the vertex shortcut is
+claimed remain unresolved.
 
 The `output-error-paper-readiness-v1` blocker manifest is a synthetic reporting
 preflight for this same protocol. It records the requested B-owned result kind,
