@@ -15,6 +15,7 @@ from src.contracts.net_load import validate_executable_input_gate
 from src.hp_model import HeatPumpProfile
 from src.pv_model import (
     PVCapacitySourcePacket,
+    PVCapacityValueChoicePacket,
     PVCBSAnchorEvidencePacket,
     PVGISReference,
     PVII3050GrowthEvidencePacket,
@@ -35,6 +36,7 @@ from src.pv_model import (
     generate_pv_profile,
     generate_pv_profile_from_input_artifact,
     load_pv_capacity_source_packet,
+    load_pv_capacity_value_choice_packet,
     load_pv_cbs_anchor_evidence_packet,
     load_pv_ii3050_growth_evidence_packet,
     load_pv_orientation_tilt_source_choice_packet,
@@ -1750,6 +1752,52 @@ def test_ii3050_growth_evidence_packet_rejects_silent_signed_scenario() -> None:
             raw_bundle=payload["raw_bundle"],
             table_evidence=payload["table_evidence"],
             growth_factor_choices_for_pi_review=payload["growth_factor_choices_for_pi_review"],
+            pi_approval_keys_before_executable_use=payload["pi_approval_keys_before_executable_use"],
+            non_claims=payload["non_claims"],
+        )
+
+
+def test_committed_d014_capacity_value_choice_packet_is_fail_closed() -> None:
+    packet = load_pv_capacity_value_choice_packet(
+        "data/metadata/weather_pv/d014_pv_capacity_value_choice_packet.json"
+    )
+    record = packet.identity_record()
+
+    assert packet.packet_id == "D014-PV-CAPACITY-VALUE-CHOICE-PACKET"
+    assert record["cbs_anchor_packet_id"] == "D014-CBS-PV-CAPACITY-ANCHOR-EVIDENCE"
+    assert record["ii3050_growth_packet_id"] == "D014-II3050-PV-GROWTH-EVIDENCE"
+    assert record["primary_equation_id"] == "dc_kwp_source_year_matched_ii3050_ratio"
+    assert record["executable_capacity_value_approved"] is False
+    assert "cbs_source_period_key" in packet.missing_approval_keys
+    assert "ii3050_scenario_column" in packet.missing_approval_keys
+    assert "scenario_source_consistency_with_ev_hp_inputs" in packet.missing_approval_keys
+    assert "PV-PARAM-001_or_amended_conversion_decision" in packet.missing_approval_keys
+    with pytest.raises(ValueError, match="PV capacity value choices are unsigned"):
+        packet.require_executable_capacity_value_approval()
+
+
+def test_capacity_value_choice_packet_rejects_silent_approval() -> None:
+    payload = json.loads(
+        Path("data/metadata/weather_pv/d014_pv_capacity_value_choice_packet.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    payload["pi_recommendation"]["recommendation_status"] = "approved"
+
+    with pytest.raises(ValueError, match="recommendation must remain proposed"):
+        PVCapacityValueChoicePacket(
+            packet_id=payload["packet_id"],
+            data_id=payload["data_id"],
+            status=payload["status"],
+            download_performed=payload["download_performed"],
+            raw_data_committed=payload["raw_data_committed"],
+            governing_decisions=payload["governing_decisions"],
+            source_evidence_inputs=payload["source_evidence_inputs"],
+            candidate_operands_for_pi_review=payload["candidate_operands_for_pi_review"],
+            candidate_equations_for_local_2035_capacity=payload["candidate_equations_for_local_2035_capacity"],
+            scenario_consistency_issue=payload["scenario_consistency_issue"],
+            capacity_convention_recommendation=payload["capacity_convention_recommendation"],
+            pi_recommendation=payload["pi_recommendation"],
             pi_approval_keys_before_executable_use=payload["pi_approval_keys_before_executable_use"],
             non_claims=payload["non_claims"],
         )
