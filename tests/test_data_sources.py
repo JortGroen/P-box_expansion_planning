@@ -1135,3 +1135,37 @@ def test_d014_statistical_orientation_tilt_packet_is_lightweight_and_metadata_on
     payload = json.loads(path.read_text(encoding="utf-8"))
     assert path.name == "d014_pv_statistical_orientation_tilt_packet.json"
     assert payload["status"].startswith("proposed_statistical_orientation_tilt_packet")
+
+
+def test_d014_orientation_tilt_source_choice_packet_lists_candidates_without_values(tmp_path: Path) -> None:
+    packet = pv_capacity.build_d014_pv_orientation_tilt_source_choice_packet()
+
+    assert packet["packet_id"] == "D014-PV-ORIENTATION-TILT-SOURCE-CHOICE-PACKET"
+    assert packet["data_id"] == "D-014"
+    assert packet["download_performed"] is False
+    assert packet["raw_data_committed"] is False
+    assert packet["approved_scope_decision"] == "PV-ORIENT-001"
+    assert packet["first_experiment_scope"]["statistical_orientation_tilt_classes_only"] is True
+    assert packet["first_experiment_scope"]["specific_3dbag_per_roof_workflow_allowed_now"] is False
+    candidate_ids = {candidate["source_id"] for candidate in packet["source_candidates"]}
+    assert {
+        "killinger_2018_pv_system_characteristics",
+        "utrecht_rooftop_pv_observed_systems",
+        "ramadhani_2023_rooftop_uncertainty_method",
+        "pvgis_reference",
+        "pvlib_conversion_candidate",
+        "jrc_dbsm_or_3dbag_deferred_building_level_work",
+    }.issubset(candidate_ids)
+    assert packet["recommended_source_order_for_pi_review"][0]["source_id"] == (
+        "killinger_2018_pv_system_characteristics"
+    )
+    assert packet["proposed_class_artifact_requirements"]["executable_allowed_now"] is False
+    assert "class_weight_values" in packet["pi_approval_keys_before_executable_use"]
+    assert "pv_conversion_treatment_for_classes" in packet["pi_approval_keys_before_executable_use"]
+    assert any("No orientation or tilt class bins" in item for item in packet["non_claims"])
+
+    path = pv_capacity.write_d014_pv_orientation_tilt_source_choice_packet(tmp_path)
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    assert path.name == "d014_pv_orientation_tilt_source_choice_packet.json"
+    assert payload["status"].startswith("proposed_source_choice_packet")
+

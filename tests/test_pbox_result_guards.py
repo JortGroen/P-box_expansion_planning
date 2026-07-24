@@ -137,13 +137,26 @@ def test_alpha_indexed_probability_report_rejects_collapsed_or_invalid_rows() ->
         assert_alpha_indexed_probability_report([])
 
     with pytest.raises(ValueError, match="missing fields"):
-        assert_alpha_indexed_probability_report([{k: v for k, v in base.items() if k != "p_upper"}])
+        assert_alpha_indexed_probability_report(
+            [{k: v for k, v in base.items() if k != "p_upper"}]
+        )
 
-    with pytest.raises(ValueError, match="collapse"):
-        assert_alpha_indexed_probability_report([{**base, "defuzzified_probability": 0.02}])
+    for field in (
+        "defuzzified_probability",
+        "expected_probability",
+        "mean_probability",
+        "p_hat",
+        "p_mid",
+        "probability",
+    ):
+        with pytest.raises(ValueError, match="collapse"):
+            assert_alpha_indexed_probability_report([{**base, field: 0.02}])
 
-    with pytest.raises(ValueError, match="unique"):
+    with pytest.raises(ValueError, match="strictly increasing"):
         assert_alpha_indexed_probability_report([base, dict(base)])
+
+    with pytest.raises(ValueError, match="strictly increasing"):
+        assert_alpha_indexed_probability_report([{**base, "alpha": 0.5}, base])
 
     with pytest.raises(ValueError, match="p_lower <= p_upper"):
         assert_alpha_indexed_probability_report([{**base, "p_lower": 0.04}])

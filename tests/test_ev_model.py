@@ -39,6 +39,7 @@ from src.ev_model import (
     ev_ic1_candidate_adapter_artifact,
     ev_ic1_candidate_member_reference_artifact,
     ev_ic1_component_input_scaffold_artifact,
+    ev_candidate_profile_checksum_preflight_artifact,
     ev_library_integration_artifact_from_manifest,
     ev_member_selection_implementation_plan,
     ev_planning_calendar_mapping_expectation,
@@ -684,6 +685,192 @@ def test_ev_candidate_checksum_guardrail_rejects_held_out_paths() -> None:
 
     with pytest.raises(ValueError, match="candidate processed files only"):
         ev_candidate_checksum_expectations(readiness)
+
+
+def _synthetic_ev_component_input_scaffold() -> dict[str, object]:
+    return {
+        "artifact_type": "ev_ic1_component_input_scaffold",
+        "component_kind": "ev",
+        "planning_year": 2035,
+        "calendar_mapping": {
+            "rule_id": EV_CALENDAR_MAPPING_RULE_ID,
+            "n_timesteps": EXPECTED_FULL_YEAR_STEPS,
+        },
+        "source_artifacts": {
+            "candidate_adapter_artifact": "candidate-adapter.json",
+            "candidate_member_reference": "member-reference.json",
+            "candidate_selection_manifest_set": "selection-manifests.json.gz",
+        },
+        "policy": {
+            "candidate_libraries_only": True,
+            "held_out_access": False,
+            "quarantined_access": False,
+            "profile_arrays_loaded": False,
+            "integrated_analysis_performed": False,
+            "event_or_p_e_analysis_performed": False,
+            "capacity_screen_performed": False,
+            "manuscript_numbers_produced": False,
+            "m_sufficiency_claimed": False,
+            "final_low_middle_high_branch_selected": False,
+        },
+    }
+
+
+def test_ev_candidate_profile_checksum_preflight_records_verified_candidate_files(
+    tmp_path: Path,
+) -> None:
+    payload = b"synthetic candidate bytes"
+    processed_path = tmp_path / "data" / "processed" / "elaad_profiles" / "candidate.npz"
+    processed_path.parent.mkdir(parents=True)
+    processed_path.write_bytes(payload)
+    digest = ev_model._sha256_file(processed_path)
+    readiness = {
+        "libraries": [
+            {
+                "library_id": "synthetic_home",
+                "component_id": EV_HOME_COMPONENT,
+                "candidate_member_count": 100,
+                "candidate_batches": [
+                    {
+                        "seed": 140001,
+                        "processed_path": processed_path.relative_to(tmp_path).as_posix(),
+                        "processed_sha256_file": digest,
+                        "n_profiles": 100,
+                        "n_timesteps": EXPECTED_FULL_YEAR_STEPS,
+                        "capacity_class": None,
+                        "cp_capacity_kw": 11,
+                    }
+                ],
+            }
+        ]
+    }
+    verifications = verify_ev_candidate_checksums(readiness, base_dir=tmp_path)
+
+    artifact = ev_candidate_profile_checksum_preflight_artifact(
+        _synthetic_ev_component_input_scaffold(),
+        readiness,
+        verifications,
+        verification_timestamp_utc="2026-07-24T12:00:00Z",
+    )
+
+    assert artifact["artifact_type"] == "ev_ic1_candidate_profile_checksum_preflight"
+    assert artifact["status"] == "candidate_processed_checksums_verified_array_loading_still_blocked"
+    assert artifact["verification"]["candidate_processed_file_count"] == 1
+    assert artifact["verification"]["by_component"][EV_HOME_COMPONENT] == {
+        "batch_count": 1,
+        "member_count": 100,
+        "byte_size": len(payload),
+    }
+    assert artifact["verification"]["all_observed_sha256_match_expected"] is True
+    assert artifact["verification"]["verified_candidate_batches"][0]["checksum_verified"] is True
+    assert artifact["ic1_preconditions"]["future_consumer_must_reverify_ignored_files_before_array_loading"] is True
+    assert artifact["policy"]["profile_arrays_loaded"] is False
+
+
+def test_ev_candidate_profile_checksum_preflight_requires_complete_coverage(
+    tmp_path: Path,
+) -> None:
+    payload = b"synthetic candidate bytes"
+    processed_path = tmp_path / "data" / "processed" / "elaad_profiles" / "candidate.npz"
+    processed_path.parent.mkdir(parents=True)
+    processed_path.write_bytes(payload)
+    digest = ev_model._sha256_file(processed_path)
+    readiness = {
+        "libraries": [
+            {
+                "library_id": "synthetic_home",
+                "component_id": EV_HOME_COMPONENT,
+                "candidate_member_count": 200,
+                "candidate_batches": [
+                    {
+                        "seed": 140001,
+                        "processed_path": processed_path.relative_to(tmp_path).as_posix(),
+                        "processed_sha256_file": digest,
+                        "n_profiles": 100,
+                        "n_timesteps": EXPECTED_FULL_YEAR_STEPS,
+                    },
+                    {
+                        "seed": 140101,
+                        "processed_path": "data/processed/elaad_profiles/missing_candidate.npz",
+                        "processed_sha256_file": "b" * 64,
+                        "n_profiles": 100,
+                        "n_timesteps": EXPECTED_FULL_YEAR_STEPS,
+                    },
+                ],
+            }
+        ]
+    }
+    partial = verify_ev_candidate_checksums(
+        {"libraries": [{**readiness["libraries"][0], "candidate_batches": [readiness["libraries"][0]["candidate_batches"][0]]}]},
+        base_dir=tmp_path,
+    )
+
+    with pytest.raises(ValueError, match="verification for every candidate batch"):
+        ev_candidate_profile_checksum_preflight_artifact(
+            _synthetic_ev_component_input_scaffold(),
+            readiness,
+            partial,
+            verification_timestamp_utc="2026-07-24T12:00:00Z",
+        )
+
+
+def test_ev_candidate_profile_checksum_preflight_does_not_load_arrays() -> None:
+    source = inspect.getsource(ev_candidate_profile_checksum_preflight_artifact)
+
+    assert "load_processed_batch_npz" not in source
+    assert "np.load" not in source
+
+
+def test_committed_ev_candidate_profile_checksum_preflight_records_fast_provenance() -> None:
+    artifact = json.loads(
+        Path(
+            "data/metadata/ev_adoption/e2_s2_ev_candidate_profile_checksum_preflight.json"
+        ).read_text(encoding="utf-8")
+    )
+
+    assert artifact["artifact_type"] == "ev_ic1_candidate_profile_checksum_preflight"
+    assert artifact["status"] == "candidate_processed_checksums_verified_array_loading_still_blocked"
+    assert artifact["decision_ids"] == [
+        "EV-003",
+        "EV-005",
+        "EV-005B",
+        "EV-007A",
+        "A-014",
+        "EV-008A",
+        "EV-CAL-001",
+        "RNG-001",
+    ]
+    verification = artifact["verification"]
+    assert verification["candidate_processed_file_count"] == 22
+    assert verification["candidate_batch_count"] == 22
+    assert verification["candidate_member_count"] == 2200
+    assert verification["by_component"][EV_HOME_COMPONENT]["member_count"] == 1000
+    assert verification["by_component"][EV_PUBLIC_COMPONENT]["member_count"] == 1200
+    assert verification["public_member_count_by_capacity_class"] == {
+        "public_11kw": 300,
+        "public_13kw": 300,
+        "public_15kw": 300,
+        "public_22kw": 300,
+    }
+    assert verification["all_observed_sha256_match_expected"] is True
+    sample = verification["verified_candidate_batches"][0]
+    assert sample["component_id"] == EV_HOME_COMPONENT
+    assert sample["seed"] == 140001
+    assert sample["observed_sha256"] == sample["expected_sha256"]
+    assert artifact["calendar_mapping"]["rule_id"] == EV_CALENDAR_MAPPING_RULE_ID
+    assert artifact["calendar_mapping"]["source_timestep_i_maps_to_target_timestep_i"] is True
+    assert artifact["policy"] == {
+        "candidate_libraries_only": True,
+        "held_out_access": False,
+        "quarantined_access": False,
+        "profile_arrays_loaded": False,
+        "integrated_analysis_performed": False,
+        "event_or_p_e_analysis_performed": False,
+        "capacity_screen_performed": False,
+        "final_low_middle_high_branch_selected": False,
+        "m_sufficiency_claimed": False,
+        "manuscript_numbers_produced": False,
+    }
 
 
 def test_ev_planning_calendar_mapping_guardrail_requires_2035_mapping() -> None:
