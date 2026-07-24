@@ -16,6 +16,7 @@ from src.hp_model import HeatPumpProfile
 from src.pv_model import (
     PVCapacitySourcePacket,
     PVGISReference,
+    PVOrientationTiltSourceChoicePacket,
     PVStatisticalOrientationTiltPacket,
     PVSystemConfig,
     PVWeatherInputArtifact,
@@ -31,6 +32,7 @@ from src.pv_model import (
     generate_pv_profile,
     generate_pv_profile_from_input_artifact,
     load_pv_capacity_source_packet,
+    load_pv_orientation_tilt_source_choice_packet,
     load_pv_statistical_orientation_tilt_packet,
     load_pv_weather_input_artifact,
     parse_pvgis_monthly_reference,
@@ -1665,3 +1667,48 @@ def test_statistical_orientation_tilt_packet_rejects_building_level_scope() -> N
             pi_questions=payload["pi_questions"],
             non_claims=payload["non_claims"],
         )
+
+
+def test_committed_d014_orientation_tilt_source_choice_packet_is_fail_closed() -> None:
+    packet = load_pv_orientation_tilt_source_choice_packet(
+        "data/metadata/weather_pv/d014_pv_orientation_tilt_source_choice_packet.json"
+    )
+    record = packet.identity_record()
+
+    assert packet.packet_id == "D014-PV-ORIENTATION-TILT-SOURCE-CHOICE-PACKET"
+    assert packet.approved_scope_decision == "PV-ORIENT-001"
+    assert packet.download_performed is False
+    assert packet.raw_data_committed is False
+    assert record["statistical_orientation_tilt_classes_only"] is True
+    assert record["roof_or_location_level_extraction_allowed_now"] is False
+    assert record["executable_allowed_now"] is False
+    assert "killinger_2018_pv_system_characteristics" in record["source_candidate_ids"]
+    assert "jrc_dbsm_or_3dbag_deferred_building_level_work" in record["source_candidate_ids"]
+    assert "orientation_tilt_distribution_source_id" in packet.missing_approval_keys
+    assert "class_weight_values" in packet.missing_approval_keys
+    assert "pv_param_001_or_amended_conversion_decision" in packet.missing_approval_keys
+    with pytest.raises(ValueError, match="orientation/tilt source, class bins, weights"):
+        packet.require_executable_source_choice_approval()
+
+
+def test_orientation_tilt_source_choice_packet_rejects_roof_level_scope() -> None:
+    payload = json.loads(Path("data/metadata/weather_pv/d014_pv_orientation_tilt_source_choice_packet.json").read_text(encoding="utf-8"))
+    payload["first_experiment_scope"]["roof_or_location_level_extraction_allowed_now"] = True
+
+    with pytest.raises(ValueError, match="roof/location-level extraction"):
+        PVOrientationTiltSourceChoicePacket(
+            packet_id=payload["packet_id"],
+            data_id=payload["data_id"],
+            status=payload["status"],
+            download_performed=payload["download_performed"],
+            raw_data_committed=payload["raw_data_committed"],
+            approved_scope_decision=payload["approved_scope_decision"],
+            first_experiment_scope=payload["first_experiment_scope"],
+            recommended_source_order_for_pi_review=payload["recommended_source_order_for_pi_review"],
+            source_candidates=payload["source_candidates"],
+            proposed_class_artifact_requirements=payload["proposed_class_artifact_requirements"],
+            source_backing_summary=payload["source_backing_summary"],
+            pi_approval_keys_before_executable_use=payload["pi_approval_keys_before_executable_use"],
+            non_claims=payload["non_claims"],
+        )
+

@@ -316,6 +316,144 @@ def load_pv_statistical_orientation_tilt_packet(path: str | Path) -> PVStatistic
 
 
 @dataclass(frozen=True)
+class PVOrientationTiltSourceChoicePacket:
+    """Proposed source-choice packet for statistical PV orientation/tilt classes."""
+
+    packet_id: str
+    data_id: str
+    status: str
+    download_performed: bool
+    raw_data_committed: bool
+    approved_scope_decision: str
+    first_experiment_scope: Mapping[str, object]
+    recommended_source_order_for_pi_review: Sequence[Mapping[str, object]]
+    source_candidates: Sequence[Mapping[str, object]]
+    proposed_class_artifact_requirements: Mapping[str, object]
+    source_backing_summary: Mapping[str, object]
+    pi_approval_keys_before_executable_use: Sequence[str]
+    non_claims: Sequence[str]
+
+    def __post_init__(self) -> None:
+        if self.packet_id != "D014-PV-ORIENTATION-TILT-SOURCE-CHOICE-PACKET":
+            raise ValueError("orientation/tilt source-choice packet must identify D014-PV-ORIENTATION-TILT-SOURCE-CHOICE-PACKET")
+        if self.data_id != "D-014":
+            raise ValueError("orientation/tilt source-choice packet must identify D-014")
+        if not str(self.status).startswith("proposed_"):
+            raise ValueError("orientation/tilt source-choice packet must remain proposed until PI approval")
+        if self.download_performed is not False or self.raw_data_committed is not False:
+            raise ValueError("orientation/tilt source-choice packet must not claim raw retrieval or committed raw data")
+        if self.approved_scope_decision != "PV-ORIENT-001":
+            raise ValueError("orientation/tilt source-choice packet must be governed by PV-ORIENT-001")
+        scope = _audit_json_mapping(self.first_experiment_scope, "first_experiment_scope")
+        class_requirements = _audit_json_mapping(
+            self.proposed_class_artifact_requirements,
+            "proposed_class_artifact_requirements",
+        )
+        backing = _audit_json_mapping(self.source_backing_summary, "source_backing_summary")
+        source_order = tuple(
+            _audit_json_mapping(item, "recommended_source_order_for_pi_review item")
+            for item in self.recommended_source_order_for_pi_review
+        )
+        candidates = tuple(_audit_json_mapping(item, "source_candidate item") for item in self.source_candidates)
+        approval_keys = tuple(str(item) for item in self.pi_approval_keys_before_executable_use)
+        non_claims = tuple(str(item) for item in self.non_claims)
+        if scope.get("statistical_orientation_tilt_classes_only") is not True:
+            raise ValueError("first experiment must remain statistical orientation/tilt classes only")
+        if scope.get("roof_or_location_level_extraction_allowed_now") is not False:
+            raise ValueError("roof/location-level extraction must remain blocked")
+        if scope.get("specific_3dbag_per_roof_workflow_allowed_now") is not False:
+            raise ValueError("3DBAG per-roof workflow must remain blocked")
+        if class_requirements.get("executable_allowed_now") is not False:
+            raise ValueError("orientation/tilt source-choice artifact must be fail-closed")
+        required = {
+            "orientation_tilt_distribution_source_id",
+            "orientation_class_bin_definitions",
+            "tilt_class_bin_definitions",
+            "class_weight_values",
+            "pv_conversion_treatment_for_classes",
+            "pv_param_001_or_amended_conversion_decision",
+            "d014_capacity_value_artifact",
+            "node_allocation_rule",
+        }
+        missing = required.difference(approval_keys)
+        if missing:
+            raise ValueError(f"orientation/tilt source-choice packet missing approval keys: {sorted(missing)}")
+        candidate_ids = {str(item.get("source_id")) for item in candidates}
+        for source_id in (
+            "killinger_2018_pv_system_characteristics",
+            "utrecht_rooftop_pv_observed_systems",
+            "ramadhani_2023_rooftop_uncertainty_method",
+            "pvgis_reference",
+            "pvlib_conversion_candidate",
+            "jrc_dbsm_or_3dbag_deferred_building_level_work",
+        ):
+            if source_id not in candidate_ids:
+                raise ValueError(f"orientation/tilt source-choice packet missing source candidate {source_id}")
+        if not any("No source candidate is selected as final" in item for item in non_claims):
+            raise ValueError("packet must state that no source candidate is final")
+        if not any("No orientation or tilt class bins" in item for item in non_claims):
+            raise ValueError("packet must state that no bins or weights are approved")
+        if not any("No 3DBAG per-roof" in item for item in non_claims):
+            raise ValueError("packet must state that heavy 3DBAG/per-roof work is not implemented")
+
+        object.__setattr__(self, "first_experiment_scope", scope)
+        object.__setattr__(self, "recommended_source_order_for_pi_review", source_order)
+        object.__setattr__(self, "source_candidates", candidates)
+        object.__setattr__(self, "proposed_class_artifact_requirements", class_requirements)
+        object.__setattr__(self, "source_backing_summary", backing)
+        object.__setattr__(self, "pi_approval_keys_before_executable_use", approval_keys)
+        object.__setattr__(self, "non_claims", non_claims)
+
+    @property
+    def missing_approval_keys(self) -> tuple[str, ...]:
+        return self.pi_approval_keys_before_executable_use
+
+    def require_executable_source_choice_approval(self) -> None:
+        """Always fail until a signed statistical orientation/tilt source choice replaces this packet."""
+        raise ValueError(
+            "D-014 PV orientation/tilt source, class bins, weights, capacity artifact, allocation, "
+            "and PV conversion treatment are unsigned"
+        )
+
+    def identity_record(self) -> dict[str, object]:
+        return {
+            "packet_id": self.packet_id,
+            "data_id": self.data_id,
+            "status": self.status,
+            "approved_scope_decision": self.approved_scope_decision,
+            "statistical_orientation_tilt_classes_only": self.first_experiment_scope[
+                "statistical_orientation_tilt_classes_only"
+            ],
+            "roof_or_location_level_extraction_allowed_now": self.first_experiment_scope[
+                "roof_or_location_level_extraction_allowed_now"
+            ],
+            "executable_allowed_now": self.proposed_class_artifact_requirements["executable_allowed_now"],
+            "source_candidate_ids": tuple(str(item["source_id"]) for item in self.source_candidates),
+            "missing_approval_keys": self.missing_approval_keys,
+        }
+
+
+def load_pv_orientation_tilt_source_choice_packet(path: str | Path) -> PVOrientationTiltSourceChoicePacket:
+    """Load the proposed D-014 orientation/tilt source-choice packet."""
+    payload = json.loads(Path(path).read_text(encoding="utf-8"))
+    return PVOrientationTiltSourceChoicePacket(
+        packet_id=str(payload.get("packet_id", "")),
+        data_id=str(payload.get("data_id", "")),
+        status=str(payload.get("status", "")),
+        download_performed=bool(payload.get("download_performed")),
+        raw_data_committed=bool(payload.get("raw_data_committed")),
+        approved_scope_decision=str(payload.get("approved_scope_decision", "")),
+        first_experiment_scope=payload.get("first_experiment_scope", {}),
+        recommended_source_order_for_pi_review=payload.get("recommended_source_order_for_pi_review", ()),
+        source_candidates=payload.get("source_candidates", ()),
+        proposed_class_artifact_requirements=payload.get("proposed_class_artifact_requirements", {}),
+        source_backing_summary=payload.get("source_backing_summary", {}),
+        pi_approval_keys_before_executable_use=payload.get("pi_approval_keys_before_executable_use", ()),
+        non_claims=payload.get("non_claims", ()),
+    )
+
+
+@dataclass(frozen=True)
 class PVGenerationProfile:
     """PV generation produced from one validated paired weather member."""
 
