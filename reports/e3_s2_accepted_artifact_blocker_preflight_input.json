@@ -1,7 +1,7 @@
 {
   "schema_version": "e3_s2_accepted_artifact_blocker_preflight_input_v1",
   "task_id": "E3.S2",
-  "intended_use": "e3_s2_accepted_artifact_loader_blocker_preflight_after_pr234_235_236_237_238",
+  "intended_use": "e3_s2_accepted_artifact_loader_blocker_preflight_after_pr234_to_pr241",
   "scope": "metadata_preflight_only_no_arrays_no_ic2_execution_no_events_no_probability_no_capacity_screen",
   "config": {
     "config_id": "e3_s2_accepted_artifact_loader_blocker_preflight_v1",
@@ -31,7 +31,7 @@
       "no_event_detection": true,
       "no_probability_estimate": true,
       "no_capacity_screen_result": true,
-      "refresh_basis": "origin/main after PR #234, #235, #236, #237, and #238 merged",
+      "refresh_basis": "origin/main through PR #241 after PR #234, #235, #236, #237, #238, #240, and #241 merged",
       "ic2_bridge_preflight_path": "reports/E3_S2_EXECUTABLE_BRIDGE_PREFLIGHT.md",
       "primary_threshold_metadata": "G0-A3: strict L_import > 1.0 p.u. for four consecutive 15-minute import steps over the full year; 1.1 and 1.2 are sensitivities only",
       "accepted_artifact_loader_helper": "build_accepted_artifact_loader_blocker_preflight"
@@ -141,12 +141,12 @@
       }
     },
     {
-      "artifact_id": "d004_pv_final_acceptance_gate_packet",
+      "artifact_id": "D014-PV-EXECUTABLE-READINESS-BLOCKERS",
       "kind": "pv",
       "artifact_status": "unsigned",
-      "version_id": "d004_pv_final_acceptance_gate_packet_v1",
-      "source_id": "d004_pv_final_acceptance_gate_metadata",
-      "member_id": "pv_final_acceptance_unapproved",
+      "version_id": "d014_pv_executable_readiness_blockers_v1",
+      "source_id": "d014_pv_executable_readiness_blockers_metadata",
+      "member_id": "pv_weather_source_member_ready_pv_generation_blocked",
       "calendar_id": "calendar_2035_15min_full_year_35040",
       "node_ids": [
         "simbench_1_mv_semiurb_0_sw_all_in_service_load_nodes"
@@ -159,35 +159,25 @@
         "PV-ORIENT-001"
       ],
       "blocking_register_ids": [
-        "PV-PARAM-001",
-        "D-014",
-        "D014-PV-CAPACITY-SOURCE-VALUE-PACKET",
-        "D014-CBS-PV-CAPACITY-ANCHOR-EVIDENCE",
         "D014-PV-CAPACITY-APPROVAL-TEMPLATE",
-        "D014-PV-STATISTICAL-ORIENTATION-TILT-PACKET",
-        "FINAL-PAIRED-HP-PV-ACCEPTANCE",
-        "COLD-SPELL-ACCEPTANCE"
+        "A-016",
+        "PV-ORIENT-001",
+        "PV-PARAM-001",
+        "future_node_allocation_rule",
+        "future_final_paired_acceptance"
       ],
       "timestep_seconds": 900,
       "shared_weather_driver_id": "d004_alkmaar_berkhout_2014_2023_v1:unselected",
-      "manifest_path": "data/metadata/weather_pv/d004_pv_final_acceptance_gate_packet.json",
+      "manifest_path": "data/metadata/weather_pv/d014_pv_executable_readiness_blockers.json",
       "provenance": {
-        "discovered_path": "data/metadata/weather_pv/d004_pv_final_acceptance_gate_packet.json",
-        "supporting_report": "reports/e2_s4_pv_final_acceptance_gate_packet.md",
-        "older_paired_readiness_packet": "data/metadata/weather_pv/d004_pv_paired_readiness_preflight_packet.json",
-        "weather_input_artifact": "data/metadata/weather_pv/d004_alkmaar_berkhout_2014_2023_v1_weather_input_artifact.json",
-        "classification_note": "PV final-acceptance gate packet remains the current PV/weather gate packet after PR #237. PV-CAP-001 and PV-ORIENT-001 approve route/scope only; concrete D-014 numeric capacity values, scenario growth, capacity convention, per-node allocation, statistical orientation/tilt source/weights, PV-PARAM-001, final paired HP/PV acceptance, and cold-spell acceptance remain unresolved before executable PV/weather input.",
-        "capacity_source_route": "PV-CAP-001 approved route; PR #222 added D-014 CBS Alkmaar anchor evidence, but executable row/year/field, numeric capacity value, scenario growth factor, capacity convention, and per-node allocation remain pending.",
-        "packet_status": "blocked pending PV-PARAM-001, D-014 value/source packets including CBS anchor value choice, final paired HP/PV acceptance, and cold-spell acceptance; PV-CAP-001/PV-ORIENT-001 route and scope approved but executable values pending",
-        "readiness_bucket": "proposed_blocked",
-        "supporting_capacity_source_value_packet": "data/metadata/weather_pv/d014_pv_capacity_source_value_packet.json",
-        "supporting_statistical_orientation_tilt_packet": "data/metadata/weather_pv/d014_pv_statistical_orientation_tilt_packet.json",
-        "supporting_statistical_orientation_report": "reports/e2_s4_d014_pv_statistical_orientation_tilt_packet.md",
-        "orientation_tilt_route": "PV-ORIENT-001 approves statistical orientation/tilt scope only; D014-PV-STATISTICAL-ORIENTATION-TILT-PACKET is proposed and source, bins, weights, and conversion treatment remain pending.",
-        "supporting_cbs_capacity_anchor_evidence": "data/metadata/weather_pv/d014_cbs_85005ned_alkmaar_gm0361_anchor_evidence.json",
-        "supporting_cbs_capacity_anchor_report": "reports/e2_s4_d014_cbs_capacity_anchor_evidence.md",
+        "discovered_path": "data/metadata/weather_pv/d014_pv_executable_readiness_blockers.json",
+        "supporting_report": "reports/e2_s4_d014_pv_executable_readiness_blockers.md",
+        "supporting_weather_input_artifact": "data/metadata/weather_pv/d004_alkmaar_berkhout_2014_2023_v1_weather_input_artifact.json",
         "supporting_capacity_approval_template": "data/metadata/weather_pv/d014_pv_capacity_approval_template.json",
-        "supporting_capacity_approval_template_sha256": "f4124256525f9004d4a12dce5150bc9ad73935661586884f1ff781073a07a6f7"
+        "supporting_capacity_approval_template_sha256": "f4124256525f9004d4a12dce5150bc9ad73935661586884f1ff781073a07a6f7",
+        "classification_note": "Merged PR #241 records accepted weather source/member readiness but keeps executable PV generation blocked until D-014 capacity, A-016 scenario consistency, PV-ORIENT/PV-PARAM, node allocation, and final paired HP/PV/cold-spell gates are signed.",
+        "packet_status": "proposed fail-closed executable PV readiness blockers; executable values unsigned",
+        "readiness_bucket": "proposed_blocked"
       }
     },
     {
@@ -245,7 +235,7 @@
     }
   ],
   "metadata": {
-    "refresh_basis": "origin/main after PR #234, #235, #236, #237, and #238 merged",
+    "refresh_basis": "origin/main through PR #241 after PR #234, #235, #236, #237, #238, #240, and #241 merged",
     "ev_output_verifier_status": "merged_pr_234_consumption_packet_available_metadata_only",
     "checksum_policy": "source and component-output manifest paths require version-controlled expected SHA-256 before accepted-artifact loader execution",
     "no_real_net_load_arrays": true,
@@ -257,7 +247,9 @@
     "merged_dependency_notes": {
       "PR-234": "EV component-output consumption packet is present on main and consumed as metadata only.",
       "PR-235": "A-014 executable EV adoption artifact is present on main and accepted for declared branch metadata.",
-      "PR-236": "synthetic artifact-loader assembly smoke harness is present on main; no real arrays are opened here."
+      "PR-236": "synthetic artifact-loader assembly smoke harness is present on main; no real arrays are opened here.",
+      "PR-240": "Hybrid source-readiness guard is present on main.",
+      "PR-241": "PV executable-readiness blocker packet is present on main and consumed as metadata only."
     }
   },
   "trajectory_config": {
@@ -288,9 +280,9 @@
     "reports/e2_s5_baseline_diversity_readiness.md": "35dddc989ff32e313ffcb22c16d26f494596445b6ba1879117168feb285a9d0c",
     "data/metadata/ev_adoption/e2_s2_ev_ic1_component_output_consumption_packet.json": "05e899f0718b6a527a1350921939f9244274a76440ba65eab83d25b1056ddc9d",
     "data/metadata/hp_scaling/hp001_alkmaar_gm0361_executable_value_binding_decision_packet.json": "609a9631498559c6af4926f640e0c00ac9d2cac44aa40e8b3dbf5cd80a952270",
-    "data/metadata/weather_pv/d004_pv_final_acceptance_gate_packet.json": "e88761b7735681ea1a3f59445617899d6dcc4f723779661115c3a99d1b85b94a",
     "data/metadata/ev_adoption/e2_s6_a014_alkmaar_executable_adoption_artifact.json": "5504d71bda5c388254013690c64407763bb37179a5cd82b6aa1199f216d933ad",
-    "src/flex_aggregator.py": "7b07ffb68d8e153593c47cd611f653a2208c37c7836275566e6d783a87a583cb"
+    "src/flex_aggregator.py": "7b07ffb68d8e153593c47cd611f653a2208c37c7836275566e6d783a87a583cb",
+    "data/metadata/weather_pv/d014_pv_executable_readiness_blockers.json": "9bf7ed48cf266e3292d5bafc179becb0326160329056c9845d5ee9f7e9bc5844"
   },
   "downstream_blocker_ids": [
     "A-013",
