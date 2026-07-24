@@ -109,6 +109,308 @@ def estimate_gaussian_toy_pbox(
 
 
 @dataclass(frozen=True)
+class GaussianCrosscheckAlphaRecord:
+    """Manifest row comparing one alpha-cut p-box result with its oracle."""
+
+    alpha: float
+    rho_lower: float
+    rho_upper: float
+    closed_form_lower: float
+    closed_form_upper: float
+    estimated_lower: float
+    estimated_upper: float
+    absolute_error_lower: float
+    absolute_error_upper: float
+
+    def __post_init__(self) -> None:
+        for name, value in self.to_mapping().items():
+            if name == "alpha" or name.startswith("rho_"):
+                if not isinstance(value, float) or not math.isfinite(value):
+                    raise ValueError(f"{name} must be finite")
+            elif isinstance(value, float) and (
+                not math.isfinite(value) or not 0.0 <= value <= 1.0
+            ):
+                raise ValueError(f"{name} must be finite and in [0, 1]")
+        if self.rho_lower > self.rho_upper:
+            raise ValueError("rho_lower must be <= rho_upper")
+        if self.closed_form_lower > self.closed_form_upper:
+            raise ValueError("closed-form lower bound must not exceed upper bound")
+        if self.estimated_lower > self.estimated_upper:
+            raise ValueError("estimated lower bound must not exceed upper bound")
+
+    def to_mapping(self) -> dict[str, float]:
+        return {
+            "absolute_error_lower": self.absolute_error_lower,
+            "absolute_error_upper": self.absolute_error_upper,
+            "alpha": self.alpha,
+            "closed_form_lower": self.closed_form_lower,
+            "closed_form_upper": self.closed_form_upper,
+            "estimated_lower": self.estimated_lower,
+            "estimated_upper": self.estimated_upper,
+            "rho_lower": self.rho_lower,
+            "rho_upper": self.rho_upper,
+        }
+
+
+@dataclass(frozen=True)
+class GaussianCrosscheckManifest:
+    """JSON-stable synthetic E5.S4 analytic trust-certificate payload."""
+
+    rows: tuple[GaussianCrosscheckAlphaRecord, ...]
+    tolerance: float
+    sample_count: int
+    root_seed: int
+    use_status: str = "synthetic-only"
+    crosscheck_id: str = "E5.S4-gaussian-analytic-v1"
+
+    def __post_init__(self) -> None:
+        if self.crosscheck_id != "E5.S4-gaussian-analytic-v1":
+            raise ValueError("crosscheck_id must identify the E5.S4 Gaussian fixture")
+        if self.use_status != "synthetic-only":
+            raise ValueError("Gaussian cross-check manifest must remain synthetic-only")
+        if not self.rows:
+            raise ValueError("rows must not be empty")
+        if not math.isfinite(self.tolerance) or self.tolerance <= 0.0:
+            raise ValueError("tolerance must be finite and positive")
+        if self.sample_count <= 0:
+            raise ValueError("sample_count must be positive")
+        if self.root_seed < 0:
+            raise ValueError("root_seed must be nonnegative")
+        alphas = tuple(row.alpha for row in self.rows)
+        if alphas != tuple(sorted(alphas)) or len(set(alphas)) != len(alphas):
+            raise ValueError("rows must be strictly increasing in alpha")
+
+    @property
+    def max_absolute_error(self) -> float:
+        return max(
+            max(row.absolute_error_lower, row.absolute_error_upper)
+            for row in self.rows
+        )
+
+    @property
+    def passed(self) -> bool:
+        return self.max_absolute_error <= self.tolerance
+
+    def to_mapping(self) -> dict[str, object]:
+        return {
+            "alpha_rows": [row.to_mapping() for row in self.rows],
+            "closed_form_oracle": (
+                "P(E_toy | rho)=1-Phi((c_toy-mu_0+beta*rho)/sigma)"
+            ),
+            "crosscheck_id": self.crosscheck_id,
+            "g3_claim": "none-pre-g3-synthetic",
+            "max_absolute_error": self.max_absolute_error,
+            "passed": self.passed,
+            "probability_reporting": "alpha-indexed-lower-upper-only",
+            "root_seed": self.root_seed,
+            "sample_count": self.sample_count,
+            "synthetic_non_claims": [
+                "no real trajectories",
+                "no real P(E)",
+                "no capacity screen",
+                "no manuscript number",
+            ],
+            "tolerance": self.tolerance,
+            "use_status": self.use_status,
+        }
+
+
+def assert_gaussian_crosscheck_manifest_payload(payload: Mapping[str, object]) -> None:
+    """Validate a serialized synthetic Gaussian cross-check manifest."""
+
+    required = {
+        "alpha_rows",
+        "closed_form_oracle",
+        "crosscheck_id",
+        "g3_claim",
+        "max_absolute_error",
+        "passed",
+        "probability_reporting",
+        "root_seed",
+        "sample_count",
+        "synthetic_non_claims",
+        "tolerance",
+        "use_status",
+    }
+    missing = sorted(required.difference(payload))
+    if missing:
+        raise ValueError(f"Gaussian cross-check payload missing fields: {missing}")
+    if "defuzzified_probability" in payload:
+        raise ValueError("Gaussian cross-check payload must not be defuzzified")
+    if payload["crosscheck_id"] != "E5.S4-gaussian-analytic-v1":
+        raise ValueError("crosscheck_id must identify the E5.S4 Gaussian fixture")
+    if payload["use_status"] != "synthetic-only":
+        raise ValueError("Gaussian cross-check payload must remain synthetic-only")
+    if payload["probability_reporting"] != "alpha-indexed-lower-upper-only":
+        raise ValueError("probability_reporting must remain alpha-indexed lower/upper")
+    if payload["g3_claim"] != "none-pre-g3-synthetic":
+        raise ValueError("Gaussian cross-check payload must not claim G3 approval")
+    if not isinstance(payload["passed"], bool):
+        raise TypeError("passed must be boolean")
+    sample_count = payload["sample_count"]
+    root_seed = payload["root_seed"]
+    if (
+        isinstance(sample_count, bool)
+        or not isinstance(sample_count, int)
+        or sample_count <= 0
+    ):
+        raise ValueError("sample_count must be a positive integer")
+    if (
+        isinstance(root_seed, bool)
+        or not isinstance(root_seed, int)
+        or root_seed < 0
+    ):
+        raise ValueError("root_seed must be a nonnegative integer")
+    tolerance = _finite_probability_like(
+        payload["tolerance"], name="tolerance", positive=True
+    )
+    reported_max_error = _finite_probability_like(
+        payload["max_absolute_error"], name="max_absolute_error"
+    )
+    rows_obj = payload["alpha_rows"]
+    if not isinstance(rows_obj, Sequence) or isinstance(rows_obj, (str, bytes)):
+        raise TypeError("alpha_rows must be a sequence of row mappings")
+    if not rows_obj:
+        raise ValueError("alpha_rows must not be empty")
+    alphas: list[float] = []
+    row_errors: list[float] = []
+    for index, row_obj in enumerate(rows_obj):
+        if not isinstance(row_obj, Mapping):
+            raise TypeError(f"alpha_rows[{index}] must be a mapping")
+        row = _coerce_gaussian_crosscheck_row(row_obj, index=index)
+        alphas.append(row.alpha)
+        row_errors.extend([row.absolute_error_lower, row.absolute_error_upper])
+        if "defuzzified_probability" in row_obj:
+            raise ValueError("Gaussian cross-check rows must not be defuzzified")
+    if alphas != sorted(alphas) or len(set(alphas)) != len(alphas):
+        raise ValueError("alpha_rows must be strictly increasing in alpha")
+    derived_max_error = max(row_errors)
+    if not math.isclose(
+        reported_max_error, derived_max_error, rel_tol=0.0, abs_tol=1e-15
+    ):
+        raise ValueError("max_absolute_error must match row errors")
+    if payload["passed"] != (reported_max_error <= tolerance):
+        raise ValueError("passed must match max_absolute_error <= tolerance")
+
+
+def _coerce_gaussian_crosscheck_row(
+    row: Mapping[str, object],
+    *,
+    index: int,
+) -> GaussianCrosscheckAlphaRecord:
+    required = {
+        "absolute_error_lower",
+        "absolute_error_upper",
+        "alpha",
+        "closed_form_lower",
+        "closed_form_upper",
+        "estimated_lower",
+        "estimated_upper",
+        "rho_lower",
+        "rho_upper",
+    }
+    missing = sorted(required.difference(row))
+    if missing:
+        raise ValueError(f"alpha_rows[{index}] missing fields: {missing}")
+    return GaussianCrosscheckAlphaRecord(
+        alpha=_finite_probability_like(row["alpha"], name=f"alpha_rows[{index}].alpha"),
+        rho_lower=_finite_number(row["rho_lower"], name=f"alpha_rows[{index}].rho_lower"),
+        rho_upper=_finite_number(row["rho_upper"], name=f"alpha_rows[{index}].rho_upper"),
+        closed_form_lower=_finite_probability_like(
+            row["closed_form_lower"], name=f"alpha_rows[{index}].closed_form_lower"
+        ),
+        closed_form_upper=_finite_probability_like(
+            row["closed_form_upper"], name=f"alpha_rows[{index}].closed_form_upper"
+        ),
+        estimated_lower=_finite_probability_like(
+            row["estimated_lower"], name=f"alpha_rows[{index}].estimated_lower"
+        ),
+        estimated_upper=_finite_probability_like(
+            row["estimated_upper"], name=f"alpha_rows[{index}].estimated_upper"
+        ),
+        absolute_error_lower=_finite_probability_like(
+            row["absolute_error_lower"],
+            name=f"alpha_rows[{index}].absolute_error_lower",
+        ),
+        absolute_error_upper=_finite_probability_like(
+            row["absolute_error_upper"],
+            name=f"alpha_rows[{index}].absolute_error_upper",
+        ),
+    )
+
+
+def _finite_probability_like(
+    value: object,
+    *,
+    name: str,
+    positive: bool = False,
+) -> float:
+    numeric = _finite_number(value, name=name)
+    if positive:
+        if numeric <= 0.0:
+            raise ValueError(f"{name} must be positive")
+    elif not 0.0 <= numeric <= 1.0:
+        raise ValueError(f"{name} must be in [0, 1]")
+    return numeric
+
+
+def _finite_number(value: object, *, name: str) -> float:
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise TypeError(f"{name} must be numeric")
+    numeric = float(value)
+    if not math.isfinite(numeric):
+        raise ValueError(f"{name} must be finite")
+    return numeric
+def build_gaussian_crosscheck_manifest(
+    *,
+    fuzzy_number: TrapezoidalFuzzyNumber,
+    alpha_grid: Sequence[float],
+    params: GaussianToyParameters,
+    sample_count: int,
+    root_seed: int,
+    tolerance: float = 0.01,
+) -> GaussianCrosscheckManifest:
+    """Compare the synthetic Gaussian p-box path with closed-form endpoints."""
+
+    expected = gaussian_closed_form_bounds(
+        fuzzy_number=fuzzy_number,
+        alpha_grid=alpha_grid,
+        params=params,
+    )
+    estimated = estimate_gaussian_toy_pbox(
+        fuzzy_number=fuzzy_number,
+        alpha_grid=alpha_grid,
+        params=params,
+        sample_count=sample_count,
+        root_seed=root_seed,
+    )
+    rows = []
+    for alpha in sorted(expected):
+        cut = fuzzy_number.alpha_cut(alpha)
+        expected_lower, expected_upper = expected[alpha]
+        result = estimated[alpha]
+        rows.append(
+            GaussianCrosscheckAlphaRecord(
+                alpha=alpha,
+                rho_lower=cut.lower,
+                rho_upper=cut.upper,
+                closed_form_lower=expected_lower,
+                closed_form_upper=expected_upper,
+                estimated_lower=result.lower.probability,
+                estimated_upper=result.upper.probability,
+                absolute_error_lower=abs(result.lower.probability - expected_lower),
+                absolute_error_upper=abs(result.upper.probability - expected_upper),
+            )
+        )
+    return GaussianCrosscheckManifest(
+        rows=tuple(rows),
+        tolerance=tolerance,
+        sample_count=sample_count,
+        root_seed=root_seed,
+    )
+
+
+@dataclass(frozen=True)
 class OutputErrorToyTrajectory:
     """Synthetic loading trajectory for output-error trust-certificate checks."""
 
