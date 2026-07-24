@@ -9,6 +9,7 @@ allowed to present as paper-facing.
 from __future__ import annotations
 
 from dataclasses import dataclass
+import math
 from typing import Mapping, Sequence
 
 from src.pbox import PBoxFamily, VertexUseMode
@@ -343,3 +344,106 @@ def _validate_output_error_record(record: Mapping[str, object]) -> None:
         raise ValueError(
             "output_error_record must preserve probability_widening='forbidden'"
         )
+    event_counts = _expect_mapping(
+        record["event_count_bounds"], name="output_error_record.event_count_bounds"
+    )
+    probability_bounds = _expect_mapping(
+        record["probability_bounds"], name="output_error_record.probability_bounds"
+    )
+    sample_events = _expect_sequence(
+        record["sample_endpoint_events"],
+        name="output_error_record.sample_endpoint_events",
+    )
+    lower_successes = _expect_nonnegative_int(
+        event_counts.get("lower_successes"), name="lower_successes"
+    )
+    upper_successes = _expect_nonnegative_int(
+        event_counts.get("upper_successes"), name="upper_successes"
+    )
+    sample_count = _expect_nonnegative_int(
+        event_counts.get("sample_count"), name="sample_count"
+    )
+    if sample_count == 0:
+        raise ValueError("output_error_record sample_count must be positive")
+    if lower_successes > upper_successes:
+        raise ValueError("output_error_record expected lower_successes <= upper_successes")
+    if upper_successes > sample_count:
+        raise ValueError("output_error_record successes cannot exceed sample_count")
+    if len(sample_events) != sample_count:
+        raise ValueError("output_error_record sample events must match sample_count")
+
+    lower_probability = _validate_probability_estimate_record(
+        _expect_mapping(probability_bounds.get("lower"), name="probability_bounds.lower"),
+        expected_successes=lower_successes,
+        expected_sample_count=sample_count,
+        name="probability_bounds.lower",
+    )
+    upper_probability = _validate_probability_estimate_record(
+        _expect_mapping(probability_bounds.get("upper"), name="probability_bounds.upper"),
+        expected_successes=upper_successes,
+        expected_sample_count=sample_count,
+        name="probability_bounds.upper",
+    )
+    if lower_probability > upper_probability:
+        raise ValueError("output_error_record expected lower probability <= upper probability")
+
+    observed_lower = 0
+    observed_upper = 0
+    for expected_index, event in enumerate(sample_events):
+        event_mapping = _expect_mapping(event, name="sample_endpoint_event")
+        if event_mapping.get("sample_index") != expected_index:
+            raise ValueError("output_error_record sample_index values must be consecutive")
+        lower_event = event_mapping.get("lower_event")
+        upper_event = event_mapping.get("upper_event")
+        if not isinstance(lower_event, bool) or not isinstance(upper_event, bool):
+            raise TypeError("sample endpoint events must use boolean event flags")
+        # Lower endpoint events are a subset of upper endpoint events under the
+        # conservative loading envelope; otherwise the serialized record cannot
+        # support lower/upper p-box interpretation.
+        if lower_event and not upper_event:
+            raise ValueError("sample endpoint lower_event cannot exceed upper_event")
+        observed_lower += int(lower_event)
+        observed_upper += int(upper_event)
+    if (observed_lower, observed_upper) != (lower_successes, upper_successes):
+        raise ValueError("output_error_record event counts must match sample events")
+
+
+def _validate_probability_estimate_record(
+    estimate: Mapping[str, object],
+    *,
+    expected_successes: int,
+    expected_sample_count: int,
+    name: str,
+) -> float:
+    required = {"ci_lower", "ci_upper", "probability", "sample_count", "successes"}
+    _require_mapping_fields(estimate, required, name=name)
+    successes = _expect_nonnegative_int(estimate["successes"], name=f"{name}.successes")
+    sample_count = _expect_nonnegative_int(
+        estimate["sample_count"], name=f"{name}.sample_count"
+    )
+    if successes != expected_successes or sample_count != expected_sample_count:
+        raise ValueError(f"{name} must match endpoint event counts")
+    probability = _expect_probability(estimate["probability"], name=f"{name}.probability")
+    expected_probability = successes / sample_count
+    if not math.isclose(probability, expected_probability, rel_tol=0.0, abs_tol=1e-12):
+        raise ValueError(f"{name}.probability must equal successes / sample_count")
+    ci_lower = _expect_probability(estimate["ci_lower"], name=f"{name}.ci_lower")
+    ci_upper = _expect_probability(estimate["ci_upper"], name=f"{name}.ci_upper")
+    if not ci_lower <= probability <= ci_upper:
+        raise ValueError(f"{name} confidence interval must contain probability")
+    return probability
+
+
+def _expect_probability(value: object, *, name: str) -> float:
+    probability = float(value)
+    if not math.isfinite(probability) or not 0.0 <= probability <= 1.0:
+        raise ValueError(f"{name} must be finite and in [0, 1]")
+    return probability
+
+
+def _expect_nonnegative_int(value: object, *, name: str) -> int:
+    if isinstance(value, bool) or not isinstance(value, int):
+        raise TypeError(f"{name} must be a nonnegative integer")
+    if value < 0:
+        raise ValueError(f"{name} must be nonnegative")
+    return value
