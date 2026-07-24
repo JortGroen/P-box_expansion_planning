@@ -3767,6 +3767,173 @@ def ev_ic1_component_input_scaffold_artifact(
         },
     }
 
+def a014_executable_adoption_artifact(
+    config: dict[str, Any],
+    *,
+    source_config_path: str = "configs/scenarios.yaml",
+    source_config_sha256: str | None = None,
+    preview_artifact_path: str = "data/metadata/ev_adoption/e2_s6_a014_alkmaar_allocation_preview.json",
+    preview_artifact_sha256: str | None = None,
+) -> dict[str, object]:
+    """Build the accepted per-node EV adoption allocation artifact for IC-1.
+
+    This is an adoption-count artifact only. It materializes EV-007A/A-014
+    counts and node allocations, but does not select a final scenario branch or
+    load any EV profile arrays.
+    """
+
+    validate_adoption_scenarios_config(config)
+    if config["local_grid_scenarios"].get("status") != "approved":
+        raise ValueError("Executable A-014 adoption artifact requires approved EV-007A local totals")
+    if config["allocation"].get("status") != "approved":
+        raise ValueError("Executable A-014 adoption artifact requires approved A-014 node weights")
+    if source_config_sha256 is not None:
+        source_config_sha256 = _require_sha256(source_config_sha256, "source_config_sha256")
+    if preview_artifact_sha256 is not None:
+        preview_artifact_sha256 = _require_sha256(preview_artifact_sha256, "preview_artifact_sha256")
+
+    scenarios = {item.scenario: item for item in adoption_scenarios(config)}
+    if set(scenarios) != {"low", "middle", "high"}:
+        raise ValueError("Executable A-014 adoption artifact requires low/middle/high declared branches")
+    allocations = adoption_node_allocations(config)
+    if {item.scenario for item in allocations} != set(scenarios):
+        raise ValueError("Executable A-014 adoption artifact scenario coverage mismatch")
+
+    weight_records = config["allocation"].get("node_weights")
+    if not isinstance(weight_records, list):
+        raise ValueError("Executable A-014 adoption artifact requires materialized node weights")
+    node_weights: list[dict[str, object]] = []
+    for record in weight_records:
+        if not isinstance(record, dict):
+            raise ValueError("A-014 node weight records must be mappings")
+        node_id = _require_non_empty_string(record.get("node_id"), "node_id")
+        weight = float(record.get("weight"))
+        if not np.isfinite(weight) or weight < 0.0:
+            raise ValueError("A-014 node weights must be finite and non-negative")
+        node_weights.append(
+            {
+                "node_id": node_id,
+                "source_load_index": _require_int(record.get("source_load_index"), "source_load_index"),
+                "weight": weight,
+                "weight_share": float(record.get("weight_share")),
+            }
+        )
+    if len(node_weights) != 115 or len({row["node_id"] for row in node_weights}) != len(node_weights):
+        raise ValueError("Executable A-014 adoption artifact requires 115 unique node weights")
+    if not np.isclose(sum(float(row["weight_share"]) for row in node_weights), 1.0):
+        raise ValueError("A-014 node weight shares must sum to one")
+
+    allocation_records: list[dict[str, object]] = []
+    node_ids: tuple[str, ...] | None = None
+    for allocation in sorted(allocations, key=lambda item: item.scenario):
+        scenario = scenarios[allocation.scenario]
+        current_nodes = tuple(sorted(allocation.home_by_node))
+        if current_nodes != tuple(sorted(allocation.public_by_node)):
+            raise ValueError("A-014 home/public allocations must cover the same nodes")
+        if node_ids is None:
+            node_ids = current_nodes
+        elif node_ids != current_nodes:
+            raise ValueError("A-014 scenario allocations must cover one stable node set")
+        if allocation.total_home_charge_points != scenario.home_charge_points:
+            raise ValueError("A-014 home allocation total does not match EV-007A local count")
+        if allocation.total_public_charge_points != scenario.public_charge_points:
+            raise ValueError("A-014 public allocation total does not match EV-007A local count")
+        node_records = [
+            {
+                "node_id": node_id,
+                "home_charge_points": allocation.home_by_node[node_id],
+                "public_charge_points": allocation.public_by_node[node_id],
+            }
+            for node_id in current_nodes
+        ]
+        allocation_records.append(
+            {
+                "scenario": allocation.scenario,
+                "planning_year": allocation.year,
+                "home_charge_points": scenario.home_charge_points,
+                "public_charge_points": scenario.public_charge_points,
+                "node_count": len(current_nodes),
+                "node_allocations": node_records,
+                "provenance": scenario.provenance,
+                "total_conservation_verified": True,
+                "nonnegative_integer_counts_verified": True,
+            }
+        )
+
+    stable_node_ids = tuple(node_ids or ())
+    if len(stable_node_ids) != 115:
+        raise ValueError("Executable A-014 adoption artifact requires 115 node IDs")
+    selected_cluster = config.get("local_count_workflow", {}).get("selected_cluster", {})
+    if not isinstance(selected_cluster, dict):
+        selected_cluster = {}
+    source_ids = config.get("source_ids")
+    if not isinstance(source_ids, dict):
+        raise ValueError("Executable A-014 adoption artifact requires source IDs")
+
+    return {
+        "schema_version": 1,
+        "artifact_type": "a014_executable_ev_adoption_allocation_artifact",
+        "artifact_id": "e2_s6_a014_alkmaar_executable_adoption_artifact",
+        "status": "accepted_executable_per_node_ev_adoption_allocation",
+        "task_id": "E2.S6",
+        "planning_year": 2035,
+        "source_ids": ["D-010"],
+        "decision_ids": ["EV-007", "EV-007A", "A-014"],
+        "source_artifacts": {
+            "scenario_config": source_config_path,
+            "scenario_config_sha256": source_config_sha256,
+            "historical_preview_artifact": preview_artifact_path,
+            "historical_preview_artifact_sha256": preview_artifact_sha256,
+            "local_count_metadata": "data/metadata/ev_adoption/e2_s6_local_adoption_counts_metadata.json",
+        },
+        "selected_local_proxy": {
+            "area_type": selected_cluster.get("area_type", "municipalities"),
+            "area_identifier": selected_cluster.get("area_identifier", "GM0361"),
+            "name": selected_cluster.get("name", "Alkmaar"),
+            "governing_decision": "EV-007A",
+        },
+        "allocation_method": {
+            "method_id": "A-014",
+            "status": "approved",
+            "stage": "second_stage_after_ev007_local_totals",
+            "weight_column": "p_mw",
+            "integer_rounding": "largest_remainder_ties_by_node_id",
+            "node_weight_source": config["allocation"].get("node_weight_source"),
+        },
+        "scenario_selection": {
+            "declared_branches": ["low", "middle", "high"],
+            "final_low_middle_high_branch_selected": False,
+            "selection_status": config["local_grid_scenarios"].get("scenario_selection_status"),
+        },
+        "node_axis": {
+            "node_ids": list(stable_node_ids),
+            "node_count": len(stable_node_ids),
+            "node_axis_order": "sorted_node_id",
+        },
+        "node_weights": node_weights,
+        "scenario_allocations": allocation_records,
+        "scenario_totals": {
+            record["scenario"]: {
+                "home": record["home_charge_points"],
+                "public": record["public_charge_points"],
+            }
+            for record in allocation_records
+        },
+        "policy": {
+            "executable_adoption_counts": True,
+            "candidate_profile_arrays_loaded": False,
+            "held_out_access": False,
+            "quarantined_access": False,
+            "integrated_analysis_performed": False,
+            "event_or_p_e_analysis_performed": False,
+            "capacity_screen_performed": False,
+            "final_low_middle_high_branch_selected": False,
+            "m_sufficiency_claimed": False,
+            "manuscript_numbers_produced": False,
+        },
+    }
+
+
 def adoption_node_allocations(config: dict[str, Any]) -> tuple[NodeChargePointAllocation, ...]:
     """Derive deterministic per-node home/public charge-point allocations."""
 

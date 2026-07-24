@@ -24,6 +24,7 @@ from src.ev_model import (
     EVProfileBootstrapSampler,
     EVProfileLibrary,
     EXPECTED_FULL_YEAR_STEPS,
+    a014_executable_adoption_artifact,
     a014_node_weights_from_load_table,
     adoption_node_allocations,
     adoption_scenarios,
@@ -2844,6 +2845,74 @@ def test_committed_local_scenarios_materialize_a014_node_weights() -> None:
         "middle": (9386, 5127),
         "high": (10343, 6138),
     }
+
+
+def test_committed_a014_executable_adoption_artifact_matches_builder() -> None:
+    config_path = Path("configs/scenarios.yaml")
+    preview_path = Path("data/metadata/ev_adoption/e2_s6_a014_alkmaar_allocation_preview.json")
+    config = load_adoption_scenarios_config(config_path)
+
+    expected = a014_executable_adoption_artifact(
+        config,
+        source_config_path=config_path.as_posix(),
+        source_config_sha256=_git_blob_sha256(config_path),
+        preview_artifact_path=preview_path.as_posix(),
+        preview_artifact_sha256=_git_blob_sha256(preview_path),
+    )
+    committed = json.loads(
+        Path(
+            "data/metadata/ev_adoption/e2_s6_a014_alkmaar_executable_adoption_artifact.json"
+        ).read_text(encoding="utf-8")
+    )
+
+    assert committed == expected
+    assert committed["artifact_type"] == "a014_executable_ev_adoption_allocation_artifact"
+    assert committed["status"] == "accepted_executable_per_node_ev_adoption_allocation"
+    assert committed["decision_ids"] == ["EV-007", "EV-007A", "A-014"]
+    assert committed["scenario_totals"] == {
+        "high": {"home": 10343, "public": 6138},
+        "low": {"home": 7992, "public": 4183},
+        "middle": {"home": 9386, "public": 5127},
+    }
+    assert committed["node_axis"]["node_count"] == 115
+    assert committed["scenario_selection"]["final_low_middle_high_branch_selected"] is False
+    assert committed["policy"] == {
+        "executable_adoption_counts": True,
+        "candidate_profile_arrays_loaded": False,
+        "held_out_access": False,
+        "quarantined_access": False,
+        "integrated_analysis_performed": False,
+        "event_or_p_e_analysis_performed": False,
+        "capacity_screen_performed": False,
+        "final_low_middle_high_branch_selected": False,
+        "m_sufficiency_claimed": False,
+        "manuscript_numbers_produced": False,
+    }
+
+
+def test_a014_executable_adoption_artifact_conserves_all_node_totals() -> None:
+    artifact = a014_executable_adoption_artifact(load_adoption_scenarios_config(Path("configs/scenarios.yaml")))
+
+    assert len(artifact["node_axis"]["node_ids"]) == 115
+    for record in artifact["scenario_allocations"]:
+        node_rows = record["node_allocations"]
+        assert len(node_rows) == 115
+        assert sum(row["home_charge_points"] for row in node_rows) == record["home_charge_points"]
+        assert sum(row["public_charge_points"] for row in node_rows) == record["public_charge_points"]
+        assert all(row["home_charge_points"] >= 0 and row["public_charge_points"] >= 0 for row in node_rows)
+
+
+def test_a014_executable_adoption_artifact_rejects_unapproved_statuses() -> None:
+    config = load_adoption_scenarios_config(Path("configs/scenarios.yaml"))
+    config["local_grid_scenarios"]["status"] = "proposed"
+    config["local_grid_scenarios"]["scenarios"] = []
+    with pytest.raises(ValueError, match="approved EV-007A"):
+        a014_executable_adoption_artifact(config)
+
+    config = load_adoption_scenarios_config(Path("configs/scenarios.yaml"))
+    config["allocation"]["status"] = "proposed"
+    with pytest.raises(ValueError, match="approved A-014"):
+        a014_executable_adoption_artifact(config)
 
 
 def test_unapproved_allocation_status_cannot_allocate() -> None:
