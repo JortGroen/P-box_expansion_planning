@@ -439,9 +439,7 @@ sampling is required.
 The E4.S2 scaffold provides a deterministic interior alpha-cut sampling path
 for synthetic validation and possible activation if G3 rejects endpoint-only
 propagation. It reuses the same canonical sample identities for every rho
-candidate within an alpha-cut and reports only alpha-indexed lower and upper
-probability bounds; it does not produce or authorize paper-facing probability
-results before G3 and downstream event dependencies are resolved.
+candidate within an alpha-cut and reports only alpha-indexed lower and upper probability bounds. Its synthetic `interior-pbox-fallback-report-v1` payload and serialized validator preserve the rho grid, lower/upper extrema, confidence intervals, and pre-G3 non-claims after JSON transport; it does not produce or authorize paper-facing probability results before G3 and downstream event dependencies are resolved.
 
 The E6.S2 decision-layer scaffold is likewise synthetic and pre-G3 only. Given
 validated alpha-indexed lower and upper event-probability curves that are
