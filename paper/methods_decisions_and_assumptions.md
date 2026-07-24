@@ -1739,6 +1739,12 @@ annual TWh values, 2035 HP adoption, final scaling choices, D-004 acceptance,
 paired-weather cold-spell checks, net-load integration, event analysis, `P(E)`,
 threshold runs, capacity-screen results, manuscript numbers, or probability
 results.
+
+<!-- methods-id: E2-S3-HP001-COMPONENT-OUTPUT-READINESS-BLOCKER -->
+### E2-S3-HP001-COMPONENT-OUTPUT-READINESS-BLOCKER - HP-001 Component-Output Readiness Blocker Packet
+
+**Status: Proposed blocker/preflight packet; executable HP outputs unsigned.** The HP-001 component-output readiness blocker packet defines the metadata a future heat-pump component-output artifact must expose before IC-1 or any integrated consumer may use it. The preflight requires signed approval IDs for annual value binding, 2035 adoption/electrification, A-016 scenario-source consistency, D-004 paired-weather acceptance, and cold-spell tolerances; a real HP output artifact path and SHA-256 checksum; a 35,040-step, 900-second WEATHER-001 calendar; identical HP/PV weather identity fields including `shared_weather_driver_id`, `member_id`, source, and content checksum; and separate traceability for SFH/MFH space heat and domestic hot water components with their approved When2Heat shape and COP columns. Any missing approval, missing artifact/checksum, HP/PV weather mismatch, unsigned component provenance, or unresolved blocker ID keeps the preflight red. This packet does not approve annual HP TWh values, 2035 adoption/electrification/service fractions, final D-004 paired-weather or cold-spell acceptance, net-load/event analysis, `P(E)`, capacity screens, threshold analysis, manuscript numbers, or probability results.
+
 <!-- methods-id: OWN-001 -->
 ### OWN-001 - Machine-Enforced Agent Ownership
 

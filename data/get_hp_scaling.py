@@ -30,6 +30,8 @@ READINESS_APPROVAL_CHECKLIST_FILENAME = "hp001_alkmaar_gm0361_readiness_approval
 EXECUTABLE_VALUE_BINDING_DECISION_PACKET_FILENAME = "hp001_alkmaar_gm0361_executable_value_binding_decision_packet.json"
 COLD_SPELL_ACCEPTANCE_DECISION_PACKET_FILENAME = "hp001_d004_cold_spell_acceptance_decision_packet.json"
 PROFILE_ARTIFACT_CONSUMPTION_MANIFEST_TEMPLATE_FILENAME = "hp001_profile_artifact_consumption_manifest_template.json"
+
+COMPONENT_OUTPUT_READINESS_BLOCKER_FILENAME = "hp001_component_output_readiness_blocker_packet.json"
 DOWNLOAD_TIMEOUT_S = 120.0
 PBL_HEAT_TERMS = ("warmte", "heat", "gas", "energie", "energy", "verbruik", "demand", "vraag")
 PBL_DHW_TERMS = ("tapwater", "warm_water", "dhw", "water")
@@ -666,6 +668,122 @@ def build_hp001_profile_artifact_consumption_manifest_template() -> dict[str, An
     }
 
 
+def build_hp001_component_output_readiness_blocker_packet() -> dict[str, Any]:
+    """Return the fail-closed HP component-output blocker packet for IC-1."""
+    readiness = build_hp001_readiness_approval_checklist_packet()
+    required_approval_keys = readiness["fail_closed_handoff"]["required_final_approval_keys"]
+    component_templates = [
+        {
+            "building_class": "SFH",
+            "end_use": "space",
+            "heat_column": "NL_heat_profile_space_SFH",
+            "cop_column": "NL_COP_ASHP_radiator",
+            "annual_heat_demand_twh": "<future signed positive value>",
+            "provenance": {
+                "annual_scaling_status": "signed",
+                "annual_scaling_approval_id": "<future signed annual approval>",
+            },
+        },
+        {
+            "building_class": "MFH",
+            "end_use": "space",
+            "heat_column": "NL_heat_profile_space_MFH",
+            "cop_column": "NL_COP_ASHP_radiator",
+            "annual_heat_demand_twh": "<future signed positive value>",
+            "provenance": {
+                "annual_scaling_status": "signed",
+                "annual_scaling_approval_id": "<future signed annual approval>",
+            },
+        },
+        {
+            "building_class": "SFH",
+            "end_use": "water",
+            "heat_column": "NL_heat_profile_water_SFH",
+            "cop_column": "NL_COP_ASHP_water",
+            "annual_heat_demand_twh": "<future signed positive value>",
+            "provenance": {
+                "annual_scaling_status": "signed",
+                "annual_scaling_approval_id": "<future signed annual approval>",
+            },
+        },
+        {
+            "building_class": "MFH",
+            "end_use": "water",
+            "heat_column": "NL_heat_profile_water_MFH",
+            "cop_column": "NL_COP_ASHP_water",
+            "annual_heat_demand_twh": "<future signed positive value>",
+            "provenance": {
+                "annual_scaling_status": "signed",
+                "annual_scaling_approval_id": "<future signed annual approval>",
+            },
+        },
+    ]
+    return {
+        "packet_id": "E2-S3-HP001-COMPONENT-OUTPUT-READINESS-BLOCKER",
+        "created_utc": _utc_now(),
+        "status": "proposed_blocker_packet_not_executable",
+        "future_required_manifest_status": "approved_for_ic1_component_output_consumption",
+        "purpose": "Give future IC-1 integration a concise HP preflight manifest that fails closed until real HP component outputs are safe to consume.",
+        "validator": "src.hp_model.require_hp001_component_output_readiness_manifest",
+        "approved_foundation": readiness["approved_foundation"],
+        "required_approval_keys_before_ic1_consumption": required_approval_keys,
+        "preflight_manifest_template": {
+            "status": "approved_for_ic1_component_output_consumption",
+            "approval_ids": {key: f"<future signed {key} approval id>" for key in required_approval_keys},
+            "profile_artifact": {
+                "path": "data/processed/hp_profiles/<future_signed_hp001_component_output>.npz",
+                "sha256": "<future 64-character SHA-256>",
+                "n_timesteps": 35040,
+                "cadence_seconds": 900,
+                "electric_power_unit": "kW",
+            },
+            "weather_identity": {
+                "shared_weather_driver_id": "<future accepted D-004 shared_weather_driver_id>",
+                "member_id": "<future accepted D-004 member_id>",
+                "source": "<future accepted D-004 source/provenance label>",
+                "content_sha256": "<future WEATHER-001 member content SHA-256>",
+                "n_timesteps": 35040,
+                "cadence_seconds": 900,
+            },
+            "paired_pv_weather_identity": {
+                "shared_weather_driver_id": "<must match HP weather_identity>",
+                "member_id": "<must match HP weather_identity>",
+                "source": "<must match HP weather_identity>",
+                "content_sha256": "<must match HP weather_identity>",
+                "n_timesteps": 35040,
+                "cadence_seconds": 900,
+            },
+            "component_traceability": component_templates,
+            "unresolved_blocker_ids": [],
+        },
+        "current_blockers": [
+            "annual HP TWh values and 2035 adoption/electrification/service fractions are unsigned",
+            "A-016 scenario-source consistency is not signed for a real integrated case",
+            "D-004 final paired-weather acceptance is not signed",
+            "cold-spell numerical tolerances and real acceptance evidence are unsigned",
+            "no real HP component-output artifact path or checksum exists",
+        ],
+        "non_claims": [
+            "No executable annual HP values are created.",
+            "No HP component-output artifact is created or approved.",
+            "No D-004 paired-weather or cold-spell final acceptance is signed or run.",
+            "No net-load, event, P(E), threshold, capacity-screen, manuscript, or probability analysis is run.",
+        ],
+    }
+
+
+
+
+def write_hp001_component_output_readiness_blocker_packet(metadata_dir: Path) -> Path:
+    """Write the proposed HP component-output readiness blocker packet."""
+    target_dir = metadata_dir / "hp_scaling"
+    target_dir.mkdir(parents=True, exist_ok=True)
+    path = target_dir / COMPONENT_OUTPUT_READINESS_BLOCKER_FILENAME
+    payload = build_hp001_component_output_readiness_blocker_packet()
+    path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    return path
+
+
 def write_hp001_executable_value_binding_decision_packet(metadata_dir: Path) -> Path:
     """Write the proposed executable value-binding decision packet."""
     target_dir = metadata_dir / "hp_scaling"
@@ -1115,6 +1233,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--write-executable-value-binding-packet", action="store_true", help="Write the proposed HP-001 executable value-binding decision packet without approving values.")
     parser.add_argument("--write-cold-spell-acceptance-packet", action="store_true", help="Write the proposed HP/D-004 cold-spell tolerance decision packet without running acceptance.")
     parser.add_argument("--write-profile-consumption-template", action="store_true", help="Write the proposed HP-001 profile artifact consumption manifest template without approving values.")
+
+    parser.add_argument("--write-component-output-readiness-blocker", action="store_true", help="Write the proposed HP-001 IC-1 component-output readiness blocker packet without creating load artifacts.")
     parser.add_argument("--download", action="store_true", help="Retrieve/checksum the approved D-013 public sources; no values are produced.")
     parser.add_argument("--inspect-existing", action="store_true", help="Refresh schema metadata from existing ignored D-013 raw files without network or values.")
     parser.add_argument("--resume", action="store_true", help="Skip completed sources whose raw files match checkpoint byte size and SHA-256.")
@@ -1134,6 +1254,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         path = write_hp001_cold_spell_acceptance_decision_packet(Path(args.metadata_dir))
     elif args.write_profile_consumption_template:
         path = write_hp001_profile_artifact_consumption_manifest_template(Path(args.metadata_dir))
+    elif args.write_component_output_readiness_blocker:
+        path = write_hp001_component_output_readiness_blocker_packet(Path(args.metadata_dir))
     elif args.write_formula_packet:
         path = write_hp001_scaling_formula_config_decision_packet(Path(args.metadata_dir))
     else:

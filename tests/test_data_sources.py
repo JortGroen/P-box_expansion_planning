@@ -1439,6 +1439,25 @@ def test_committed_d014_capacity_approval_template_records_unsigned_contract() -
     assert "PV-PARAM-001_or_amended_conversion_decision" in payload["executable_gate"]["blocking_approval_keys"]
 
 
+def test_hp001_component_output_readiness_blocker_packet_is_not_executable(tmp_path: Path) -> None:
+    packet = hp_scaling.build_hp001_component_output_readiness_blocker_packet()
+
+    assert packet["packet_id"] == "E2-S3-HP001-COMPONENT-OUTPUT-READINESS-BLOCKER"
+    assert packet["status"] == "proposed_blocker_packet_not_executable"
+    assert packet["future_required_manifest_status"] == "approved_for_ic1_component_output_consumption"
+    assert "value_column" in packet["required_approval_keys_before_ic1_consumption"]
+    assert "d004_paired_weather_acceptance" in packet["required_approval_keys_before_ic1_consumption"]
+    assert packet["preflight_manifest_template"]["unresolved_blocker_ids"] == []
+    assert {item["end_use"] for item in packet["preflight_manifest_template"]["component_traceability"]} == {"space", "water"}
+    assert any("no real HP component-output artifact" in item for item in packet["current_blockers"])
+    assert "No executable annual HP values are created." in packet["non_claims"]
+
+    path = hp_scaling.write_hp001_component_output_readiness_blocker_packet(tmp_path)
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    assert path.name == "hp001_component_output_readiness_blocker_packet.json"
+    assert payload["validator"] == "src.hp_model.require_hp001_component_output_readiness_manifest"
+
+
 def test_d014_pv_executable_readiness_blockers_keep_generation_blocked() -> None:
     packet = pv_capacity.build_d014_pv_executable_readiness_blockers_packet()
 
