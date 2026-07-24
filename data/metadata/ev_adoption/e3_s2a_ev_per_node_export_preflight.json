@@ -1,0 +1,79 @@
+{
+  "artifact_id": "e3_s2a_ev_per_node_export_preflight",
+  "artifact_status_for_written_manifests": "scaffold",
+  "artifact_type": "ev_per_node_component_output_export_preflight",
+  "checkpoint": {
+    "complete": true,
+    "resume_command": ".\\.venv\\Scripts\\python.exe data\\get_ev_component_outputs.py export-per-node --generic-loader-packet data\\metadata\\ev_adoption\\e3_s2a_ev_ic1_generic_component_output_manifest_packet.json --checkpoint-path data\\metadata\\ev_adoption\\e3_s2a_ev_per_node_export_preflight.json",
+    "safe_resume_behavior": "Existing per-node outputs are skipped only when their manifest and file checksum agree with the current source checksum.",
+    "work_unit": "one scenario/node per exported NPZ and manifest"
+  },
+  "completed_per_node_export_count": 0,
+  "completed_per_node_exports": [],
+  "manifest_directory": "data/metadata/ev_adoption/per_node_component_output_manifests",
+  "missing_source_component_outputs": [
+    {
+      "failure": "missing_ignored_source_npz",
+      "path": "data/processed/elaad_profiles/component_outputs/ev_ic1_candidate_component_output_high.npz",
+      "scenario": "high",
+      "sha256": "dd95f30d74da00b6fb87c2ced8f402b4d612c59a28e7d1d33e9e82fcd7a805d5"
+    },
+    {
+      "failure": "missing_ignored_source_npz",
+      "path": "data/processed/elaad_profiles/component_outputs/ev_ic1_candidate_component_output_low.npz",
+      "scenario": "low",
+      "sha256": "a896794ddd9f004fe945c62a5b84b2b1b6e9381cbecd80b17ca7c749de68ce65"
+    },
+    {
+      "failure": "missing_ignored_source_npz",
+      "path": "data/processed/elaad_profiles/component_outputs/ev_ic1_candidate_component_output_middle.npz",
+      "scenario": "middle",
+      "sha256": "38081c7f849bb679a19560d1a7f7fd6d8428e35ef6cad2087e4d82a46c1e568d"
+    }
+  ],
+  "output_directory": "data/processed/elaad_profiles/component_outputs/per_node",
+  "policy": {
+    "candidate_libraries_only": true,
+    "capacity_screen_performed": false,
+    "elaad_api_calls": false,
+    "event_or_p_e_analysis_performed": false,
+    "final_low_middle_high_branch_selected": false,
+    "held_out_access": false,
+    "integrated_analysis_performed": false,
+    "m_sufficiency_claimed": false,
+    "manuscript_numbers_produced": false,
+    "per_node_outputs_are_one_dimensional": true,
+    "quarantined_access": false,
+    "source_multi_node_npz_sha256_verified_before_loading": true
+  },
+  "remaining_blockers": [
+    "E3.S2a-EV-HELD-OUT-ADEQUACY-NOT-RUN",
+    "EV-005-M-SUFFICIENCY-NOT-CERTIFIED",
+    "G5-FINAL-LOW-MIDDLE-HIGH-BRANCH-NOT-SELECTED",
+    "IC-1-INTEGRATED-NET-LOAD-ASSEMBLY-NOT-RUN",
+    "A-016-CROSS-COMPONENT-SCENARIO-CONSISTENCY-NOT-YET-CHECKED"
+  ],
+  "required_source_component_outputs": [
+    {
+      "path": "data/processed/elaad_profiles/component_outputs/ev_ic1_candidate_component_output_high.npz",
+      "scenario": "high",
+      "sha256": "dd95f30d74da00b6fb87c2ced8f402b4d612c59a28e7d1d33e9e82fcd7a805d5"
+    },
+    {
+      "path": "data/processed/elaad_profiles/component_outputs/ev_ic1_candidate_component_output_low.npz",
+      "scenario": "low",
+      "sha256": "a896794ddd9f004fe945c62a5b84b2b1b6e9381cbecd80b17ca7c749de68ce65"
+    },
+    {
+      "path": "data/processed/elaad_profiles/component_outputs/ev_ic1_candidate_component_output_middle.npz",
+      "scenario": "middle",
+      "sha256": "38081c7f849bb679a19560d1a7f7fd6d8428e35ef6cad2087e4d82a46c1e568d"
+    }
+  ],
+  "schema_version": 1,
+  "source_checksum_mismatches": [],
+  "source_generic_loader_packet": "data/metadata/ev_adoption/e3_s2a_ev_ic1_generic_component_output_manifest_packet.json",
+  "status": "blocked_missing_source_component_outputs",
+  "task_id": "E3.S2a",
+  "timestamp_utc": "2026-07-24T17:30:00Z"
+}
