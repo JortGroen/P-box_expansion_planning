@@ -35,6 +35,7 @@ from src.contracts.net_load import (
     build_executable_loading_bridge_preflight,
     build_net_load_result,
     build_real_artifact_assembly_preflight,
+    build_synthetic_ic1_assembly_and_real_input_gate,
     load_component_adapter_output_from_npz_artifact,
     load_component_adapter_outputs_from_npz_artifacts,
     load_net_load_component_from_npz_artifact,
@@ -185,6 +186,18 @@ def _adapter_outputs(context) -> list[ComponentAdapterOutput]:
     ]
 
 
+
+def _window_realization_context():
+    return build_realization_context(
+        scenario="scenario-a",
+        year=2035,
+        time_domain="window_set",
+        rho=0.5,
+        seed=7001,
+        shared_weather_driver_id="weather-executable-1",
+        calendar_metadata={"calendar_id": "calendar-2035-15min"},
+        mapping_version_metadata={"node_mapping_version": "synthetic-v1"},
+    )
 
 def _write_component_output_npz_artifact(
     tmp_path,
@@ -2549,6 +2562,167 @@ def _write_synthetic_manifest_files(tmp_path, artifacts: list[ExecutableInputArt
     return expected
 
 
+def test_synthetic_ic1_assembly_real_gate_builds_fixture_and_real_blockers(tmp_path) -> None:
+    context = _window_realization_context()
+    synthetic_manifests = [
+        _write_component_output_npz_artifact(
+            tmp_path,
+            context,
+            kind="baseline",
+            artifact_status="synthetic_fixture",
+            node_id="node-a",
+            p_kw=np.array([10.0, 8.0, 0.0, -1.0]),
+            q_kvar=np.array([1.0, 0.8, 0.0, -0.1]),
+        ),
+        _write_component_output_npz_artifact(
+            tmp_path,
+            context,
+            kind="ev",
+            artifact_status="synthetic_fixture",
+            node_id="node-a",
+            p_kw=np.array([1.0, 1.0, 0.0, 0.0]),
+            q_kvar=np.array([0.1, 0.1, 0.0, 0.0]),
+        ),
+        _write_component_output_npz_artifact(
+            tmp_path,
+            context,
+            kind="hp",
+            artifact_status="synthetic_fixture",
+            node_id="node-b",
+            p_kw=np.array([2.0, 2.0, 2.0, 2.0]),
+            q_kvar=np.array([0.2, 0.2, 0.2, 0.2]),
+        ),
+        _write_component_output_npz_artifact(
+            tmp_path,
+            context,
+            kind="pv",
+            artifact_status="synthetic_fixture",
+            node_id="node-b",
+            p_kw=np.array([-3.0, -1.0, 0.0, 0.0]),
+            q_kvar=np.array([-0.3, -0.1, 0.0, 0.0]),
+        ),
+        _write_component_output_npz_artifact(
+            tmp_path,
+            context,
+            kind="adoption",
+            artifact_status="synthetic_fixture",
+            node_id="node-a",
+            p_kw=np.zeros(4),
+            q_kvar=np.zeros(4),
+        ),
+        _write_component_output_npz_artifact(
+            tmp_path,
+            context,
+            kind="flexibility",
+            artifact_status="synthetic_fixture",
+            node_id="node-a",
+            p_kw=np.array([-0.5, -0.5, 0.0, 0.0]),
+            q_kvar=np.zeros(4),
+        ),
+    ]
+    real_artifacts = _safe_executable_input_artifacts()
+    source_sha = _write_synthetic_manifest_files(tmp_path, real_artifacts)
+
+    gate = build_synthetic_ic1_assembly_and_real_input_gate(
+        assembly_id="synthetic-assembly-real-gate",
+        plan=NetLoadAssemblyPlan(node_ids=("node-a", "node-b")),
+        context=context,
+        synthetic_component_manifests=synthetic_manifests,
+        real_config=_screen_preflight_config(),
+        real_artifacts=real_artifacts,
+        trajectory_config=_trajectory_prerun_config(),
+        repo_root=tmp_path,
+        expected_calendar_id="calendar-2035-15min",
+        artifact_sha256_by_path=source_sha,
+        component_output_manifest_paths_by_kind={"ev": "data/metadata/component_outputs/ev.json"},
+        missing_component_output_manifest_blockers={
+            "baseline": ("E2.S5-BASELINE-COMPONENT-OUTPUT-ARTIFACT",),
+            "hp": ("HP-001", "D004-PAIRED-HP-PV-ACCEPTANCE"),
+            "pv": ("PV-PARAM-001", "D-014"),
+            "adoption": ("E3.S2-ADOPTION-COMPONENT-OUTPUT-MANIFEST",),
+            "flexibility": ("E3.S1-FLEX-REAL-VALUES-NOT-SIGNED",),
+        },
+    )
+
+    fixture = gate["synthetic_fixture_manifest"]
+    assert gate["ready_for_synthetic_fixture_assembly"] is True
+    assert gate["ready_for_real_input_execution"] is False
+    assert fixture["loading_input"]["primary_probability_domain"] is False
+    assert fixture["node_axis"] == ("node-a", "node-b")
+    assert fixture["net_load_shape"] == (2, 4)
+    assert fixture["import_export_metadata"] == {
+        "p_net_sign_preserved_for_later_ic2_direction_gate": True,
+        "positive_p_net_is_import": True,
+        "negative_p_net_is_export": True,
+        "zero_p_net_is_neither": True,
+        "not_evaluated_here": True,
+    }
+    assert gate["no_event_detection"] is True
+    assert gate["no_probability_estimate"] is True
+    assert gate["blocker_manifest"]["ready"] is False
+    blocker_codes = {item["code"] for item in gate["blocker_manifest"]["items"]}
+    assert "capacity_provenance_missing" in blocker_codes
+    assert "component_output_manifest_missing" in blocker_codes
+    assert "p_event" not in gate
+    assert "overload" not in gate
+
+
+def test_synthetic_ic1_assembly_real_gate_requires_window_fixture_context(tmp_path) -> None:
+    context = _realization_context()
+    manifest = _write_component_output_npz_artifact(
+        tmp_path,
+        context,
+        kind="ev",
+        artifact_status="synthetic_fixture",
+    )
+
+    with pytest.raises(ValueError, match="time_domain='window_set'"):
+        build_synthetic_ic1_assembly_and_real_input_gate(
+            assembly_id="bad-full-year-fixture",
+            plan=NetLoadAssemblyPlan(node_ids=("node-a",)),
+            context=context,
+            synthetic_component_manifests=(manifest,),
+            real_config=_screen_preflight_config(),
+            real_artifacts=_safe_executable_input_artifacts(),
+            trajectory_config=_trajectory_prerun_config(),
+            repo_root=tmp_path,
+        )
+
+
+def test_synthetic_ic1_assembly_real_gate_rejects_non_fixture_or_legacy_result_fields(tmp_path) -> None:
+    context = _window_realization_context()
+    accepted_manifest = _write_component_output_npz_artifact(tmp_path, context, kind="ev")
+    legacy_manifest = _write_component_output_npz_artifact(
+        tmp_path,
+        context,
+        kind="baseline",
+        artifact_status="synthetic_fixture",
+        manifest_overrides={"overload": False},
+    )
+
+    with pytest.raises(ValueError, match="only synthetic_fixture"):
+        build_synthetic_ic1_assembly_and_real_input_gate(
+            assembly_id="bad-non-fixture",
+            plan=NetLoadAssemblyPlan(node_ids=("node-a",)),
+            context=context,
+            synthetic_component_manifests=(accepted_manifest,),
+            real_config=_screen_preflight_config(),
+            real_artifacts=_safe_executable_input_artifacts(),
+            trajectory_config=_trajectory_prerun_config(),
+            repo_root=tmp_path,
+        )
+    with pytest.raises(ValueError, match="legacy result field"):
+        build_synthetic_ic1_assembly_and_real_input_gate(
+            assembly_id="bad-legacy-result-field",
+            plan=NetLoadAssemblyPlan(node_ids=("node-a",)),
+            context=context,
+            synthetic_component_manifests=(legacy_manifest,),
+            real_config=_screen_preflight_config(),
+            real_artifacts=_safe_executable_input_artifacts(),
+            trajectory_config=_trajectory_prerun_config(),
+            repo_root=tmp_path,
+        )
+
 def test_accepted_artifact_loader_blocker_preflight_accepts_clean_metadata(tmp_path) -> None:
     artifacts = _safe_executable_input_artifacts()
     source_sha = _write_synthetic_manifest_files(tmp_path, artifacts)
@@ -2666,6 +2840,35 @@ def test_accepted_artifact_loader_blocker_preflight_rejects_unsafe_tokens(tmp_pa
     assert any(item["code"] == "component_output_manifest_unsafe_token" for item in blockers)
     assert any(item.get("fields") == ("member_id",) for item in blockers)
 
+
+def test_accepted_artifact_loader_blocker_preflight_rejects_component_result_fields(tmp_path) -> None:
+    artifacts = _safe_executable_input_artifacts()
+    source_sha = _write_synthetic_manifest_files(tmp_path, artifacts)
+    component_paths, component_sha = _write_loader_component_manifests(
+        tmp_path,
+        artifacts,
+        overrides_by_kind={"ev": {"event_count": 1}},
+    )
+
+    preflight = build_accepted_artifact_loader_blocker_preflight(
+        _screen_preflight_config(),
+        artifacts,
+        _trajectory_prerun_config(),
+        capacity_provenance=_synthetic_capacity_provenance(),
+        artifact_sha256_by_path=source_sha,
+        component_output_manifest_paths_by_kind=component_paths,
+        component_output_manifest_sha256_by_path=component_sha,
+        repo_root=tmp_path,
+        downstream_blocker_ids=(),
+    )
+
+    assert preflight["ready_for_artifact_loader_execution"] is False
+    assert any(
+        item["code"] == "component_output_manifest_legacy_result_fields"
+        and item["kind"] == "ev"
+        and item["fields"] == ("event_count",)
+        for item in preflight["blocker_manifest"]["items"]
+    )
 
 def test_accepted_artifact_loader_blocker_preflight_rejects_manifest_path_escape(tmp_path) -> None:
     artifacts = _safe_executable_input_artifacts()

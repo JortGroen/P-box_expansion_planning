@@ -1,0 +1,19 @@
+{
+  "array_path": "reports/e3_s2_synthetic_assembly_real_gate_fixtures/adoption.npz",
+  "array_sha256": "f0ecbc8f1183f9bf1d22f4af688c8f571308c3589672e2a4aa6d102856f298cb",
+  "artifact_id": "adoption-synthetic-a-synthetic-array",
+  "artifact_status": "synthetic_fixture",
+  "calendar_id": "synthetic_window_2035_15min_4step",
+  "component_id": "adoption-synthetic-a",
+  "kind": "adoption",
+  "member_id": "adoption-synthetic-member",
+  "node_id": "node-a",
+  "provenance": {
+    "fixture_id": "e3_s2_two_node_four_step_synthetic_ic1_fixture_v1",
+    "not_a_scientific_result": true,
+    "synthetic_fixture_only": true
+  },
+  "source_id": "synthetic-adoption-source",
+  "timestep_count": 4,
+  "timestep_seconds": 900
+}

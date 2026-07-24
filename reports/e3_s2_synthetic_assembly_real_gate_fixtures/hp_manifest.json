@@ -1,0 +1,20 @@
+{
+  "array_path": "reports/e3_s2_synthetic_assembly_real_gate_fixtures/hp.npz",
+  "array_sha256": "08aa5e30fb2176bedfdbd236a466a86aca0f0614427e665593bad1e43bb0a773",
+  "artifact_id": "hp-synthetic-b-synthetic-array",
+  "artifact_status": "synthetic_fixture",
+  "calendar_id": "synthetic_window_2035_15min_4step",
+  "component_id": "hp-synthetic-b",
+  "kind": "hp",
+  "member_id": "hp-synthetic-member",
+  "node_id": "node-b",
+  "provenance": {
+    "fixture_id": "e3_s2_two_node_four_step_synthetic_ic1_fixture_v1",
+    "not_a_scientific_result": true,
+    "synthetic_fixture_only": true
+  },
+  "shared_weather_driver_id": "synthetic_weather_driver_e3_s2_smoke_v1",
+  "source_id": "synthetic-hp-source",
+  "timestep_count": 4,
+  "timestep_seconds": 900
+}

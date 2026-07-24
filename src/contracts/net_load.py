@@ -2491,6 +2491,133 @@ def assemble_net_load_from_npz_artifacts(
     )
 
 
+def build_synthetic_ic1_assembly_and_real_input_gate(
+    *,
+    assembly_id: str,
+    plan: NetLoadAssemblyPlan,
+    context: NetLoadRealizationContext,
+    synthetic_component_manifests: Sequence[Mapping[str, object]],
+    real_config: FutureLayerScreenPreflightConfig,
+    real_artifacts: Sequence[ExecutableInputArtifact],
+    trajectory_config: LoadingTrajectoryPreRunConfig,
+    repo_root: Path | str | None = None,
+    expected_calendar_id: str | None = None,
+    capacity_provenance: Mapping[str, object] | None = None,
+    artifact_sha256_by_path: Mapping[str, str] | None = None,
+    component_output_manifest_paths_by_kind: Mapping[str, str] | None = None,
+    component_output_manifest_sha256_by_path: Mapping[str, str] | None = None,
+    missing_component_output_manifest_blockers: Mapping[str, Sequence[str]] | None = None,
+    downstream_blocker_ids: Sequence[str] = DEFAULT_EXECUTABLE_BRIDGE_BLOCKER_IDS,
+    required_component_kinds: Sequence[ComponentKind] = REQUIRED_INTEGRATION_COMPONENT_KINDS,
+    intended_use: str = "e3_s2_synthetic_ic1_assembly_and_real_input_gate",
+) -> dict[str, object]:
+    """Build a synthetic IC-1 smoke path plus the fail-closed real-input gate.
+
+    The synthetic side deliberately accepts only ``synthetic_fixture`` component
+    output manifests and uses ``window_set`` fixtures so it cannot be confused
+    with the full-year primary probability domain.
+    """
+
+    assembly_id = _require_nonempty(assembly_id, name="assembly_id")
+    if context.time_domain != "window_set":
+        raise ValueError("synthetic IC-1 assembly fixtures must use time_domain='window_set'")
+    _reject_legacy_result_fields(synthetic_component_manifests, record_name="synthetic component manifest")
+    synthetic_outputs = load_component_adapter_outputs_from_npz_artifacts(
+        synthetic_component_manifests,
+        context,
+        repo_root=repo_root,
+        expected_calendar_id=expected_calendar_id,
+        expected_node_ids=plan.node_ids,
+        allow_synthetic_fixture=True,
+    )
+    if any(output.metadata.get("artifact_status") != "synthetic_fixture" for output in synthetic_outputs):
+        raise ValueError("synthetic IC-1 assembly gate accepts only synthetic_fixture component outputs")
+    synthetic_net_load = assemble_net_load_from_adapter_outputs(
+        plan,
+        context,
+        synthetic_outputs,
+        metadata={
+            "assembly": "synthetic_ic1_assembly_real_gate_fixture",
+            "assembly_id": assembly_id,
+            "synthetic_fixture_only": True,
+            "not_a_scientific_result": True,
+            "no_event_detection": True,
+            "no_probability_estimate": True,
+            "no_capacity_screen_result": True,
+        },
+    )
+    synthetic_readiness = NetLoadLoadingInputReadiness(
+        net_load=synthetic_net_load,
+        registry_manifest={
+            "registry_id": f"{assembly_id}:synthetic-fixture-registry",
+            "node_ids": plan.node_ids,
+            "required_component_kinds": tuple(required_component_kinds),
+            "synthetic_fixture_only": True,
+            "not_a_scientific_result": True,
+        },
+        realization_context_manifest=context.manifest_metadata(),
+        planning_year=context.planning_year,
+        timestep_seconds=900,
+        time_domain=context.time_domain,
+        metadata={
+            "assembly_id": assembly_id,
+            "synthetic_fixture_only": True,
+            "not_a_scientific_result": True,
+            "no_event_detection": True,
+            "no_probability_estimate": True,
+            "no_capacity_screen_result": True,
+        },
+    )
+    real_gate = build_accepted_artifact_loader_blocker_preflight(
+        real_config,
+        real_artifacts,
+        trajectory_config,
+        capacity_provenance=capacity_provenance,
+        artifact_sha256_by_path=artifact_sha256_by_path,
+        component_output_manifest_paths_by_kind=component_output_manifest_paths_by_kind,
+        component_output_manifest_sha256_by_path=component_output_manifest_sha256_by_path,
+        missing_component_output_manifest_blockers=missing_component_output_manifest_blockers,
+        repo_root=repo_root,
+        required_component_kinds=required_component_kinds,
+        missing_artifact_blockers=None,
+        downstream_blocker_ids=downstream_blocker_ids,
+        intended_use=intended_use,
+    )
+    synthetic_manifest = synthetic_readiness.manifest_record()
+    return {
+        "intended_use": intended_use,
+        "metadata_preflight_only": True,
+        "synthetic_fixture_only": True,
+        "ready_for_synthetic_fixture_assembly": True,
+        "ready_for_real_input_execution": real_gate["ready_for_artifact_loader_execution"],
+        "no_real_net_load_arrays": True,
+        "no_event_detection": True,
+        "no_event_counts": True,
+        "no_probability_estimate": True,
+        "no_capacity_screen_result": True,
+        "synthetic_fixture_manifest": {
+            "loading_input": synthetic_manifest,
+            "node_axis": synthetic_manifest["node_ids"],
+            "timestep_count": synthetic_manifest["timestep_count"],
+            "component_count": len(synthetic_manifest["component_provenance"]),
+            "component_kinds": tuple(
+                item["kind"] for item in synthetic_manifest["component_provenance"]
+            ),
+            "shared_weather_driver_ids": synthetic_manifest["shared_weather_driver_ids"],
+            "net_load_shape": tuple(int(value) for value in synthetic_readiness.net_load.p_net_kw.shape),
+            "import_export_metadata": {
+                "p_net_sign_preserved_for_later_ic2_direction_gate": True,
+                "positive_p_net_is_import": True,
+                "negative_p_net_is_export": True,
+                "zero_p_net_is_neither": True,
+                "not_evaluated_here": True,
+            },
+        },
+        "real_input_gate": real_gate,
+        "blocker_manifest": real_gate["blocker_manifest"],
+    }
+
+
 def validate_net_load_result(result: NetLoadResult) -> None:
     """Validate an IC-1 result and raise on contract violations."""
 
@@ -2528,6 +2655,7 @@ def _resolve_repo_relative_path(repo_root: Path, relative_path: str, *, field_na
     except ValueError as exc:
         raise ValueError(f"artifact {field_name} must stay within repo_root") from exc
     return resolved
+
 
 def _sha256_file(path: Path) -> str:
     digest = hashlib.sha256()
@@ -2635,6 +2763,31 @@ def _optional_npz_text(data: np.lib.npyio.NpzFile, name: str) -> str | None:
         raise ValueError(f"component output artifact NPZ {name} metadata must be scalar")
     value = str(array.item())
     return _require_nonempty(value, name=f"NPZ {name}")
+
+
+_FORBIDDEN_IC1_RESULT_FIELDS = (
+    "overload",
+    "overload_bool",
+    "event_count",
+    "event_counts",
+    "event_detected",
+    "p_event",
+    "probability_estimate",
+    "threshold_pu",
+)
+
+
+def _reject_legacy_result_fields(
+    records: Sequence[Mapping[str, object]],
+    *,
+    record_name: str,
+) -> None:
+    for record in records:
+        present = tuple(field for field in _FORBIDDEN_IC1_RESULT_FIELDS if field in record)
+        if present:
+            raise ValueError(
+                f"{record_name} must not contain legacy result field(s): {', '.join(present)}"
+            )
 
 
 _UNSAFE_EXECUTABLE_TOKENS = (
@@ -2904,6 +3057,18 @@ def _component_output_manifest_schema_blockers(
         )
         blockers[-1]["missing_keys"] = missing
         return blockers
+    legacy_fields = tuple(field for field in _FORBIDDEN_IC1_RESULT_FIELDS if field in manifest)
+    if legacy_fields:
+        _append_loader_blocker(
+            blockers,
+            "component_output_manifest_legacy_result_fields",
+            "component-output manifest must not include legacy event/probability result fields",
+            kind=kind,
+            artifact_id=str(manifest["artifact_id"]),
+            path=path,
+            blocker_ids=(f"E3.S2-{kind.upper()}-COMPONENT-OUTPUT-NO-RESULT-FIELDS",),
+        )
+        blockers[-1]["fields"] = legacy_fields
     if manifest["artifact_status"] != "accepted":
         _append_loader_blocker(
             blockers,

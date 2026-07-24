@@ -1,0 +1,20 @@
+{
+  "array_path": "reports/e3_s2_synthetic_assembly_real_gate_fixtures/pv.npz",
+  "array_sha256": "693652950bfd84b0434f451a7244f922b4928b907fc173c9d3425f7851851ba0",
+  "artifact_id": "pv-synthetic-b-synthetic-array",
+  "artifact_status": "synthetic_fixture",
+  "calendar_id": "synthetic_window_2035_15min_4step",
+  "component_id": "pv-synthetic-b",
+  "kind": "pv",
+  "member_id": "pv-synthetic-member",
+  "node_id": "node-b",
+  "provenance": {
+    "fixture_id": "e3_s2_two_node_four_step_synthetic_ic1_fixture_v1",
+    "not_a_scientific_result": true,
+    "synthetic_fixture_only": true
+  },
+  "shared_weather_driver_id": "synthetic_weather_driver_e3_s2_smoke_v1",
+  "source_id": "synthetic-pv-source",
+  "timestep_count": 4,
+  "timestep_seconds": 900
+}
