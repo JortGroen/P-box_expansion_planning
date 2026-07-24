@@ -1,7 +1,7 @@
 {
   "schema_version": "e3_s2b_integrated_prerun_readiness_input_v1",
   "task_id": "E3.S2b",
-  "intended_use": "e3_s2b_integrated_prerun_readiness_current_main_through_pr257",
+  "intended_use": "e3_s2b_integrated_prerun_readiness_current_main_through_pr250_pr256_pr257",
   "scope": "metadata_preflight_only_no_arrays_no_ic2_execution_no_events_no_probability_no_capacity_screen",
   "config": {
     "config_id": "e3_s2b_integrated_prerun_readiness_v1",
@@ -33,7 +33,7 @@
       "no_event_detection": true,
       "no_probability_estimate": true,
       "no_capacity_screen_result": true,
-      "refresh_basis": "origin/main through PR #257; #251/#252/#253/#254/#255/#256/#257 consumed as metadata only",
+      "refresh_basis": "origin/main through PR #250/#256/#257; #250/#251/#252/#253/#254/#255/#256/#257 consumed as metadata only",
       "accepted_artifact_loader_helper": "build_accepted_artifact_loader_blocker_preflight",
       "e3_s2b_prerun_helper": "build_e3_s2b_integrated_prerun_readiness",
       "primary_threshold_metadata": "G0-A3: strict L_import > 1.0 p.u. for four consecutive 15-minute import steps over the full year; 1.1 and 1.2 are sensitivities only"
@@ -95,12 +95,12 @@
       }
     },
     {
-      "artifact_id": "hp001_alkmaar_gm0361_executable_value_binding_decision_packet",
+      "artifact_id": "E2-S3-HP001-COMPONENT-OUTPUT-READINESS-BLOCKER",
       "kind": "hp",
       "artifact_status": "unsigned",
-      "version_id": "hp001_executable_value_binding_decision_packet_v1",
-      "source_id": "hp001_executable_value_binding_decision_packet_metadata",
-      "member_id": "hp001_executable_value_binding_unapproved",
+      "version_id": "hp001_component_output_readiness_blocker_packet_v1",
+      "source_id": "hp001_component_output_readiness_blocker_metadata",
+      "member_id": "hp001_component_output_artifact_missing",
       "calendar_id": "calendar_2035_15min_full_year_35040",
       "node_ids": [
         "simbench_1_mv_semiurb_0_sw_all_in_service_load_nodes"
@@ -114,7 +114,10 @@
         "D004-SOURCE-MEMBER-ACCEPTANCE"
       ],
       "blocking_register_ids": [
+        "E2-S3-HP001-COMPONENT-OUTPUT-READINESS-BLOCKER",
         "E2-S3-HP001-EXECUTABLE-VALUE-BINDING-PACKET",
+        "E2-S3-HP001-PROFILE-ARTIFACT-CONSUMPTION-MANIFEST",
+        "E2-S3-HP001-COLD-SPELL-ACCEPTANCE-READINESS",
         "value_column",
         "denominator",
         "unit_conversion",
@@ -126,10 +129,13 @@
       ],
       "timestep_seconds": 900,
       "shared_weather_driver_id": "d004_alkmaar_berkhout_2014_2023_v1:unselected",
-      "manifest_path": "data/metadata/hp_scaling/hp001_alkmaar_gm0361_executable_value_binding_decision_packet.json",
+      "manifest_path": "data/metadata/hp_scaling/hp001_component_output_readiness_blocker_packet.json",
       "provenance": {
         "readiness_bucket": "proposed_blocked",
-        "packet_status": "proposed executable value-binding decision packet; annual HP values/final A-016/paired-weather/cold-spell approvals unsigned"
+        "packet_status": "PR #250 HP component-output readiness blocker present; annual HP values, profile artifact manifest, A-016, paired-weather acceptance, and cold-spell tolerances remain unsigned",
+        "supporting_refreshed_value_binding_packet": "data/metadata/hp_scaling/hp001_alkmaar_gm0361_executable_value_binding_decision_packet.json",
+        "supporting_profile_artifact_consumption_template": "data/metadata/hp_scaling/hp001_profile_artifact_consumption_manifest_template.json",
+        "supporting_cold_spell_acceptance_packet": "data/metadata/hp_scaling/hp001_d004_cold_spell_acceptance_decision_packet.json"
       }
     },
     {
@@ -216,9 +222,9 @@
     }
   ],
   "metadata": {
-    "refresh_basis": "origin/main through PR #257; #251/#252/#253/#254/#255/#256/#257 consumed as metadata only",
+    "refresh_basis": "origin/main through PR #250/#256/#257; #250/#251/#252/#253/#254/#255/#256/#257 consumed as metadata only",
     "hard_boundary": "no arrays, no IC-2 execution, no events, no P(E), no capacity-screen result, no manuscript numbers",
-    "current_main_commit": "3d6c7f6458ea08db39b0fb955f533f15c9b58966"
+    "current_main_commit": "104c49bfbf12f846c213a93273430d54e07e8b51"
   },
   "missing_artifact_blockers": {},
   "capacity_provenance": null,
@@ -237,7 +243,7 @@
     "source_lineage_by_component": {
       "baseline": "SimBench baseline readiness metadata; executable component output missing",
       "ev": "ElaadNL candidate EV accepted index plus checksum preflight metadata; no held-out access",
-      "hp": "HP001 readiness checklist/value-binding packet proposed; executable annual values unsigned",
+      "hp": "HP001 component-output blocker/value-binding/profile-template/cold-spell packets proposed; executable annual values and output manifest unsigned",
       "pv": "D-014/PV-CAP/PV-ORIENT/PV-PARAM packets present; executable values/formula/allocation unsigned",
       "adoption": "A-014/EV-007A declared branch metadata accepted; final G5 branch not selected",
       "flexibility": "FLEX-001 scaffold protocol approved; no real flexibility values signed"
@@ -288,7 +294,14 @@
     "agent_b_e4_e5_runner_readiness": "reports/e4_e5_runner_readiness.md",
     "agent_b_runner_readiness_module": "src/pbox_runner_readiness.py",
     "pv_first_experiment_value_decision_packet": "data/metadata/weather_pv/d014_pv_first_experiment_value_decision_packet.json",
-    "pv_first_experiment_value_decision_report": "reports/e2_s4_d014_pv_first_experiment_value_decision_packet.md"
+    "pv_first_experiment_value_decision_report": "reports/e2_s4_d014_pv_first_experiment_value_decision_packet.md",
+    "hp_component_output_readiness_blocker": "data/metadata/hp_scaling/hp001_component_output_readiness_blocker_packet.json",
+    "hp_profile_artifact_consumption_template": "data/metadata/hp_scaling/hp001_profile_artifact_consumption_manifest_template.json",
+    "hp_cold_spell_acceptance_decision_packet": "data/metadata/hp_scaling/hp001_d004_cold_spell_acceptance_decision_packet.json",
+    "hp_refreshed_executable_value_binding_packet": "data/metadata/hp_scaling/hp001_alkmaar_gm0361_executable_value_binding_decision_packet.json",
+    "hp_component_output_readiness_report": "reports/e2_s3_hp001_component_output_readiness_blocker.md",
+    "hp_profile_artifact_consumption_report": "reports/e2_s3_hp001_profile_artifact_consumption_manifest.md",
+    "hp_cold_spell_acceptance_report": "reports/e2_s3_hp001_cold_spell_acceptance_readiness.md"
   },
   "supporting_metadata_sha256_by_path": {
     "reports/e3_s2_accepted_artifact_blocker_preflight_input.json": "374de84d5899286c28f0f36a6a7d11a60483804c35726e762e6cb4f34346da30",
@@ -310,15 +323,22 @@
     "reports/e4_e5_runner_readiness.md": "81fbf9317d638451e22c605f3e8b3caa612222439a6b1ec846a6f4043d7e7d68",
     "src/pbox_runner_readiness.py": "b3302dd95086bd7fba0cc2355cc691397cceca1a317bea541b6cc05d38e673fc",
     "data/metadata/weather_pv/d014_pv_first_experiment_value_decision_packet.json": "3c97678013ae63afdbd678626222f14e5b3df44951f9d4c5d6abe8c879941fdf",
-    "reports/e2_s4_d014_pv_first_experiment_value_decision_packet.md": "ab85486184a34bfe650f1ce4e6195d275b9a939e7773569eaff393271bd90172"
+    "reports/e2_s4_d014_pv_first_experiment_value_decision_packet.md": "ab85486184a34bfe650f1ce4e6195d275b9a939e7773569eaff393271bd90172",
+    "data/metadata/hp_scaling/hp001_component_output_readiness_blocker_packet.json": "14d7a28bfc9c08c35c99cd4622060ee9f9cdfcdde46360d3be71a65726515997",
+    "data/metadata/hp_scaling/hp001_profile_artifact_consumption_manifest_template.json": "821d4e99af1fbe7382c9c899fa95d9a08e84dd8cbe5fe9aba6d554370cd2b6d3",
+    "data/metadata/hp_scaling/hp001_d004_cold_spell_acceptance_decision_packet.json": "90db98a21399412bec6edae3d9cff5707fcf0b60a52e634e20b756b89c153058",
+    "data/metadata/hp_scaling/hp001_alkmaar_gm0361_executable_value_binding_decision_packet.json": "5483ed6a0cc39b9323e4e3366458b412230b822973592769d010feb9ac5dc920",
+    "reports/e2_s3_hp001_component_output_readiness_blocker.md": "a5d867c8accb37bf658f04f7de3c6718a2f8f7c5879a1b7980d6c8d4f6e87439",
+    "reports/e2_s3_hp001_profile_artifact_consumption_manifest.md": "b46e0f3bdad2579c0e0470a5b50497fff907dd8080d2727f8b876f78ce4e0aa3",
+    "reports/e2_s3_hp001_cold_spell_acceptance_readiness.md": "055cce65ddb92a5cf6a852564ae411c1a0e0dc05e1e28d89e125124953a57d20"
   },
   "artifact_sha256_by_path": {
     "reports/e2_s5_baseline_diversity_readiness.md": "35dddc989ff32e313ffcb22c16d26f494596445b6ba1879117168feb285a9d0c",
     "data/metadata/ev_adoption/e2_s2_ev_ic1_accepted_artifact_index_preflight.json": "927a0c734592ef4defe17c045da9ab14bc6ba8d864fb415262e9811e3ab234b3",
-    "data/metadata/hp_scaling/hp001_alkmaar_gm0361_executable_value_binding_decision_packet.json": "609a9631498559c6af4926f640e0c00ac9d2cac44aa40e8b3dbf5cd80a952270",
     "data/metadata/weather_pv/d014_pv_first_experiment_value_decision_packet.json": "3c97678013ae63afdbd678626222f14e5b3df44951f9d4c5d6abe8c879941fdf",
     "data/metadata/ev_adoption/e2_s6_a014_alkmaar_executable_adoption_artifact.json": "5504d71bda5c388254013690c64407763bb37179a5cd82b6aa1199f216d933ad",
-    "src/flex_aggregator.py": "7b07ffb68d8e153593c47cd611f653a2208c37c7836275566e6d783a87a583cb"
+    "src/flex_aggregator.py": "7b07ffb68d8e153593c47cd611f653a2208c37c7836275566e6d783a87a583cb",
+    "data/metadata/hp_scaling/hp001_component_output_readiness_blocker_packet.json": "14d7a28bfc9c08c35c99cd4622060ee9f9cdfcdde46360d3be71a65726515997"
   },
   "component_output_manifest_paths_by_kind": {
     "ev": "data/metadata/ev_adoption/e2_s2_ev_ic1_candidate_component_output_manifest.json"
@@ -332,7 +352,10 @@
     ],
     "hp": [
       "HP-001",
+      "E2-S3-HP001-COMPONENT-OUTPUT-READINESS-BLOCKER",
       "E2-S3-HP001-EXECUTABLE-VALUE-BINDING-PACKET",
+      "E2-S3-HP001-PROFILE-ARTIFACT-CONSUMPTION-MANIFEST",
+      "E2-S3-HP001-COLD-SPELL-ACCEPTANCE-READINESS",
       "D004-PAIRED-HP-PV-ACCEPTANCE"
     ],
     "pv": [
