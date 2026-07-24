@@ -26,4 +26,4 @@ This packet approves no PV capacity value, CBS row, II3050 scenario, growth fact
 
 ## Validation
 
-Completed on this branch: focused PV/data-source/methods tests passed; `scripts/task.ps1 ownership` passed; `git diff --check` passed; `scripts/task.ps1 test-fast` passed with 622 passed, 1 skipped, and 7 deselected.
+Completed on this branch: focused PV/data-source/methods tests passed; `scripts/task.ps1 ownership` passed; `git diff --check` passed; `scripts/task.ps1 test-fast` passed with 640 passed, 1 skipped, and 7 deselected.

@@ -6,4 +6,4 @@
 - Added proposed metadata-only `D014-PV-CAPACITY-APPROVAL-TEMPLATE` for the future signed PV capacity artifact.
 - Preserved fail-closed boundaries: no final PV capacity/growth/orientation/PV-PARAM value, no PV generation, no net-load/event/P(E), no capacity screen, and no manuscript results.
 - Added validators and tests so unsigned templates cannot authorize executable PV capacity input.
-- Validation completed: focused PV/data-source/methods tests passed; `scripts/task.ps1 ownership` passed; `git diff --check` passed; `scripts/task.ps1 test-fast` passed with 622 passed, 1 skipped, and 7 deselected.
+- Validation completed: focused PV/data-source/methods tests passed; `scripts/task.ps1 ownership` passed; `git diff --check` passed; `scripts/task.ps1 test-fast` passed with 640 passed, 1 skipped, and 7 deselected.
