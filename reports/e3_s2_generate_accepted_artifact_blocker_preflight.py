@@ -153,7 +153,7 @@ def _report_text(
     return f"""# E3.S2 Accepted-Artifact Loader Blocker Preflight
 
 Task: E3.S2 IC-1 NetLoadProvider readiness.
-Status: metadata/preflight only. This packet instantiates `build_accepted_artifact_loader_blocker_preflight(...)` from the current committed metadata surface on `origin/main` through PR #243. The merged EV accepted-artifact index and adoption artifact are consumed as metadata only; remaining gaps are reported as blockers.
+Status: metadata/preflight only. This packet instantiates `build_accepted_artifact_loader_blocker_preflight(...)` from the current committed metadata surface on `origin/main` through PR #248 (with PR #249 methods cleanup on main). The merged EV accepted-artifact index, EV held-out blocker, PV executable guard, and adoption artifact are consumed as metadata only; remaining gaps are reported as blockers.
 
 ## Boundary
 
@@ -187,7 +187,7 @@ Source metadata packet checksums are verified before component-output manifests 
 
 ## Interpretation
 
-The current metadata surface is intentionally not accepted for loader execution. EV now has the merged PR #243 accepted-artifact index and a checksum-pinned candidate component-output manifest path, but that manifest is not yet the accepted generic loader schema. Adoption now has the merged PR #235 accepted per-node allocation artifact, but no component-output loader manifest is present for the IC-1 assembly boundary. PV/weather now has the merged PR #241 executable-readiness blocker packet, which confirms weather source/member readiness while keeping PV generation blocked. Flexibility has the approved FLEX-001 scaffold protocol, but no real flexibility values or results are signed. Baseline, HP, PV/weather, adoption, and flexibility still lack accepted component-output manifests for the loader boundary.
+The current metadata surface is intentionally not accepted for loader execution. EV now has the merged PR #243 accepted-artifact index, the PR #248 held-out adequacy blocker packet, and a checksum-pinned candidate component-output manifest path, but that manifest is not yet the accepted generic loader schema and held-out data remain closed. Adoption now has the merged PR #235 accepted per-node allocation artifact, but no component-output loader manifest is present for the IC-1 assembly boundary. PV/weather now has the merged PR #241 executable-readiness blocker packet and PR #246 executable preflight guard, which confirm weather source/member readiness while keeping PV generation blocked. Flexibility has the approved FLEX-001 scaffold protocol, but no real flexibility values or results are signed. Baseline, HP, PV/weather, adoption, and flexibility still lack accepted component-output manifests for the loader boundary.
 
 The preflight also preserves downstream blockers for A-013, G2, G1-A2 capacity/domain provenance, A-016 scenario consistency, and the capacity convention. G0-A3 is recorded only as governed metadata: strict `L_import > 1.0 p.u.` for four consecutive 15-minute import steps over the full year, with `1.1` and `1.2` only as explicit sensitivities. No threshold is evaluated here.
 
