@@ -41,12 +41,14 @@ from src.hp_model import (
     hp001_components_from_local_scaling_config,
     hp001_profile_artifact_consumption_manifest_from_profile,
     hp001_profile_artifact_consumption_missing_approval_keys,
+    hp001_profile_rebuild_preflight_blockers,
     hp001_final_readiness_missing_approval_keys,
     hp001_local_scaling_config_from_value_binding_record,
     hp001_residential_when2heat_components,
     require_hp001_component_output_readiness_manifest,
     require_hp001_final_readiness_approvals,
     require_hp001_profile_artifact_consumption_manifest,
+    require_hp001_profile_rebuild_preflight_manifest,
     require_signed_hp001_local_scaling_config,
     load_when2heat_hourly_csv,
     require_signed_annual_scaling,
@@ -1223,6 +1225,85 @@ def test_hp001_profile_consumption_manifest_rejects_missing_component_trace() ->
 
     with pytest.raises(ValueError, match="exactly the HP-001"):
         require_hp001_profile_artifact_consumption_manifest(manifest)
+
+
+def _signed_hp001_profile_rebuild_preflight_manifest() -> dict[str, object]:
+    approval_ids = {key: f"SIGNED-{key}" for key in HP001_FINAL_READINESS_REQUIRED_APPROVAL_KEYS}
+    weather_identity = {
+        "shared_weather_driver_id": "d004_alkmaar_berkhout_2014_2023_v1:2020",
+        "member_id": "d004_alkmaar_berkhout_2020_v1",
+        "source": "D-004 KNMI station 249 Berkhout",
+        "content_sha256": "a" * 64,
+        "n_timesteps": 35040,
+        "cadence_seconds": 900,
+    }
+    return {
+        "status": "approved_for_hp001_profile_rebuild_preflight",
+        "approval_ids": approval_ids,
+        "source_artifacts": {
+            "when2heat_source": {
+                "data_id": "D-003",
+                "path": "data/raw/when2heat/when2heat_input.csv",
+                "sha256": "b" * 64,
+                "provenance": "When2Heat/OPSD fixture",
+            },
+            "weather_member": {
+                "data_id": "D-004",
+                "path": "data/processed/weather_pv/member_fixture.npz",
+                "sha256": "c" * 64,
+                "provenance": "D-004 WEATHER-001 fixture",
+            },
+            "value_binding_record": {
+                "data_id": "D-013",
+                "path": "data/metadata/hp_scaling/value_binding_fixture.json",
+                "sha256": "d" * 64,
+                "provenance": "PI-signed HP-001 value binding fixture",
+            },
+        },
+        "weather_identity": dict(weather_identity),
+        "paired_pv_weather_identity": dict(weather_identity),
+        "output_plan": {
+            "profile_artifact_path": "data/processed/hp_profiles/hp001_fixture.npz",
+            "profile_manifest_path": "data/metadata/hp_scaling/hp001_fixture_manifest.json",
+            "checksum_manifest_path": "data/metadata/hp_scaling/hp001_fixture_checksums.json",
+            "n_timesteps": 35040,
+            "cadence_seconds": 900,
+            "component_count": 4,
+            "electric_power_unit": "kW",
+        },
+        "unresolved_blocker_ids": [],
+    }
+
+
+def test_hp001_profile_rebuild_preflight_template_fails_closed() -> None:
+    packet = hp_scaling.build_hp001_profile_rebuild_preflight_template()
+    template = packet["preflight_manifest_template"]
+
+    assert packet["status"] == "proposed_rebuild_preflight_template_not_executable"
+    assert packet["future_required_manifest_status"] == "approved_for_hp001_profile_rebuild_preflight"
+    assert "value_column" in packet["required_approval_keys_before_rebuild"]
+    assert "d004_paired_weather_acceptance" in packet["required_approval_keys_before_rebuild"]
+    assert any("no real HP profile artifact rebuild" in item for item in packet["current_blockers"])
+    with pytest.raises(ValueError, match="profile rebuild preflight is not ready"):
+        require_hp001_profile_rebuild_preflight_manifest(template)
+
+
+def test_hp001_profile_rebuild_preflight_accepts_complete_signed_fixture() -> None:
+    manifest = _signed_hp001_profile_rebuild_preflight_manifest()
+
+    assert hp001_profile_rebuild_preflight_blockers(manifest) == ()
+    require_hp001_profile_rebuild_preflight_manifest(manifest)
+
+
+def test_hp001_profile_rebuild_preflight_rejects_missing_source_checksum() -> None:
+    manifest = _signed_hp001_profile_rebuild_preflight_manifest()
+    manifest["source_artifacts"]["when2heat_source"]["sha256"] = ""
+
+    blockers = hp001_profile_rebuild_preflight_blockers(manifest)
+
+    assert "source_artifacts:when2heat_source_sha256_missing" in blockers
+    with pytest.raises(ValueError, match="when2heat_source_sha256_missing"):
+        require_hp001_profile_rebuild_preflight_manifest(manifest)
 
 def _signed_hp001_component_output_manifest() -> dict[str, object]:
     approval_ids = {key: f"SIGNED-{key}" for key in HP001_FINAL_READINESS_REQUIRED_APPROVAL_KEYS}

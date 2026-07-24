@@ -69,6 +69,7 @@ HP001_FINAL_READINESS_REQUIRED_APPROVAL_KEYS = (
     *HP001_WEATHER_ACCEPTANCE_REQUIRED_APPROVAL_KEYS,
 )
 HP001_PROFILE_ARTIFACT_CONSUMPTION_APPROVED_STATUS = "approved_for_integrated_hp_profile_consumption"
+HP001_PROFILE_REBUILD_PREFLIGHT_READY_STATUS = "approved_for_hp001_profile_rebuild_preflight"
 HP001_PROFILE_ARTIFACT_REQUIRED_COMPONENTS = (
     ("SFH", "space", "NL_heat_profile_space_SFH", HP001_SPACE_COP_COLUMN),
     ("MFH", "space", "NL_heat_profile_space_MFH", HP001_SPACE_COP_COLUMN),
@@ -814,6 +815,74 @@ def require_hp001_profile_artifact_consumption_manifest(manifest: Mapping[str, A
             f"space/water components; missing={tuple(sorted(required - seen))}, "
             f"extra={tuple(sorted(seen - required))}"
         )
+
+
+def hp001_profile_rebuild_preflight_blockers(manifest: Mapping[str, Any]) -> tuple[str, ...]:
+    """Return blockers before a future HP-001 profile artifact rebuild may run.
+
+    This preflight is metadata-only. It validates that a future rebuild request
+    names the signed inputs, source artifact checksums, paired weather identity,
+    and output targets before any annual HP profile generation can be launched.
+    """
+    if not isinstance(manifest, Mapping):
+        return ("manifest_not_mapping",)
+
+    blockers: list[str] = []
+    status = str(manifest.get("status", "")).strip()
+    if status != HP001_PROFILE_REBUILD_PREFLIGHT_READY_STATUS:
+        blockers.append("status_not_approved_for_hp001_profile_rebuild_preflight")
+
+    approval_ids_raw = manifest.get("approval_ids")
+    if not isinstance(approval_ids_raw, Mapping):
+        blockers.append("approval_ids_missing_or_not_mapping")
+        approval_ids: Mapping[str, str] = {}
+    else:
+        approval_ids = approval_ids_raw
+    blockers.extend(f"missing_approval:{key}" for key in hp001_final_readiness_missing_approval_keys(approval_ids))
+
+    source_artifacts = manifest.get("source_artifacts")
+    if not isinstance(source_artifacts, Mapping):
+        blockers.append("source_artifacts_missing_or_not_mapping")
+    else:
+        for key in ("when2heat_source", "weather_member", "value_binding_record"):
+            _append_artifact_reference_blockers(source_artifacts.get(key), f"source_artifacts:{key}", blockers)
+
+    output_plan = manifest.get("output_plan")
+    if not isinstance(output_plan, Mapping):
+        blockers.append("output_plan_missing_or_not_mapping")
+    else:
+        for key in ("profile_artifact_path", "profile_manifest_path", "checksum_manifest_path"):
+            if not str(output_plan.get(key, "")).strip():
+                blockers.append(f"output_plan_{key}_missing")
+        if int(output_plan.get("n_timesteps", 0) or 0) != 35040:
+            blockers.append("output_plan_n_timesteps_not_35040")
+        if int(output_plan.get("cadence_seconds", 0) or 0) != 900:
+            blockers.append("output_plan_cadence_not_900_seconds")
+        if int(output_plan.get("component_count", 0) or 0) != len(HP001_PROFILE_ARTIFACT_REQUIRED_COMPONENTS):
+            blockers.append("output_plan_component_count_not_4")
+        if str(output_plan.get("electric_power_unit", "")).strip() != "kW":
+            blockers.append("output_plan_electric_power_unit_not_kw")
+
+    _append_weather_identity_blockers(manifest.get("weather_identity"), manifest.get("paired_pv_weather_identity"), blockers)
+
+    unresolved = manifest.get("unresolved_blocker_ids", ())
+    if unresolved is None:
+        unresolved = ()
+    if isinstance(unresolved, (str, bytes)) or not isinstance(unresolved, Sequence):
+        blockers.append("unresolved_blocker_ids_not_sequence")
+    else:
+        unresolved_ids = tuple(str(item).strip() for item in unresolved if str(item).strip())
+        if unresolved_ids:
+            blockers.append("unresolved_blocker_ids_present")
+
+    return tuple(dict.fromkeys(blockers))
+
+
+def require_hp001_profile_rebuild_preflight_manifest(manifest: Mapping[str, Any]) -> None:
+    """Raise unless a future HP profile rebuild request is fully signed."""
+    blockers = hp001_profile_rebuild_preflight_blockers(manifest)
+    if blockers:
+        raise ValueError(f"HP-001 profile rebuild preflight is not ready; blockers={blockers}")
 
 
 def hp001_profile_artifact_consumption_manifest_from_profile(
@@ -1588,6 +1657,19 @@ def _require_non_empty_text(record: Mapping[str, Any], key: str, *, label: str) 
     if not text:
         raise ValueError(f"{label} {key} must be non-empty")
     return text
+
+
+def _append_artifact_reference_blockers(raw: object, label: str, blockers: list[str]) -> None:
+    if not isinstance(raw, Mapping):
+        blockers.append(f"{label}_missing_or_not_mapping")
+        return
+    for key in ("path", "sha256", "data_id", "provenance"):
+        if not str(raw.get(key, "")).strip():
+            blockers.append(f"{label}_{key}_missing")
+    sha = str(raw.get("sha256", "")).strip()
+    if sha and len(sha) != 64:
+        blockers.append(f"{label}_sha256_missing_or_invalid")
+
 
 def _append_profile_artifact_blockers(raw: object, blockers: list[str]) -> None:
     if not isinstance(raw, Mapping):
