@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import numpy as np
 import pytest
 
@@ -29,6 +30,7 @@ from src.contracts.net_load import (
     build_realization_context,
     build_executable_loading_bridge_preflight,
     build_net_load_result,
+    build_real_artifact_assembly_preflight,
     dry_run_integrated_input_preflight,
     net_load_component_from_adapter_output,
     prepare_loading_input_from_registry_outputs,
@@ -2120,6 +2122,180 @@ def test_executable_loading_bridge_reports_current_real_project_blockers_fail_cl
     assert bridge["no_event_detection"] is True
     assert bridge["no_probability_estimate"] is True
 
+
+def _write_synthetic_manifest_files(tmp_path, artifacts: list[ExecutableInputArtifact]) -> dict[str, str]:
+    expected: dict[str, str] = {}
+    for artifact in artifacts:
+        assert artifact.manifest_path is not None
+        path = tmp_path / artifact.manifest_path
+        path.parent.mkdir(parents=True, exist_ok=True)
+        content = f"{artifact.kind}:{artifact.artifact_id}:{artifact.version_id}\n".encode("utf-8")
+        path.write_bytes(content)
+        expected[artifact.manifest_path] = hashlib.sha256(content).hexdigest()
+    return expected
+
+
+def test_real_artifact_assembly_preflight_validates_source_paths_and_checksums(tmp_path) -> None:
+    artifacts = _executable_input_artifacts()
+    expected = _write_synthetic_manifest_files(tmp_path, artifacts)
+
+    dossier = build_real_artifact_assembly_preflight(
+        _screen_preflight_config(),
+        artifacts,
+        _trajectory_prerun_config(),
+        capacity_provenance=_synthetic_capacity_provenance(),
+        artifact_sha256_by_path=expected,
+        repo_root=tmp_path,
+        downstream_blocker_ids=(),
+    )
+
+    assert dossier["ready_for_real_artifact_assembly"] is True
+    assert dossier["source_artifacts_ready"] is True
+    assert dossier["bridge_preflight"]["ready_for_first_real_experiment"] is True
+    assert dossier["no_real_net_load_arrays"] is True
+    assert dossier["no_event_detection"] is True
+    assert dossier["no_probability_estimate"] is True
+    assert all(record["checksum_match"] is True for record in dossier["source_artifact_records"])
+    assert dossier["blockers"]["source_manifest_paths_missing"] == ()
+
+
+def test_real_artifact_assembly_preflight_fails_closed_on_checksum_mismatch(tmp_path) -> None:
+    artifacts = _executable_input_artifacts()
+    expected = _write_synthetic_manifest_files(tmp_path, artifacts)
+    expected[artifacts[1].manifest_path] = "0" * 64
+
+    dossier = build_real_artifact_assembly_preflight(
+        _screen_preflight_config(),
+        artifacts,
+        _trajectory_prerun_config(),
+        capacity_provenance=_synthetic_capacity_provenance(),
+        artifact_sha256_by_path=expected,
+        repo_root=tmp_path,
+        downstream_blocker_ids=(),
+    )
+
+    observed = hashlib.sha256(
+        f"{artifacts[1].kind}:{artifacts[1].artifact_id}:{artifacts[1].version_id}\n".encode("utf-8")
+    ).hexdigest()
+    assert dossier["ready_for_real_artifact_assembly"] is False
+    assert dossier["source_artifacts_ready"] is False
+    assert dossier["blockers"]["source_manifest_checksum_mismatches"] == (
+        {"path": artifacts[1].manifest_path, "expected": "0" * 64, "observed": observed},
+    )
+    assert dossier["no_event_counts"] is True
+
+
+def test_real_artifact_assembly_preflight_rejects_absolute_manifest_path(tmp_path) -> None:
+    artifacts = _executable_input_artifacts()
+    absolute_path = tmp_path / "data" / "metadata" / "synthetic" / "ev.json"
+    artifacts[1] = ExecutableInputArtifact(
+        artifact_id=artifacts[1].artifact_id,
+        kind=artifacts[1].kind,
+        artifact_status=artifacts[1].artifact_status,
+        version_id=artifacts[1].version_id,
+        source_id=artifacts[1].source_id,
+        member_id=artifacts[1].member_id,
+        calendar_id=artifacts[1].calendar_id,
+        node_ids=artifacts[1].node_ids,
+        signed_register_ids=artifacts[1].signed_register_ids,
+        blocking_register_ids=artifacts[1].blocking_register_ids,
+        timestep_seconds=artifacts[1].timestep_seconds,
+        shared_weather_driver_id=artifacts[1].shared_weather_driver_id,
+        manifest_path=str(absolute_path),
+        provenance=artifacts[1].provenance,
+    )
+
+    with pytest.raises(ValueError, match="repository-relative"):
+        build_real_artifact_assembly_preflight(
+            _screen_preflight_config(),
+            artifacts,
+            _trajectory_prerun_config(),
+            capacity_provenance=_synthetic_capacity_provenance(),
+            repo_root=tmp_path,
+            downstream_blocker_ids=(),
+        )
+
+
+def test_real_artifact_assembly_preflight_rejects_manifest_parent_traversal(tmp_path) -> None:
+    artifacts = _executable_input_artifacts()
+    artifacts[1] = ExecutableInputArtifact(
+        artifact_id=artifacts[1].artifact_id,
+        kind=artifacts[1].kind,
+        artifact_status=artifacts[1].artifact_status,
+        version_id=artifacts[1].version_id,
+        source_id=artifacts[1].source_id,
+        member_id=artifacts[1].member_id,
+        calendar_id=artifacts[1].calendar_id,
+        node_ids=artifacts[1].node_ids,
+        signed_register_ids=artifacts[1].signed_register_ids,
+        blocking_register_ids=artifacts[1].blocking_register_ids,
+        timestep_seconds=artifacts[1].timestep_seconds,
+        shared_weather_driver_id=artifacts[1].shared_weather_driver_id,
+        manifest_path="../outside.json",
+        provenance=artifacts[1].provenance,
+    )
+
+    with pytest.raises(ValueError, match="within repo_root"):
+        build_real_artifact_assembly_preflight(
+            _screen_preflight_config(),
+            artifacts,
+            _trajectory_prerun_config(),
+            capacity_provenance=_synthetic_capacity_provenance(),
+            repo_root=tmp_path,
+            downstream_blocker_ids=(),
+        )
+
+def test_real_artifact_assembly_preflight_reports_current_project_blockers_without_arrays(tmp_path) -> None:
+    artifacts = _executable_input_artifacts()
+    artifacts[0] = _executable_input_artifact(
+        "baseline",
+        artifact_status="scaffold",
+        signed_register_ids=(),
+        blocking_register_ids=("E2.S5-BASELINE-EXECUTABLE-ARTIFACT",),
+    )
+    artifacts[2] = _executable_input_artifact(
+        "hp",
+        artifact_status="unsigned",
+        signed_register_ids=("HP-001",),
+        blocking_register_ids=("D-013", "HP-LOCAL-SCALING", "D004-PAIRED-ACCEPTANCE"),
+    )
+    artifacts[3] = _executable_input_artifact(
+        "pv",
+        artifact_status="unsigned",
+        signed_register_ids=("D004-SOURCE-MEMBER-ACCEPTANCE", "PV-CAP-001"),
+        blocking_register_ids=("PV-PARAM-001", "D-014", "PV-CAPACITY-VALUE"),
+    )
+    expected = _write_synthetic_manifest_files(tmp_path, artifacts)
+
+    dossier = build_real_artifact_assembly_preflight(
+        _screen_preflight_config(),
+        artifacts,
+        _trajectory_prerun_config(),
+        capacity_provenance=None,
+        artifact_sha256_by_path=expected,
+        repo_root=tmp_path,
+    )
+
+    assert dossier["ready_for_real_artifact_assembly"] is False
+    assert dossier["source_artifacts_ready"] is True
+    assert dossier["bridge_preflight"]["ready_for_ic1_input_assembly"] is False
+    assert dossier["blockers"]["component_artifact_blockers_by_kind"]["baseline"] == (
+        "E2.S5-BASELINE-EXECUTABLE-ARTIFACT",
+    )
+    assert dossier["blockers"]["component_artifact_blockers_by_kind"]["hp"] == (
+        "D-013",
+        "HP-LOCAL-SCALING",
+        "D004-PAIRED-ACCEPTANCE",
+    )
+    assert dossier["blockers"]["component_artifact_blockers_by_kind"]["pv"] == (
+        "PV-PARAM-001",
+        "D-014",
+        "PV-CAPACITY-VALUE",
+    )
+    assert dossier["blockers"]["downstream_gate_blockers"] == ("A-013", "G2", "G1-A2", "A-016")
+    assert dossier["blockers"]["capacity_provenance_missing"] is True
+    assert dossier["no_capacity_screen_result"] is True
+    assert "p_event" not in dossier
 
 def test_executable_loading_bridge_rejects_bad_bridge_metadata() -> None:
     bad_capacity = {
