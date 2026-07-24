@@ -49,6 +49,8 @@ class RhoSweepResult:
         rhos = [point.rho for point in self.points]
         if rhos != sorted(rhos) or len(set(rhos)) != len(rhos):
             raise ValueError("rho sweep points must have unique sorted rho values")
+        if any(point.estimate.sample_count != self.sample_count for point in self.points):
+            raise ValueError("rho sweep point sample_count must match result sample_count")
         if self.max_upward_violation < 0.0:
             raise ValueError("max_upward_violation must be nonnegative")
         expected = _max_upward_violation(self.points)

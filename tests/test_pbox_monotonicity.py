@@ -128,6 +128,10 @@ def test_rho_sweep_payload_validator_rejects_paper_facing_or_tampered_payload() 
     bad_points.reverse()
     with pytest.raises(ValueError, match="unique sorted"):
         assert_synthetic_rho_sweep_payload({**payload, "points": bad_points})
+    mismatched_counts = [dict(point) for point in payload["points"]]
+    mismatched_counts[0]["sample_count"] = payload["sample_count"] + 1
+    with pytest.raises(ValueError, match="point sample_count"):
+        assert_synthetic_rho_sweep_payload({**payload, "points": mismatched_counts})
 
     with pytest.raises(ValueError, match="monotone_nonincreasing"):
         assert_synthetic_rho_sweep_payload(
