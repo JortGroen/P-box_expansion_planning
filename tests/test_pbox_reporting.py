@@ -12,10 +12,15 @@ from src.pbox_error import (
 )
 from src.pbox_reporting import (
     RUNNER_REPORT_BOUNDARY_PROTOCOL,
+    OUTPUT_ERROR_ENDPOINT_COUNT_BLOCKED_STATUS,
+    OUTPUT_ERROR_ENDPOINT_COUNT_BRIDGE_PROTOCOL,
+    OUTPUT_ERROR_ENDPOINT_COUNT_PROVENANCE,
     AlphaEventCountRecord,
     assert_alpha_probability_estimator_packet,
+    assert_output_error_endpoint_count_bridge_packet,
     assert_runner_report_boundary_payload,
     build_alpha_probability_estimator_packet,
+    build_output_error_endpoint_count_bridge_packet,
     build_guarded_pbox_report,
     build_runner_report_boundary_record,
     probability_rows_from_alpha_event_counts,
@@ -213,6 +218,24 @@ def _alpha_endpoint_metadata() -> dict[str, object]:
     }
 
 
+def _output_error_endpoint_count_metadata() -> dict[str, object]:
+    metadata = _alpha_endpoint_metadata()
+    metadata.update(
+        {
+            "a013_grid_error_approval_status": OUTPUT_ERROR_ENDPOINT_COUNT_BLOCKED_STATUS,
+            "a016_scenario_consistency_status": OUTPUT_ERROR_ENDPOINT_COUNT_BLOCKED_STATUS,
+            "capacity_convention_status": OUTPUT_ERROR_ENDPOINT_COUNT_BLOCKED_STATUS,
+            "dependence_assumption": OUTPUT_ERROR_DEPENDENCE,
+            "endpoint_count_provenance": OUTPUT_ERROR_ENDPOINT_COUNT_PROVENANCE,
+            "g2_tier1_envelope_approval_status": OUTPUT_ERROR_ENDPOINT_COUNT_BLOCKED_STATUS,
+            "lower_composition_formula": OUTPUT_ERROR_LOWER_FORMULA,
+            "output_error_protocol": "g1-a2-output-domain-error",
+            "upper_composition_formula": OUTPUT_ERROR_UPPER_FORMULA,
+        }
+    )
+    return metadata
+
+
 def test_alpha_probability_rows_are_recomputed_from_event_counts() -> None:
     rows = probability_rows_from_alpha_event_counts(_alpha_event_counts())
 
@@ -343,6 +366,154 @@ def test_alpha_probability_estimator_rejects_collapsed_or_tampered_payloads() ->
     tampered_metadata["endpoint_metadata"] = endpoint_metadata
     with pytest.raises(ValueError, match="probability widening"):
         assert_alpha_probability_estimator_packet(tampered_metadata)
+
+
+def test_output_error_endpoint_count_bridge_feeds_alpha_estimator() -> None:
+    packet = build_output_error_endpoint_count_bridge_packet(
+        packet_id="synthetic-e5-s3-endpoint-count-bridge",
+        event_count_records=_alpha_event_counts(),
+        endpoint_metadata=_output_error_endpoint_count_metadata(),
+    )
+    payload = packet.to_mapping()
+
+    assert payload["protocol"] == OUTPUT_ERROR_ENDPOINT_COUNT_BRIDGE_PROTOCOL
+    assert payload["use_status"] == "synthetic-output-error-endpoint-count-readiness"
+    assert payload["probability_rows"] == payload[
+        "alpha_probability_estimator_packet"
+    ]["probability_rows"]
+    assert [row["p_lower"] for row in payload["probability_rows"]] == [0.1, 0.2, 0.3]
+    assert [row["p_upper"] for row in payload["probability_rows"]] == [0.5, 0.4, 0.3]
+    assert (
+        payload["invariants"]["endpoint_count_provenance"]
+        == OUTPUT_ERROR_ENDPOINT_COUNT_PROVENANCE
+    )
+    assert payload["invariants"]["probability_widening"] == "forbidden"
+    assert payload["real_use_blocker_manifest"]["ready_for_real_use"] is False
+    blockers = payload["real_use_blocker_manifest"]["blockers"]
+    assert "missing_signed_g2_tier1_endpoints" in blockers
+    assert "missing_signed_a013_grid_error" in blockers
+    assert_output_error_endpoint_count_bridge_packet(payload)
+
+
+def test_output_error_endpoint_count_bridge_rejects_forbidden_error_semantics() -> None:
+    metadata = _output_error_endpoint_count_metadata()
+    metadata["probability_widening"] = "posthoc-margin"
+    with pytest.raises(ValueError, match="probability widening"):
+        build_output_error_endpoint_count_bridge_packet(
+            packet_id="probability-margin-bridge",
+            event_count_records=_alpha_event_counts(),
+            endpoint_metadata=metadata,
+        )
+
+    metadata = _output_error_endpoint_count_metadata()
+    metadata["error_sampling"] = "independent-random-draws"
+    with pytest.raises(ValueError, match="independent error sampling"):
+        build_output_error_endpoint_count_bridge_packet(
+            packet_id="independent-error-bridge",
+            event_count_records=_alpha_event_counts(),
+            endpoint_metadata=metadata,
+        )
+
+    metadata = _output_error_endpoint_count_metadata()
+    metadata["direction_gate"] = "widened_loading_sign"
+    with pytest.raises(ValueError, match="unwidened P_net"):
+        build_output_error_endpoint_count_bridge_packet(
+            packet_id="widened-direction-bridge",
+            event_count_records=_alpha_event_counts(),
+            endpoint_metadata=metadata,
+        )
+
+
+def test_output_error_endpoint_count_bridge_rejects_missing_or_stale_inputs() -> None:
+    metadata = _output_error_endpoint_count_metadata()
+    metadata.pop("endpoint_count_provenance")
+    with pytest.raises(ValueError, match="endpoint_count_provenance"):
+        build_output_error_endpoint_count_bridge_packet(
+            packet_id="missing-provenance-bridge",
+            event_count_records=_alpha_event_counts(),
+            endpoint_metadata=metadata,
+        )
+
+    metadata = _output_error_endpoint_count_metadata()
+    metadata["a013_grid_error_approval_id"] = "A-013-unsigned"
+    with pytest.raises(ValueError, match="stale or unsigned"):
+        build_output_error_endpoint_count_bridge_packet(
+            packet_id="unsigned-a013-reference-bridge",
+            event_count_records=_alpha_event_counts(),
+            endpoint_metadata=metadata,
+        )
+
+    metadata = _output_error_endpoint_count_metadata()
+    metadata["capacity_denominator_provenance"] = "capacity-placeholder"
+    with pytest.raises(ValueError, match="stale or unsigned"):
+        build_output_error_endpoint_count_bridge_packet(
+            packet_id="placeholder-capacity-reference-bridge",
+            event_count_records=_alpha_event_counts(),
+            endpoint_metadata=metadata,
+        )
+
+    metadata = _output_error_endpoint_count_metadata()
+    metadata["a016_scenario_consistency_id"] = "A-016-proposed"
+    with pytest.raises(ValueError, match="stale or unsigned"):
+        build_output_error_endpoint_count_bridge_packet(
+            packet_id="proposed-a016-reference-bridge",
+            event_count_records=_alpha_event_counts(),
+            endpoint_metadata=metadata,
+        )
+
+    metadata = _output_error_endpoint_count_metadata()
+    metadata["a013_grid_error_approval_status"] = "signed"
+    with pytest.raises(ValueError, match="blocked-pending-real-inputs"):
+        build_output_error_endpoint_count_bridge_packet(
+            packet_id="stale-a013-status-bridge",
+            event_count_records=_alpha_event_counts(),
+            endpoint_metadata=metadata,
+        )
+
+    metadata = _output_error_endpoint_count_metadata()
+    metadata["g2_tier1_envelope_approval_status"] = "signed"
+    with pytest.raises(ValueError, match="blocked-pending-real-inputs"):
+        build_output_error_endpoint_count_bridge_packet(
+            packet_id="stale-g2-status-bridge",
+            event_count_records=_alpha_event_counts(),
+            endpoint_metadata=metadata,
+        )
+
+
+def test_output_error_endpoint_count_bridge_rejects_relabeling_or_tampering() -> None:
+    payload = build_output_error_endpoint_count_bridge_packet(
+        packet_id="synthetic-e5-s3-endpoint-count-bridge",
+        event_count_records=_alpha_event_counts(),
+        endpoint_metadata=_output_error_endpoint_count_metadata(),
+    ).to_mapping()
+
+    relabeled = dict(payload)
+    relabeled["use_status"] = "paper-facing"
+    with pytest.raises(ValueError, match="remain synthetic"):
+        assert_output_error_endpoint_count_bridge_packet(relabeled)
+
+    collapsed = dict(payload)
+    collapsed["probability_margin_widening"] = 0.05
+    with pytest.raises(ValueError, match="collapsed"):
+        assert_output_error_endpoint_count_bridge_packet(collapsed)
+
+    tampered = dict(payload)
+    rows = [dict(row) for row in payload["probability_rows"]]
+    rows[0]["p_upper"] = 0.9
+    tampered["probability_rows"] = rows
+    with pytest.raises(
+        ValueError,
+        match="alpha estimator packet|supplied by the alpha estimator",
+    ):
+        assert_output_error_endpoint_count_bridge_packet(tampered)
+
+    tampered_blockers = dict(payload)
+    blocker_manifest = dict(payload["real_use_blocker_manifest"])
+    blocker_manifest["blockers"] = []
+    tampered_blockers["real_use_blocker_manifest"] = blocker_manifest
+    with pytest.raises(ValueError, match="real_use_blocker_manifest"):
+        assert_output_error_endpoint_count_bridge_packet(tampered_blockers)
+
 
 def test_probability_rows_from_pbox_family_are_sorted_alpha_indexed_bounds() -> None:
     rows = probability_rows_from_pbox_family(_pbox_family())

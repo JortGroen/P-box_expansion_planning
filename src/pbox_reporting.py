@@ -44,6 +44,28 @@ ALPHA_EVENT_COUNT_REAL_USE_BLOCKERS: tuple[str, ...] = (
     "missing_a016_scenario_consistency",
     "missing_g3_monotonicity_approval_if_vertex_shortcut_claimed",
 )
+OUTPUT_ERROR_ENDPOINT_COUNT_BRIDGE_PROTOCOL = (
+    "e5s3-output-error-endpoint-count-bridge-v1"
+)
+OUTPUT_ERROR_ENDPOINT_COUNT_BRIDGE_USE_STATUS = (
+    "synthetic-output-error-endpoint-count-readiness"
+)
+OUTPUT_ERROR_ENDPOINT_COUNT_REAL_USE_BLOCKER_PROTOCOL = (
+    "e5s3-output-error-endpoint-count-real-use-blockers-v1"
+)
+OUTPUT_ERROR_ENDPOINT_COUNT_PROVENANCE = (
+    "precomputed_after_g1_a2_loading_endpoint_event_detection"
+)
+OUTPUT_ERROR_ENDPOINT_COUNT_PROTOCOL = "g1-a2-output-domain-error"
+OUTPUT_ERROR_ENDPOINT_COUNT_BLOCKED_STATUS = "blocked-pending-real-inputs"
+OUTPUT_ERROR_ENDPOINT_COUNT_REAL_USE_BLOCKERS: tuple[str, ...] = (
+    "missing_real_output_error_endpoint_count_manifest",
+    "missing_signed_g2_tier1_endpoints",
+    "missing_signed_a013_grid_error",
+    "missing_capacity_convention_and_provenance",
+    "missing_a016_scenario_consistency",
+    "missing_g3_monotonicity_approval_if_vertex_shortcut_claimed",
+)
 _ALPHA_EVENT_COUNT_ENDPOINT_METADATA_FIELDS = {
     "a013_grid_error_approval_id",
     "a016_scenario_consistency_id",
@@ -56,6 +78,36 @@ _ALPHA_EVENT_COUNT_ENDPOINT_METADATA_FIELDS = {
     "loading_endpoint_application",
     "probability_widening",
 }
+_OUTPUT_ERROR_ENDPOINT_COUNT_REFERENCE_FIELDS: tuple[str, ...] = (
+    "a013_grid_error_approval_id",
+    "a016_scenario_consistency_id",
+    "capacity_convention_linkage",
+    "capacity_denominator_provenance",
+    "g2_tier1_envelope_approval_id",
+)
+_OUTPUT_ERROR_ENDPOINT_COUNT_STALE_REFERENCE_TOKENS = (
+    "pending",
+    "placeholder",
+    "proposed",
+    "tbd",
+    "todo",
+    "unsigned",
+    "not-approved",
+)
+_OUTPUT_ERROR_ENDPOINT_COUNT_METADATA_FIELDS = (
+    _ALPHA_EVENT_COUNT_ENDPOINT_METADATA_FIELDS
+    | {
+        "a013_grid_error_approval_status",
+        "a016_scenario_consistency_status",
+        "capacity_convention_status",
+        "dependence_assumption",
+        "endpoint_count_provenance",
+        "g2_tier1_envelope_approval_status",
+        "lower_composition_formula",
+        "output_error_protocol",
+        "upper_composition_formula",
+    }
+)
 _ALPHA_EVENT_COUNT_FORBIDDEN_FIELDS = frozenset(
     {
         "defuzzified_probability",
@@ -65,6 +117,9 @@ _ALPHA_EVENT_COUNT_FORBIDDEN_FIELDS = frozenset(
         "p_hat",
         "p_mid",
         "probability",
+        "probability_margin",
+        "probability_margin_shift",
+        "probability_margin_widening",
     }
 )
 
@@ -276,6 +331,76 @@ class AlphaProbabilityEstimatorPacket:
         }
 
 
+@dataclass(frozen=True)
+class OutputErrorEndpointCountBridgePacket:
+    """Synthetic E5.S3 bridge from endpoint counts to alpha probabilities."""
+
+    packet_id: str
+    alpha_probability_packet: AlphaProbabilityEstimatorPacket
+    endpoint_metadata: Mapping[str, object]
+    use_status: str = OUTPUT_ERROR_ENDPOINT_COUNT_BRIDGE_USE_STATUS
+    protocol: str = OUTPUT_ERROR_ENDPOINT_COUNT_BRIDGE_PROTOCOL
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.packet_id, str) or not self.packet_id.strip():
+            raise ValueError("packet_id must be a nonempty string")
+        if self.protocol != OUTPUT_ERROR_ENDPOINT_COUNT_BRIDGE_PROTOCOL:
+            raise ValueError(
+                f"protocol must be {OUTPUT_ERROR_ENDPOINT_COUNT_BRIDGE_PROTOCOL!r}"
+            )
+        if self.use_status != OUTPUT_ERROR_ENDPOINT_COUNT_BRIDGE_USE_STATUS:
+            raise ValueError("output-error endpoint-count bridge must remain synthetic")
+        if not isinstance(self.alpha_probability_packet, AlphaProbabilityEstimatorPacket):
+            raise TypeError(
+                "alpha_probability_packet must be an AlphaProbabilityEstimatorPacket"
+            )
+        _validate_output_error_endpoint_count_metadata(self.endpoint_metadata)
+        if dict(self.endpoint_metadata) != dict(
+            self.alpha_probability_packet.endpoint_metadata
+        ):
+            raise ValueError(
+                "bridge endpoint_metadata must match the alpha estimator packet"
+            )
+
+    @property
+    def real_use_blocker_manifest(self) -> dict[str, object]:
+        return build_output_error_endpoint_count_real_use_blocker_manifest(
+            manifest_id=f"{self.packet_id}:real-use-blockers"
+        )
+
+    def to_mapping(self) -> dict[str, object]:
+        probability_packet = self.alpha_probability_packet.to_mapping()
+        return {
+            "alpha_probability_estimator_packet": probability_packet,
+            "endpoint_metadata": dict(self.endpoint_metadata),
+            "invariants": {
+                "alpha_indexed_lower_upper_reporting": True,
+                "crn_sample_identity": "same ordered sample_ids across alpha rows",
+                "defuzzification": "forbidden",
+                "endpoint_count_provenance": OUTPUT_ERROR_ENDPOINT_COUNT_PROVENANCE,
+                "endpoint_error_dependence": OUTPUT_ERROR_DEPENDENCE,
+                "loading_endpoint_application": OUTPUT_ERROR_APPLICATION,
+                "probability_widening": "forbidden",
+                "unwidened_direction_gate": "unwidened_p_net_import_mask",
+            },
+            "non_claims": [
+                "no real trajectories",
+                "no real P(E)",
+                "no real rho sweep",
+                "no capacity choice",
+                "no A-013 or G2 numerical signoff",
+                "no G3 verdict",
+                "no decision-engine recommendation",
+                "no manuscript number",
+            ],
+            "packet_id": self.packet_id,
+            "probability_rows": list(probability_packet["probability_rows"]),
+            "protocol": self.protocol,
+            "real_use_blocker_manifest": self.real_use_blocker_manifest,
+            "use_status": self.use_status,
+        }
+
+
 def probability_rows_from_alpha_event_counts(
     event_count_records: Sequence[AlphaEventCountRecord | Mapping[str, object]],
     *,
@@ -376,6 +501,55 @@ def build_alpha_probability_real_use_blocker_manifest(
     }
 
 
+def build_output_error_endpoint_count_bridge_packet(
+    *,
+    packet_id: str,
+    event_count_records: Sequence[AlphaEventCountRecord | Mapping[str, object]],
+    endpoint_metadata: Mapping[str, object],
+    confidence_level: float = 0.95,
+    require_nested: bool = True,
+) -> OutputErrorEndpointCountBridgePacket:
+    """Bridge G1-A2 endpoint event counts into the alpha estimator scaffold."""
+
+    _validate_output_error_endpoint_count_metadata(endpoint_metadata)
+    probability_packet = build_alpha_probability_estimator_packet(
+        packet_id=f"{packet_id}:alpha-probability-estimator",
+        event_count_records=event_count_records,
+        endpoint_metadata=endpoint_metadata,
+        confidence_level=confidence_level,
+        require_nested=require_nested,
+    )
+    return OutputErrorEndpointCountBridgePacket(
+        packet_id=packet_id,
+        alpha_probability_packet=probability_packet,
+        endpoint_metadata=endpoint_metadata,
+    )
+
+
+def build_output_error_endpoint_count_real_use_blocker_manifest(
+    *, manifest_id: str
+) -> dict[str, object]:
+    """Return blocker keys for future real E5.S3 endpoint-count bridge use."""
+
+    if not isinstance(manifest_id, str) or not manifest_id.strip():
+        raise ValueError("manifest_id must be a nonempty string")
+    return {
+        "blockers": list(OUTPUT_ERROR_ENDPOINT_COUNT_REAL_USE_BLOCKERS),
+        "manifest_id": manifest_id,
+        "manifest_protocol": OUTPUT_ERROR_ENDPOINT_COUNT_REAL_USE_BLOCKER_PROTOCOL,
+        "non_claims": [
+            "no real trajectories accepted by this scaffold",
+            "no real P(E)",
+            "no capacity convention choice",
+            "no A-013 or G2 numerical signoff",
+            "no G3 verdict",
+            "no manuscript number",
+        ],
+        "ready_for_real_use": False,
+        "use_status": "real-use-blocker",
+    }
+
+
 def assert_alpha_probability_estimator_packet(payload: Mapping[str, object]) -> None:
     """Validate a serialized synthetic alpha probability-estimator packet."""
 
@@ -438,6 +612,72 @@ def assert_alpha_probability_estimator_packet(payload: Mapping[str, object]) -> 
         raise ValueError("probability widening must remain forbidden")
     if invariants.get("alpha_indexed_lower_upper_reporting") is not True:
         raise ValueError("alpha-indexed lower/upper reporting must be true")
+
+
+def assert_output_error_endpoint_count_bridge_packet(
+    payload: Mapping[str, object],
+) -> None:
+    """Validate a serialized synthetic E5.S3 endpoint-count bridge packet."""
+
+    _reject_alpha_event_count_collapsed_fields(payload)
+    required = {
+        "alpha_probability_estimator_packet",
+        "endpoint_metadata",
+        "invariants",
+        "packet_id",
+        "probability_rows",
+        "protocol",
+        "real_use_blocker_manifest",
+        "use_status",
+    }
+    _require_mapping_fields(payload, required, name="output-error bridge packet")
+    if payload["protocol"] != OUTPUT_ERROR_ENDPOINT_COUNT_BRIDGE_PROTOCOL:
+        raise ValueError(
+            f"protocol must be {OUTPUT_ERROR_ENDPOINT_COUNT_BRIDGE_PROTOCOL!r}"
+        )
+    if payload["use_status"] != OUTPUT_ERROR_ENDPOINT_COUNT_BRIDGE_USE_STATUS:
+        raise ValueError("output-error endpoint-count bridge must remain synthetic")
+
+    endpoint_metadata = _expect_mapping(
+        payload["endpoint_metadata"], name="endpoint_metadata"
+    )
+    _validate_output_error_endpoint_count_metadata(endpoint_metadata)
+    alpha_packet = _expect_mapping(
+        payload["alpha_probability_estimator_packet"],
+        name="alpha_probability_estimator_packet",
+    )
+    assert_alpha_probability_estimator_packet(alpha_packet)
+    if dict(alpha_packet["endpoint_metadata"]) != dict(endpoint_metadata):
+        raise ValueError(
+            "bridge endpoint_metadata must match the alpha estimator packet"
+        )
+    rows = tuple(
+        dict(_expect_mapping(row, name="probability_row"))
+        for row in _expect_sequence(payload["probability_rows"], name="probability_rows")
+    )
+    if rows != tuple(dict(row) for row in alpha_packet["probability_rows"]):
+        raise ValueError(
+            "bridge probability_rows must be supplied by the alpha estimator packet"
+        )
+    expected_blockers = build_output_error_endpoint_count_real_use_blocker_manifest(
+        manifest_id=f"{payload['packet_id']}:real-use-blockers"
+    )
+    if payload["real_use_blocker_manifest"] != expected_blockers:
+        raise ValueError("real_use_blocker_manifest must match E5.S3 blockers")
+
+    invariants = _expect_mapping(payload["invariants"], name="invariants")
+    expected_invariants = {
+        "alpha_indexed_lower_upper_reporting": True,
+        "crn_sample_identity": "same ordered sample_ids across alpha rows",
+        "defuzzification": "forbidden",
+        "endpoint_count_provenance": OUTPUT_ERROR_ENDPOINT_COUNT_PROVENANCE,
+        "endpoint_error_dependence": OUTPUT_ERROR_DEPENDENCE,
+        "loading_endpoint_application": OUTPUT_ERROR_APPLICATION,
+        "probability_widening": "forbidden",
+        "unwidened_direction_gate": "unwidened_p_net_import_mask",
+    }
+    if dict(invariants) != expected_invariants:
+        raise ValueError("bridge invariants must match the E5.S3 protocol")
 
 
 def _coerce_alpha_event_count_record(
@@ -521,6 +761,54 @@ def _validate_alpha_event_endpoint_metadata(metadata: Mapping[str, object]) -> N
         raise ValueError("endpoint metadata must forbid probability widening")
     if metadata["error_sampling"] != OUTPUT_ERROR_SAMPLING:
         raise ValueError("endpoint metadata must forbid independent error sampling")
+
+
+
+def _validate_output_error_endpoint_count_metadata(metadata: Mapping[str, object]) -> None:
+    _validate_alpha_event_endpoint_metadata(metadata)
+    _require_mapping_fields(
+        metadata,
+        _OUTPUT_ERROR_ENDPOINT_COUNT_METADATA_FIELDS,
+        name="output_error_endpoint_count_metadata",
+    )
+    for field in _OUTPUT_ERROR_ENDPOINT_COUNT_METADATA_FIELDS:
+        if not isinstance(metadata[field], str) or not str(metadata[field]).strip():
+            raise ValueError(
+                f"output_error_endpoint_count_metadata {field} must be a nonempty string"
+            )
+    if metadata["endpoint_count_provenance"] != OUTPUT_ERROR_ENDPOINT_COUNT_PROVENANCE:
+        raise ValueError(
+            "endpoint counts must come from G1-A2 loading endpoints before event detection"
+        )
+    if metadata["output_error_protocol"] != OUTPUT_ERROR_ENDPOINT_COUNT_PROTOCOL:
+        raise ValueError("endpoint counts must use the G1-A2 output-error protocol")
+    if metadata["dependence_assumption"] != OUTPUT_ERROR_DEPENDENCE:
+        raise ValueError("endpoint counts must preserve arbitrary unknown dependence")
+    if metadata["lower_composition_formula"] != OUTPUT_ERROR_LOWER_FORMULA:
+        raise ValueError("lower endpoint formula must match G1-A2")
+    if metadata["upper_composition_formula"] != OUTPUT_ERROR_UPPER_FORMULA:
+        raise ValueError("upper endpoint formula must match G1-A2")
+    for field in _OUTPUT_ERROR_ENDPOINT_COUNT_REFERENCE_FIELDS:
+        lowered = str(metadata[field]).lower()
+        stale = [
+            token
+            for token in _OUTPUT_ERROR_ENDPOINT_COUNT_STALE_REFERENCE_TOKENS
+            if token in lowered
+        ]
+        if stale:
+            raise ValueError(f"{field} contains stale or unsigned token(s): {stale}")
+    for field in (
+        "a013_grid_error_approval_status",
+        "a016_scenario_consistency_status",
+        "capacity_convention_status",
+        "g2_tier1_envelope_approval_status",
+    ):
+        # This bridge is pre-real-use by design; signed real approval metadata
+        # must enter through a later runner manifest, not a synthetic fixture.
+        if metadata[field] != OUTPUT_ERROR_ENDPOINT_COUNT_BLOCKED_STATUS:
+            raise ValueError(
+                f"{field} must remain {OUTPUT_ERROR_ENDPOINT_COUNT_BLOCKED_STATUS!r}"
+            )
 
 
 def _reject_alpha_event_count_collapsed_fields(value: object) -> None:
