@@ -1,0 +1,5 @@
+# Agent C Log: E2.S4 D-014 PV First-Experiment Value-Approval Packet
+
+DID: Added proposed metadata-only `D014-PV-FIRST-EXPERIMENT-VALUE-APPROVAL-PACKET`, loader/validator, tests, register/methods prose, and PI-facing report. The packet consolidates remaining PV first-experiment signoff choices while requiring a blocker manifest rather than arrays before approvals exist.
+
+OPEN: PI still needs to sign capacity row/value/convention, II3050 scenario/growth/A-016 mapping, statistical orientation/tilt values, PV-PARAM conversion/loss/temperature/clipping treatment, reactive-power and path/checksum policy, node allocation, and final paired HP/PV acceptance. No PV output, net-load/event analysis, `P(E)`, capacity screen, threshold run, manuscript result, or roof/building/PV-map/3DBAG workflow was produced.
