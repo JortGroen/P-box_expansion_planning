@@ -201,6 +201,121 @@ def load_pv_capacity_source_packet(path: str | Path) -> PVCapacitySourcePacket:
     )
 
 @dataclass(frozen=True)
+class PVStatisticalOrientationTiltPacket:
+    """Proposed D-014 statistical orientation/tilt packet that stays fail-closed."""
+
+    packet_id: str
+    data_id: str
+    status: str
+    download_performed: bool
+    raw_data_committed: bool
+    first_experiment_scope: Mapping[str, object]
+    governing_boundaries: Mapping[str, object]
+    source_route_comparison: Sequence[Mapping[str, object]]
+    proposed_artifact_interface: Mapping[str, object]
+    pi_questions: Sequence[str]
+    non_claims: Sequence[str]
+
+    def __post_init__(self) -> None:
+        if self.packet_id != "D014-PV-STATISTICAL-ORIENTATION-TILT-PACKET":
+            raise ValueError("statistical orientation/tilt packet must identify D014-PV-STATISTICAL-ORIENTATION-TILT-PACKET")
+        if self.data_id != "D-014":
+            raise ValueError("statistical orientation/tilt packet must identify D-014")
+        if not str(self.status).startswith("proposed_"):
+            raise ValueError("statistical orientation/tilt packet must remain proposed until PI approval")
+        if self.download_performed is not False or self.raw_data_committed is not False:
+            raise ValueError("statistical orientation/tilt packet must not claim raw retrieval or committed raw data")
+        scope = _audit_json_mapping(self.first_experiment_scope, "first_experiment_scope")
+        boundaries = _audit_json_mapping(self.governing_boundaries, "governing_boundaries")
+        interface = _audit_json_mapping(self.proposed_artifact_interface, "proposed_artifact_interface")
+        routes = tuple(_audit_json_mapping(item, "source_route_comparison item") for item in self.source_route_comparison)
+        questions = tuple(str(item) for item in self.pi_questions)
+        non_claims = tuple(str(item) for item in self.non_claims)
+        if scope.get("statistical_orientation_tilt_classes_only") is not True:
+            raise ValueError("first experiment must use statistical orientation/tilt classes only")
+        if scope.get("building_or_roof_level_extraction_in_scope") is not False:
+            raise ValueError("building or roof-level extraction must stay out of first-experiment scope")
+        if scope.get("specific_3dbag_per_roof_workflow_in_first_experiment") is not False:
+            raise ValueError("3DBAG per-roof workflow must be deferred from the first experiment")
+        if "PV-CAP-001 remains separate" not in str(boundaries.get("capacity_route", "")):
+            raise ValueError("packet must keep the D-014 capacity route separate")
+        if "PR=0.86/direct-GHI is not approved" not in str(boundaries.get("conversion_parameters", "")):
+            raise ValueError("packet must not approve the disputed PV-PARAM route")
+        if interface.get("executable_allowed_now") is not False:
+            raise ValueError("statistical orientation/tilt artifact must be fail-closed")
+        required_keys = tuple(str(item) for item in interface.get("approval_keys_required_before_executable_use", ()))
+        missing = {
+            "statistical_orientation_tilt_source",
+            "class_weight_values",
+            "pv_conversion_formula_or_pvlib_route",
+            "d014_capacity_value_artifact",
+            "node_allocation_rule",
+        }.difference(required_keys)
+        if missing:
+            raise ValueError(f"statistical orientation/tilt packet missing approval keys: {sorted(missing)}")
+        route_ids = {str(item.get("source_id")) for item in routes}
+        if "3dbag_deferred_roof_geometry" not in route_ids:
+            raise ValueError("packet must explicitly defer 3DBAG roof geometry")
+        if not any("No statistical class bins or weights are approved" in item for item in non_claims):
+            raise ValueError("packet must state that class bins/weights are not approved")
+
+        object.__setattr__(self, "first_experiment_scope", scope)
+        object.__setattr__(self, "governing_boundaries", boundaries)
+        object.__setattr__(self, "source_route_comparison", routes)
+        object.__setattr__(self, "proposed_artifact_interface", interface)
+        object.__setattr__(self, "pi_questions", questions)
+        object.__setattr__(self, "non_claims", non_claims)
+
+    @property
+    def missing_approval_keys(self) -> tuple[str, ...]:
+        return tuple(
+            str(item)
+            for item in self.proposed_artifact_interface["approval_keys_required_before_executable_use"]
+        )
+
+    def require_executable_orientation_tilt_approval(self) -> None:
+        """Always fail until a signed class table/config replaces this proposal."""
+        raise ValueError(
+            "D-014 statistical PV orientation/tilt classes are unsigned; executable PV requires signed "
+            "class source, bins, weights, capacity convention, allocation, and PV conversion parameters"
+        )
+
+    def identity_record(self) -> dict[str, object]:
+        """Return audit fields for downstream readiness manifests."""
+        return {
+            "packet_id": self.packet_id,
+            "data_id": self.data_id,
+            "status": self.status,
+            "statistical_orientation_tilt_classes_only": self.first_experiment_scope[
+                "statistical_orientation_tilt_classes_only"
+            ],
+            "building_or_roof_level_extraction_in_scope": self.first_experiment_scope[
+                "building_or_roof_level_extraction_in_scope"
+            ],
+            "executable_allowed_now": self.proposed_artifact_interface["executable_allowed_now"],
+            "missing_approval_keys": self.missing_approval_keys,
+        }
+
+
+def load_pv_statistical_orientation_tilt_packet(path: str | Path) -> PVStatisticalOrientationTiltPacket:
+    """Load the proposed D-014 statistical orientation/tilt packet."""
+    payload = json.loads(Path(path).read_text(encoding="utf-8"))
+    return PVStatisticalOrientationTiltPacket(
+        packet_id=str(payload.get("packet_id", "")),
+        data_id=str(payload.get("data_id", "")),
+        status=str(payload.get("status", "")),
+        download_performed=bool(payload.get("download_performed")),
+        raw_data_committed=bool(payload.get("raw_data_committed")),
+        first_experiment_scope=payload.get("first_experiment_scope", {}),
+        governing_boundaries=payload.get("governing_boundaries", {}),
+        source_route_comparison=payload.get("source_route_comparison", ()),
+        proposed_artifact_interface=payload.get("proposed_artifact_interface", {}),
+        pi_questions=payload.get("pi_questions", ()),
+        non_claims=payload.get("non_claims", ()),
+    )
+
+
+@dataclass(frozen=True)
 class PVGenerationProfile:
     """PV generation produced from one validated paired weather member."""
 

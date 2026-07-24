@@ -1085,6 +1085,9 @@ def test_d014_pv_capacity_source_packet_is_metadata_only(tmp_path: Path) -> None
     assert "GM0361" in cbs["alkmaar_row_filter_template"]
     assert "TypedDataSet" in cbs["alkmaar_row_query_template"]
     assert packet["ii3050_growth_factor_source"]["numeric_growth_factor_approved"] is False
+    assert packet["optional_geometry_allocation_workflow"]["primary_status"] == "deferred_until_after_first_real_experiment"
+    assert "statistical orientation/tilt distribution packet" in packet["optional_geometry_allocation_workflow"]["recommended_next_packet"]
+    assert "statistical_orientation_tilt_distribution_source" in packet["capacity_value_binding_under_review"]["approval_keys_required_before_executable_use"]
     assert "No numeric PV installed capacity is approved." in packet["fail_closed_non_claims"]
 
     path = pv_capacity.write_d014_pv_capacity_source_value_packet(tmp_path)
@@ -1129,3 +1132,26 @@ def test_hp001_cold_spell_acceptance_decision_packet_is_proposal_only(tmp_path: 
     path = hp_scaling.write_hp001_cold_spell_acceptance_decision_packet(tmp_path)
     written = json.loads(path.read_text(encoding="utf-8"))
     assert written["decision_packet_id"] == packet["decision_packet_id"]
+
+def test_d014_statistical_orientation_tilt_packet_is_lightweight_and_metadata_only(tmp_path: Path) -> None:
+    packet = pv_capacity.build_d014_pv_statistical_orientation_tilt_packet()
+
+    assert packet["packet_id"] == "D014-PV-STATISTICAL-ORIENTATION-TILT-PACKET"
+    assert packet["data_id"] == "D-014"
+    assert packet["download_performed"] is False
+    assert packet["raw_data_committed"] is False
+    assert packet["first_experiment_scope"]["statistical_orientation_tilt_classes_only"] is True
+    assert packet["first_experiment_scope"]["building_or_roof_level_extraction_in_scope"] is False
+    assert packet["first_experiment_scope"]["specific_3dbag_per_roof_workflow_in_first_experiment"] is False
+    assert "PV-CAP-001 remains separate" in packet["governing_boundaries"]["capacity_route"]
+    assert "PR=0.86/direct-GHI is not approved" in packet["governing_boundaries"]["conversion_parameters"]
+    route_ids = {source["source_id"] for source in packet["source_route_comparison"]}
+    assert "3dbag_deferred_roof_geometry" in route_ids
+    assert "statistical_orientation_tilt_source" in packet["pi_approval_keys_before_executable_use"]
+    assert "class_weight_values" in packet["pi_approval_keys_before_executable_use"]
+    assert "No statistical class bins or weights are approved." in packet["non_claims"]
+
+    path = pv_capacity.write_d014_pv_statistical_orientation_tilt_packet(tmp_path)
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    assert path.name == "d014_pv_statistical_orientation_tilt_packet.json"
+    assert payload["status"].startswith("proposed_statistical_orientation_tilt_packet")
