@@ -35,6 +35,7 @@
 - [ ] Invariant suite green (if math touched)
 - [ ] Manifest(s) attached for every produced result
 - [ ] Repeated/API/download/profile/checksum/sweep work is scripted, tested, and resumable before scale-up
+- [ ] Integrated/stacked execution fails closed on unsigned values, placeholders, missing artifacts/checksums, and unresolved blocker IDs
 - [ ] Registers updated (`ASSUMPTIONS`/`DATA_REGISTER` rows `proposed` where needed)
 - [ ] Methods paragraph registry updated for every changed decision, assumption, or data/protocol choice
 - [ ] No interface-contract or schema change (or: gate approval linked)
