@@ -1,16 +1,16 @@
 {
   "command": ".\\.venv\\Scripts\\python.exe reports\\e3_s2_generate_accepted_artifact_blocker_preflight.py",
-  "generated_at_utc": "2026-07-24T13:25:42Z",
-  "git_commit": "3690fcbf61ab391fce494c067113b85ba7a58c4f",
-  "git_status_short_before_generation": "",
+  "generated_at_utc": "2026-07-24T13:34:24Z",
+  "git_commit": "d9d96bb727a82a0df3ee333b6f1cfcb37c75d914",
+  "git_status_short_before_generation": "M reports/E3_S2_ACCEPTED_ARTIFACT_BLOCKER_PREFLIGHT.md\n M reports/e3_s2_accepted_artifact_blocker_preflight_manifest.json",
   "input": {
     "path": "reports/e3_s2_accepted_artifact_blocker_preflight_input.json",
     "schema_version": "e3_s2_accepted_artifact_blocker_preflight_input_v1",
-    "sha256": "d177e275861fc4f85f3376743afaf6ab459872b40120df558c72fbac5707cba8"
+    "sha256": "e01eb4476780ee81133fb7d03a9ffd288df8ba0ab191024103d3328c009a59f8"
   },
   "outputs": {
     "report_path": "reports/E3_S2_ACCEPTED_ARTIFACT_BLOCKER_PREFLIGHT.md",
-    "report_sha256": "dc3ca84d1e5c333323409ed92a7e2e651eb2c730ffd913566d5cc96462c3ef1d"
+    "report_sha256": "c6cdf5fa76f666124d88c0081f028805d68a5b55ed5fb6a9b6b8cca7f382c992"
   },
   "preflight": {
     "blocker_manifest": {
@@ -126,7 +126,7 @@
           "message": "accepted component-output manifest is required before artifact-loader execution"
         },
         {
-          "artifact_id": "e2_s2_ev_ic1_component_output_consumption_packet",
+          "artifact_id": "e2_s2_ev_ic1_accepted_artifact_index_preflight",
           "blocker_ids": [
             "E3.S2-EV-COMPONENT-OUTPUT-SCHEMA"
           ],
@@ -201,7 +201,7 @@
         "state": "missing"
       },
       {
-        "artifact_id": "e2_s2_ev_ic1_component_output_consumption_packet",
+        "artifact_id": "e2_s2_ev_ic1_accepted_artifact_index_preflight",
         "checksum_match": true,
         "expected_sha256": "01dcac20e7369a5997bb2a7584cac98e3a62a9ebaff4f44cfc4e6969c3bc4e39",
         "kind": "ev",
@@ -234,7 +234,7 @@
         "state": "missing"
       }
     ],
-    "intended_use": "e3_s2_accepted_artifact_loader_blocker_preflight_after_pr234_to_pr241",
+    "intended_use": "e3_s2_accepted_artifact_loader_blocker_preflight_through_pr243",
     "metadata_preflight_only": true,
     "no_capacity_screen_result": true,
     "no_component_array_loading": true,
@@ -417,56 +417,58 @@
             "ev": {
               "accepted_for_gate": true,
               "artifact": {
-                "artifact_id": "e2_s2_ev_ic1_component_output_consumption_packet",
+                "artifact_id": "e2_s2_ev_ic1_accepted_artifact_index_preflight",
                 "artifact_status": "accepted",
                 "blocking_register_ids": [],
                 "calendar_id": "planning-2035-europe-amsterdam-15min",
                 "kind": "ev",
-                "manifest_path": "data/metadata/ev_adoption/e2_s2_ev_ic1_component_output_consumption_packet.json",
-                "member_id": "ev005b_candidate_selection_manifest_set_root20260722_sample0",
+                "manifest_path": "data/metadata/ev_adoption/e2_s2_ev_ic1_accepted_artifact_index_preflight.json",
+                "member_id": "ev005b_candidate_index_root20260722_sample0_all_declared_branches",
                 "node_ids": [
                   "load_000_to_load_114"
                 ],
                 "provenance": {
-                  "boundary_note": "merged PR #234 consumption packet is available and consumed as metadata only; no held-out data opened and no EV component arrays loaded",
+                  "boundary_note": "merged PR #243 EV index is available and consumed as metadata only; no held-out data opened and no EV component arrays loaded",
                   "component_output_manifest_sha256": "01dcac20e7369a5997bb2a7584cac98e3a62a9ebaff4f44cfc4e6969c3bc4e39",
-                  "discovered_path": "data/metadata/ev_adoption/e2_s2_ev_ic1_component_output_consumption_packet.json",
-                  "ev_output_verifier_status": "merged_pr_234_consumption_packet_available_metadata_only",
-                  "packet_status": "accepted candidate-only EV component-output consumption packet for IC-1 preflight metadata",
+                  "discovered_path": "data/metadata/ev_adoption/e2_s2_ev_ic1_accepted_artifact_index_preflight.json",
+                  "ev_output_verifier_status": "merged_pr_243_accepted_artifact_index_available_metadata_only",
+                  "packet_status": "accepted EV metadata index for Agent A preflight; blocked for integrated results",
                   "readiness_bucket": "accepted_metadata_only",
                   "rng_protocol_id": "RNG-001",
-                  "supporting_component_input_scaffold": "data/metadata/ev_adoption/e2_s2_ev_ic1_component_input_scaffold.json",
-                  "supporting_component_output_manifest": "data/metadata/ev_adoption/e2_s2_ev_ic1_candidate_component_output_manifest.json"
+                  "supporting_adoption_artifact": "data/metadata/ev_adoption/e2_s6_a014_alkmaar_executable_adoption_artifact.json",
+                  "supporting_component_output_consumption_packet": "data/metadata/ev_adoption/e2_s2_ev_ic1_component_output_consumption_packet.json",
+                  "supporting_component_output_manifest": "data/metadata/ev_adoption/e2_s2_ev_ic1_candidate_component_output_manifest.json",
+                  "supporting_report": "reports/e2_s2_ev_ic1_accepted_artifact_index_preflight.md"
                 },
                 "shared_weather_driver_id": null,
                 "signed_register_ids": [
+                  "A-014",
                   "EV-003",
-                  "EV-004",
                   "EV-005",
                   "EV-005B",
+                  "EV-007",
                   "EV-007A",
                   "EV-008A",
-                  "EV-CAL-001",
-                  "A-014"
+                  "EV-CAL-001"
                 ],
-                "source_id": "elaadnl_ev_component_output_consumption_packet",
+                "source_id": "elaadnl_ev_accepted_artifact_index_preflight",
                 "timestep_seconds": 900,
-                "version_id": "e2_s2_ev_ic1_component_output_consumption_packet_v1"
+                "version_id": "e2_s2_ev_ic1_accepted_artifact_index_preflight_v1"
               },
-              "artifact_id": "e2_s2_ev_ic1_component_output_consumption_packet",
+              "artifact_id": "e2_s2_ev_ic1_accepted_artifact_index_preflight",
               "artifact_status": "accepted",
               "blocking_register_ids": [],
               "kind": "ev",
-              "manifest_path": "data/metadata/ev_adoption/e2_s2_ev_ic1_component_output_consumption_packet.json",
+              "manifest_path": "data/metadata/ev_adoption/e2_s2_ev_ic1_accepted_artifact_index_preflight.json",
               "signed_register_ids": [
+                "A-014",
                 "EV-003",
-                "EV-004",
                 "EV-005",
                 "EV-005B",
+                "EV-007",
                 "EV-007A",
                 "EV-008A",
-                "EV-CAL-001",
-                "A-014"
+                "EV-CAL-001"
               ],
               "state": "accepted"
             },
@@ -654,7 +656,7 @@
               "no_real_net_load_arrays": true,
               "planning_year_basis": "G0-A4",
               "primary_threshold_metadata": "G0-A3: strict L_import > 1.0 p.u. for four consecutive 15-minute import steps over the full year; 1.1 and 1.2 are sensitivities only",
-              "refresh_basis": "origin/main through PR #241 after PR #234, #235, #236, #237, #238, #240, and #241 merged",
+              "refresh_basis": "origin/main through PR #243 after EV accepted-artifact index preflight merged",
               "threshold_basis": "G0-A3 resolved but not evaluated in this preflight"
             },
             "node_ids": [
@@ -679,7 +681,7 @@
           "dry_run_only": true,
           "executable_input_gate": null,
           "gate_error": null,
-          "intended_use": "e3_s2_accepted_artifact_loader_blocker_preflight_after_pr234_to_pr241",
+          "intended_use": "e3_s2_accepted_artifact_loader_blocker_preflight_through_pr243",
           "missing_component_kinds": [],
           "no_capacity_screen_result": true,
           "no_event_detection": true,
@@ -704,7 +706,7 @@
           ],
           "screen_prerequisite_only": true
         },
-        "intended_use": "e3_s2_accepted_artifact_loader_blocker_preflight_after_pr234_to_pr241",
+        "intended_use": "e3_s2_accepted_artifact_loader_blocker_preflight_through_pr243",
         "manifest_fields": {
           "calendar_id": "calendar_2035_15min_full_year_35040",
           "capacity_provenance": null,
@@ -772,7 +774,7 @@
         }
       },
       "dry_run_only": true,
-      "intended_use": "e3_s2_accepted_artifact_loader_blocker_preflight_after_pr234_to_pr241",
+      "intended_use": "e3_s2_accepted_artifact_loader_blocker_preflight_through_pr243",
       "metadata_preflight_only": true,
       "no_capacity_screen_result": true,
       "no_event_counts": true,
@@ -792,14 +794,14 @@
           "sha256": "35dddc989ff32e313ffcb22c16d26f494596445b6ba1879117168feb285a9d0c"
         },
         {
-          "artifact_id": "e2_s2_ev_ic1_component_output_consumption_packet",
+          "artifact_id": "e2_s2_ev_ic1_accepted_artifact_index_preflight",
           "artifact_status": "accepted",
           "checksum_match": true,
           "exists": true,
-          "expected_sha256": "05e899f0718b6a527a1350921939f9244274a76440ba65eab83d25b1056ddc9d",
+          "expected_sha256": "927a0c734592ef4defe17c045da9ab14bc6ba8d864fb415262e9811e3ab234b3",
           "kind": "ev",
-          "path": "data/metadata/ev_adoption/e2_s2_ev_ic1_component_output_consumption_packet.json",
-          "sha256": "05e899f0718b6a527a1350921939f9244274a76440ba65eab83d25b1056ddc9d"
+          "path": "data/metadata/ev_adoption/e2_s2_ev_ic1_accepted_artifact_index_preflight.json",
+          "sha256": "927a0c734592ef4defe17c045da9ab14bc6ba8d864fb415262e9811e3ab234b3"
         },
         {
           "artifact_id": "hp001_alkmaar_gm0361_executable_value_binding_decision_packet",
