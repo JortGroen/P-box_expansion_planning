@@ -653,7 +653,16 @@ def test_hp001_value_binding_record_adapter_requires_all_approval_ids() -> None:
         "approval_state": {
             **packet["approval_state"],
             "approval_ids": {"value_column": "HP-SCALING-VALUE-COLUMN"},
+            "missing_approval_keys": [],
+            "executable_binding_allowed": True,
         },
+        "component_value_drafts_unsigned_before_2035_adoption": [
+            {
+                **component,
+                "annual_twh_status": "approved_for_executable_value_binding",
+            }
+            for component in packet["component_value_drafts_unsigned_before_2035_adoption"]
+        ],
     }
 
     with pytest.raises(ValueError, match="remaining choices"):
@@ -667,6 +676,8 @@ def test_hp001_value_binding_record_adapter_builds_signed_config_only() -> None:
         "status": "approved_for_executable_value_binding",
         "approval_state": {
             **packet["approval_state"],
+            "missing_approval_keys": [],
+            "executable_binding_allowed": True,
             "approval_ids": {
                 "value_column": "HP-SCALING-VALUE-COLUMN",
                 "denominator": "HP-SCALING-DENOMINATOR",
@@ -675,6 +686,13 @@ def test_hp001_value_binding_record_adapter_builds_signed_config_only() -> None:
                 "adoption_electrification": "HP-SCALING-ADOPTION",
             },
         },
+        "component_value_drafts_unsigned_before_2035_adoption": [
+            {
+                **component,
+                "annual_twh_status": "approved_for_executable_value_binding",
+            }
+            for component in packet["component_value_drafts_unsigned_before_2035_adoption"]
+        ],
     }
 
     config = hp001_local_scaling_config_from_value_binding_record(packet)
@@ -686,6 +704,58 @@ def test_hp001_value_binding_record_adapter_builds_signed_config_only() -> None:
     assert config.water_heat_twh_by_class == {"MFH": 0.038099269, "SFH": 0.059798509}
     assert config.provenance["value_binding_packet_id"] == "E2-S3-HP001-VALUE-BINDING-READINESS"
 
+
+def test_hp001_value_binding_record_requires_executable_flag_even_with_approvals() -> None:
+    packet = hp_scaling.build_hp001_value_binding_readiness_packet()
+    packet = {
+        **packet,
+        "status": "approved_for_executable_value_binding",
+        "approval_state": {
+            **packet["approval_state"],
+            "approval_ids": {
+                "value_column": "HP-SCALING-VALUE-COLUMN",
+                "denominator": "HP-SCALING-DENOMINATOR",
+                "unit_conversion": "HP-SCALING-CONVERSION",
+                "sfh_mfh_split": "HP-SCALING-SPLIT",
+                "adoption_electrification": "HP-SCALING-ADOPTION",
+            },
+            "missing_approval_keys": [],
+            "executable_binding_allowed": False,
+        },
+        "component_value_drafts_unsigned_before_2035_adoption": [
+            {
+                **component,
+                "annual_twh_status": "approved_for_executable_value_binding",
+            }
+            for component in packet["component_value_drafts_unsigned_before_2035_adoption"]
+        ],
+    }
+
+    with pytest.raises(ValueError, match="executable_binding_allowed"):
+        hp001_local_scaling_config_from_value_binding_record(packet)
+
+
+def test_hp001_value_binding_record_requires_component_approval_status() -> None:
+    packet = hp_scaling.build_hp001_value_binding_readiness_packet()
+    packet = {
+        **packet,
+        "status": "approved_for_executable_value_binding",
+        "approval_state": {
+            **packet["approval_state"],
+            "approval_ids": {
+                "value_column": "HP-SCALING-VALUE-COLUMN",
+                "denominator": "HP-SCALING-DENOMINATOR",
+                "unit_conversion": "HP-SCALING-CONVERSION",
+                "sfh_mfh_split": "HP-SCALING-SPLIT",
+                "adoption_electrification": "HP-SCALING-ADOPTION",
+            },
+            "missing_approval_keys": [],
+            "executable_binding_allowed": True,
+        },
+    }
+
+    with pytest.raises(ValueError, match="annual_twh_status"):
+        hp001_local_scaling_config_from_value_binding_record(packet)
 
 def test_default_components_require_explicit_scales() -> None:
     with pytest.raises(ValueError, match="explicit annual heat TWh scale"):

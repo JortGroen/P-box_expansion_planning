@@ -52,6 +52,7 @@ HP001_SCALING_REQUIRED_APPROVAL_KEYS = (
     "adoption_electrification",
 )
 HP001_VALUE_BINDING_APPROVED_STATUS = "approved_for_executable_value_binding"
+HP001_VALUE_BINDING_COMPONENT_APPROVED_STATUS = "approved_for_executable_value_binding"
 HP001_WEATHER_ACCEPTANCE_REQUIRED_APPROVAL_KEYS = (
     "d004_paired_weather_acceptance",
     "cold_spell_tolerances",
@@ -784,6 +785,34 @@ def hp001_local_scaling_config_from_value_binding_record(
         )
     source_inputs = _require_mapping(record.get("source_inputs_under_review"), "source_inputs_under_review")
     approval_state = _require_mapping(record.get("approval_state"), "approval_state")
+    if approval_state.get("executable_binding_allowed") is not True:
+        raise ValueError("HP-001 value-binding record executable_binding_allowed must be true")
+    required_keys = _coerce_approval_key_sequence(
+        approval_state.get("required_before_executable_binding"),
+        label="required_before_executable_binding",
+    )
+    if required_keys != HP001_SCALING_REQUIRED_APPROVAL_KEYS:
+        raise ValueError(
+            "HP-001 value-binding record required approval keys do not match "
+            f"the HP-001 contract; required={required_keys}"
+        )
+    declared_missing = _coerce_approval_key_sequence(
+        approval_state.get("missing_approval_keys", ()),
+        label="missing_approval_keys",
+    )
+    if declared_missing:
+        raise ValueError(
+            "HP-001 value-binding record still declares missing approval keys; "
+            f"missing={declared_missing}"
+        )
+    approved_mapping_ids = {
+        str(item).strip() for item in approval_state.get("approved_indicator_mapping_ids", ())
+    }
+    if HP001_INDICATOR_MAPPING_ASSUMPTION_ID not in approved_mapping_ids or "D013-PBL-MAPPING" not in approved_mapping_ids:
+        raise ValueError(
+            "HP-001 value-binding record must preserve the D013-PBL-MAPPING/A-015 "
+            "indicator-mapping approval before executable use"
+        )
     approval_ids = _require_mapping(approval_state.get("approval_ids"), "approval_ids")
     component_records = record.get("component_value_drafts_unsigned_before_2035_adoption")
     if not isinstance(component_records, Sequence) or isinstance(component_records, (str, bytes)):
@@ -793,6 +822,12 @@ def hp001_local_scaling_config_from_value_binding_record(
     water_heat_twh_by_class: dict[str, float] = {}
     for component in component_records:
         component_record = _require_mapping(component, "component value draft")
+        component_status = str(component_record.get("annual_twh_status", "")).strip()
+        if component_status != HP001_VALUE_BINDING_COMPONENT_APPROVED_STATUS:
+            raise ValueError(
+                "HP-001 component annual_twh_status must be approved before "
+                f"executable binding; component_status={component_status!r}"
+            )
         building_class = str(component_record.get("building_class", "")).strip()
         end_use = str(component_record.get("end_use", "")).strip()
         annual_heat_twh = float(component_record.get("annual_heat_twh", 0.0))
@@ -823,6 +858,14 @@ def hp001_local_scaling_config_from_value_binding_record(
     require_signed_hp001_local_scaling_config(config)
     return config
 
+
+def _coerce_approval_key_sequence(raw: object, *, label: str) -> tuple[str, ...]:
+    if not isinstance(raw, Sequence) or isinstance(raw, (str, bytes)):
+        raise ValueError(f"{label} must be a sequence of approval keys")
+    keys = tuple(str(item).strip() for item in raw)
+    if any(not key for key in keys):
+        raise ValueError(f"{label} must not contain empty approval keys")
+    return keys
 
 def load_when2heat_hourly_csv(
     path: str | Path,

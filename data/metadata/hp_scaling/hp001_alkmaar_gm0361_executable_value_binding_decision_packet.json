@@ -1,5 +1,5 @@
 {
-  "created_utc": "2026-07-24T07:51:19Z",
+  "created_utc": "2026-07-24T10:26:05Z",
   "data_ids": [
     "D-003",
     "D-004",
@@ -45,6 +45,22 @@
     "adapter": "src.hp_model.hp001_local_scaling_config_from_value_binding_record",
     "annual_scaling_guard": "src.hp_model.require_signed_hp001_local_scaling_config",
     "component_builder": "src.hp_model.hp001_components_from_local_scaling_config",
+    "required_approval_state": {
+      "approved_indicator_mapping_ids_must_include": [
+        "D013-PBL-MAPPING",
+        "A-015"
+      ],
+      "component_annual_twh_status": "approved_for_executable_value_binding",
+      "executable_binding_allowed": true,
+      "missing_approval_keys": [],
+      "required_before_executable_binding": [
+        "value_column",
+        "denominator",
+        "unit_conversion",
+        "sfh_mfh_split",
+        "adoption_electrification"
+      ]
+    },
     "required_record_status": "approved_for_executable_value_binding",
     "still_not_enough_for_integrated_use": "Annual value-binding approval does not by itself sign A-016 scenario-source consistency, D-004 paired-weather acceptance, or cold-spell tolerances."
   },
