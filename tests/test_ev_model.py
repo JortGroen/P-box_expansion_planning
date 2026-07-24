@@ -15,6 +15,7 @@ import data.get_ev_adequacy_preflight as ev_adequacy_preflight
 import data.get_ev_component_outputs as ev_component_outputs
 from data.get_ev_component_outputs import (
     EVComponentOutputVerificationError,
+    build_ev_per_node_manifest_index,
     export_ev_per_node_component_outputs,
     rebuild_and_verify_ev_component_outputs,
     verify_existing_ev_component_outputs,
@@ -80,6 +81,7 @@ from src.contracts.net_load import (
     NetLoadRealizationContext,
     build_accepted_artifact_loader_blocker_preflight,
     load_component_adapter_output_from_npz_artifact,
+    load_component_adapter_outputs_from_npz_artifacts,
 )
 from src.rng import SeedTree
 
@@ -2110,6 +2112,7 @@ def test_ev_generic_loader_manifest_writer_is_deterministic(tmp_path: Path) -> N
     assert json.loads((tmp_path / "metadata" / "packet.json").read_text(encoding="utf-8")) == first
     assert len(first["scenario_manifests"]) == 3
 
+
 def _write_synthetic_multi_node_ev_npz(path: Path, *, node_ids: tuple[str, ...] = ("load_000", "load_001")) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     timestamps = np.array(
         ["2035-01-01T00:00:00", "2035-01-01T00:15:00", "2035-01-01T00:30:00", "2035-01-01T00:45:00"],
@@ -2176,9 +2179,13 @@ def _synthetic_generic_packet(source_path: Path, source_sha: str, *, node_ids: t
             "candidate_libraries_only": True,
             "held_out_access": False,
             "quarantined_access": False,
+            "elaad_api_calls": False,
             "integrated_analysis_performed": False,
             "event_or_p_e_analysis_performed": False,
+            "capacity_screen_performed": False,
+            "final_low_middle_high_branch_selected": False,
             "m_sufficiency_claimed": False,
+            "manuscript_numbers_produced": False,
         },
         "scenario_manifests": scenario_manifests,
         "manifests_by_scenario": manifests_by_scenario,
@@ -2325,6 +2332,298 @@ def test_ev_per_node_export_rejects_accepted_status_before_approval(tmp_path: Pa
             timestamp_utc="2026-07-24T17:00:00Z",
             scenario_filter=("low",),
             artifact_status="accepted",
+        )
+
+
+
+def test_committed_ev_per_node_manifest_index_matches_builder() -> None:
+    base = Path("data/metadata/ev_adoption")
+    generic_packet_path = base / "e3_s2a_ev_ic1_generic_component_output_manifest_packet.json"
+    committed_path = base / "e3_s2a_ev_per_node_manifest_index_preflight.json"
+    generic_packet = json.loads(generic_packet_path.read_text(encoding="utf-8"))
+    committed = json.loads(committed_path.read_text(encoding="utf-8"))
+
+    expected = build_ev_per_node_manifest_index(
+        generic_packet=generic_packet,
+        base_dir=Path("."),
+        generic_packet_path=generic_packet_path,
+        index_path=None,
+        timestamp_utc=str(committed["timestamp_utc"]),
+    )
+
+    assert committed == expected
+    assert committed["status"] == "blocked_per_node_manifest_index_not_ready_for_agent_a_loader"
+    assert committed["expected_per_node_unit_count"] == 345
+    assert committed["missing_per_node_unit_count"] == 345
+    assert committed["ready_for_agent_a_loader_execution"] is False
+    assert committed["index_scope"] == {
+        "filtered_scope": False,
+        "full_declared_scope": True,
+        "node_filter": None,
+        "real_loader_ready_requires_full_declared_scope": True,
+        "scenario_filter": None,
+    }
+
+
+def _write_synthetic_per_node_exports(
+    tmp_path: Path,
+    *,
+    scenarios: tuple[str, ...] = ("low", "middle"),
+    node_ids: tuple[str, ...] = ("load_000", "load_001"),
+    artifact_status: str = "synthetic_fixture",
+) -> dict[str, object]:
+    source_path = Path("data/processed/elaad_profiles/component_outputs/ev_fixture_all.npz")
+    _write_synthetic_multi_node_ev_npz(tmp_path / source_path, node_ids=node_ids)
+    source_sha = ev_model._sha256_file(tmp_path / source_path)
+    packet = _synthetic_generic_packet(source_path, source_sha, node_ids=node_ids)
+    packet_path = tmp_path / "metadata/generic_packet.json"
+    packet_path.parent.mkdir(parents=True, exist_ok=True)
+    packet_path.write_text(json.dumps(packet, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    export_ev_per_node_component_outputs(
+        generic_packet=packet,
+        base_dir=tmp_path,
+        generic_packet_path=Path("metadata/generic_packet.json"),
+        output_dir=Path("data/processed/elaad_profiles/component_outputs/per_node"),
+        manifest_dir=Path("metadata/per_node"),
+        checkpoint_path=Path("metadata/per_node_checkpoint.json"),
+        timestamp_utc="2026-07-24T18:00:00Z",
+        artifact_status=artifact_status,
+        allow_accepted_status=artifact_status == "accepted",
+        scenario_filter=scenarios,
+    )
+    return packet
+
+
+def test_ev_per_node_manifest_index_loads_two_scenario_fixture_through_agent_a_boundary(tmp_path: Path) -> None:
+    packet = _write_synthetic_per_node_exports(tmp_path)
+
+    index = build_ev_per_node_manifest_index(
+        generic_packet=packet,
+        base_dir=tmp_path,
+        generic_packet_path=Path("metadata/generic_packet.json"),
+        output_dir=Path("data/processed/elaad_profiles/component_outputs/per_node"),
+        manifest_dir=Path("metadata/per_node"),
+        index_path=Path("metadata/per_node_index.json"),
+        timestamp_utc="2026-07-24T18:01:00Z",
+        scenario_filter=("low", "middle"),
+        allow_synthetic_fixture=True,
+        require_accepted_status=False,
+    )
+
+    assert index["status"] == "synthetic_per_node_manifest_index_ready_for_agent_a_loader_fixture"
+    assert index["ready_for_agent_a_loader_execution"] is False
+    assert index["ready_for_synthetic_agent_a_loader_fixture"] is True
+    assert index["expected_per_node_unit_count"] == 4
+    assert index["verified_per_node_unit_count"] == 4
+    assert index["missing_per_node_units"] == []
+    assert json.loads((tmp_path / "metadata/per_node_index.json").read_text(encoding="utf-8")) == index
+
+    low = next(row for row in index["agent_a_loader_index_by_scenario"] if row["scenario"] == "low")
+    manifests = [json.loads((tmp_path / path).read_text(encoding="utf-8")) for path in low["component_output_manifest_paths"]]
+    outputs = load_component_adapter_outputs_from_npz_artifacts(
+        manifests,
+        _ev_loader_context(),
+        repo_root=tmp_path,
+        expected_calendar_id="planning-2035-europe-amsterdam-15min",
+        expected_node_ids=("load_000", "load_001"),
+        allow_synthetic_fixture=True,
+    )
+    assert tuple(output.node_id for output in outputs) == ("load_000", "load_001")
+    assert all(output.kind == "ev" for output in outputs)
+
+
+def test_ev_per_node_manifest_index_blocks_missing_per_node_outputs(tmp_path: Path) -> None:
+    source_path = Path("data/processed/elaad_profiles/component_outputs/ev_fixture_all.npz")
+    packet = _synthetic_generic_packet(source_path, "1" * 64)
+    packet_path = tmp_path / "metadata/generic_packet.json"
+    packet_path.parent.mkdir(parents=True, exist_ok=True)
+    packet_path.write_text(json.dumps(packet, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+    index = build_ev_per_node_manifest_index(
+        generic_packet=packet,
+        base_dir=tmp_path,
+        generic_packet_path=Path("metadata/generic_packet.json"),
+        output_dir=Path("data/processed/elaad_profiles/component_outputs/per_node"),
+        manifest_dir=Path("metadata/per_node"),
+        index_path=Path("metadata/per_node_index.json"),
+        timestamp_utc="2026-07-24T18:01:00Z",
+        scenario_filter=("low", "middle"),
+    )
+
+    assert index["status"] == "blocked_per_node_manifest_index_not_ready_for_agent_a_loader"
+    assert index["ready_for_agent_a_loader_execution"] is False
+    assert index["expected_per_node_unit_count"] == 4
+    assert index["missing_per_node_unit_count"] == 4
+    assert index["verified_per_node_units"] == []
+
+
+def test_ev_per_node_manifest_index_records_checksum_mismatch(tmp_path: Path) -> None:
+    packet = _write_synthetic_per_node_exports(tmp_path)
+    target = tmp_path / "data/processed/elaad_profiles/component_outputs/per_node/ev_ic1_candidate_component_output_low_load_000.npz"
+    target.write_bytes(b"not the original deterministic npz")
+
+    index = build_ev_per_node_manifest_index(
+        generic_packet=packet,
+        base_dir=tmp_path,
+        generic_packet_path=Path("metadata/generic_packet.json"),
+        output_dir=Path("data/processed/elaad_profiles/component_outputs/per_node"),
+        manifest_dir=Path("metadata/per_node"),
+        index_path=Path("metadata/per_node_index.json"),
+        timestamp_utc="2026-07-24T18:01:00Z",
+        scenario_filter=("low",),
+        allow_synthetic_fixture=True,
+        require_accepted_status=False,
+    )
+
+    assert index["status"] == "blocked_per_node_manifest_index_not_ready_for_agent_a_loader"
+    assert index["checksum_mismatch_count"] == 1
+    assert index["stale_per_node_units"][0]["blockers"] == ["array_checksum_mismatch"]
+
+
+def test_ev_per_node_manifest_index_blocks_filtered_accepted_scope_for_real_loader(tmp_path: Path) -> None:
+    packet = _write_synthetic_per_node_exports(tmp_path, scenarios=("low",), artifact_status="accepted")
+
+    index = build_ev_per_node_manifest_index(
+        generic_packet=packet,
+        base_dir=tmp_path,
+        generic_packet_path=Path("metadata/generic_packet.json"),
+        output_dir=Path("data/processed/elaad_profiles/component_outputs/per_node"),
+        manifest_dir=Path("metadata/per_node"),
+        index_path=Path("metadata/per_node_index.json"),
+        timestamp_utc="2026-07-24T18:02:00Z",
+        scenario_filter=("low",),
+    )
+
+    assert index["status"] == "blocked_filtered_per_node_manifest_index_not_real_loader_ready"
+    assert index["verified_per_node_unit_count"] == 2
+    assert index["missing_per_node_unit_count"] == 0
+    assert index["ready_for_agent_a_loader_execution"] is False
+    assert index["index_scope"]["filtered_scope"] is True
+    assert index["index_scope"]["full_declared_scope"] is False
+    assert "E3.S2a-FILTERED-INDEX-NOT-REAL-LOADER-READY" in index["remaining_blockers"]
+
+
+def test_ev_per_node_manifest_index_allows_unfiltered_complete_accepted_fixture(tmp_path: Path) -> None:
+    packet = _write_synthetic_per_node_exports(
+        tmp_path,
+        scenarios=("high", "low", "middle"),
+        artifact_status="accepted",
+    )
+
+    index = build_ev_per_node_manifest_index(
+        generic_packet=packet,
+        base_dir=tmp_path,
+        generic_packet_path=Path("metadata/generic_packet.json"),
+        output_dir=Path("data/processed/elaad_profiles/component_outputs/per_node"),
+        manifest_dir=Path("metadata/per_node"),
+        index_path=Path("metadata/per_node_index.json"),
+        timestamp_utc="2026-07-24T18:02:00Z",
+    )
+
+    assert index["status"] == "accepted_per_node_manifest_index_ready_for_agent_a_loader"
+    assert index["expected_per_node_unit_count"] == 6
+    assert index["verified_per_node_unit_count"] == 6
+    assert index["ready_for_agent_a_loader_execution"] is True
+    assert index["ready_for_synthetic_agent_a_loader_fixture"] is False
+    assert index["index_scope"]["filtered_scope"] is False
+    assert index["remaining_blockers"] == []
+
+
+def test_ev_per_node_manifest_index_rejects_duplicate_scenario_and_node_metadata(tmp_path: Path) -> None:
+    source_path = Path("data/processed/elaad_profiles/component_outputs/ev_fixture_all.npz")
+    _write_synthetic_multi_node_ev_npz(tmp_path / source_path)
+    packet = _synthetic_generic_packet(source_path, ev_model._sha256_file(tmp_path / source_path))
+    packet["scenario_manifests"][1]["scenario"] = "high"
+
+    with pytest.raises(EVComponentOutputVerificationError, match="duplicate scenario"):
+        build_ev_per_node_manifest_index(
+            generic_packet=packet,
+            base_dir=tmp_path,
+            timestamp_utc="2026-07-24T18:01:00Z",
+        )
+
+    packet = _synthetic_generic_packet(source_path, ev_model._sha256_file(tmp_path / source_path), node_ids=("load_000", "load_000"))
+    with pytest.raises(EVComponentOutputVerificationError, match="duplicate node IDs"):
+        build_ev_per_node_manifest_index(
+            generic_packet=packet,
+            base_dir=tmp_path,
+            timestamp_utc="2026-07-24T18:01:00Z",
+        )
+
+
+def test_ev_per_node_manifest_index_rejects_policy_violations_and_unsafe_tokens(tmp_path: Path) -> None:
+    source_path = Path("data/processed/elaad_profiles/component_outputs/ev_fixture_all.npz")
+    packet = _synthetic_generic_packet(source_path, "1" * 64)
+    for key in ("final_low_middle_high_branch_selected", "held_out_access", "quarantined_access", "elaad_api_calls", "m_sufficiency_claimed"):
+        broken = json.loads(json.dumps(packet))
+        broken["policy"][key] = True
+        with pytest.raises(EVComponentOutputVerificationError, match=f"{key}=False"):
+            build_ev_per_node_manifest_index(
+                generic_packet=broken,
+                base_dir=tmp_path,
+                timestamp_utc="2026-07-24T18:01:00Z",
+            )
+
+    broken = json.loads(json.dumps(packet))
+    broken["decision_ids"] = [*broken["decision_ids"], "EV-FUTURE-PLACEHOLDER"]
+    with pytest.raises(EVComponentOutputVerificationError, match="Unsafe approval/source token"):
+        build_ev_per_node_manifest_index(
+            generic_packet=broken,
+            base_dir=tmp_path,
+            timestamp_utc="2026-07-24T18:01:00Z",
+        )
+
+
+def test_ev_per_node_manifest_index_blocks_nonaccepted_status_before_real_loader_use(tmp_path: Path) -> None:
+    packet = _write_synthetic_per_node_exports(tmp_path)
+
+    index = build_ev_per_node_manifest_index(
+        generic_packet=packet,
+        base_dir=tmp_path,
+        generic_packet_path=Path("metadata/generic_packet.json"),
+        output_dir=Path("data/processed/elaad_profiles/component_outputs/per_node"),
+        manifest_dir=Path("metadata/per_node"),
+        index_path=Path("metadata/per_node_index.json"),
+        timestamp_utc="2026-07-24T18:01:00Z",
+        scenario_filter=("low",),
+    )
+
+    assert index["ready_for_agent_a_loader_execution"] is False
+    assert index["stale_per_node_unit_count"] == 2
+    assert "manifest_artifact_status_not_allowed" in index["stale_per_node_units"][0]["blockers"]
+
+
+def test_ev_per_node_manifest_index_rejects_stale_generic_or_unsafe_paths(tmp_path: Path) -> None:
+    packet = _write_synthetic_per_node_exports(tmp_path)
+    manifest_path = tmp_path / "metadata/per_node/ev_2035_low_load_000.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest["array_path"] = "data/metadata/ev_adoption/generic_component_output_manifests/ev_2035_low.json"
+    manifest_path.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+    index = build_ev_per_node_manifest_index(
+        generic_packet=packet,
+        base_dir=tmp_path,
+        generic_packet_path=Path("metadata/generic_packet.json"),
+        output_dir=Path("data/processed/elaad_profiles/component_outputs/per_node"),
+        manifest_dir=Path("metadata/per_node"),
+        index_path=Path("metadata/per_node_index.json"),
+        timestamp_utc="2026-07-24T18:01:00Z",
+        scenario_filter=("low",),
+        allow_synthetic_fixture=True,
+        require_accepted_status=False,
+    )
+
+    blockers = set(index["stale_per_node_units"][0]["blockers"])
+    assert "manifest_array_path_mismatch" in blockers
+    assert "manifest_array_path_forbidden" in blockers
+
+    broken = json.loads(json.dumps(packet))
+    broken["scenario_manifests"][0]["array_path"] = "data/raw/elaad_profiles/held_out.npz"
+    with pytest.raises(EVComponentOutputVerificationError, match="held-out/quarantined/raw/generic source paths"):
+        build_ev_per_node_manifest_index(
+            generic_packet=broken,
+            base_dir=tmp_path,
+            timestamp_utc="2026-07-24T18:01:00Z",
         )
 
 
