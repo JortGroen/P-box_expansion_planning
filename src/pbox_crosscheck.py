@@ -675,6 +675,12 @@ def _coerce_event_tuple(events: Sequence[bool]) -> tuple[bool, ...]:
 
 
 HYBRID_REPRODUCTION_READINESS_PROTOCOL = "e5s4-hybrid-reproduction-readiness-v1"
+_REQUIRED_HYBRID_PROVENANCE_ROLES = frozenset(
+    {"source", "published-example", "reproduction-evidence"}
+)
+_UNSIGNED_PROVENANCE_TOKENS = frozenset(
+    {"pending", "placeholder", "proposed", "tbd", "unsigned", "unknown"}
+)
 
 
 @dataclass(frozen=True)
@@ -687,6 +693,7 @@ class HybridReproductionReadiness:
     example_reproduced: bool
     qualitative_behavior_checked: bool
     blockers: tuple[str, ...]
+    provenance_ids: tuple[str, ...] = ()
     use_status: str = "source-readiness-only"
     protocol: str = HYBRID_REPRODUCTION_READINESS_PROTOCOL
 
@@ -709,8 +716,12 @@ class HybridReproductionReadiness:
             raise TypeError("example_reproduced must be boolean")
         if not isinstance(self.qualitative_behavior_checked, bool):
             raise TypeError("qualitative_behavior_checked must be boolean")
-        if any(not isinstance(blocker, str) or not blocker.strip() for blocker in self.blockers):
+        if any(
+            not isinstance(blocker, str) or not blocker.strip()
+            for blocker in self.blockers
+        ):
             raise ValueError("blockers must contain only nonempty strings")
+        _validate_hybrid_provenance_ids(self.provenance_ids, ready=self.ready)
         if self.ready and self.blockers:
             raise ValueError("ready hybrid reproduction must not carry blockers")
         if not self.ready and not self.blockers:
@@ -730,6 +741,7 @@ class HybridReproductionReadiness:
             "blockers": list(self.blockers),
             "example_reproduced": self.example_reproduced,
             "published_example_id": self.published_example_id,
+            "provenance_ids": list(self.provenance_ids),
             "qualitative_behavior_checked": self.qualitative_behavior_checked,
             "ready": self.ready,
             "source_id": self.source_id,
@@ -751,6 +763,11 @@ def assert_hybrid_reproduction_ready_payload(payload: Mapping[str, object]) -> N
     readiness = _coerce_hybrid_reproduction_readiness(payload)
     if "defuzzified_probability" in payload:
         raise ValueError("hybrid reproduction readiness must not be defuzzified")
+    if (
+        "ready" in payload
+        and _expect_bool(payload["ready"], name="ready") != readiness.ready
+    ):
+        raise ValueError("serialized ready flag must match hybrid provenance state")
     if not readiness.ready:
         blockers = "; ".join(readiness.blockers)
         raise RuntimeError(f"hybrid reproduction is not ready: {blockers}")
@@ -763,6 +780,7 @@ def _coerce_hybrid_reproduction_readiness(
         "blockers",
         "example_reproduced",
         "published_example_id",
+        "provenance_ids",
         "qualitative_behavior_checked",
         "protocol",
         "source_id",
@@ -777,6 +795,11 @@ def _coerce_hybrid_reproduction_readiness(
         blockers_obj, (str, bytes)
     ):
         raise TypeError("blockers must be a sequence of strings")
+    provenance_obj = payload["provenance_ids"]
+    if not isinstance(provenance_obj, Sequence) or isinstance(
+        provenance_obj, (str, bytes)
+    ):
+        raise TypeError("provenance_ids must be a sequence of strings")
     return HybridReproductionReadiness(
         source_id=_expect_string(payload["source_id"], name="source_id"),
         source_status=_expect_string(payload["source_status"], name="source_status"),
@@ -793,9 +816,46 @@ def _coerce_hybrid_reproduction_readiness(
         blockers=tuple(
             _expect_string(blocker, name="blocker") for blocker in blockers_obj
         ),
+        provenance_ids=tuple(
+            _expect_string(provenance_id, name="provenance_id")
+            for provenance_id in provenance_obj
+        ),
         use_status=_expect_string(payload["use_status"], name="use_status"),
         protocol=_expect_string(payload["protocol"], name="protocol"),
     )
+
+
+def _validate_hybrid_provenance_ids(
+    provenance_ids: Sequence[str], *, ready: bool
+) -> None:
+    if any(
+        not isinstance(provenance_id, str) or not provenance_id.strip()
+        for provenance_id in provenance_ids
+    ):
+        raise ValueError("provenance_ids must contain only nonempty strings")
+    if len(set(provenance_ids)) != len(tuple(provenance_ids)):
+        raise ValueError("provenance_ids must not contain duplicates")
+    roles = set()
+    for provenance_id in provenance_ids:
+        if ":" not in provenance_id:
+            raise ValueError("provenance_ids must use '<role>:<id>' form")
+        role, identifier = provenance_id.split(":", 1)
+        if not role or not identifier.strip():
+            raise ValueError("provenance_ids must use '<role>:<id>' form")
+        if any(
+            token in identifier.lower()
+            for token in _UNSIGNED_PROVENANCE_TOKENS
+        ):
+            raise ValueError("provenance_ids must not contain unsigned placeholder IDs")
+        roles.add(role)
+
+    # The published-example gate must cite source, example, and reproduction
+    # evidence separately; otherwise a true boolean could bypass provenance review.
+    if ready and not _REQUIRED_HYBRID_PROVENANCE_ROLES.issubset(roles):
+        missing = sorted(_REQUIRED_HYBRID_PROVENANCE_ROLES.difference(roles))
+        raise ValueError(
+            f"ready hybrid reproduction missing provenance roles: {missing}"
+        )
 
 
 def _expect_string(value: object, *, name: str) -> str:

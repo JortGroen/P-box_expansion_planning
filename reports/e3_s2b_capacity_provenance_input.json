@@ -1,0 +1,31 @@
+{
+  "schema_version": "e3_s2b_capacity_provenance_input_v1",
+  "task_id": "E3.S2b",
+  "command": ".\\.venv\\Scripts\\python.exe reports\\e3_s2b_generate_capacity_provenance.py",
+  "grid_key": "simbench_semiurb",
+  "grid_source": "simbench",
+  "grid_code": "1-MV-semiurb--0-sw",
+  "decision_asset_id": "g0_decision_transformer",
+  "decision_transformer_indices": [0, 1],
+  "busbar_switch_indices": [0, 5],
+  "transformer_switch_indices": [1, 2, 3, 4],
+  "supporting_evidence_paths": [
+    "reports/grid_inventory.md",
+    "reports/transformer_headroom_diagnostic.md",
+    "reports/transformer_headroom_evidence.json",
+    "reports/G1_A2_GRID_ERROR_AND_CAPACITY_PROTOCOL.md"
+  ],
+  "outputs": {
+    "packet_path": "reports/e3_s2b_capacity_provenance_packet.json",
+    "report_path": "reports/E3_S2B_CAPACITY_PROVENANCE.md",
+    "manifest_path": "reports/e3_s2b_capacity_provenance_manifest.json"
+  },
+  "metadata": {
+    "purpose": "capacity provenance for future E3.S2b capacity/domain screen pre-run readiness",
+    "denominator_choice_status": "pending_pi_decision",
+    "no_capacity_screen_result": true,
+    "no_event_detection": true,
+    "no_probability_estimate": true,
+    "no_manuscript_number": true
+  }
+}
