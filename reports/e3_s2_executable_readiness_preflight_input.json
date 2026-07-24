@@ -31,7 +31,7 @@
       "no_event_detection": true,
       "no_probability_estimate": true,
       "no_capacity_screen_result": true,
-      "refresh_basis": "origin/main after PRs #192 and #193 merged on top of PR #189"
+      "refresh_basis": "origin/main after PRs #200, #204, #205, #206, #208, and #209 merged"
     }
   },
   "missing_artifact_blockers": {},
@@ -144,10 +144,14 @@
         "WEATHER-001",
         "D004-MC-001",
         "D004-SOURCE-MEMBER-ACCEPTANCE",
-        "PV-CAP-001"
+        "PV-CAP-001",
+        "PV-ORIENT-001"
       ],
       "blocking_register_ids": [
         "PV-PARAM-001",
+        "D-014",
+        "D014-PV-CAPACITY-SOURCE-VALUE-PACKET",
+        "D014-PV-STATISTICAL-ORIENTATION-TILT-PACKET",
         "FINAL-PAIRED-HP-PV-ACCEPTANCE",
         "COLD-SPELL-ACCEPTANCE"
       ],
@@ -159,10 +163,14 @@
         "supporting_report": "reports/e2_s4_pv_final_acceptance_gate_packet.md",
         "older_paired_readiness_packet": "data/metadata/weather_pv/d004_pv_paired_readiness_preflight_packet.json",
         "weather_input_artifact": "data/metadata/weather_pv/d004_alkmaar_berkhout_2014_2023_v1_weather_input_artifact.json",
-        "classification_note": "PV final-acceptance gate packet remains the current PV/weather gate packet; PV-CAP-001 is now an approved source route only, while executable PV remains blocked by parameter signoff, final paired HP/PV acceptance, cold-spell acceptance, and later D-014/value/allocation approvals",
-        "capacity_source_route": "PV-CAP-001 approved route; concrete D-014 retrieval, numeric capacity value, scenario growth factor, capacity convention, and per-node allocation remain pending",
-        "packet_status": "blocked pending PV-PARAM-001, final paired HP/PV acceptance, and cold-spell acceptance; PV-CAP-001 route approved but executable values pending",
-        "readiness_bucket": "proposed_blocked"
+        "classification_note": "PV final-acceptance gate packet remains the current PV/weather gate packet. PV-CAP-001 and PV-ORIENT-001 approve the route/scope only; concrete D-014 retrieval, numeric capacity values, scenario growth, capacity convention, per-node allocation, statistical orientation/tilt source/weights, PV-PARAM-001, final paired HP/PV acceptance, and cold-spell acceptance remain unresolved before executable PV/weather input.",
+        "capacity_source_route": "PV-CAP-001 approved route; D014-PV-CAPACITY-SOURCE-VALUE-PACKET is proposed and concrete D-014 retrieval, numeric capacity value, scenario growth factor, capacity convention, and per-node allocation remain pending.",
+        "packet_status": "blocked pending PV-PARAM-001, D-014 value/source packets, final paired HP/PV acceptance, and cold-spell acceptance; PV-CAP-001/PV-ORIENT-001 route and scope approved but executable values pending",
+        "readiness_bucket": "proposed_blocked",
+        "supporting_capacity_source_value_packet": "data/metadata/weather_pv/d014_pv_capacity_source_value_packet.json",
+        "supporting_statistical_orientation_tilt_packet": "data/metadata/weather_pv/d014_pv_statistical_orientation_tilt_packet.json",
+        "supporting_statistical_orientation_report": "reports/e2_s4_d014_pv_statistical_orientation_tilt_packet.md",
+        "orientation_tilt_route": "PV-ORIENT-001 approves statistical orientation/tilt scope only; D014-PV-STATISTICAL-ORIENTATION-TILT-PACKET is proposed and source, bins, weights, and conversion treatment remain pending."
       }
     },
     {
