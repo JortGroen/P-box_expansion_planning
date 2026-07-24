@@ -333,6 +333,19 @@ recomputes the blocker list and `ready_for_paper` flag from those fields and
 rejects collapsed probability fields, so a blocked readiness packet cannot be
 serialized as a paper-facing p-box result by changing one flag.
 
+The `e5s3-output-error-endpoint-count-bridge-v1` scaffold is the count-side
+handoff between future G1-A2 endpoint-event manifests and the alpha probability
+estimator. It accepts only precomputed lower/upper endpoint event counts that
+are labelled as produced after loading-trajectory widening and event detection,
+then recomputes alpha-indexed lower/upper probabilities and confidence
+intervals from those counts. The bridge records the exact G1-A2 formulas,
+unknown-dependence convention, unwidened `P_net` direction gate, forbidden
+probability widening, forbidden independent error sampling, CRN sample identity,
+and a fail-closed blocker manifest. It remains synthetic-only: real use still
+requires signed G2 Tier-1 endpoints, signed A-013 grid-error value/form,
+capacity convention and denominator provenance, A-016 scenario consistency,
+real output-error endpoint-count manifests, and G3 wherever a vertex shortcut
+is claimed.
 <!-- methods-id: RNG-001 -->
 ### RNG-001 - Seed-Tree and CRN Identity Protocol
 
