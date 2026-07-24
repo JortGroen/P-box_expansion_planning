@@ -34,10 +34,12 @@ from src.hp_model import (
     cold_week_sanity_check,
     default_when2heat_components,
     downscale_hourly_to_15min,
+    hp001_component_output_readiness_blockers,
     hp001_components_from_local_scaling_config,
     hp001_final_readiness_missing_approval_keys,
     hp001_local_scaling_config_from_value_binding_record,
     hp001_residential_when2heat_components,
+    require_hp001_component_output_readiness_manifest,
     require_hp001_final_readiness_approvals,
     require_signed_hp001_local_scaling_config,
     load_when2heat_hourly_csv,
@@ -925,3 +927,109 @@ def test_hp001_executable_value_binding_template_stays_fail_closed() -> None:
             packet["unsigned_candidate_binding_record"]
         )
 
+
+
+def _signed_hp001_component_output_manifest() -> dict[str, object]:
+    approval_ids = {key: f"SIGNED-{key}" for key in HP001_FINAL_READINESS_REQUIRED_APPROVAL_KEYS}
+    weather_identity = {
+        "shared_weather_driver_id": "d004_alkmaar_berkhout_2014_2023_v1:2020",
+        "member_id": "d004_alkmaar_berkhout_2020_v1",
+        "source": "D-004 KNMI station 249 Berkhout",
+        "content_sha256": "a" * 64,
+        "n_timesteps": 35040,
+        "cadence_seconds": 900,
+    }
+    return {
+        "status": "approved_for_ic1_component_output_consumption",
+        "approval_ids": approval_ids,
+        "profile_artifact": {
+            "path": "data/processed/hp_profiles/hp001_component_output_fixture.npz",
+            "sha256": "b" * 64,
+            "n_timesteps": 35040,
+            "cadence_seconds": 900,
+        },
+        "weather_identity": dict(weather_identity),
+        "paired_pv_weather_identity": dict(weather_identity),
+        "component_traceability": [
+            {
+                "building_class": "SFH",
+                "end_use": "space",
+                "heat_column": "NL_heat_profile_space_SFH",
+                "cop_column": "NL_COP_ASHP_radiator",
+                "annual_heat_demand_twh": 0.1,
+                "provenance": {
+                    "annual_scaling_status": "signed",
+                    "annual_scaling_approval_id": "HP-SCALING-SIGNED",
+                },
+            },
+            {
+                "building_class": "MFH",
+                "end_use": "space",
+                "heat_column": "NL_heat_profile_space_MFH",
+                "cop_column": "NL_COP_ASHP_radiator",
+                "annual_heat_demand_twh": 0.2,
+                "provenance": {
+                    "annual_scaling_status": "signed",
+                    "annual_scaling_approval_id": "HP-SCALING-SIGNED",
+                },
+            },
+            {
+                "building_class": "SFH",
+                "end_use": "water",
+                "heat_column": "NL_heat_profile_water_SFH",
+                "cop_column": "NL_COP_ASHP_water",
+                "annual_heat_demand_twh": 0.03,
+                "provenance": {
+                    "annual_scaling_status": "signed",
+                    "annual_scaling_approval_id": "HP-SCALING-SIGNED",
+                },
+            },
+            {
+                "building_class": "MFH",
+                "end_use": "water",
+                "heat_column": "NL_heat_profile_water_MFH",
+                "cop_column": "NL_COP_ASHP_water",
+                "annual_heat_demand_twh": 0.04,
+                "provenance": {
+                    "annual_scaling_status": "signed",
+                    "annual_scaling_approval_id": "HP-SCALING-SIGNED",
+                },
+            },
+        ],
+        "unresolved_blocker_ids": [],
+    }
+
+
+def test_hp001_component_output_readiness_packet_stays_blocked() -> None:
+    packet = hp_scaling.build_hp001_component_output_readiness_blocker_packet()
+    template = packet["preflight_manifest_template"]
+
+    assert packet["status"] == "proposed_blocker_packet_not_executable"
+    assert packet["future_required_manifest_status"] == "approved_for_ic1_component_output_consumption"
+    assert packet["required_approval_keys_before_ic1_consumption"] == list(
+        HP001_FINAL_READINESS_REQUIRED_APPROVAL_KEYS
+    )
+    assert "No HP component-output artifact is created or approved." in packet["non_claims"]
+    with pytest.raises(ValueError, match="not ready for IC-1 consumption"):
+        require_hp001_component_output_readiness_manifest(template)
+
+
+def test_hp001_component_output_readiness_accepts_complete_signed_fixture() -> None:
+    manifest = _signed_hp001_component_output_manifest()
+
+    assert hp001_component_output_readiness_blockers(manifest) == ()
+    require_hp001_component_output_readiness_manifest(manifest)
+
+
+def test_hp001_component_output_readiness_rejects_weather_mismatch() -> None:
+    manifest = _signed_hp001_component_output_manifest()
+    manifest["paired_pv_weather_identity"] = {
+        **manifest["paired_pv_weather_identity"],
+        "shared_weather_driver_id": "d004_alkmaar_berkhout_2014_2023_v1:2021",
+    }
+
+    blockers = hp001_component_output_readiness_blockers(manifest)
+
+    assert "paired_weather_identity_mismatch:shared_weather_driver_id" in blockers
+    with pytest.raises(ValueError, match="paired_weather_identity_mismatch"):
+        require_hp001_component_output_readiness_manifest(manifest)

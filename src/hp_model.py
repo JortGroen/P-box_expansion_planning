@@ -50,6 +50,7 @@ HP001_SCALING_REQUIRED_APPROVAL_KEYS = (
     "adoption_electrification",
 )
 HP001_VALUE_BINDING_APPROVED_STATUS = "approved_for_executable_value_binding"
+HP001_COMPONENT_OUTPUT_READY_STATUS = "approved_for_ic1_component_output_consumption"
 HP001_WEATHER_ACCEPTANCE_REQUIRED_APPROVAL_KEYS = (
     "d004_paired_weather_acceptance",
     "cold_spell_tolerances",
@@ -636,6 +637,55 @@ def require_hp001_final_readiness_approvals(approval_ids: Mapping[str, str]) -> 
             f"missing={missing}"
         )
 
+
+
+def hp001_component_output_readiness_blockers(manifest: Mapping[str, Any]) -> tuple[str, ...]:
+    """Return blockers before an HP component-output artifact can feed IC-1.
+
+    The check is intentionally stricter than annual value binding: integrated
+    consumers need signed annual/scenario/weather approvals plus artifact
+    checksum and component provenance metadata before they may consume HP
+    outputs.
+    """
+    if not isinstance(manifest, Mapping):
+        return ("manifest_not_mapping",)
+
+    blockers: list[str] = []
+    status = str(manifest.get("status", "")).strip()
+    if status != HP001_COMPONENT_OUTPUT_READY_STATUS:
+        blockers.append("status_not_approved_for_ic1_component_output_consumption")
+
+    approval_ids_raw = manifest.get("approval_ids")
+    if not isinstance(approval_ids_raw, Mapping):
+        blockers.append("approval_ids_missing_or_not_mapping")
+        approval_ids: Mapping[str, str] = {}
+    else:
+        approval_ids = approval_ids_raw
+    blockers.extend(f"missing_approval:{key}" for key in hp001_final_readiness_missing_approval_keys(approval_ids))
+
+    _append_profile_artifact_blockers(manifest.get("profile_artifact"), blockers)
+    _append_weather_identity_blockers(manifest.get("weather_identity"), manifest.get("paired_pv_weather_identity"), blockers)
+    _append_component_traceability_blockers(manifest.get("component_traceability"), blockers)
+
+    unresolved = manifest.get("unresolved_blocker_ids", ())
+    if unresolved is None:
+        unresolved = ()
+    if isinstance(unresolved, (str, bytes)) or not isinstance(unresolved, Sequence):
+        blockers.append("unresolved_blocker_ids_not_sequence")
+    else:
+        unresolved_ids = tuple(str(item).strip() for item in unresolved if str(item).strip())
+        if unresolved_ids:
+            blockers.append("unresolved_blocker_ids_present")
+
+    return tuple(dict.fromkeys(blockers))
+
+
+def require_hp001_component_output_readiness_manifest(manifest: Mapping[str, Any]) -> None:
+    """Raise unless an HP component-output manifest is ready for IC-1 use."""
+    blockers = hp001_component_output_readiness_blockers(manifest)
+    if blockers:
+        raise ValueError(f"HP-001 component-output artifact is not ready for IC-1 consumption; blockers={blockers}")
+
 def require_signed_hp001_local_scaling_config(config: HP001LocalScalingConfig) -> None:
     """Raise unless every remaining HP-001 local-scaling choice is signed."""
     missing = config.missing_approval_keys()
@@ -1138,6 +1188,84 @@ def _when2heat_use_columns(
         columns.add(component.heat_column)
         columns.add(component.cop_column)
     return columns
+
+
+
+def _append_profile_artifact_blockers(raw: object, blockers: list[str]) -> None:
+    if not isinstance(raw, Mapping):
+        blockers.append("profile_artifact_missing_or_not_mapping")
+        return
+    if not str(raw.get("path", "")).strip():
+        blockers.append("profile_artifact_path_missing")
+    sha = str(raw.get("sha256", "")).strip()
+    if len(sha) != 64:
+        blockers.append("profile_artifact_sha256_missing_or_invalid")
+    if int(raw.get("n_timesteps", 0) or 0) != 35040:
+        blockers.append("profile_artifact_n_timesteps_not_35040")
+    if int(raw.get("cadence_seconds", 0) or 0) != 900:
+        blockers.append("profile_artifact_cadence_not_900_seconds")
+
+
+def _append_weather_identity_blockers(raw_hp: object, raw_pv: object, blockers: list[str]) -> None:
+    required = ("shared_weather_driver_id", "member_id", "source", "content_sha256")
+    if not isinstance(raw_hp, Mapping):
+        blockers.append("weather_identity_missing_or_not_mapping")
+        return
+    for key in required:
+        if not str(raw_hp.get(key, "")).strip():
+            blockers.append(f"weather_identity_{key}_missing")
+    if int(raw_hp.get("n_timesteps", 0) or 0) != 35040:
+        blockers.append("weather_identity_n_timesteps_not_35040")
+    if int(raw_hp.get("cadence_seconds", 0) or 0) != 900:
+        blockers.append("weather_identity_cadence_not_900_seconds")
+    if not isinstance(raw_pv, Mapping):
+        blockers.append("paired_pv_weather_identity_missing_or_not_mapping")
+        return
+    for key in required:
+        if str(raw_hp.get(key, "")).strip() != str(raw_pv.get(key, "")).strip():
+            blockers.append(f"paired_weather_identity_mismatch:{key}")
+    for key in ("n_timesteps", "cadence_seconds"):
+        if int(raw_hp.get(key, 0) or 0) != int(raw_pv.get(key, 0) or 0):
+            blockers.append(f"paired_weather_identity_mismatch:{key}")
+
+
+def _append_component_traceability_blockers(raw: object, blockers: list[str]) -> None:
+    if isinstance(raw, (str, bytes)) or not isinstance(raw, Sequence):
+        blockers.append("component_traceability_missing_or_not_sequence")
+        return
+    expected = {
+        ("SFH", "space", "NL_heat_profile_space_SFH", HP001_SPACE_COP_COLUMN),
+        ("MFH", "space", "NL_heat_profile_space_MFH", HP001_SPACE_COP_COLUMN),
+        ("SFH", "water", "NL_heat_profile_water_SFH", HP001_WATER_COP_COLUMN),
+        ("MFH", "water", "NL_heat_profile_water_MFH", HP001_WATER_COP_COLUMN),
+    }
+    observed: set[tuple[str, str, str, str]] = set()
+    for item in raw:
+        if not isinstance(item, Mapping):
+            blockers.append("component_traceability_item_not_mapping")
+            continue
+        record = (
+            str(item.get("building_class", "")).strip(),
+            str(item.get("end_use", "")).strip(),
+            str(item.get("heat_column", "")).strip(),
+            str(item.get("cop_column", "")).strip(),
+        )
+        observed.add(record)
+        try:
+            if float(item.get("annual_heat_demand_twh", 0.0)) <= 0:
+                blockers.append("component_traceability_annual_heat_demand_not_positive")
+        except (TypeError, ValueError):
+            blockers.append("component_traceability_annual_heat_demand_not_numeric")
+        provenance = item.get("provenance")
+        if not isinstance(provenance, Mapping):
+            blockers.append("component_traceability_provenance_missing")
+            continue
+        if str(provenance.get("annual_scaling_status", "")).strip() != "signed":
+            blockers.append("component_traceability_annual_scaling_not_signed")
+        if not str(provenance.get("annual_scaling_approval_id", "")).strip():
+            blockers.append("component_traceability_annual_scaling_approval_missing")
+    if observed != expected:
+        blockers.append("component_traceability_missing_or_extra_hp001_components")
 
 
 def _require_exact_hp001_classes(values: Mapping[str, float], *, label: str) -> None:
