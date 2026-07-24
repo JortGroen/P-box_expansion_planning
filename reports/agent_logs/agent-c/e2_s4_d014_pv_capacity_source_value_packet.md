@@ -1,0 +1,5 @@
+## 2026-07-24 00:00 — E2.S4 D-014 PV capacity source/value packet — done
+DID: Prepared a proposed D-014 source/value packet for PV-CAP-001. Added metadata-only source route helper, fail-closed PVCapacitySourcePacket validation, DATA_REGISTER/DECISIONS/methods text, and focused tests.
+VERIFIED: Focused `pytest -q tests/test_data_sources.py tests/test_pv_model.py tests/test_methods_registry.py` passed: 91 passed. `scripts/task.ps1 ownership` passed for 11 changed paths. `scripts/task.ps1 test-fast` passed: 508 passed, 1 skipped, 7 deselected.
+OPEN: PI still must approve exact CBS period/field, capacity convention, II3050 scenario/growth factor, per-node allocation, and PV-PARAM conversion before executable PV.
+NEXT: After PI review, retrieve/checksum approved D-014 sources with checkpoint/resume metadata.

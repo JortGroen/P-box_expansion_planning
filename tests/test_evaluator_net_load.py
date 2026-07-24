@@ -31,6 +31,7 @@ from src.contracts.net_load import (
     dry_run_integrated_input_preflight,
     net_load_component_from_adapter_output,
     prepare_loading_input_from_registry_outputs,
+    prepare_executable_net_load_assembly_from_artifacts,
     validate_component_adapter_skeletons,
     validate_net_load_result,
     validate_real_component_adapter_readiness,
@@ -1633,6 +1634,89 @@ def _executable_input_artifacts() -> list[ExecutableInputArtifact]:
     ]
 
 
+def _executable_adapter_outputs(
+    context,
+    artifacts: list[ExecutableInputArtifact],
+) -> list[ComponentAdapterOutput]:
+    by_kind = {artifact.kind: artifact for artifact in artifacts}
+    outputs = [
+        _adapter_output(
+            context,
+            "baseline-a",
+            "baseline",
+            [10.0, 11.0, 12.0, 13.0],
+            member_id=by_kind["baseline"].member_id,
+            source_id=by_kind["baseline"].source_id,
+            artifact_status=by_kind["baseline"].artifact_status,
+        ),
+        _adapter_output(
+            context,
+            "ev-a",
+            "ev",
+            [1.0, 2.0, 3.0, 4.0],
+            member_id=by_kind["ev"].member_id,
+            source_id=by_kind["ev"].source_id,
+            artifact_status=by_kind["ev"].artifact_status,
+        ),
+        _adapter_output(
+            context,
+            "hp-b",
+            "hp",
+            [4.0, 5.0, 6.0, 7.0],
+            node_id="node-b",
+            member_id=by_kind["hp"].member_id,
+            source_id=by_kind["hp"].source_id,
+            shared_weather_driver_id=context.shared_weather_driver_id,
+            artifact_status=by_kind["hp"].artifact_status,
+        ),
+        _adapter_output(
+            context,
+            "pv-b",
+            "pv",
+            [0.0, -2.0, -3.0, 0.0],
+            node_id="node-b",
+            member_id=by_kind["pv"].member_id,
+            source_id=by_kind["pv"].source_id,
+            shared_weather_driver_id=context.shared_weather_driver_id,
+            artifact_status=by_kind["pv"].artifact_status,
+        ),
+        _adapter_output(
+            context,
+            "adoption-a",
+            "adoption",
+            [0.0, 0.0, 0.0, 0.0],
+            member_id=by_kind["adoption"].member_id,
+            source_id=by_kind["adoption"].source_id,
+            artifact_status=by_kind["adoption"].artifact_status,
+        ),
+        _adapter_output(
+            context,
+            "flex-a",
+            "flexibility",
+            [-0.2, -0.2, 0.0, 0.0],
+            member_id=by_kind["flexibility"].member_id,
+            source_id=by_kind["flexibility"].source_id,
+            artifact_status=by_kind["flexibility"].artifact_status,
+        ),
+    ]
+    return [
+        ComponentAdapterOutput(
+            component_id=output.component_id,
+            kind=output.kind,
+            node_id=output.node_id,
+            p_kw=output.p_kw,
+            q_kvar=output.q_kvar,
+            timestamps=output.timestamps,
+            member_id=output.member_id,
+            source_id=output.source_id,
+            stream_id=output.stream_id,
+            shared_weather_driver_id=output.shared_weather_driver_id,
+            metadata={**dict(output.metadata), "calendar_id": by_kind[output.kind].calendar_id},
+        )
+        for output in outputs
+    ]
+
+
 def test_executable_input_gate_records_manifestable_ready_inputs_without_arrays() -> None:
     readiness = validate_executable_input_gate(
         _executable_input_artifacts(),
@@ -1833,6 +1917,115 @@ def _screen_preflight_config() -> FutureLayerScreenPreflightConfig:
         node_ids=("node-a", "node-b"),
         metadata={"calendar_id": "calendar-2035-15min", "scaffold_only": True},
     )
+
+
+def test_executable_assembly_scaffold_prepares_synthetic_loading_input_without_events() -> None:
+    context = build_realization_context(
+        scenario="scenario-a",
+        year=2035,
+        time_domain="window_set",
+        rho=0.5,
+        seed=7001,
+        shared_weather_driver_id="weather-executable-1",
+        calendar_metadata={"calendar_id": "calendar-2035-15min"},
+        mapping_version_metadata={"node_mapping_version": "synthetic-v1"},
+    )
+
+    artifacts = _executable_input_artifacts()
+    readiness = prepare_executable_net_load_assembly_from_artifacts(
+        assembly_id="synthetic-executable-assembly",
+        executable_input_artifacts=artifacts,
+        context=context,
+        adapter_outputs=_executable_adapter_outputs(context, artifacts),
+        intended_use="e3_s2_ic1_assembly_scaffold",
+        time_domain="window_set",
+        metadata={"fixture": "tiny-synthetic"},
+    )
+
+    manifest = readiness.manifest_record()
+    assert manifest["primary_probability_domain"] is False
+    assert manifest["metadata"]["source"] == "executable_artifact_assembly_scaffold"
+    assert manifest["metadata"]["no_event_detection"] is True
+    assert manifest["metadata"]["no_probability_estimate"] is True
+    assert manifest["metadata"]["no_capacity_screen_result"] is True
+    registry = manifest["registry_manifest"]
+    assert registry["metadata"]["assembly_id"] == "synthetic-executable-assembly"
+    assert registry["metadata"]["executable_input_gate"]["ready_for_execution"] is True
+    assert registry["metadata"]["governed_event_metadata"] == {
+        "basis": "G0-A3",
+        "primary_threshold_pu": 1.0,
+        "strict_import_loading_gt_threshold": True,
+        "min_consecutive_15_minute_steps": 4,
+        "not_evaluated_here": True,
+    }
+    assert "threshold_pu" not in readiness.net_load.metadata
+    assert "overload" not in readiness.net_load.metadata
+    np.testing.assert_array_equal(
+        readiness.net_load.p_net_kw,
+        np.array(
+            [
+                [10.8, 12.8, 15.0, 17.0],
+                [4.0, 3.0, 3.0, 7.0],
+            ]
+        ),
+    )
+
+
+def test_executable_assembly_scaffold_rejects_current_unsigned_project_readiness() -> None:
+    artifacts = _executable_input_artifacts()
+    artifacts[0] = _executable_input_artifact(
+        "baseline",
+        artifact_status="scaffold",
+        signed_register_ids=(),
+        blocking_register_ids=("E2.S5-BASELINE-EXECUTABLE-ARTIFACT",),
+    )
+    artifacts[2] = _executable_input_artifact(
+        "hp",
+        artifact_status="unsigned",
+        signed_register_ids=("HP-001", "D-013", "WEATHER-001"),
+        blocking_register_ids=(
+            "E2-S3-HP001-EXECUTABLE-VALUE-BINDING-PACKET",
+            "value_column",
+            "denominator",
+            "unit_conversion",
+            "sfh_mfh_split",
+            "adoption_electrification",
+            "d004_paired_weather_acceptance",
+            "cold_spell_tolerances",
+        ),
+    )
+    artifacts[3] = _executable_input_artifact(
+        "pv",
+        artifact_status="unsigned",
+        signed_register_ids=("WEATHER-001", "D004-MC-001", "D004-SOURCE-MEMBER-ACCEPTANCE", "PV-CAP-001"),
+        blocking_register_ids=("PV-PARAM-001", "FINAL-PAIRED-HP-PV-ACCEPTANCE", "COLD-SPELL-ACCEPTANCE"),
+    )
+    artifacts[4] = _executable_input_artifact(
+        "adoption",
+        artifact_status="unsigned",
+        signed_register_ids=("EV-007A", "A-014"),
+        blocking_register_ids=("E2.S6-PER-NODE-EXECUTABLE-ADOPTION-ARTIFACT",),
+    )
+    context = build_realization_context(
+        scenario="middle",
+        year=2035,
+        time_domain="window_set",
+        rho=0.0,
+        seed=7001,
+        shared_weather_driver_id="weather-executable-1",
+    )
+    adapter = _CountingComponentAdapter(_adapter_outputs(context)[0])
+
+    with pytest.raises(ValueError, match="baseline: E2.S5-BASELINE-EXECUTABLE-ARTIFACT"):
+        prepare_executable_net_load_assembly_from_artifacts(
+            assembly_id="current-project-readiness",
+            executable_input_artifacts=artifacts,
+            context=context,
+            adapter_outputs=(adapter.output,),
+            intended_use="e3_s2_ic1_assembly_scaffold",
+            time_domain="window_set",
+        )
+    assert adapter.calls == 0
 
 
 def test_future_layer_screen_preflight_records_manifest_fields_without_results() -> None:

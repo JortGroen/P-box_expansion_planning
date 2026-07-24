@@ -1,0 +1,7 @@
+# E5 Guarded Endpoint Record Validation
+
+## 2026-07-24 00:00 - E5.S3/E5.S4 readiness - done
+DID: Strengthened the B-owned guarded p-box runner/report boundary so serialized output-error records must carry internally consistent lower/upper endpoint counts, probability estimates, sample count, and per-sample endpoint event flags. Added synthetic tamper tests for mismatched counts, probabilities not derived from counts, lower-event-without-upper-event records, and nonconsecutive sample identities.
+VERIFIED: `.\scripts\task.ps1 ownership -Paths src/pbox_reporting.py,tests/test_pbox_reporting.py,reports/agent_logs/agent-b/E5-guarded-endpoint-record-validation.md` passed before editing. Focused `.\.venv\Scripts\python.exe -m pytest tests/test_pbox_reporting.py --basetemp .tmp\pytest-focused` passed with 31 tests. `git diff --check` passed before final validation. Final `./scripts/task.ps1 ownership` passed for 3 changed paths, and final `./scripts/task.ps1 test-fast` passed with 507 passed, 2 skipped, and 7 deselected in 29.25 s.
+OPEN: This remains synthetic/scaffold-only. Real paper-facing outputs are still blocked by signed G2 Tier-1 endpoints, signed A-013, approved capacity convention/provenance, real endpoint records from manifested trajectories, and G3 where vertex shortcut use is claimed.
+NEXT: Run repository ownership and `test-fast`, then open a focused PR for reviewer inspection.

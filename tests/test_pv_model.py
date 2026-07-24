@@ -14,6 +14,7 @@ import data.get_weather_pv as weather_pv
 from src.contracts.net_load import validate_executable_input_gate
 from src.hp_model import HeatPumpProfile
 from src.pv_model import (
+    PVCapacitySourcePacket,
     PVGISReference,
     PVSystemConfig,
     PVWeatherInputArtifact,
@@ -28,6 +29,7 @@ from src.pv_model import (
     check_profile_against_pvgis_reference,
     generate_pv_profile,
     generate_pv_profile_from_input_artifact,
+    load_pv_capacity_source_packet,
     load_pv_weather_input_artifact,
     parse_pvgis_monthly_reference,
     seasonal_energy_kwh,
@@ -1575,3 +1577,43 @@ def test_committed_d004_weather_member_metadata_preserves_energy_and_identity() 
     assert payload["identity_record"]["shared_weather_driver_id"] == payload["shared_weather_driver_id"]
     assert payload["source_files"]["pvgis"][0]["file_role"].endswith("reference")
     assert any("No HP/PV paired acceptance" in item for item in payload["boundaries"])
+
+
+def test_committed_d014_pv_capacity_source_packet_is_fail_closed() -> None:
+    packet = load_pv_capacity_source_packet(
+        "data/metadata/weather_pv/d014_pv_capacity_source_value_packet.json"
+    )
+    record = packet.identity_record()
+
+    assert packet.packet_id == "D014-PV-CAPACITY-SOURCE-VALUE-PACKET"
+    assert packet.data_id == "D-014"
+    assert packet.governing_decisions["approved_route"] == "PV-CAP-001"
+    assert packet.primary_cbs_anchor_source["table_id"] == "85005NED"
+    assert packet.ii3050_growth_factor_source["numeric_growth_factor_approved"] is False
+    assert packet.download_performed is False
+    assert packet.raw_data_committed is False
+    assert "ii3050_growth_factor_value" in packet.missing_approval_keys
+    assert "PV-PARAM-001_or_amended_conversion_decision" in packet.missing_approval_keys
+    assert record["cbs_table_id"] == "85005NED"
+    assert record["download_performed"] is False
+    with pytest.raises(ValueError, match="D-014 PV capacity values are unsigned"):
+        packet.require_executable_capacity_approval()
+
+
+def test_pv_capacity_source_packet_rejects_silent_executable_values() -> None:
+    payload = json.loads(Path("data/metadata/weather_pv/d014_pv_capacity_source_value_packet.json").read_text(encoding="utf-8"))
+    payload["ii3050_growth_factor_source"]["numeric_growth_factor_approved"] = True
+
+    with pytest.raises(ValueError, match="numeric II3050 growth factor"):
+        PVCapacitySourcePacket(
+            packet_id=payload["packet_id"],
+            data_id=payload["data_id"],
+            status=payload["status"],
+            download_performed=payload["download_performed"],
+            raw_data_committed=payload["raw_data_committed"],
+            governing_decisions=payload["governing_decisions"],
+            primary_cbs_anchor_source=payload["primary_cbs_anchor_source"],
+            ii3050_growth_factor_source=payload["ii3050_growth_factor_source"],
+            capacity_value_binding_under_review=payload["capacity_value_binding_under_review"],
+            fail_closed_non_claims=payload["fail_closed_non_claims"],
+        )

@@ -1,0 +1,163 @@
+{
+  "approved_route_semantics": {
+    "capacity_route": "Anchor current/local PV installed capacity to CBS Alkmaar photovoltaic capacity, then scale to the frozen 2035 planning layer with a signed II3050/scenario growth factor.",
+    "pv_param_boundary": "PV-PARAM-001 decides only the irradiance-to-kW conversion once signed installed_capacity_kw is supplied; it does not decide the CBS source year, II3050 growth factor, capacity convention, or node allocation."
+  },
+  "capacity_value_binding_under_review": {
+    "allocation_candidates": [
+      "uniform or load-proportional allocation across eligible load nodes, unsigned and not recommended without spatial evidence",
+      "CBS/DEGO/Zonnedakje or building-roof evidence for spatial allocation if concrete data and license are registered",
+      "3DBAG roof-plane distribution to derive tilt/aspect/orientation classes for later pvlib/PVGIS-style conversion, not for capacity totals by itself"
+    ],
+    "approval_keys_required_before_executable_use": [
+      "cbs_source_file_checksum",
+      "alkmaar_geography_key",
+      "cbs_source_period_key",
+      "cbs_capacity_field_key",
+      "capacity_unit_and_dc_ac_convention",
+      "ii3050_source_file_or_page_checksum",
+      "ii3050_scenario_column",
+      "ii3050_growth_factor_value",
+      "node_allocation_rule",
+      "PV-PARAM-001_or_amended_conversion_decision"
+    ],
+    "candidate_formula": "installed_capacity_kw = cbs_alkmaar_capacity_kw_selected_convention * signed_ii3050_growth_factor_2035",
+    "capacity_convention_candidates": [
+      "panelvermogen/DC kWp converted to kW-like installed_capacity_kw for PV-PARAM only if PI signs DC convention",
+      "omvormervermogen/AC kW as grid-facing installed_capacity_kw only if PI signs AC convention",
+      "dual-record DC and AC capacities with a signed DC/AC mapping before conversion"
+    ]
+  },
+  "created_utc": "2026-07-24T07:29:49+00:00",
+  "data_id": "D-014",
+  "download_performed": false,
+  "fail_closed_non_claims": [
+    "No raw D-014 data has been downloaded by this packet.",
+    "No numeric PV installed capacity is approved.",
+    "No CBS period, field, unit, or DC/AC convention is approved.",
+    "No II3050 scenario column or growth factor value is approved.",
+    "No per-node PV allocation is approved.",
+    "PV-PARAM-001 remains proposed and the simple PR=0.86/direct-GHI route is not approved by this packet.",
+    "No net-load, event detection, P(E), threshold analysis, capacity screen, or manuscript result is run."
+  ],
+  "governing_decisions": {
+    "approved_route": "PV-CAP-001",
+    "conversion_parameters": "PV-PARAM-001 remains proposed and fail-closed",
+    "scenario_consistency": "A-016 requires scenario-source consistency before executable integrated analysis"
+  },
+  "ii3050_growth_factor_source": {
+    "candidate_table": "II3050 edition 2 appendices, Table A.1, row 'Zon PV* GW' for 2035 scenario columns",
+    "growth_factor_formula_under_review": "growth_factor_2035 = ii3050_selected_2035_pv_gw / ii3050_reference_or_anchor_year_pv_gw",
+    "license": "public web publication/citation route; no raw redistributed file in this packet",
+    "numeric_growth_factor_approved": false,
+    "owner": "Netbeheer Nederland",
+    "pi_choices_required": [
+      "select II3050 scenario column or scenario family for the 2035 planning layer",
+      "select denominator for scaling: II3050 reference year, CBS anchor year, or a documented crosswalk",
+      "decide whether the growth factor applies uniformly to Alkmaar or needs a local/regional modifier"
+    ],
+    "planned_metadata_path": "data/metadata/weather_pv/d014_ii3050_pv_growth_factor_metadata.json",
+    "planned_raw_path": "data/raw/pv_capacity/d014_ii3050_eindrapport_bijlagen.pdf",
+    "source_id": "ii3050_edition2_pv_growth_factor_2035",
+    "source_pages": {
+      "appendices": "https://www.netbeheernederland.nl/publicatie/bijlagen-ii3050-eindrapport",
+      "main_report": "https://www.netbeheernederland.nl/publicatie/ii3050-eindrapport"
+    }
+  },
+  "optional_geometry_allocation_workflow": {
+    "primary_status": "source_discovery_only_not_executable",
+    "recommended_next_packet": "3DBAG/PVGIS-pvlib geometry workflow packet after D-014 source retrieval is approved",
+    "sources": [
+      {
+        "boundary": "does not provide installed PV capacity totals or approve PV-PARAM conversion",
+        "license": "CC BY 4.0 per 3DBAG documentation; credit required",
+        "role": "derive Alkmaar roof-plane tilt/aspect/orientation area distribution for later conversion or allocation",
+        "source_id": "3dbag_roof_geometry",
+        "url": "https://api.3dbag.nl/api.html"
+      },
+      {
+        "boundary": "not primary executable source in this packet",
+        "role": "optional spatial allocation/source discovery if downloadable Alkmaar data, license, and provenance are registered",
+        "source_id": "dego_or_zonnedakje_source_discovery"
+      }
+    ]
+  },
+  "packet_id": "D014-PV-CAPACITY-SOURCE-VALUE-PACKET",
+  "primary_cbs_anchor_source": {
+    "alkmaar_row_filter_template": "RegioS eq 'GM0361' and Perioden eq '<PERIOD_KEY>' and SectorEnVermogensklasse eq '<SECTOR_AND_SIZE_KEY>'",
+    "alkmaar_row_query_template": "https://opendata.cbs.nl/ODataApi/OData/85005NED/TypedDataSet?%24filter=RegioS+eq+%27GM0361%27+and+Perioden+eq+%27%3CPERIOD_KEY%3E%27+and+SectorEnVermogensklasse+eq+%27%3CSECTOR_AND_SIZE_KEY%3E%27",
+    "field_candidates_for_schema_inspection": [
+      {
+        "concept": "panelvermogen_kwp_or_mwp",
+        "description": "CBS installed panel capacity / paneelvermogen field; recommended default if PI wants DC peak capacity",
+        "executable_status": "candidate_key_must_be_confirmed_from_DataProperties"
+      },
+      {
+        "concept": "omvormervermogen_kw_or_mw",
+        "description": "CBS installed inverter capacity / omvormervermogen field; candidate if PI wants AC or grid-facing convention",
+        "executable_status": "candidate_key_must_be_confirmed_from_DataProperties"
+      },
+      {
+        "concept": "aantal_installaties",
+        "description": "installation-count field for diagnostics and allocation plausibility only, not a capacity substitute",
+        "executable_status": "diagnostic_only"
+      }
+    ],
+    "geography_candidates": [
+      {
+        "key": "GM0361",
+        "label": "Alkmaar municipality",
+        "recommendation": "primary local anchor for consistency with EV-007A, D-004, and HP local-scaling proxy"
+      }
+    ],
+    "license": "CC-BY 4.0 per data.overheid dataset page; verify again at retrieval time",
+    "owner": "Centraal Bureau voor de Statistiek",
+    "period_candidates_for_pi_review": [
+      {
+        "blocked_until_schema_inspection": true,
+        "period_key": "latest_definitive_full_year_from_Perioden",
+        "recommendation": "preferred anchor because CBS notes 2019-2023 definitive in the current table description"
+      },
+      {
+        "blocked_until_pi_approval": true,
+        "period_key": "latest_available_full_year_from_Perioden",
+        "recommendation": "sensitivity only if PI accepts provisional/nader voorlopige values"
+      }
+    ],
+    "planned_checkpoint_path": "data/metadata/weather_pv/d014_pv_capacity_retrieval_checkpoint.json",
+    "planned_metadata_path": "data/metadata/weather_pv/d014_cbs_85005ned_alkmaar_gm0361_metadata.json",
+    "planned_raw_path": "data/raw/pv_capacity/d014_cbs_85005ned_alkmaar_gm0361.json",
+    "schema_probe_urls": {
+      "data_properties": "https://opendata.cbs.nl/ODataApi/OData/85005NED/DataProperties",
+      "periods": "https://opendata.cbs.nl/ODataApi/OData/85005NED/Perioden",
+      "regions": "https://opendata.cbs.nl/ODataApi/OData/85005NED/RegioS",
+      "sector_and_capacity_class_codes": "https://opendata.cbs.nl/ODataApi/OData/85005NED/SectorEnVermogensklasse",
+      "table_infos": "https://opendata.cbs.nl/ODataApi/OData/85005NED/TableInfos"
+    },
+    "sector_size_candidates_for_pi_review": [
+      "all sectors and all PV size classes as primary municipal anchor",
+      "residential/woningen only as sensitivity if the PV layer is restricted to residential load nodes",
+      "small <=15 kWp versus large >15 kWp split as allocation diagnostic, not automatic node allocation"
+    ],
+    "source_id": "cbs_85005ned_alkmaar_pv_capacity_anchor",
+    "source_pages": {
+      "data_overheid": "https://data.overheid.nl/en/dataset/16612-zonnestroom--vermogen-en-vermogensklasse--bedrijven-en-woningen--regio",
+      "odata_root": "https://opendata.cbs.nl/ODataApi/OData/85005NED",
+      "statline": "https://www.cbs.nl/nl-nl/cijfers/detail/85005NED"
+    },
+    "table_id": "85005NED",
+    "title": "Zonnestroom; vermogen en vermogensklasse, bedrijven en woningen, regio"
+  },
+  "raw_data_committed": false,
+  "retrieval_plan_after_pi_approval": {
+    "checkpoint_resume_behavior": "write one checkpoint record after each source: planned URL, output path, size, sha256, retrieval UTC, and source schema hash; resume skips files whose size and sha256 match the checkpoint",
+    "estimated_wall_time": "under 15 minutes for CBS OData JSON and one II3050 PDF/page checksum under normal network conditions",
+    "long_run_notice_if_scope_expands": "LONG-RUN NOTICE\nTask: E2.S4 D-014 PV capacity source retrieval\nProcess: retrieve CBS 85005NED Alkmaar records, II3050 appendices, and optional geometry source metadata\nEstimated wall time: <estimate from pilot; send before launch if above 15 minutes>\nResource impact: network plus small local JSON/PDF writes; no raw files committed\nCheckpoint plan: data/metadata/weather_pv/d014_pv_capacity_retrieval_checkpoint.json after each source\nResume procedure: rerun data/get_pv_capacity.py --retrieve-approved-d014-sources --resume; verified checksums are skipped",
+    "long_run_notice_required_now": false,
+    "planned_commands": [
+      "./.venv/Scripts/python.exe data/get_pv_capacity.py --write-d014-source-value-packet",
+      "future after PI approval: ./.venv/Scripts/python.exe data/get_pv_capacity.py --retrieve-approved-d014-sources --resume"
+    ]
+  },
+  "status": "proposed_source_value_packet_no_raw_download_no_executable_values"
+}
