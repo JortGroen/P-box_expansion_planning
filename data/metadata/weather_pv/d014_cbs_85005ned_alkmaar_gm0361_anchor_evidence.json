@@ -1,0 +1,914 @@
+{
+  "approved_route_decision": "PV-CAP-001",
+  "candidate_value_choices_for_pi_review": {
+    "all_retrieved_alkmaar_rows": [
+      {
+        "ID": 175,
+        "Installaties_1": 6751,
+        "OpgesteldVermogenOmvormers_3": null,
+        "OpgesteldVermogenVanZonnepanelen_2": 33951,
+        "Perioden": "2019JJ00",
+        "ProductieVanZonnestroom_4": null,
+        "RegioS": "GM0361",
+        "SectorEnVermogensklasse": "E007161"
+      },
+      {
+        "ID": 176,
+        "Installaties_1": 9067,
+        "OpgesteldVermogenOmvormers_3": null,
+        "OpgesteldVermogenVanZonnepanelen_2": 47118,
+        "Perioden": "2020JJ00",
+        "ProductieVanZonnestroom_4": null,
+        "RegioS": "GM0361",
+        "SectorEnVermogensklasse": "E007161"
+      },
+      {
+        "ID": 177,
+        "Installaties_1": 11538,
+        "OpgesteldVermogenOmvormers_3": null,
+        "OpgesteldVermogenVanZonnepanelen_2": 59943,
+        "Perioden": "2021JJ00",
+        "ProductieVanZonnestroom_4": null,
+        "RegioS": "GM0361",
+        "SectorEnVermogensklasse": "E007161"
+      },
+      {
+        "ID": 178,
+        "Installaties_1": 14650,
+        "OpgesteldVermogenOmvormers_3": 71081,
+        "OpgesteldVermogenVanZonnepanelen_2": 76531,
+        "Perioden": "2022JJ00",
+        "ProductieVanZonnestroom_4": null,
+        "RegioS": "GM0361",
+        "SectorEnVermogensklasse": "E007161"
+      },
+      {
+        "ID": 179,
+        "Installaties_1": 17502,
+        "OpgesteldVermogenOmvormers_3": 87643,
+        "OpgesteldVermogenVanZonnepanelen_2": 94183,
+        "Perioden": "2023JJ00",
+        "ProductieVanZonnestroom_4": null,
+        "RegioS": "GM0361",
+        "SectorEnVermogensklasse": "E007161"
+      },
+      {
+        "ID": 180,
+        "Installaties_1": 19807,
+        "OpgesteldVermogenOmvormers_3": 97734,
+        "OpgesteldVermogenVanZonnepanelen_2": 105406,
+        "Perioden": "2024JJ00",
+        "ProductieVanZonnestroom_4": null,
+        "RegioS": "GM0361",
+        "SectorEnVermogensklasse": "E007161"
+      },
+      {
+        "ID": 181,
+        "Installaties_1": 20860,
+        "OpgesteldVermogenOmvormers_3": 100304,
+        "OpgesteldVermogenVanZonnepanelen_2": 108329,
+        "Perioden": "2025JJ00",
+        "ProductieVanZonnestroom_4": null,
+        "RegioS": "GM0361",
+        "SectorEnVermogensklasse": "E007161"
+      },
+      {
+        "ID": 3339,
+        "Installaties_1": 6280,
+        "OpgesteldVermogenOmvormers_3": null,
+        "OpgesteldVermogenVanZonnepanelen_2": 18416,
+        "Perioden": "2019JJ00",
+        "ProductieVanZonnestroom_4": null,
+        "RegioS": "GM0361",
+        "SectorEnVermogensklasse": "E007037"
+      },
+      {
+        "ID": 3340,
+        "Installaties_1": 8542,
+        "OpgesteldVermogenOmvormers_3": null,
+        "OpgesteldVermogenVanZonnepanelen_2": 25743,
+        "Perioden": "2020JJ00",
+        "ProductieVanZonnestroom_4": null,
+        "RegioS": "GM0361",
+        "SectorEnVermogensklasse": "E007037"
+      },
+      {
+        "ID": 3341,
+        "Installaties_1": 10957,
+        "OpgesteldVermogenOmvormers_3": null,
+        "OpgesteldVermogenVanZonnepanelen_2": 33649,
+        "Perioden": "2021JJ00",
+        "ProductieVanZonnestroom_4": null,
+        "RegioS": "GM0361",
+        "SectorEnVermogensklasse": "E007037"
+      },
+      {
+        "ID": 3342,
+        "Installaties_1": 13876,
+        "OpgesteldVermogenOmvormers_3": 41444,
+        "OpgesteldVermogenVanZonnepanelen_2": 43205,
+        "Perioden": "2022JJ00",
+        "ProductieVanZonnestroom_4": null,
+        "RegioS": "GM0361",
+        "SectorEnVermogensklasse": "E007037"
+      },
+      {
+        "ID": 3343,
+        "Installaties_1": 16501,
+        "OpgesteldVermogenOmvormers_3": 51439,
+        "OpgesteldVermogenVanZonnepanelen_2": 54457,
+        "Perioden": "2023JJ00",
+        "ProductieVanZonnestroom_4": null,
+        "RegioS": "GM0361",
+        "SectorEnVermogensklasse": "E007037"
+      },
+      {
+        "ID": 3344,
+        "Installaties_1": 18633,
+        "OpgesteldVermogenOmvormers_3": 57714,
+        "OpgesteldVermogenVanZonnepanelen_2": 61370,
+        "Perioden": "2024JJ00",
+        "ProductieVanZonnestroom_4": null,
+        "RegioS": "GM0361",
+        "SectorEnVermogensklasse": "E007037"
+      },
+      {
+        "ID": 3345,
+        "Installaties_1": 19601,
+        "OpgesteldVermogenOmvormers_3": 59768,
+        "OpgesteldVermogenVanZonnepanelen_2": 63661,
+        "Perioden": "2025JJ00",
+        "ProductieVanZonnestroom_4": null,
+        "RegioS": "GM0361",
+        "SectorEnVermogensklasse": "E007037"
+      },
+      {
+        "ID": 6503,
+        "Installaties_1": 471,
+        "OpgesteldVermogenOmvormers_3": null,
+        "OpgesteldVermogenVanZonnepanelen_2": 15535,
+        "Perioden": "2019JJ00",
+        "ProductieVanZonnestroom_4": null,
+        "RegioS": "GM0361",
+        "SectorEnVermogensklasse": "T001081"
+      },
+      {
+        "ID": 6504,
+        "Installaties_1": 525,
+        "OpgesteldVermogenOmvormers_3": null,
+        "OpgesteldVermogenVanZonnepanelen_2": 21375,
+        "Perioden": "2020JJ00",
+        "ProductieVanZonnestroom_4": null,
+        "RegioS": "GM0361",
+        "SectorEnVermogensklasse": "T001081"
+      },
+      {
+        "ID": 6505,
+        "Installaties_1": null,
+        "OpgesteldVermogenOmvormers_3": null,
+        "OpgesteldVermogenVanZonnepanelen_2": 26294,
+        "Perioden": "2021JJ00",
+        "ProductieVanZonnestroom_4": null,
+        "RegioS": "GM0361",
+        "SectorEnVermogensklasse": "T001081"
+      },
+      {
+        "ID": 6506,
+        "Installaties_1": null,
+        "OpgesteldVermogenOmvormers_3": 29637,
+        "OpgesteldVermogenVanZonnepanelen_2": 33327,
+        "Perioden": "2022JJ00",
+        "ProductieVanZonnestroom_4": null,
+        "RegioS": "GM0361",
+        "SectorEnVermogensklasse": "T001081"
+      },
+      {
+        "ID": 6507,
+        "Installaties_1": null,
+        "OpgesteldVermogenOmvormers_3": 36204,
+        "OpgesteldVermogenVanZonnepanelen_2": 39726,
+        "Perioden": "2023JJ00",
+        "ProductieVanZonnestroom_4": null,
+        "RegioS": "GM0361",
+        "SectorEnVermogensklasse": "T001081"
+      },
+      {
+        "ID": 6508,
+        "Installaties_1": null,
+        "OpgesteldVermogenOmvormers_3": 40020,
+        "OpgesteldVermogenVanZonnepanelen_2": 44036,
+        "Perioden": "2024JJ00",
+        "ProductieVanZonnestroom_4": null,
+        "RegioS": "GM0361",
+        "SectorEnVermogensklasse": "T001081"
+      },
+      {
+        "ID": 6509,
+        "Installaties_1": null,
+        "OpgesteldVermogenOmvormers_3": 40536,
+        "OpgesteldVermogenVanZonnepanelen_2": 44667,
+        "Perioden": "2025JJ00",
+        "ProductieVanZonnestroom_4": null,
+        "RegioS": "GM0361",
+        "SectorEnVermogensklasse": "T001081"
+      },
+      {
+        "ID": 9667,
+        "Installaties_1": 83,
+        "OpgesteldVermogenOmvormers_3": null,
+        "OpgesteldVermogenVanZonnepanelen_2": 2634,
+        "Perioden": "2019JJ00",
+        "ProductieVanZonnestroom_4": null,
+        "RegioS": "GM0361",
+        "SectorEnVermogensklasse": "301000 "
+      },
+      {
+        "ID": 9668,
+        "Installaties_1": 95,
+        "OpgesteldVermogenOmvormers_3": null,
+        "OpgesteldVermogenVanZonnepanelen_2": 4898,
+        "Perioden": "2020JJ00",
+        "ProductieVanZonnestroom_4": null,
+        "RegioS": "GM0361",
+        "SectorEnVermogensklasse": "301000 "
+      },
+      {
+        "ID": 9669,
+        "Installaties_1": null,
+        "OpgesteldVermogenOmvormers_3": null,
+        "OpgesteldVermogenVanZonnepanelen_2": 5433,
+        "Perioden": "2021JJ00",
+        "ProductieVanZonnestroom_4": null,
+        "RegioS": "GM0361",
+        "SectorEnVermogensklasse": "301000 "
+      },
+      {
+        "ID": 9670,
+        "Installaties_1": null,
+        "OpgesteldVermogenOmvormers_3": null,
+        "OpgesteldVermogenVanZonnepanelen_2": null,
+        "Perioden": "2022JJ00",
+        "ProductieVanZonnestroom_4": null,
+        "RegioS": "GM0361",
+        "SectorEnVermogensklasse": "301000 "
+      },
+      {
+        "ID": 9671,
+        "Installaties_1": null,
+        "OpgesteldVermogenOmvormers_3": 5960,
+        "OpgesteldVermogenVanZonnepanelen_2": 6531,
+        "Perioden": "2023JJ00",
+        "ProductieVanZonnestroom_4": null,
+        "RegioS": "GM0361",
+        "SectorEnVermogensklasse": "301000 "
+      },
+      {
+        "ID": 9672,
+        "Installaties_1": null,
+        "OpgesteldVermogenOmvormers_3": 6440,
+        "OpgesteldVermogenVanZonnepanelen_2": 7050,
+        "Perioden": "2024JJ00",
+        "ProductieVanZonnestroom_4": null,
+        "RegioS": "GM0361",
+        "SectorEnVermogensklasse": "301000 "
+      },
+      {
+        "ID": 9673,
+        "Installaties_1": null,
+        "OpgesteldVermogenOmvormers_3": 6381,
+        "OpgesteldVermogenVanZonnepanelen_2": 7030,
+        "Perioden": "2025JJ00",
+        "ProductieVanZonnestroom_4": null,
+        "RegioS": "GM0361",
+        "SectorEnVermogensklasse": "301000 "
+      },
+      {
+        "ID": 12831,
+        "Installaties_1": 4,
+        "OpgesteldVermogenOmvormers_3": null,
+        "OpgesteldVermogenVanZonnepanelen_2": 377,
+        "Perioden": "2019JJ00",
+        "ProductieVanZonnestroom_4": null,
+        "RegioS": "GM0361",
+        "SectorEnVermogensklasse": "346600 "
+      },
+      {
+        "ID": 12832,
+        "Installaties_1": 5,
+        "OpgesteldVermogenOmvormers_3": null,
+        "OpgesteldVermogenVanZonnepanelen_2": 627,
+        "Perioden": "2020JJ00",
+        "ProductieVanZonnestroom_4": null,
+        "RegioS": "GM0361",
+        "SectorEnVermogensklasse": "346600 "
+      },
+      {
+        "ID": 12833,
+        "Installaties_1": null,
+        "OpgesteldVermogenOmvormers_3": null,
+        "OpgesteldVermogenVanZonnepanelen_2": 1133,
+        "Perioden": "2021JJ00",
+        "ProductieVanZonnestroom_4": null,
+        "RegioS": "GM0361",
+        "SectorEnVermogensklasse": "346600 "
+      },
+      {
+        "ID": 12834,
+        "Installaties_1": null,
+        "OpgesteldVermogenOmvormers_3": null,
+        "OpgesteldVermogenVanZonnepanelen_2": null,
+        "Perioden": "2022JJ00",
+        "ProductieVanZonnestroom_4": null,
+        "RegioS": "GM0361",
+        "SectorEnVermogensklasse": "346600 "
+      },
+      {
+        "ID": 12835,
+        "Installaties_1": null,
+        "OpgesteldVermogenOmvormers_3": 1258,
+        "OpgesteldVermogenVanZonnepanelen_2": 1481,
+        "Perioden": "2023JJ00",
+        "ProductieVanZonnestroom_4": null,
+        "RegioS": "GM0361",
+        "SectorEnVermogensklasse": "346600 "
+      },
+      {
+        "ID": 12836,
+        "Installaties_1": null,
+        "OpgesteldVermogenOmvormers_3": 1466,
+        "OpgesteldVermogenVanZonnepanelen_2": 1778,
+        "Perioden": "2024JJ00",
+        "ProductieVanZonnestroom_4": null,
+        "RegioS": "GM0361",
+        "SectorEnVermogensklasse": "346600 "
+      },
+      {
+        "ID": 12837,
+        "Installaties_1": null,
+        "OpgesteldVermogenOmvormers_3": 1466,
+        "OpgesteldVermogenVanZonnepanelen_2": 1778,
+        "Perioden": "2025JJ00",
+        "ProductieVanZonnestroom_4": null,
+        "RegioS": "GM0361",
+        "SectorEnVermogensklasse": "346600 "
+      },
+      {
+        "ID": 15995,
+        "Installaties_1": 6605,
+        "OpgesteldVermogenOmvormers_3": null,
+        "OpgesteldVermogenVanZonnepanelen_2": 19005,
+        "Perioden": "2019JJ00",
+        "ProductieVanZonnestroom_4": null,
+        "RegioS": "GM0361",
+        "SectorEnVermogensklasse": "A050176"
+      },
+      {
+        "ID": 15996,
+        "Installaties_1": 8873,
+        "OpgesteldVermogenOmvormers_3": null,
+        "OpgesteldVermogenVanZonnepanelen_2": 26097,
+        "Perioden": "2020JJ00",
+        "ProductieVanZonnestroom_4": null,
+        "RegioS": "GM0361",
+        "SectorEnVermogensklasse": "A050176"
+      },
+      {
+        "ID": 15997,
+        "Installaties_1": 11299,
+        "OpgesteldVermogenOmvormers_3": null,
+        "OpgesteldVermogenVanZonnepanelen_2": 33543,
+        "Perioden": "2021JJ00",
+        "ProductieVanZonnestroom_4": null,
+        "RegioS": "GM0361",
+        "SectorEnVermogensklasse": "A050176"
+      },
+      {
+        "ID": 15998,
+        "Installaties_1": 14340,
+        "OpgesteldVermogenOmvormers_3": 41794,
+        "OpgesteldVermogenVanZonnepanelen_2": 43603,
+        "Perioden": "2022JJ00",
+        "ProductieVanZonnestroom_4": null,
+        "RegioS": "GM0361",
+        "SectorEnVermogensklasse": "A050176"
+      },
+      {
+        "ID": 15999,
+        "Installaties_1": 17123,
+        "OpgesteldVermogenOmvormers_3": 52427,
+        "OpgesteldVermogenVanZonnepanelen_2": 55525,
+        "Perioden": "2023JJ00",
+        "ProductieVanZonnestroom_4": null,
+        "RegioS": "GM0361",
+        "SectorEnVermogensklasse": "A050176"
+      },
+      {
+        "ID": 16000,
+        "Installaties_1": 19351,
+        "OpgesteldVermogenOmvormers_3": 58973,
+        "OpgesteldVermogenVanZonnepanelen_2": 62714,
+        "Perioden": "2024JJ00",
+        "ProductieVanZonnestroom_4": null,
+        "RegioS": "GM0361",
+        "SectorEnVermogensklasse": "A050176"
+      },
+      {
+        "ID": 16001,
+        "Installaties_1": 20396,
+        "OpgesteldVermogenOmvormers_3": 61509,
+        "OpgesteldVermogenVanZonnepanelen_2": 65513,
+        "Perioden": "2025JJ00",
+        "ProductieVanZonnestroom_4": null,
+        "RegioS": "GM0361",
+        "SectorEnVermogensklasse": "A050176"
+      },
+      {
+        "ID": 19159,
+        "Installaties_1": 146,
+        "OpgesteldVermogenOmvormers_3": null,
+        "OpgesteldVermogenVanZonnepanelen_2": 14946,
+        "Perioden": "2019JJ00",
+        "ProductieVanZonnestroom_4": null,
+        "RegioS": "GM0361",
+        "SectorEnVermogensklasse": "A050177"
+      },
+      {
+        "ID": 19160,
+        "Installaties_1": 194,
+        "OpgesteldVermogenOmvormers_3": null,
+        "OpgesteldVermogenVanZonnepanelen_2": 21021,
+        "Perioden": "2020JJ00",
+        "ProductieVanZonnestroom_4": null,
+        "RegioS": "GM0361",
+        "SectorEnVermogensklasse": "A050177"
+      },
+      {
+        "ID": 19161,
+        "Installaties_1": 239,
+        "OpgesteldVermogenOmvormers_3": null,
+        "OpgesteldVermogenVanZonnepanelen_2": 26400,
+        "Perioden": "2021JJ00",
+        "ProductieVanZonnestroom_4": null,
+        "RegioS": "GM0361",
+        "SectorEnVermogensklasse": "A050177"
+      },
+      {
+        "ID": 19162,
+        "Installaties_1": 310,
+        "OpgesteldVermogenOmvormers_3": 29287,
+        "OpgesteldVermogenVanZonnepanelen_2": 32929,
+        "Perioden": "2022JJ00",
+        "ProductieVanZonnestroom_4": null,
+        "RegioS": "GM0361",
+        "SectorEnVermogensklasse": "A050177"
+      },
+      {
+        "ID": 19163,
+        "Installaties_1": 379,
+        "OpgesteldVermogenOmvormers_3": 35215,
+        "OpgesteldVermogenVanZonnepanelen_2": 38658,
+        "Perioden": "2023JJ00",
+        "ProductieVanZonnestroom_4": null,
+        "RegioS": "GM0361",
+        "SectorEnVermogensklasse": "A050177"
+      },
+      {
+        "ID": 19164,
+        "Installaties_1": 456,
+        "OpgesteldVermogenOmvormers_3": 38761,
+        "OpgesteldVermogenVanZonnepanelen_2": 42692,
+        "Perioden": "2024JJ00",
+        "ProductieVanZonnestroom_4": null,
+        "RegioS": "GM0361",
+        "SectorEnVermogensklasse": "A050177"
+      },
+      {
+        "ID": 19165,
+        "Installaties_1": 464,
+        "OpgesteldVermogenOmvormers_3": 38794,
+        "OpgesteldVermogenVanZonnepanelen_2": 42816,
+        "Perioden": "2025JJ00",
+        "ProductieVanZonnestroom_4": null,
+        "RegioS": "GM0361",
+        "SectorEnVermogensklasse": "A050177"
+      },
+      {
+        "ID": 22323,
+        "Installaties_1": null,
+        "OpgesteldVermogenOmvormers_3": null,
+        "OpgesteldVermogenVanZonnepanelen_2": null,
+        "Perioden": "2019JJ00",
+        "ProductieVanZonnestroom_4": null,
+        "RegioS": "GM0361",
+        "SectorEnVermogensklasse": "A050178"
+      },
+      {
+        "ID": 22324,
+        "Installaties_1": null,
+        "OpgesteldVermogenOmvormers_3": null,
+        "OpgesteldVermogenVanZonnepanelen_2": null,
+        "Perioden": "2020JJ00",
+        "ProductieVanZonnestroom_4": null,
+        "RegioS": "GM0361",
+        "SectorEnVermogensklasse": "A050178"
+      },
+      {
+        "ID": 22325,
+        "Installaties_1": null,
+        "OpgesteldVermogenOmvormers_3": null,
+        "OpgesteldVermogenVanZonnepanelen_2": null,
+        "Perioden": "2021JJ00",
+        "ProductieVanZonnestroom_4": null,
+        "RegioS": "GM0361",
+        "SectorEnVermogensklasse": "A050178"
+      },
+      {
+        "ID": 22326,
+        "Installaties_1": null,
+        "OpgesteldVermogenOmvormers_3": null,
+        "OpgesteldVermogenVanZonnepanelen_2": null,
+        "Perioden": "2022JJ00",
+        "ProductieVanZonnestroom_4": null,
+        "RegioS": "GM0361",
+        "SectorEnVermogensklasse": "A050178"
+      },
+      {
+        "ID": 22327,
+        "Installaties_1": 3,
+        "OpgesteldVermogenOmvormers_3": 4052,
+        "OpgesteldVermogenVanZonnepanelen_2": 4326,
+        "Perioden": "2023JJ00",
+        "ProductieVanZonnestroom_4": null,
+        "RegioS": "GM0361",
+        "SectorEnVermogensklasse": "A050178"
+      },
+      {
+        "ID": 22328,
+        "Installaties_1": 3,
+        "OpgesteldVermogenOmvormers_3": 4052,
+        "OpgesteldVermogenVanZonnepanelen_2": 4326,
+        "Perioden": "2024JJ00",
+        "ProductieVanZonnestroom_4": null,
+        "RegioS": "GM0361",
+        "SectorEnVermogensklasse": "A050178"
+      },
+      {
+        "ID": 22329,
+        "Installaties_1": 3,
+        "OpgesteldVermogenOmvormers_3": 4052,
+        "OpgesteldVermogenVanZonnepanelen_2": 4326,
+        "Perioden": "2025JJ00",
+        "ProductieVanZonnestroom_4": null,
+        "RegioS": "GM0361",
+        "SectorEnVermogensklasse": "A050178"
+      },
+      {
+        "ID": 25487,
+        "Installaties_1": null,
+        "OpgesteldVermogenOmvormers_3": null,
+        "OpgesteldVermogenVanZonnepanelen_2": null,
+        "Perioden": "2019JJ00",
+        "ProductieVanZonnestroom_4": null,
+        "RegioS": "GM0361",
+        "SectorEnVermogensklasse": "A050179"
+      },
+      {
+        "ID": 25488,
+        "Installaties_1": null,
+        "OpgesteldVermogenOmvormers_3": null,
+        "OpgesteldVermogenVanZonnepanelen_2": null,
+        "Perioden": "2020JJ00",
+        "ProductieVanZonnestroom_4": null,
+        "RegioS": "GM0361",
+        "SectorEnVermogensklasse": "A050179"
+      },
+      {
+        "ID": 25489,
+        "Installaties_1": null,
+        "OpgesteldVermogenOmvormers_3": null,
+        "OpgesteldVermogenVanZonnepanelen_2": null,
+        "Perioden": "2021JJ00",
+        "ProductieVanZonnestroom_4": null,
+        "RegioS": "GM0361",
+        "SectorEnVermogensklasse": "A050179"
+      },
+      {
+        "ID": 25490,
+        "Installaties_1": null,
+        "OpgesteldVermogenOmvormers_3": null,
+        "OpgesteldVermogenVanZonnepanelen_2": null,
+        "Perioden": "2022JJ00",
+        "ProductieVanZonnestroom_4": null,
+        "RegioS": "GM0361",
+        "SectorEnVermogensklasse": "A050179"
+      },
+      {
+        "ID": 25491,
+        "Installaties_1": 376,
+        "OpgesteldVermogenOmvormers_3": 31163,
+        "OpgesteldVermogenVanZonnepanelen_2": 34332,
+        "Perioden": "2023JJ00",
+        "ProductieVanZonnestroom_4": null,
+        "RegioS": "GM0361",
+        "SectorEnVermogensklasse": "A050179"
+      },
+      {
+        "ID": 25492,
+        "Installaties_1": 453,
+        "OpgesteldVermogenOmvormers_3": 34709,
+        "OpgesteldVermogenVanZonnepanelen_2": 38366,
+        "Perioden": "2024JJ00",
+        "ProductieVanZonnestroom_4": null,
+        "RegioS": "GM0361",
+        "SectorEnVermogensklasse": "A050179"
+      },
+      {
+        "ID": 25493,
+        "Installaties_1": 461,
+        "OpgesteldVermogenOmvormers_3": 34742,
+        "OpgesteldVermogenVanZonnepanelen_2": 38490,
+        "Perioden": "2025JJ00",
+        "ProductieVanZonnestroom_4": null,
+        "RegioS": "GM0361",
+        "SectorEnVermogensklasse": "A050179"
+      }
+    ],
+    "capacity_field_candidates": [
+      "OpgesteldVermogenVanZonnepanelen_2 in kWp: panel/DC peak-capacity candidate",
+      "OpgesteldVermogenOmvormers_3 in kW: inverter/AC grid-facing candidate, available for Alkmaar from 2022 onward",
+      "Installaties_1 count: diagnostic/allocation plausibility only",
+      "ProductieVanZonnestroom_4 million kWh: not available at municipal rows in the retrieved evidence"
+    ],
+    "exact_row_candidates": [
+      {
+        "choice_role": "latest_definitive_all_activity_and_homes_candidate",
+        "executable_status": "candidate_only_unsigned",
+        "installations_count": 17502,
+        "inverter_capacity_kw": 87643,
+        "panel_capacity_kwp": 94183,
+        "period_key": "2023JJ00",
+        "period_status": "Definitief",
+        "period_title": "2023",
+        "production_million_kwh": null,
+        "row_id": 179,
+        "sector_key": "E007161",
+        "sector_title": "Alle economische activiteit en woningen"
+      },
+      {
+        "choice_role": "latest_definitive_homes_only_sensitivity_candidate",
+        "executable_status": "candidate_only_unsigned",
+        "installations_count": 16501,
+        "inverter_capacity_kw": 51439,
+        "panel_capacity_kwp": 54457,
+        "period_key": "2023JJ00",
+        "period_status": "Definitief",
+        "period_title": "2023",
+        "production_million_kwh": null,
+        "row_id": 3343,
+        "sector_key": "E007037",
+        "sector_title": "Woningen"
+      },
+      {
+        "choice_role": "latest_available_provisional_all_activity_and_homes_candidate",
+        "executable_status": "candidate_only_unsigned",
+        "installations_count": 20860,
+        "inverter_capacity_kw": 100304,
+        "panel_capacity_kwp": 108329,
+        "period_key": "2025JJ00",
+        "period_status": "NaderVoorlopig",
+        "period_title": "2025",
+        "production_million_kwh": null,
+        "row_id": 181,
+        "sector_key": "E007161",
+        "sector_title": "Alle economische activiteit en woningen"
+      },
+      {
+        "choice_role": "latest_available_provisional_homes_only_sensitivity_candidate",
+        "executable_status": "candidate_only_unsigned",
+        "installations_count": 19601,
+        "inverter_capacity_kw": 59768,
+        "panel_capacity_kwp": 63661,
+        "period_key": "2025JJ00",
+        "period_status": "NaderVoorlopig",
+        "period_title": "2025",
+        "production_million_kwh": null,
+        "row_id": 3345,
+        "sector_key": "E007037",
+        "sector_title": "Woningen"
+      }
+    ],
+    "period_candidates": [
+      "2023JJ00 latest definitive full-year candidate",
+      "2025JJ00 latest available nader voorlopige candidate only if PI accepts provisional values",
+      "2024JJ00 provisional diagnostic or sensitivity candidate"
+    ],
+    "sector_category_candidates": [
+      "E007161 all economic activity and homes as the municipal total anchor candidate",
+      "E007037 homes-only sensitivity if PV is restricted to residential nodes",
+      "T001081 business/economic activity context only unless PI signs a split",
+      "A050176/A050177/A050178/A050179 size/placement categories for diagnostics or later allocation, not automatic totals"
+    ]
+  },
+  "capacity_route_boundary": "CBS Alkmaar anchor evidence only; II3050/scenario growth factor remains separate and unsigned",
+  "created_utc": "2026-07-24T10:32:50+00:00",
+  "data_id": "D-014",
+  "download_performed": true,
+  "non_claims": [
+    "No executable PV installed-capacity value is approved.",
+    "No CBS period, sector/category row, capacity field, unit convention, or DC/AC convention is selected as final.",
+    "No II3050 scenario column or growth factor is retrieved or approved by this packet.",
+    "No per-node PV allocation is approved.",
+    "No statistical orientation/tilt values or PV-PARAM conversion treatment are approved.",
+    "No roof, building, 3DBAG, or PV-map geometry source is retrieved or used.",
+    "No net-load, event detection, P(E), threshold analysis, capacity screen, manuscript result, or final PV output is produced."
+  ],
+  "packet_id": "D014-CBS-PV-CAPACITY-ANCHOR-EVIDENCE",
+  "pi_approval_keys_before_executable_use": [
+    "cbs_raw_bundle_sha256",
+    "alkmaar_geography_key",
+    "cbs_source_period_key",
+    "cbs_sector_category_key",
+    "cbs_capacity_field_key",
+    "capacity_unit_and_dc_ac_convention",
+    "ii3050_source_file_or_page_checksum",
+    "ii3050_scenario_column",
+    "ii3050_growth_factor_value",
+    "node_allocation_rule",
+    "statistical_orientation_tilt_distribution_source",
+    "statistical_orientation_tilt_distribution_weights",
+    "PV-PARAM-001_or_amended_conversion_decision"
+  ],
+  "pv_orient_boundary": "PV-ORIENT-001 lightweight statistical orientation/tilt scope preserved; no roof/building/3DBAG/PV-map retrieval",
+  "pv_param_boundary": "PV-PARAM-001 remains proposed/fail-closed; this packet does not approve PR=0.86, direct-GHI, plane-of-array conversion, or PV output",
+  "raw_bundle": {
+    "path": "data/raw/pv_capacity/d014_cbs_85005ned_alkmaar_gm0361_anchor_evidence.json",
+    "query_urls": {
+      "alkmaar_region": "https://opendata.cbs.nl/ODataApi/OData/85005NED/RegioS?%24filter=Key+eq+%27GM0361%27",
+      "alkmaar_rows": "https://opendata.cbs.nl/ODataApi/OData/85005NED/TypedDataSet?%24filter=RegioS+eq+%27GM0361%27",
+      "data_properties": "https://opendata.cbs.nl/ODataApi/OData/85005NED/DataProperties",
+      "periods": "https://opendata.cbs.nl/ODataApi/OData/85005NED/Perioden",
+      "sector_and_capacity_class_codes": "https://opendata.cbs.nl/ODataApi/OData/85005NED/SectorEnVermogensklasse",
+      "table_infos": "https://opendata.cbs.nl/ODataApi/OData/85005NED/TableInfos"
+    },
+    "retrieved_utc": "2026-07-24T10:32:50+00:00",
+    "sha256": "b2efd245a974ccd462ebedb340a48d399d65a454b2aef4caa7a09cea91341963",
+    "size_bytes": 46844
+  },
+  "raw_data_committed": false,
+  "schema": {
+    "alkmaar_region_rows": [
+      {
+        "CategoryGroupID": null,
+        "Description": "Gemeentelijke herindeling per 01-01-2015\r\nBegindatum voor 1830",
+        "Key": "GM0361",
+        "Title": "Alkmaar"
+      }
+    ],
+    "alkmaar_row_count": 63,
+    "periods": [
+      {
+        "Description": "Definitieve cijfers",
+        "Key": "2019JJ00",
+        "Status": "Definitief",
+        "Title": "2019"
+      },
+      {
+        "Description": "",
+        "Key": "2020JJ00",
+        "Status": "Definitief",
+        "Title": "2020"
+      },
+      {
+        "Description": "",
+        "Key": "2021JJ00",
+        "Status": "Definitief",
+        "Title": "2021 "
+      },
+      {
+        "Description": "",
+        "Key": "2022JJ00",
+        "Status": "Definitief",
+        "Title": "2022"
+      },
+      {
+        "Description": "",
+        "Key": "2023JJ00",
+        "Status": "Definitief",
+        "Title": "2023 "
+      },
+      {
+        "Description": "Nader voorlopige cijfers",
+        "Key": "2024JJ00",
+        "Status": "NaderVoorlopig",
+        "Title": "2024"
+      },
+      {
+        "Description": "Nader voorlopige cijfers",
+        "Key": "2025JJ00",
+        "Status": "NaderVoorlopig",
+        "Title": "2025"
+      }
+    ],
+    "sector_and_capacity_class_codes": [
+      {
+        "CategoryGroupID": null,
+        "Description": null,
+        "Key": "E007161",
+        "Title": "Alle economische activiteit en woningen"
+      },
+      {
+        "CategoryGroupID": null,
+        "Description": "E\u00e9n of meer personen die samen een woonruimte bewonen en zichzelf daar niet-bedrijfsmatig voorzien in de dagelijkse levensbehoeften. Het gebruik van energie voor het vervoer van de leden van het huishouden wordt niet meegerekend bij het energieverbruik van huishoudens.",
+        "Key": "E007037",
+        "Title": "Woningen"
+      },
+      {
+        "CategoryGroupID": null,
+        "Description": "Alle economische activiteiten \r\nDeze categorie is een samentelling van categorie\u00ebn: \r\nA Landbouw, bosbouw en visserij \r\nB Winning van delfstoffen \r\nC Industrie \r\nD Productie en distributie van en handel in elektriciteit, aardgas, stoom en gekoelde lucht \r\nE Winning en distributie van water; afval- en afvalwaterbeheer en sanering \r\nF Bouwnijverheid \r\nG Groot- en detailhandel; reparatie van auto's \r\nH Vervoer en opslag \r\nI Logies-, maaltijd- en drankverstrekking \r\nJ Informatie en communicatie \r\nK Financi\u00eble instellingen \r\nL Verhuur van en handel in onroerend goed \r\nM Advisering, onderzoek en overige specialistische zakelijke dienstverlening \r\nN Verhuur van roerende goederen en overige zakelijke dienstverlening \r\nO Openbaar bestuur, overheidsdiensten en verplichte sociale verzekeringen \r\nP Onderwijs \r\nQ Gezondheids- en welzijnszorg \r\nR Cultuur, sport en recreatie \r\nS Overige dienstverlening \r\nT Huishoudens als werkgever; niet-gedifferentieerde productie van goederen en diensten door huishoudens voor eigen gebruik \r\nU Extraterritoriale organisaties en lichamen",
+        "Key": "T001081",
+        "Title": "A-U Alle economische activiteiten"
+      },
+      {
+        "CategoryGroupID": null,
+        "Description": "Landbouw, bosbouw en visserij \r\nDeze sectie omvat: \r\n- de exploitatie van natuurlijke plantaardige en dierlijke hulpbronnen: \r\n w.o. de akkerbouw, veeteelt en de productie van overige planten en dieren op een agrarisch bedrijf of in het natuurlijke leefgebied; \r\n w.o. bosbouw, houtteelt en jacht; \r\n w.o. specifieke loondiensten met betrekking tot het productieproces landbouw, jacht en bosbouw worden eveneens in deze sectie ingedeeld; \r\n w.o. visserij: de vangst of het kweken van vis, schaaldieren en weekdieren.",
+        "Key": "301000 ",
+        "Title": "A Landbouw, bosbouw en visserij"
+      },
+      {
+        "CategoryGroupID": null,
+        "Description": "Productie en distributie van en handel in elektriciteit, aardgas, stoom en gekoelde lucht \r\nDeze sectie omvat: \r\n- productie en distributie van en handel in elektriciteit, aardgas en warm water.",
+        "Key": "346600 ",
+        "Title": "D Energievoorziening"
+      },
+      {
+        "CategoryGroupID": null,
+        "Description": "Installaties van 15 kilowattpiek (kWp) paneelvermogen of minder",
+        "Key": "A050176",
+        "Title": "Paneelvermogen: klein (tot en met 15 kWp"
+      },
+      {
+        "CategoryGroupID": null,
+        "Description": "Installaties van meer dan 15 kilowattpiek (kWp) paneelvermogen",
+        "Key": "A050177",
+        "Title": "Paneelvermogen: groot (meer dan 15 kWp)"
+      },
+      {
+        "CategoryGroupID": null,
+        "Description": "Installaties geplaatst op veld. Denk aan zonneweides en installaties op het water.",
+        "Key": "A050178",
+        "Title": "Paneelvermogen: groot op veld"
+      },
+      {
+        "CategoryGroupID": null,
+        "Description": "Installaties geplaatst op het dak of aan gebouwen of als zonwering boven parkeerplaatsen.",
+        "Key": "A050179",
+        "Title": "Paneelvermogen: groot op dak"
+      }
+    ],
+    "topic_fields": [
+      {
+        "description": "Het aantal zonnestroominstallaties aan het einde van de referentieperiode.",
+        "key": "Installaties_1",
+        "role_for_d014": "diagnostic_or_not_municipal_capacity_anchor",
+        "title": "Installaties",
+        "unit": "aantal"
+      },
+      {
+        "description": "Het opgestelde elektrisch vermogen van de panelen van zonnestroominstallaties in kWp aan het einde van de referentieperiode.",
+        "key": "OpgesteldVermogenVanZonnepanelen_2",
+        "role_for_d014": "candidate_capacity_field",
+        "title": "Opgesteld vermogen van zonnepanelen",
+        "unit": "kWp"
+      },
+      {
+        "description": "Het opgestelde elektrisch vermogen van de omvormers van zonnestroominstallaties in kW aan het einde van de referentieperiode. ",
+        "key": "OpgesteldVermogenOmvormers_3",
+        "role_for_d014": "candidate_capacity_field",
+        "title": "Opgesteld vermogen omvormers",
+        "unit": "kW"
+      },
+      {
+        "description": "De hoeveelheid geproduceerde elektriciteit door zonnestroominstallaties in miljoen kWh in de referentieperiode",
+        "key": "ProductieVanZonnestroom_4",
+        "role_for_d014": "diagnostic_or_not_municipal_capacity_anchor",
+        "title": "Productie van zonnestroom",
+        "unit": "mln kWh"
+      }
+    ]
+  },
+  "source": {
+    "data_overheid_page": "https://data.overheid.nl/en/dataset/16612-zonnestroom--vermogen-en-vermogensklasse--bedrijven-en-woningen--regio",
+    "frequency": "Tweemaalperjaar",
+    "license": "CC-BY 4.0 per data.overheid dataset page recorded in D-014; verify again before publication use",
+    "modified": "2026-06-12T02:00:00",
+    "odata_root": "https://opendata.cbs.nl/ODataApi/OData/85005NED",
+    "owner": "Centraal Bureau voor de Statistiek",
+    "period_coverage": "2019 - 2025",
+    "statline_page": "https://www.cbs.nl/nl-nl/cijfers/detail/85005NED",
+    "summary": "Zonnestroom, opgesteld vermogen, installaties, zonnepanelen\nvermogensklasse, bedrijven, woningen, dak, veld, regio",
+    "table_id": "85005NED",
+    "title": "Zonnestroom; vermogen en vermogensklasse, bedrijven en woningen, regio"
+  },
+  "source_value_packet_id": "D014-PV-CAPACITY-SOURCE-VALUE-PACKET",
+  "status": "retrieved_source_evidence_values_unsigned"
+}

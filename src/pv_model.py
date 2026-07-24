@@ -200,6 +200,162 @@ def load_pv_capacity_source_packet(path: str | Path) -> PVCapacitySourcePacket:
         fail_closed_non_claims=payload.get("fail_closed_non_claims", ()),
     )
 
+
+@dataclass(frozen=True)
+class PVCBSAnchorEvidencePacket:
+    """Retrieved CBS Alkmaar PV-capacity anchor evidence with unsigned values."""
+
+    packet_id: str
+    data_id: str
+    status: str
+    download_performed: bool
+    raw_data_committed: bool
+    approved_route_decision: str
+    source_value_packet_id: str
+    capacity_route_boundary: str
+    pv_param_boundary: str
+    pv_orient_boundary: str
+    source: Mapping[str, object]
+    raw_bundle: Mapping[str, object]
+    schema: Mapping[str, object]
+    candidate_value_choices_for_pi_review: Mapping[str, object]
+    pi_approval_keys_before_executable_use: Sequence[str]
+    non_claims: Sequence[str]
+
+    def __post_init__(self) -> None:
+        if self.packet_id != "D014-CBS-PV-CAPACITY-ANCHOR-EVIDENCE":
+            raise ValueError("CBS PV capacity anchor evidence must identify D014-CBS-PV-CAPACITY-ANCHOR-EVIDENCE")
+        if self.data_id != "D-014":
+            raise ValueError("CBS PV capacity anchor evidence must identify D-014")
+        if self.status != "retrieved_source_evidence_values_unsigned":
+            raise ValueError("CBS PV capacity anchor evidence must remain retrieved evidence with unsigned values")
+        if self.download_performed is not True:
+            raise ValueError("CBS PV capacity anchor evidence must record that source evidence was downloaded")
+        if self.raw_data_committed is not False:
+            raise ValueError("CBS raw PV capacity evidence must remain ignored/uncommitted")
+        if self.approved_route_decision != "PV-CAP-001":
+            raise ValueError("CBS PV capacity anchor evidence must be governed by PV-CAP-001")
+        if self.source_value_packet_id != "D014-PV-CAPACITY-SOURCE-VALUE-PACKET":
+            raise ValueError("CBS evidence must link to the D-014 capacity source/value packet")
+        if "II3050/scenario growth factor remains separate" not in self.capacity_route_boundary:
+            raise ValueError("CBS evidence must keep II3050 growth separate")
+        if "PV-PARAM-001 remains proposed" not in self.pv_param_boundary:
+            raise ValueError("CBS evidence must keep PV-PARAM-001 fail-closed")
+        if "no roof/building/3DBAG/PV-map retrieval" not in self.pv_orient_boundary:
+            raise ValueError("CBS evidence must preserve PV-ORIENT-001 lightweight scope")
+        source = _audit_json_mapping(self.source, "source")
+        raw_bundle = _audit_json_mapping(self.raw_bundle, "raw_bundle")
+        schema = _audit_json_mapping(self.schema, "schema")
+        choices = _audit_json_mapping(self.candidate_value_choices_for_pi_review, "candidate_value_choices_for_pi_review")
+        approval_keys = tuple(str(item) for item in self.pi_approval_keys_before_executable_use)
+        non_claims = tuple(str(item) for item in self.non_claims)
+        if source.get("table_id") != "85005NED":
+            raise ValueError("CBS evidence must use table 85005NED")
+        if not str(raw_bundle.get("path", "")).startswith("data/raw/pv_capacity/"):
+            raise ValueError("CBS raw evidence must stay under ignored data/raw/pv_capacity")
+        if len(str(raw_bundle.get("sha256", ""))) != 64:
+            raise ValueError("CBS raw evidence must record a SHA-256 checksum")
+        if int(raw_bundle.get("size_bytes", 0)) <= 0:
+            raise ValueError("CBS raw evidence must record a positive file size")
+        if schema.get("alkmaar_row_count") != 63:
+            raise ValueError("CBS evidence must preserve the full GM0361 row set")
+        field_keys = {str(item.get("key")) for item in schema.get("topic_fields", ())}
+        required_fields = {
+            "Installaties_1",
+            "OpgesteldVermogenVanZonnepanelen_2",
+            "OpgesteldVermogenOmvormers_3",
+            "ProductieVanZonnestroom_4",
+        }
+        if not required_fields.issubset(field_keys):
+            raise ValueError("CBS evidence missing expected topic fields")
+        rows = tuple(_audit_json_mapping(item, "exact row candidate") for item in choices.get("exact_row_candidates", ()))
+        if not rows:
+            raise ValueError("CBS evidence must list exact row candidates for PI review")
+        row_roles = {str(item.get("choice_role")) for item in rows}
+        if "latest_definitive_all_activity_and_homes_candidate" not in row_roles:
+            raise ValueError("CBS evidence must include the latest definitive municipal-total candidate")
+        for row in rows:
+            if row.get("executable_status") != "candidate_only_unsigned":
+                raise ValueError("CBS row candidates must remain unsigned")
+        required_keys = {
+            "cbs_raw_bundle_sha256",
+            "alkmaar_geography_key",
+            "cbs_source_period_key",
+            "cbs_sector_category_key",
+            "cbs_capacity_field_key",
+            "capacity_unit_and_dc_ac_convention",
+            "ii3050_growth_factor_value",
+            "node_allocation_rule",
+            "statistical_orientation_tilt_distribution_weights",
+            "PV-PARAM-001_or_amended_conversion_decision",
+        }
+        missing = required_keys.difference(approval_keys)
+        if missing:
+            raise ValueError(f"CBS evidence missing approval keys: {sorted(missing)}")
+        if not any("No executable PV installed-capacity value is approved" in item for item in non_claims):
+            raise ValueError("CBS evidence must state no executable capacity value is approved")
+        if not any("No CBS period" in item for item in non_claims):
+            raise ValueError("CBS evidence must state no CBS row/field convention is final")
+
+        object.__setattr__(self, "source", source)
+        object.__setattr__(self, "raw_bundle", raw_bundle)
+        object.__setattr__(self, "schema", schema)
+        object.__setattr__(self, "candidate_value_choices_for_pi_review", choices)
+        object.__setattr__(self, "pi_approval_keys_before_executable_use", approval_keys)
+        object.__setattr__(self, "non_claims", non_claims)
+
+    @property
+    def missing_approval_keys(self) -> tuple[str, ...]:
+        return self.pi_approval_keys_before_executable_use
+
+    def require_executable_capacity_anchor_approval(self) -> None:
+        """Always fail until a later signed value artifact replaces this evidence."""
+        raise ValueError(
+            "D-014 CBS PV capacity anchor values are unsigned; executable PV requires signed period, "
+            "sector/category, field, DC/AC convention, II3050 growth factor, allocation, and PV-PARAM approval"
+        )
+
+    def identity_record(self) -> dict[str, object]:
+        return {
+            "packet_id": self.packet_id,
+            "data_id": self.data_id,
+            "status": self.status,
+            "table_id": self.source["table_id"],
+            "raw_sha256": self.raw_bundle["sha256"],
+            "raw_size_bytes": self.raw_bundle["size_bytes"],
+            "alkmaar_row_count": self.schema["alkmaar_row_count"],
+            "candidate_row_roles": tuple(
+                str(item["choice_role"])
+                for item in self.candidate_value_choices_for_pi_review["exact_row_candidates"]
+            ),
+            "missing_approval_keys": self.missing_approval_keys,
+            "executable_capacity_value_approved": False,
+        }
+
+
+def load_pv_cbs_anchor_evidence_packet(path: str | Path) -> PVCBSAnchorEvidencePacket:
+    """Load the retrieved CBS Alkmaar PV-capacity anchor evidence packet."""
+    payload = json.loads(Path(path).read_text(encoding="utf-8"))
+    return PVCBSAnchorEvidencePacket(
+        packet_id=str(payload.get("packet_id", "")),
+        data_id=str(payload.get("data_id", "")),
+        status=str(payload.get("status", "")),
+        download_performed=bool(payload.get("download_performed")),
+        raw_data_committed=bool(payload.get("raw_data_committed")),
+        approved_route_decision=str(payload.get("approved_route_decision", "")),
+        source_value_packet_id=str(payload.get("source_value_packet_id", "")),
+        capacity_route_boundary=str(payload.get("capacity_route_boundary", "")),
+        pv_param_boundary=str(payload.get("pv_param_boundary", "")),
+        pv_orient_boundary=str(payload.get("pv_orient_boundary", "")),
+        source=payload.get("source", {}),
+        raw_bundle=payload.get("raw_bundle", {}),
+        schema=payload.get("schema", {}),
+        candidate_value_choices_for_pi_review=payload.get("candidate_value_choices_for_pi_review", {}),
+        pi_approval_keys_before_executable_use=payload.get("pi_approval_keys_before_executable_use", ()),
+        non_claims=payload.get("non_claims", ()),
+    )
+
+
 @dataclass(frozen=True)
 class PVStatisticalOrientationTiltPacket:
     """Proposed D-014 statistical orientation/tilt packet that stays fail-closed."""

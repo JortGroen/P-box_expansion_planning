@@ -2,13 +2,16 @@ from __future__ import annotations
 
 import argparse
 from datetime import UTC, datetime
+import hashlib
 import json
 from pathlib import Path
 from typing import Any, Mapping, Sequence
-from urllib import parse
+from urllib import parse, request
 
 D014_PACKET_NAME = "d014_pv_capacity_source_value_packet.json"
 D014_PACKET_ID = "D014-PV-CAPACITY-SOURCE-VALUE-PACKET"
+D014_CBS_ANCHOR_EVIDENCE_NAME = "d014_cbs_85005ned_alkmaar_gm0361_anchor_evidence.json"
+D014_CBS_ANCHOR_EVIDENCE_ID = "D014-CBS-PV-CAPACITY-ANCHOR-EVIDENCE"
 D014_STATISTICAL_ORIENTATION_TILT_NAME = "d014_pv_statistical_orientation_tilt_packet.json"
 D014_STATISTICAL_ORIENTATION_TILT_ID = "D014-PV-STATISTICAL-ORIENTATION-TILT-PACKET"
 D014_ORIENTATION_TILT_SOURCE_CHOICE_NAME = "d014_pv_orientation_tilt_source_choice_packet.json"
@@ -46,6 +49,217 @@ def build_cbs_odata_url(entity: str, params: Mapping[str, object] | None = None)
     if not params:
         return url
     return f"{url}?{parse.urlencode(params)}"
+
+
+def build_d014_cbs_anchor_query_urls() -> dict[str, str]:
+    """Return the exact CBS OData queries for the Alkmaar PV-capacity anchor."""
+    return {
+        "table_infos": build_cbs_odata_url("TableInfos"),
+        "data_properties": build_cbs_odata_url("DataProperties"),
+        "periods": build_cbs_odata_url("Perioden"),
+        "sector_and_capacity_class_codes": build_cbs_odata_url("SectorEnVermogensklasse"),
+        "alkmaar_region": build_cbs_odata_url("RegioS", {"$filter": "Key eq 'GM0361'"}),
+        "alkmaar_rows": build_cbs_odata_url("TypedDataSet", {"$filter": "RegioS eq 'GM0361'"}),
+    }
+
+
+def fetch_d014_cbs_anchor_raw_bundle(timeout_seconds: int = 30) -> dict[str, Any]:
+    """Fetch the small CBS OData evidence bundle for Alkmaar without choosing a value."""
+    urls = build_d014_cbs_anchor_query_urls()
+    responses: dict[str, Any] = {}
+    for key, url in urls.items():
+        with request.urlopen(url, timeout=timeout_seconds) as response:
+            responses[key] = json.loads(response.read().decode("utf-8-sig"))
+    return {
+        "source_bundle_id": "d014_cbs_85005ned_alkmaar_gm0361_anchor_raw_v1",
+        "retrieved_utc": _now_utc_iso(),
+        "table_id": CBS_TABLE_ID,
+        "alkmaar_geography_key": ALKMAAR_GM_CODE,
+        "query_urls": urls,
+        "responses": responses,
+    }
+
+
+def write_d014_cbs_anchor_raw_bundle(
+    raw_dir: str | Path = "data/raw/pv_capacity",
+    *,
+    timeout_seconds: int = 30,
+) -> Path:
+    """Retrieve and write the ignored raw CBS Alkmaar evidence bundle."""
+    directory = Path(raw_dir)
+    directory.mkdir(parents=True, exist_ok=True)
+    path = directory / D014_CBS_ANCHOR_EVIDENCE_NAME
+    bundle = fetch_d014_cbs_anchor_raw_bundle(timeout_seconds=timeout_seconds)
+    path.write_text(json.dumps(bundle, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    return path
+
+
+def build_d014_cbs_capacity_anchor_evidence_packet(raw_bundle_path: str | Path) -> dict[str, Any]:
+    """Build the committed metadata packet from an ignored CBS raw bundle.
+
+    The packet exposes exact source rows for PI review. It intentionally does
+    not choose the period, field, DC/AC convention, II3050 growth factor, or
+    executable installed-capacity value.
+    """
+    raw_path = Path(raw_bundle_path)
+    raw_bytes = raw_path.read_bytes()
+    raw_bundle = json.loads(raw_bytes.decode("utf-8"))
+    responses = raw_bundle["responses"]
+    table_info = responses["table_infos"]["value"][0]
+    data_properties = responses["data_properties"]["value"]
+    periods = responses["periods"]["value"]
+    sectors = responses["sector_and_capacity_class_codes"]["value"]
+    region_rows = responses["alkmaar_region"]["value"]
+    alkmaar_rows = responses["alkmaar_rows"]["value"]
+    fields = [item for item in data_properties if item.get("Type") == "Topic"]
+    period_by_key = {item["Key"]: item for item in periods}
+    sector_by_key = {item["Key"]: item for item in sectors}
+
+    def row_choice(row: Mapping[str, Any], role: str) -> dict[str, Any]:
+        period = period_by_key[str(row["Perioden"])]
+        sector = sector_by_key[str(row["SectorEnVermogensklasse"])]
+        return {
+            "choice_role": role,
+            "row_id": row["ID"],
+            "period_key": row["Perioden"],
+            "period_title": str(period.get("Title", "")).strip(),
+            "period_status": period.get("Status"),
+            "sector_key": row["SectorEnVermogensklasse"],
+            "sector_title": sector.get("Title"),
+            "installations_count": row.get("Installaties_1"),
+            "panel_capacity_kwp": row.get("OpgesteldVermogenVanZonnepanelen_2"),
+            "inverter_capacity_kw": row.get("OpgesteldVermogenOmvormers_3"),
+            "production_million_kwh": row.get("ProductieVanZonnestroom_4"),
+            "executable_status": "candidate_only_unsigned",
+        }
+
+    def find_row(period_key: str, sector_key: str) -> Mapping[str, Any]:
+        for row in alkmaar_rows:
+            if row["Perioden"] == period_key and row["SectorEnVermogensklasse"] == sector_key:
+                return row
+        raise ValueError(f"missing CBS row for {period_key} {sector_key}")
+
+    candidate_rows = [
+        row_choice(find_row("2023JJ00", "E007161"), "latest_definitive_all_activity_and_homes_candidate"),
+        row_choice(find_row("2023JJ00", "E007037"), "latest_definitive_homes_only_sensitivity_candidate"),
+        row_choice(find_row("2025JJ00", "E007161"), "latest_available_provisional_all_activity_and_homes_candidate"),
+        row_choice(find_row("2025JJ00", "E007037"), "latest_available_provisional_homes_only_sensitivity_candidate"),
+    ]
+    return {
+        "packet_id": D014_CBS_ANCHOR_EVIDENCE_ID,
+        "data_id": D014_DATA_ID,
+        "status": "retrieved_source_evidence_values_unsigned",
+        "created_utc": _now_utc_iso(),
+        "download_performed": True,
+        "raw_data_committed": False,
+        "approved_route_decision": "PV-CAP-001",
+        "source_value_packet_id": D014_PACKET_ID,
+        "capacity_route_boundary": "CBS Alkmaar anchor evidence only; II3050/scenario growth factor remains separate and unsigned",
+        "pv_param_boundary": "PV-PARAM-001 remains proposed/fail-closed; this packet does not approve PR=0.86, direct-GHI, plane-of-array conversion, or PV output",
+        "pv_orient_boundary": "PV-ORIENT-001 lightweight statistical orientation/tilt scope preserved; no roof/building/3DBAG/PV-map retrieval",
+        "source": {
+            "table_id": CBS_TABLE_ID,
+            "title": table_info.get("Title"),
+            "owner": "Centraal Bureau voor de Statistiek",
+            "license": "CC-BY 4.0 per data.overheid dataset page recorded in D-014; verify again before publication use",
+            "odata_root": CBS_ODATA_BASE,
+            "statline_page": CBS_STATLINE_PAGE,
+            "data_overheid_page": CBS_DATA_OVERHEID_PAGE,
+            "modified": table_info.get("Modified"),
+            "period_coverage": table_info.get("Period"),
+            "frequency": table_info.get("Frequency"),
+            "summary": table_info.get("Summary"),
+        },
+        "raw_bundle": {
+            "path": raw_path.as_posix(),
+            "sha256": hashlib.sha256(raw_bytes).hexdigest(),
+            "size_bytes": len(raw_bytes),
+            "retrieved_utc": raw_bundle.get("retrieved_utc"),
+            "query_urls": raw_bundle.get("query_urls"),
+        },
+        "schema": {
+            "topic_fields": [
+                {
+                    "key": item.get("Key"),
+                    "title": item.get("Title"),
+                    "unit": item.get("Unit"),
+                    "description": item.get("Description"),
+                    "role_for_d014": (
+                        "candidate_capacity_field" if item.get("Key") in {"OpgesteldVermogenVanZonnepanelen_2", "OpgesteldVermogenOmvormers_3"}
+                        else "diagnostic_or_not_municipal_capacity_anchor"
+                    ),
+                }
+                for item in fields
+            ],
+            "periods": periods,
+            "sector_and_capacity_class_codes": sectors,
+            "alkmaar_region_rows": region_rows,
+            "alkmaar_row_count": len(alkmaar_rows),
+        },
+        "candidate_value_choices_for_pi_review": {
+            "period_candidates": [
+                "2023JJ00 latest definitive full-year candidate",
+                "2025JJ00 latest available nader voorlopige candidate only if PI accepts provisional values",
+                "2024JJ00 provisional diagnostic or sensitivity candidate",
+            ],
+            "sector_category_candidates": [
+                "E007161 all economic activity and homes as the municipal total anchor candidate",
+                "E007037 homes-only sensitivity if PV is restricted to residential nodes",
+                "T001081 business/economic activity context only unless PI signs a split",
+                "A050176/A050177/A050178/A050179 size/placement categories for diagnostics or later allocation, not automatic totals",
+            ],
+            "capacity_field_candidates": [
+                "OpgesteldVermogenVanZonnepanelen_2 in kWp: panel/DC peak-capacity candidate",
+                "OpgesteldVermogenOmvormers_3 in kW: inverter/AC grid-facing candidate, available for Alkmaar from 2022 onward",
+                "Installaties_1 count: diagnostic/allocation plausibility only",
+                "ProductieVanZonnestroom_4 million kWh: not available at municipal rows in the retrieved evidence",
+            ],
+            "exact_row_candidates": candidate_rows,
+            "all_retrieved_alkmaar_rows": alkmaar_rows,
+        },
+        "pi_approval_keys_before_executable_use": [
+            "cbs_raw_bundle_sha256",
+            "alkmaar_geography_key",
+            "cbs_source_period_key",
+            "cbs_sector_category_key",
+            "cbs_capacity_field_key",
+            "capacity_unit_and_dc_ac_convention",
+            "ii3050_source_file_or_page_checksum",
+            "ii3050_scenario_column",
+            "ii3050_growth_factor_value",
+            "node_allocation_rule",
+            "statistical_orientation_tilt_distribution_source",
+            "statistical_orientation_tilt_distribution_weights",
+            "PV-PARAM-001_or_amended_conversion_decision",
+        ],
+        "non_claims": [
+            "No executable PV installed-capacity value is approved.",
+            "No CBS period, sector/category row, capacity field, unit convention, or DC/AC convention is selected as final.",
+            "No II3050 scenario column or growth factor is retrieved or approved by this packet.",
+            "No per-node PV allocation is approved.",
+            "No statistical orientation/tilt values or PV-PARAM conversion treatment are approved.",
+            "No roof, building, 3DBAG, or PV-map geometry source is retrieved or used.",
+            "No net-load, event detection, P(E), threshold analysis, capacity screen, manuscript result, or final PV output is produced.",
+        ],
+    }
+
+
+def retrieve_d014_cbs_capacity_anchor_evidence(
+    *,
+    metadata_dir: str | Path = "data/metadata",
+    raw_dir: str | Path = "data/raw/pv_capacity",
+    timeout_seconds: int = 30,
+) -> Path:
+    """Retrieve CBS Alkmaar source evidence and write committed metadata."""
+    raw_path = write_d014_cbs_anchor_raw_bundle(raw_dir, timeout_seconds=timeout_seconds)
+    directory = Path(metadata_dir) / "weather_pv"
+    directory.mkdir(parents=True, exist_ok=True)
+    metadata_path = directory / D014_CBS_ANCHOR_EVIDENCE_NAME
+    metadata_path.write_text(
+        json.dumps(build_d014_cbs_capacity_anchor_evidence_packet(raw_path), indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    return metadata_path
 
 
 def build_d014_pv_capacity_source_value_packet() -> dict[str, Any]:
@@ -763,9 +977,12 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--write-d014-statistical-orientation-tilt", action="store_true")
     parser.add_argument("--write-d014-orientation-tilt-source-choice", action="store_true")
     parser.add_argument("--write-d014-orientation-tilt-value-choice", action="store_true")
+    parser.add_argument("--retrieve-d014-cbs-anchor-evidence", action="store_true")
     args = parser.parse_args(argv)
 
-    if args.write_d014_orientation_tilt_value_choice:
+    if args.retrieve_d014_cbs_anchor_evidence:
+        path = retrieve_d014_cbs_capacity_anchor_evidence(metadata_dir=args.metadata_dir)
+    elif args.write_d014_orientation_tilt_value_choice:
         path = write_d014_pv_orientation_tilt_value_choice_packet(args.metadata_dir)
     elif args.write_d014_orientation_tilt_source_choice:
         path = write_d014_pv_orientation_tilt_source_choice_packet(args.metadata_dir)
