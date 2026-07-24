@@ -15,12 +15,15 @@ from src.pbox_reporting import (
     OUTPUT_ERROR_ENDPOINT_COUNT_BLOCKED_STATUS,
     OUTPUT_ERROR_ENDPOINT_COUNT_BRIDGE_PROTOCOL,
     OUTPUT_ERROR_ENDPOINT_COUNT_PROVENANCE,
+    REAL_OUTPUT_ERROR_ENDPOINT_COUNT_MANIFEST_PROTOCOL,
     AlphaEventCountRecord,
     assert_alpha_probability_estimator_packet,
     assert_output_error_endpoint_count_bridge_packet,
+    assert_real_output_error_endpoint_count_manifest_preflight,
     assert_runner_report_boundary_payload,
     build_alpha_probability_estimator_packet,
     build_output_error_endpoint_count_bridge_packet,
+    build_real_output_error_endpoint_count_manifest_preflight,
     build_guarded_pbox_report,
     build_runner_report_boundary_record,
     probability_rows_from_alpha_event_counts,
@@ -234,6 +237,63 @@ def _output_error_endpoint_count_metadata() -> dict[str, object]:
         }
     )
     return metadata
+
+
+def _real_endpoint_count_metadata() -> dict[str, object]:
+    return {
+        "a013_grid_error_approval_id": "a013-approved-grid-error-record",
+        "a016_scenario_consistency_id": "a016-approved-consistency-record",
+        "capacity_convention_linkage": "capacity-convention-approved-record",
+        "capacity_denominator_provenance": "capacity-denominator-provenance-record",
+        "dependence_assumption": OUTPUT_ERROR_DEPENDENCE,
+        "direction_gate": "unwidened_p_net_import_mask",
+        "endpoint_count_provenance": OUTPUT_ERROR_ENDPOINT_COUNT_PROVENANCE,
+        "endpoint_record_manifest_id": "output-error-endpoint-count-manifest-record",
+        "error_sampling": OUTPUT_ERROR_SAMPLING,
+        "g2_tier1_envelope_approval_id": "g2-approved-tier1-endpoint-record",
+        "loading_endpoint_application": OUTPUT_ERROR_APPLICATION,
+        "lower_composition_formula": OUTPUT_ERROR_LOWER_FORMULA,
+        "output_error_protocol": "g1-a2-output-domain-error",
+        "probability_widening": "forbidden",
+        "upper_composition_formula": OUTPUT_ERROR_UPPER_FORMULA,
+    }
+
+
+def _real_endpoint_count_approval_ids() -> dict[str, object]:
+    metadata = _real_endpoint_count_metadata()
+    return {
+        "a013_grid_error_approval_id": metadata["a013_grid_error_approval_id"],
+        "a016_scenario_consistency_id": metadata["a016_scenario_consistency_id"],
+        "capacity_convention_approval_id": "capacity-convention-approved-record",
+        "g2_tier1_envelope_approval_id": metadata[
+            "g2_tier1_envelope_approval_id"
+        ],
+    }
+
+
+def _real_endpoint_count_artifact_references() -> dict[str, object]:
+    metadata = _real_endpoint_count_metadata()
+    return {
+        "capacity_convention_linkage": metadata["capacity_convention_linkage"],
+        "capacity_denominator_provenance": metadata[
+            "capacity_denominator_provenance"
+        ],
+        "loading_trajectory_manifest_id": "loading-trajectory-manifest-record",
+        "output_error_endpoint_count_manifest_id": metadata[
+            "endpoint_record_manifest_id"
+        ],
+    }
+
+
+def _real_endpoint_count_threshold_semantics() -> dict[str, object]:
+    return {
+        "comparator": "strict_greater_than",
+        "direction_gate": "unwidened_p_net_import_mask",
+        "event_scope": "full_planning_year",
+        "min_consecutive_steps": 4,
+        "threshold_pu": 1.0,
+        "timestep_seconds": 900,
+    }
 
 
 def test_alpha_probability_rows_are_recomputed_from_event_counts() -> None:
@@ -513,6 +573,209 @@ def test_output_error_endpoint_count_bridge_rejects_relabeling_or_tampering() ->
     tampered_blockers["real_use_blocker_manifest"] = blocker_manifest
     with pytest.raises(ValueError, match="real_use_blocker_manifest"):
         assert_output_error_endpoint_count_bridge_packet(tampered_blockers)
+
+
+def test_real_output_error_endpoint_count_preflight_accepts_structural_fixture() -> None:
+    preflight = build_real_output_error_endpoint_count_manifest_preflight(
+        manifest_id="real-endpoint-count-preflight-fixture",
+        alpha_grid=[0.0, 0.5, 1.0],
+        event_count_records=_alpha_event_counts(),
+        endpoint_metadata=_real_endpoint_count_metadata(),
+        approval_ids=_real_endpoint_count_approval_ids(),
+        artifact_references=_real_endpoint_count_artifact_references(),
+        threshold_semantics=_real_endpoint_count_threshold_semantics(),
+    )
+    payload = preflight.to_mapping()
+
+    assert (
+        payload["manifest_protocol"]
+        == REAL_OUTPUT_ERROR_ENDPOINT_COUNT_MANIFEST_PROTOCOL
+    )
+    assert payload["ready_for_real_use"] is False
+    assert payload["probability_rows"] == payload[
+        "alpha_probability_estimator_packet"
+    ]["probability_rows"]
+    assert [row["p_lower"] for row in payload["probability_rows"]] == [0.1, 0.2, 0.3]
+    assert [row["p_upper"] for row in payload["probability_rows"]] == [0.5, 0.4, 0.3]
+    blocker_keys = payload["blocker_manifest"]["blocker_keys"]
+    assert "missing_signed_g2_tier1_endpoints" in blocker_keys
+    assert "missing_signed_a013_grid_error" in blocker_keys
+    assert "defuzzified_probability" not in str(payload)
+    assert_real_output_error_endpoint_count_manifest_preflight(payload)
+
+
+def test_real_output_error_endpoint_count_preflight_rejects_missing_or_stale_ids() -> None:
+    approval_ids = _real_endpoint_count_approval_ids()
+    approval_ids.pop("g2_tier1_envelope_approval_id")
+    with pytest.raises(ValueError, match="g2_tier1_envelope_approval_id"):
+        build_real_output_error_endpoint_count_manifest_preflight(
+            manifest_id="missing-g2-real-endpoint-preflight",
+            alpha_grid=[0.0, 0.5, 1.0],
+            event_count_records=_alpha_event_counts(),
+            endpoint_metadata=_real_endpoint_count_metadata(),
+            approval_ids=approval_ids,
+            artifact_references=_real_endpoint_count_artifact_references(),
+            threshold_semantics=_real_endpoint_count_threshold_semantics(),
+        )
+
+    approval_ids = _real_endpoint_count_approval_ids()
+    approval_ids["a013_grid_error_approval_id"] = "A-013-proposed-packet"
+    with pytest.raises(ValueError, match="stale or unsigned"):
+        build_real_output_error_endpoint_count_manifest_preflight(
+            manifest_id="stale-a013-real-endpoint-preflight",
+            alpha_grid=[0.0, 0.5, 1.0],
+            event_count_records=_alpha_event_counts(),
+            endpoint_metadata=_real_endpoint_count_metadata(),
+            approval_ids=approval_ids,
+            artifact_references=_real_endpoint_count_artifact_references(),
+            threshold_semantics=_real_endpoint_count_threshold_semantics(),
+        )
+
+    metadata = _real_endpoint_count_metadata()
+    metadata["a013_grid_error_approval_status"] = "proposed"
+    with pytest.raises(ValueError, match="stale or unsigned"):
+        build_real_output_error_endpoint_count_manifest_preflight(
+            manifest_id="stale-status-real-endpoint-preflight",
+            alpha_grid=[0.0, 0.5, 1.0],
+            event_count_records=_alpha_event_counts(),
+            endpoint_metadata=metadata,
+            approval_ids=_real_endpoint_count_approval_ids(),
+            artifact_references=_real_endpoint_count_artifact_references(),
+            threshold_semantics=_real_endpoint_count_threshold_semantics(),
+        )
+
+
+def test_real_output_error_endpoint_count_preflight_rejects_scalar_or_tampered_payload() -> None:
+    payload = build_real_output_error_endpoint_count_manifest_preflight(
+        manifest_id="real-endpoint-count-preflight-fixture",
+        alpha_grid=[0.0, 0.5, 1.0],
+        event_count_records=_alpha_event_counts(),
+        endpoint_metadata=_real_endpoint_count_metadata(),
+        approval_ids=_real_endpoint_count_approval_ids(),
+        artifact_references=_real_endpoint_count_artifact_references(),
+        threshold_semantics=_real_endpoint_count_threshold_semantics(),
+    ).to_mapping()
+
+    collapsed = dict(payload)
+    collapsed["defuzzified_probability"] = 0.25
+    with pytest.raises(ValueError, match="collapsed"):
+        assert_real_output_error_endpoint_count_manifest_preflight(collapsed)
+
+    relabeled = dict(payload)
+    relabeled["use_status"] = "paper-facing"
+    with pytest.raises(ValueError, match="cannot be relabeled"):
+        assert_real_output_error_endpoint_count_manifest_preflight(relabeled)
+
+    tampered_rows = dict(payload)
+    rows = [dict(row) for row in payload["probability_rows"]]
+    rows[0]["p_upper"] = 0.9
+    tampered_rows["probability_rows"] = rows
+    with pytest.raises(ValueError, match="alpha estimator|probability_rows"):
+        assert_real_output_error_endpoint_count_manifest_preflight(tampered_rows)
+
+    tampered_blockers = dict(payload)
+    blocker_manifest = dict(payload["blocker_manifest"])
+    blocker_manifest["ready_for_real_use"] = True
+    tampered_blockers["blocker_manifest"] = blocker_manifest
+    with pytest.raises(ValueError, match="blocker_manifest"):
+        assert_real_output_error_endpoint_count_manifest_preflight(tampered_blockers)
+
+
+def test_real_output_error_endpoint_count_preflight_rejects_alpha_or_crn_violations() -> None:
+    with pytest.raises(ValueError, match="strictly increasing"):
+        build_real_output_error_endpoint_count_manifest_preflight(
+            manifest_id="unordered-alpha-real-endpoint-preflight",
+            alpha_grid=[0.0, 1.0, 0.5],
+            event_count_records=_alpha_event_counts(),
+            endpoint_metadata=_real_endpoint_count_metadata(),
+            approval_ids=_real_endpoint_count_approval_ids(),
+            artifact_references=_real_endpoint_count_artifact_references(),
+            threshold_semantics=_real_endpoint_count_threshold_semantics(),
+        )
+
+    with pytest.raises(ValueError, match="alpha_grid"):
+        build_real_output_error_endpoint_count_manifest_preflight(
+            manifest_id="mismatched-alpha-real-endpoint-preflight",
+            alpha_grid=[0.0, 0.25, 1.0],
+            event_count_records=_alpha_event_counts(),
+            endpoint_metadata=_real_endpoint_count_metadata(),
+            approval_ids=_real_endpoint_count_approval_ids(),
+            artifact_references=_real_endpoint_count_artifact_references(),
+            threshold_semantics=_real_endpoint_count_threshold_semantics(),
+        )
+
+    records = list(_alpha_event_counts())
+    records[1] = AlphaEventCountRecord(
+        alpha=0.5,
+        lower_successes=2,
+        upper_successes=4,
+        sample_count=10,
+        sample_ids=tuple(reversed(records[1].sample_ids)),
+    )
+    with pytest.raises(ValueError, match="same ordered sample_ids"):
+        build_real_output_error_endpoint_count_manifest_preflight(
+            manifest_id="crn-mismatch-real-endpoint-preflight",
+            alpha_grid=[0.0, 0.5, 1.0],
+            event_count_records=records,
+            endpoint_metadata=_real_endpoint_count_metadata(),
+            approval_ids=_real_endpoint_count_approval_ids(),
+            artifact_references=_real_endpoint_count_artifact_references(),
+            threshold_semantics=_real_endpoint_count_threshold_semantics(),
+        )
+
+
+def test_real_output_error_endpoint_count_preflight_rejects_forbidden_semantics() -> None:
+    metadata = _real_endpoint_count_metadata()
+    metadata["probability_widening"] = "posthoc-margin"
+    with pytest.raises(ValueError, match="probability widening"):
+        build_real_output_error_endpoint_count_manifest_preflight(
+            manifest_id="probability-widening-real-endpoint-preflight",
+            alpha_grid=[0.0, 0.5, 1.0],
+            event_count_records=_alpha_event_counts(),
+            endpoint_metadata=metadata,
+            approval_ids=_real_endpoint_count_approval_ids(),
+            artifact_references=_real_endpoint_count_artifact_references(),
+            threshold_semantics=_real_endpoint_count_threshold_semantics(),
+        )
+
+    metadata = _real_endpoint_count_metadata()
+    metadata["error_sampling"] = "independent-random-draws"
+    with pytest.raises(ValueError, match="independent error sampling"):
+        build_real_output_error_endpoint_count_manifest_preflight(
+            manifest_id="independent-sampling-real-endpoint-preflight",
+            alpha_grid=[0.0, 0.5, 1.0],
+            event_count_records=_alpha_event_counts(),
+            endpoint_metadata=metadata,
+            approval_ids=_real_endpoint_count_approval_ids(),
+            artifact_references=_real_endpoint_count_artifact_references(),
+            threshold_semantics=_real_endpoint_count_threshold_semantics(),
+        )
+
+    threshold = _real_endpoint_count_threshold_semantics()
+    threshold["direction_gate"] = "widened_loading_sign"
+    with pytest.raises(ValueError, match="unwidened P_net"):
+        build_real_output_error_endpoint_count_manifest_preflight(
+            manifest_id="widened-direction-real-endpoint-preflight",
+            alpha_grid=[0.0, 0.5, 1.0],
+            event_count_records=_alpha_event_counts(),
+            endpoint_metadata=_real_endpoint_count_metadata(),
+            approval_ids=_real_endpoint_count_approval_ids(),
+            artifact_references=_real_endpoint_count_artifact_references(),
+            threshold_semantics=threshold,
+        )
+
+    threshold = _real_endpoint_count_threshold_semantics()
+    threshold["threshold_pu"] = 1.1
+    with pytest.raises(ValueError, match="G0-A3"):
+        build_real_output_error_endpoint_count_manifest_preflight(
+            manifest_id="wrong-threshold-real-endpoint-preflight",
+            alpha_grid=[0.0, 0.5, 1.0],
+            event_count_records=_alpha_event_counts(),
+            endpoint_metadata=_real_endpoint_count_metadata(),
+            approval_ids=_real_endpoint_count_approval_ids(),
+            artifact_references=_real_endpoint_count_artifact_references(),
+            threshold_semantics=threshold,
+        )
 
 
 def test_probability_rows_from_pbox_family_are_sorted_alpha_indexed_bounds() -> None:
