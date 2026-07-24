@@ -1476,6 +1476,7 @@ def test_d014_pv_component_output_artifact_scaffold_is_metadata_only(tmp_path: P
     assert packet["executable_gate"]["component_output_generation_authorized"] is False
     assert "PV-PARAM-001_or_signed_amendment" in packet["executable_gate"]["blocking_register_ids"]
     assert "signed_pv_reactive_power_policy_or_q_zero_convention" in packet["pi_approval_keys_before_executable_use"]
+    assert "signed_component_output_manifest_path_policy" in packet["pi_approval_keys_before_executable_use"]
     assert any("No real PV component-output" in item for item in packet["non_claims"])
 
     path = pv_capacity.write_d014_pv_component_output_artifact_scaffold_packet(tmp_path)

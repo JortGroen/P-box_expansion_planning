@@ -2312,6 +2312,7 @@ def test_pv_component_output_writer_emits_ic1_compatible_synthetic_fixture(tmp_p
             "a016_scenario_consistency_artifact": "SIGNED-FIXTURE-A016",
             "paired_hp_pv_acceptance_artifact": "SIGNED-FIXTURE-PAIRED",
             "reactive_power_policy_artifact": "SIGNED-FIXTURE-Q-ZERO",
+            "component_output_manifest_path_policy": "SIGNED-FIXTURE-PATH-POLICY",
         },
         provenance={
             "synthetic_fixture": True,
@@ -2362,8 +2363,81 @@ def test_pv_component_output_writer_emits_ic1_compatible_synthetic_fixture(tmp_p
         load_component_adapter_output_from_npz_artifact(manifest, context, repo_root=tmp_path)
 
 
-def test_pv_component_output_accepted_spec_rejects_unsigned_tokens() -> None:
-    with pytest.raises(ValueError, match="unsigned approval token"):
+@pytest.mark.parametrize(
+    ("array_path", "manifest_path"),
+    [
+        ("", "artifacts/pv_manifest.json"),
+        (".", "artifacts/pv_manifest.json"),
+        ("/tmp/pv.npz", "artifacts/pv_manifest.json"),
+        ("artifacts/../pv.npz", "artifacts/pv_manifest.json"),
+        ("artifacts/pv.npz", "../pv_manifest.json"),
+    ],
+)
+def test_pv_component_output_writer_rejects_non_repository_relative_paths(
+    tmp_path: Path,
+    array_path: str,
+    manifest_path: str,
+) -> None:
+    weather = _short_weather(temperature_c=[20.0, 20.0, 20.0, 20.0], ghi_w_per_m2=[0.0, 500.0, 1000.0, 0.0])
+    config = PVSystemConfig(
+        installed_capacity_kw=2.0,
+        performance_ratio=1.0,
+        reference_irradiance_w_per_m2=1000.0,
+        temperature_coefficient_per_c=0.0,
+        reference_temperature_c=25.0,
+        clip_to_capacity=True,
+        config_id="synthetic-fixture-path-guard-config",
+        parameter_status="approved_for_executable_component_use",
+        signed_parameter_decision_id="SIGNED-FIXTURE-PV-PARAM",
+    )
+    profile = generate_pv_profile(weather, config)
+    spec = PVComponentOutputArtifactSpec(
+        artifact_id="pv-synthetic-output-artifact",
+        artifact_status="synthetic_fixture",
+        component_id="pv-synthetic-node-a",
+        node_id="node-a",
+        member_id=profile.weather_member_id,
+        source_id="synthetic-signed-fixture-pv-source",
+        calendar_id="synthetic_calendar_2025_2step",
+        shared_weather_driver_id=profile.shared_weather_driver_id,
+        approval_ids={
+            "capacity_artifact": "SIGNED-FIXTURE-CAPACITY",
+            "orientation_tilt_artifact": "SIGNED-FIXTURE-ORIENTATION",
+            "pv_param_artifact": "SIGNED-FIXTURE-PV-PARAM",
+            "node_allocation_artifact": "SIGNED-FIXTURE-ALLOCATION",
+            "a016_scenario_consistency_artifact": "SIGNED-FIXTURE-A016",
+            "paired_hp_pv_acceptance_artifact": "SIGNED-FIXTURE-PAIRED",
+            "reactive_power_policy_artifact": "SIGNED-FIXTURE-Q-ZERO",
+            "component_output_manifest_path_policy": "SIGNED-FIXTURE-PATH-POLICY",
+        },
+        provenance={"synthetic_fixture": True},
+    )
+
+    with pytest.raises(ValueError, match="repository-relative|path segments"):
+        write_pv_component_output_npz_artifact(
+            profile,
+            spec,
+            array_path=array_path,
+            manifest_path=manifest_path,
+            base_dir=tmp_path,
+        )
+
+
+@pytest.mark.parametrize(
+    "bad_approval_id",
+    [
+        "D014-PV-CAPACITY-APPROVAL-TEMPLATE_successor_unsigned",
+        "future-capacity-choice",
+        "pending-capacity-choice",
+        "TODO-capacity-choice",
+        "TBD-capacity-choice",
+        "not-approved-capacity-choice",
+        "<signed-capacity-artifact>",
+        "&lt;signed-capacity-artifact&gt;",
+    ],
+)
+def test_pv_component_output_accepted_spec_rejects_unsigned_tokens(bad_approval_id: str) -> None:
+    with pytest.raises(ValueError, match="stale or unsigned approval token"):
         PVComponentOutputArtifactSpec(
             artifact_id="pv-real-output-artifact",
             artifact_status="accepted",
@@ -2374,13 +2448,14 @@ def test_pv_component_output_accepted_spec_rejects_unsigned_tokens() -> None:
             calendar_id="calendar-2035",
             shared_weather_driver_id="weather-driver",
             approval_ids={
-                "capacity_artifact": "D014-PV-CAPACITY-APPROVAL-TEMPLATE_successor_unsigned",
+                "capacity_artifact": bad_approval_id,
                 "orientation_tilt_artifact": "SIGNED-ORIENTATION",
                 "pv_param_artifact": "SIGNED-PV-PARAM",
                 "node_allocation_artifact": "SIGNED-ALLOCATION",
                 "a016_scenario_consistency_artifact": "SIGNED-A016",
                 "paired_hp_pv_acceptance_artifact": "SIGNED-PAIRED",
                 "reactive_power_policy_artifact": "SIGNED-Q",
+                "component_output_manifest_path_policy": "SIGNED-PATH-POLICY",
             },
             provenance={"source": "not-used"},
         )

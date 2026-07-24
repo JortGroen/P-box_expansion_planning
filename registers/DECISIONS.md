@@ -719,7 +719,7 @@ Use `data/metadata/weather_pv/d014_pv_component_output_artifact_scaffold.json` a
 
 ### Boundary
 
-This scaffold does not generate real PV arrays and does not approve current D-014 packets for executable use. It requires signed PV capacity, statistical orientation/tilt values, PV-PARAM conversion/loss/temperature/clipping treatment, node allocation, A-016 scenario consistency, final paired HP/PV acceptance, reactive-power policy, and path/checksum policy before accepted component-output artifacts may be emitted. Synthetic-fixture outputs are allowed only for tests and must be explicitly marked `synthetic_fixture`.
+This scaffold does not generate real PV arrays and does not approve current D-014 packets for executable use. It requires signed PV capacity, statistical orientation/tilt values, PV-PARAM conversion/loss/temperature/clipping treatment, node allocation, A-016 scenario consistency, final paired HP/PV acceptance, reactive-power policy, and path/checksum policy before accepted component-output artifacts may be emitted. Synthetic-fixture outputs are allowed only for tests and must be explicitly marked `synthetic_fixture`. Accepted executable specs must reject stale/template approval strings, including `future`, `pending`, `todo`, `tbd`, `not-approved`, and `<...>` placeholders, and must use non-empty repository-relative component-output array/manifest paths with no absolute/rooted path or `..` segments.
 
 ### Rationale
 

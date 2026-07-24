@@ -2002,6 +2002,7 @@ class PVComponentOutputArtifactScaffoldPacket:
             "signed_a016_scenario_consistency_artifact",
             "signed_final_paired_hp_pv_acceptance_artifact",
             "signed_pv_reactive_power_policy_or_q_zero_convention",
+            "signed_component_output_manifest_path_policy",
         }
         missing_keys = required_keys.difference(approval_keys)
         if missing_keys:
@@ -2104,6 +2105,7 @@ class PVComponentOutputArtifactSpec:
             "a016_scenario_consistency_artifact",
             "paired_hp_pv_acceptance_artifact",
             "reactive_power_policy_artifact",
+            "component_output_manifest_path_policy",
         }
         missing = required.difference(approvals)
         if missing:
@@ -2111,8 +2113,23 @@ class PVComponentOutputArtifactSpec:
         if self.artifact_status == "accepted":
             for key, value in approvals.items():
                 value_text = str(value).lower()
-                if any(token in value_text for token in ("unsigned", "proposed", "placeholder", "synthetic", "fixture")):
-                    raise ValueError(f"accepted PV component-output spec has unsigned approval token for {key}")
+                stale_tokens = (
+                    "unsigned",
+                    "proposed",
+                    "placeholder",
+                    "synthetic",
+                    "fixture",
+                    "future",
+                    "pending",
+                    "todo",
+                    "tbd",
+                    "not-approved",
+                    "not_approved",
+                    "not approved",
+                )
+                has_template_brackets = ("<" in value_text and ">" in value_text) or ("&lt;" in value_text and "&gt;" in value_text)
+                if has_template_brackets or any(token in value_text for token in stale_tokens):
+                    raise ValueError(f"accepted PV component-output spec has stale or unsigned approval token for {key}")
         if self.artifact_status == "synthetic_fixture" and provenance.get("synthetic_fixture") is not True:
             raise ValueError("synthetic_fixture PV component-output specs must mark provenance.synthetic_fixture=True")
         object.__setattr__(self, "timestep_seconds", int(self.timestep_seconds))
@@ -2740,10 +2757,10 @@ def write_pv_component_output_npz_artifact(
     if profile.weather_member_id != spec.member_id:
         raise ValueError("PV component-output spec member_id must match the PV profile weather member")
     base = None if base_dir is None else Path(base_dir)
-    manifest_array_path = Path(array_path)
-    manifest_output_path = Path(manifest_path)
-    target_array = manifest_array_path if base is None or manifest_array_path.is_absolute() else base / manifest_array_path
-    target_manifest = manifest_output_path if base is None or manifest_output_path.is_absolute() else base / manifest_output_path
+    manifest_array_path = _validate_relative_artifact_path(array_path, "array_path")
+    manifest_output_path = _validate_relative_artifact_path(manifest_path, "manifest_path")
+    target_array = manifest_array_path if base is None else base / manifest_array_path
+    target_manifest = manifest_output_path if base is None else base / manifest_output_path
     target_array.parent.mkdir(parents=True, exist_ok=True)
     target_manifest.parent.mkdir(parents=True, exist_ok=True)
     timestamps = np.asarray(
@@ -3035,7 +3052,16 @@ def _validate_weather_input_member_record(member: Mapping[str, object], *, accep
         raise ValueError("member n_timesteps must be positive")
 
 
-
+def _validate_relative_artifact_path(value: str | Path, name: str) -> Path:
+    raw = str(value)
+    if not raw.strip():
+        raise ValueError(f"{name} must be a non-empty repository-relative path")
+    path = Path(raw)
+    if path == Path(".") or path.is_absolute() or path.drive or path.root:
+        raise ValueError(f"{name} must be repository-relative, not absolute")
+    if any(part == ".." for part in path.parts):
+        raise ValueError(f"{name} must not contain '..' path segments")
+    return path
 def _sha256_file(path: Path) -> str:
     digest = hashlib.sha256()
     with Path(path).open("rb") as handle:
