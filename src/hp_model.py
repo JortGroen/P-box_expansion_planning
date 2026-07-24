@@ -54,8 +54,12 @@ HP001_WEATHER_ACCEPTANCE_REQUIRED_APPROVAL_KEYS = (
     "d004_paired_weather_acceptance",
     "cold_spell_tolerances",
 )
+HP001_SCENARIO_CONSISTENCY_REQUIRED_APPROVAL_KEYS = (
+    "scenario_source_consistency",
+)
 HP001_FINAL_READINESS_REQUIRED_APPROVAL_KEYS = (
     *HP001_SCALING_REQUIRED_APPROVAL_KEYS,
+    *HP001_SCENARIO_CONSISTENCY_REQUIRED_APPROVAL_KEYS,
     *HP001_WEATHER_ACCEPTANCE_REQUIRED_APPROVAL_KEYS,
 )
 
@@ -623,12 +627,13 @@ def hp001_final_readiness_missing_approval_keys(
 
 
 def require_hp001_final_readiness_approvals(approval_ids: Mapping[str, str]) -> None:
-    """Raise until annual-value and weather/cold-spell gates are signed."""
+    """Raise until annual, A-016 consistency, and weather gates are signed."""
     missing = hp001_final_readiness_missing_approval_keys(approval_ids)
     if missing:
         raise ValueError(
             "Executable integrated HP-001 use requires signed annual-scaling, "
-            f"paired-weather, and cold-spell approvals; missing={missing}"
+            "scenario-consistency, paired-weather, and cold-spell approvals; "
+            f"missing={missing}"
         )
 
 def require_signed_hp001_local_scaling_config(config: HP001LocalScalingConfig) -> None:

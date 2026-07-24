@@ -365,6 +365,9 @@ def build_hp001_readiness_approval_checklist_packet() -> dict[str, Any]:
         "d004_paired_weather_acceptance",
         "cold_spell_tolerances",
     ]
+    scenario_consistency_keys = [
+        "scenario_source_consistency",
+    ]
     return {
         "data_ids": ["D-003", "D-004", "D-013"],
         "decision_packet_id": "E2-S3-HP001-READINESS-APPROVAL-CHECKLIST",
@@ -376,9 +379,11 @@ def build_hp001_readiness_approval_checklist_packet() -> dict[str, Any]:
             "d004_source_member_use": "D004-SOURCE-MEMBER-ACCEPTANCE approves D-004 source/member use for internal first-screen work only.",
             "weather_contract": "WEATHER-001 requires HP/PV to consume the same shared weather member identity and calendar.",
             "cold_spell_design": "E2-S3-COLD-SPELL-ACCEPTANCE-DESIGN approves the diagnostic design but not numerical tolerances.",
+            "scenario_consistency": "A-016 approves the scenario-consistency requirement, but the HP integrated-use binding remains unsigned until an explicit scenario_source_consistency approval ID is recorded.",
         },
         "approval_groups": {
             "annual_value_binding": annual_value_keys,
+            "scenario_consistency": scenario_consistency_keys,
             "weather_acceptance": weather_acceptance_keys,
         },
         "required_approvals": [
@@ -387,6 +392,7 @@ def build_hp001_readiness_approval_checklist_packet() -> dict[str, Any]:
             {"key": "unit_conversion", "candidate": "GJ/year divided by 3,600,000 to obtain TWh/year", "current_status": "unsigned", "blocks": "Converting candidate thermal demand into annual TWh scales."},
             {"key": "sfh_mfh_split", "candidate": "CBS 85035NED count-share allocation between SFH and MFH", "current_status": "unsigned", "blocks": "Assigning local space/DHW heat demand to HP-001 building classes."},
             {"key": "adoption_electrification", "candidate": "separate signed 2035 HP service/adoption/electrification scenario", "current_status": "unsigned", "blocks": "Converting local residential heat demand into 2035 heat-pump-served demand."},
+            {"key": "scenario_source_consistency", "candidate": "A-016 EV/HP/PV 2035 scenario-source consistency approval", "current_status": "unsigned for final integrated HP use", "blocks": "Using HP annual values in a coherent integrated 2035 case with EV and PV source branches."},
             {"key": "d004_paired_weather_acceptance", "candidate": "exact WEATHER-001 member identity/calendar equality before HP/PV paired diagnostics", "current_status": "unsigned for final paired acceptance", "blocks": "Treating HP and PV profiles as driven by an accepted same-weather realization."},
             {"key": "cold_spell_tolerances", "candidate": "future signed numerical coldest-window and near-freezing diagnostic tolerances", "current_status": "unsigned", "blocks": "Accepting When2Heat-derived HP behavior under the selected D-004 cold-weather members."},
         ],
@@ -395,16 +401,18 @@ def build_hp001_readiness_approval_checklist_packet() -> dict[str, Any]:
             "value_binding_required_status": "approved_for_executable_value_binding",
             "annual_scaling_guard": "src.hp_model.require_signed_hp001_local_scaling_config",
             "final_readiness_guard": "src.hp_model.require_hp001_final_readiness_approvals",
-            "required_final_approval_keys": annual_value_keys + weather_acceptance_keys,
+            "required_final_approval_keys": annual_value_keys + scenario_consistency_keys + weather_acceptance_keys,
         },
         "next_pi_decision": (
-            "Approve or amend the five annual value-binding choices, then separately "
+            "Approve or amend the five annual value-binding choices, then record explicit "
+            "A-016 scenario-source consistency for the integrated case, and separately "
             "approve final D-004 paired-weather acceptance evidence and cold-spell "
             "tolerances before HP profiles enter integrated analysis."
         ),
         "non_claims": [
             "No annual HP TWh values are executable.",
             "No 2035 HP adoption/electrification value is signed.",
+            "No A-016 scenario-source consistency approval for HP integrated use is signed.",
             "No D-004 paired-weather or cold-spell acceptance is signed.",
             "No net-load, event, P(E), threshold, capacity-screen, manuscript, or probability analysis is run.",
         ],
@@ -419,6 +427,7 @@ def build_hp001_executable_value_binding_decision_packet() -> dict[str, Any]:
     readiness = build_hp001_readiness_approval_checklist_packet()
     annual_keys = list(readiness["approval_groups"]["annual_value_binding"])
     weather_keys = list(readiness["approval_groups"]["weather_acceptance"])
+    scenario_keys = list(readiness["approval_groups"]["scenario_consistency"])
     return {
         "data_ids": ["D-003", "D-004", "D-013"],
         "decision_packet_id": "E2-S3-HP001-EXECUTABLE-VALUE-BINDING-PACKET",
@@ -428,6 +437,7 @@ def build_hp001_executable_value_binding_decision_packet() -> dict[str, Any]:
             "d003_shape_cop_boundary": "HP-001 approves D-003 Dutch residential SFH/MFH space and DHW shape/COP columns for internal source use.",
             "d013_retrieval_checksum": "D-013 CBS/PBL raw public files have retrieval/checksum metadata recorded; raw files remain ignored.",
             "d013_indicator_mapping": "D013-PBL-MAPPING/A-015 approves the PBL residential indicator mapping only.",
+            "scenario_consistency": "A-016 requires EV/HP/PV 2035 source-year, planning-year, scenario-label, and scaling/adoption branch consistency before integrated use.",
             "d004_source_member": "D004-SOURCE-MEMBER-ACCEPTANCE approves source/member use for internal first-screen work only.",
             "weather_contract": "WEATHER-001 requires common HP/PV member identity, shared_weather_driver_id, source/provenance, and UTC/local calendar.",
         },
@@ -437,6 +447,7 @@ def build_hp001_executable_value_binding_decision_packet() -> dict[str, Any]:
             {"key": "unit_conversion", "requested_decision": "Approve or amend GJ/year divided by 3,600,000 to obtain TWh/year."},
             {"key": "sfh_mfh_split", "requested_decision": "Approve or amend CBS 85035NED count-share allocation for SFH/MFH."},
             {"key": "adoption_electrification", "requested_decision": "Provide or approve a 2035 HP service/adoption/electrification scenario for space and DHW."},
+            {"key": "scenario_source_consistency", "requested_decision": "Record an explicit A-016 scenario-source consistency approval for the integrated EV/HP/PV 2035 case."},
             {"key": "d004_paired_weather_acceptance", "requested_decision": "Approve later paired HP/PV evidence using exact WEATHER-001 identity/calendar equality."},
             {"key": "cold_spell_tolerances", "requested_decision": "Approve later numerical coldest-window and near-freezing cold-spell tolerances before the real check."},
         ],
@@ -459,8 +470,9 @@ def build_hp001_executable_value_binding_decision_packet() -> dict[str, Any]:
         },
         "final_readiness_dependency": {
             "annual_value_binding_keys": annual_keys,
+            "scenario_consistency_keys": scenario_keys,
             "weather_acceptance_keys": weather_keys,
-            "all_required_before_integrated_hp_use": annual_keys + weather_keys,
+            "all_required_before_integrated_hp_use": annual_keys + scenario_keys + weather_keys,
             "guard": "src.hp_model.require_hp001_final_readiness_approvals",
         },
         "future_executable_handoff_if_pi_signs": {
@@ -468,11 +480,12 @@ def build_hp001_executable_value_binding_decision_packet() -> dict[str, Any]:
             "adapter": "src.hp_model.hp001_local_scaling_config_from_value_binding_record",
             "annual_scaling_guard": "src.hp_model.require_signed_hp001_local_scaling_config",
             "component_builder": "src.hp_model.hp001_components_from_local_scaling_config",
-            "still_not_enough_for_integrated_use": "Annual value-binding approval does not by itself sign D-004 paired-weather acceptance or cold-spell tolerances.",
+            "still_not_enough_for_integrated_use": "Annual value-binding approval does not by itself sign A-016 scenario-source consistency, D-004 paired-weather acceptance, or cold-spell tolerances.",
         },
         "non_claims": [
             "No annual HP TWh values are executable.",
             "No 2035 HP adoption/electrification value is signed.",
+            "No A-016 scenario-source consistency approval for HP integrated use is signed.",
             "No D-004 paired-weather or cold-spell acceptance is signed or run.",
             "No net-load, event, P(E), threshold, capacity-screen, manuscript, or probability analysis is run.",
         ],

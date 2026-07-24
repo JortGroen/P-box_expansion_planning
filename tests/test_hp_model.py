@@ -895,19 +895,22 @@ def test_hp001_final_readiness_guard_requires_weather_and_cold_spell_approvals()
         "unit_conversion",
         "sfh_mfh_split",
         "adoption_electrification",
+        "scenario_source_consistency",
         "d004_paired_weather_acceptance",
         "cold_spell_tolerances",
     )
     assert hp001_final_readiness_missing_approval_keys(annual_approvals) == (
+        "scenario_source_consistency",
         "d004_paired_weather_acceptance",
         "cold_spell_tolerances",
     )
-    with pytest.raises(ValueError, match="paired-weather"):
+    with pytest.raises(ValueError, match="scenario-consistency"):
         require_hp001_final_readiness_approvals(annual_approvals)
 
     require_hp001_final_readiness_approvals(
         {
             **annual_approvals,
+            "scenario_source_consistency": "A016-SCENARIO-CONSISTENCY-FUTURE",
             "d004_paired_weather_acceptance": "D004-PAIRED-ACCEPTANCE-FUTURE",
             "cold_spell_tolerances": "HP-COLD-SPELL-TOLERANCES-FUTURE",
         }
