@@ -8,6 +8,7 @@ import json
 from pathlib import Path
 import subprocess
 import sys
+from urllib import parse
 import zipfile
 
 import numpy as np
@@ -16,6 +17,7 @@ import pytest
 import data.get_elaad_profiles as elaad
 import data.get_hp_scaling as hp_scaling
 import data.get_ndw_charging_inventory as ndw
+import data.get_pv_capacity as pv_capacity
 from data.get_elaad_profiles import (
     ProfileBatch,
     _shape_report,
@@ -40,7 +42,7 @@ def _case_dir(name: str) -> Path:
 
 
 def test_e2_s1_sources_have_existing_retrieval_scripts() -> None:
-    expected_ids = {"D-001", "D-002", "D-003", "D-004", "D-008", "D-012", "D-013"}
+    expected_ids = {"D-001", "D-002", "D-003", "D-004", "D-008", "D-012", "D-013", "D-014"}
     specs = source_specs()
 
     assert {spec.data_id for spec in specs} == expected_ids
@@ -1060,3 +1062,44 @@ def test_hp001_executable_value_binding_packet_is_approval_template_only(tmp_pat
     assert path.name == "hp001_alkmaar_gm0361_executable_value_binding_decision_packet.json"
     assert payload["status"].endswith("approval template only")
 
+
+
+def test_d014_pv_capacity_source_packet_is_metadata_only(tmp_path: Path) -> None:
+    packet = pv_capacity.build_d014_pv_capacity_source_value_packet()
+
+    assert packet["packet_id"] == "D014-PV-CAPACITY-SOURCE-VALUE-PACKET"
+    assert packet["data_id"] == "D-014"
+    assert packet["download_performed"] is False
+    assert packet["raw_data_committed"] is False
+    assert packet["governing_decisions"]["approved_route"] == "PV-CAP-001"
+    assert "PV-PARAM-001 remains proposed" in packet["governing_decisions"]["conversion_parameters"]
+    cbs = packet["primary_cbs_anchor_source"]
+    assert cbs["table_id"] == "85005NED"
+    assert cbs["planned_raw_path"].startswith("data/raw/pv_capacity/")
+    assert cbs["schema_probe_urls"]["data_properties"].endswith("/DataProperties")
+    assert "GM0361" in cbs["alkmaar_row_filter_template"]
+    assert "TypedDataSet" in cbs["alkmaar_row_query_template"]
+    assert packet["ii3050_growth_factor_source"]["numeric_growth_factor_approved"] is False
+    assert "No numeric PV installed capacity is approved." in packet["fail_closed_non_claims"]
+
+    path = pv_capacity.write_d014_pv_capacity_source_value_packet(tmp_path)
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    assert path.name == "d014_pv_capacity_source_value_packet.json"
+    assert payload["status"].startswith("proposed_source_value_packet")
+
+
+def test_d014_cbs_odata_url_builder_is_official_and_encoded() -> None:
+    url = pv_capacity.build_cbs_odata_url(
+        "TypedDataSet",
+        {"$filter": "RegioS eq 'GM0361' and Perioden eq '<PERIOD_KEY>'"},
+    )
+    parsed = parse.urlparse(url)
+    query = parse.parse_qs(parsed.query)
+
+    assert parsed.scheme == "https"
+    assert parsed.netloc == "opendata.cbs.nl"
+    assert parsed.path == "/ODataApi/OData/85005NED/TypedDataSet"
+    assert query["$filter"] == ["RegioS eq 'GM0361' and Perioden eq '<PERIOD_KEY>'"]
+
+    with pytest.raises(ValueError, match="entity"):
+        pv_capacity.build_cbs_odata_url("TypedDataSet?$filter=bad")

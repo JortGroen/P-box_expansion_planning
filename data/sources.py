@@ -98,6 +98,16 @@ _SOURCE_SPECS: tuple[SourceSpec, ...] = (
         raw_subdir="hp_scaling",
         notes="Proposed no-download route for Alkmaar GM0361 HP-001 local scaling evidence; no annual TWh values or 2035 adoption volumes are executable.",
     ),
+    SourceSpec(
+        data_id="D-014",
+        item="PV installed-capacity source bundle",
+        source="CBS StatLine photovoltaic-capacity table for Alkmaar plus Netbeheer Nederland II3050 growth-factor source",
+        doi_url="CBS 85005NED https://opendata.cbs.nl/ODataApi/OData/85005NED; II3050 https://www.netbeheernederland.nl/publicatie/ii3050-eindrapport",
+        license="CBS/data.overheid CC-BY 4.0; II3050 public web publication/citation route; optional geometry sources require separate license checks",
+        retrieval_script="data/get_pv_capacity.py",
+        raw_subdir="pv_capacity",
+        notes="PV-CAP-001 approves the source route only; D-014 values, capacity convention, growth factor, allocation, and PV-PARAM conversion remain unsigned and fail-closed.",
+    )
 )
 
 
