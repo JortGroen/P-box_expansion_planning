@@ -5,6 +5,13 @@ import math
 import pytest
 
 from src.pbox import PBoxAlphaResult, ProbabilityEstimate, VertexUseMode
+from src.pbox_error import (
+    OUTPUT_ERROR_APPLICATION,
+    OUTPUT_ERROR_DEPENDENCE,
+    OUTPUT_ERROR_LOWER_FORMULA,
+    OUTPUT_ERROR_SAMPLING,
+    OUTPUT_ERROR_UPPER_FORMULA,
+)
 from src.pbox_decision_reporting import (
     DecisionReportRow,
     assert_guarded_decision_report_payload,
@@ -50,7 +57,36 @@ def _complete_prerequisites() -> FinalResultPrerequisites:
 
 def _output_error_record() -> dict[str, object]:
     return {
-        "config": {"event_semantics": {"direction_gate": "unwidened_p_net_import_mask"}},
+        "config": {
+            "a013_grid_error_approval_id": "A-013-synthetic-pending",
+            "capacity_convention_linkage": "synthetic-capacity-linkage",
+            "capacity_denominator_provenance": "synthetic-capacity-placeholder",
+            "composition_formula": {
+                "lower": OUTPUT_ERROR_LOWER_FORMULA,
+                "upper": OUTPUT_ERROR_UPPER_FORMULA,
+            },
+            "dependence_assumption": OUTPUT_ERROR_DEPENDENCE,
+            "envelope": {
+                "epsilon_grid": 0.0,
+                "epsilon_tier1_minus": 0.0,
+                "epsilon_tier1_plus": 0.0,
+            },
+            "envelope_source": "synthetic-envelope-placeholder",
+            "error_application": OUTPUT_ERROR_APPLICATION,
+            "error_sampling": OUTPUT_ERROR_SAMPLING,
+            "event_semantics": {
+                "comparator": "strict_greater_than",
+                "direction_gate": "unwidened_p_net_import_mask",
+                "min_consecutive_steps": 4,
+                "threshold_pu": 1.0,
+                "timestep_seconds": 900,
+            },
+            "g2_tier1_envelope_approval_id": "G2-synthetic-pending",
+            "grid_error_source": "synthetic-grid-placeholder",
+            "probability_widening": "forbidden",
+            "tier1_error_source": "synthetic-tier1-placeholder",
+            "use_status": "synthetic-only",
+        },
         "event_count_bounds": {
             "lower_successes": 0,
             "sample_count": 2,
