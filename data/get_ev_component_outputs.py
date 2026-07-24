@@ -1160,6 +1160,7 @@ def build_ev_per_node_manifest_index(
     manifest_dir = _repo_relative_path(Path(manifest_dir), field_name="manifest_dir")
     if index_path is not None:
         index_path = _repo_relative_path(Path(index_path), field_name="index_path")
+    filtered_scope = scenario_filter is not None or node_filter is not None
     expected_units, ordering = _expected_per_node_units(
         generic_packet,
         output_dir=output_dir,
@@ -1224,12 +1225,16 @@ def build_ev_per_node_manifest_index(
             stale.append({**record, "blockers": sorted(set(blockers))})
         else:
             verified.append(record)
-    ready = not missing and not stale and not checksum_mismatches
+    structurally_ready = not missing and not stale and not checksum_mismatches
+    real_loader_ready = bool(structurally_ready and not allow_synthetic_fixture and not filtered_scope)
+    synthetic_fixture_ready = bool(structurally_ready and allow_synthetic_fixture)
     status = (
         "synthetic_per_node_manifest_index_ready_for_agent_a_loader_fixture"
-        if ready and allow_synthetic_fixture
+        if synthetic_fixture_ready
         else "accepted_per_node_manifest_index_ready_for_agent_a_loader"
-        if ready
+        if real_loader_ready
+        else "blocked_filtered_per_node_manifest_index_not_real_loader_ready"
+        if structurally_ready and filtered_scope
         else "blocked_per_node_manifest_index_not_ready_for_agent_a_loader"
     )
     by_scenario: dict[str, dict[str, Any]] = {}
@@ -1254,8 +1259,15 @@ def build_ev_per_node_manifest_index(
         "task_id": "E3.S2a",
         "status": status,
         "timestamp_utc": timestamp_utc,
-        "ready_for_agent_a_loader_execution": bool(ready and not allow_synthetic_fixture),
-        "ready_for_synthetic_agent_a_loader_fixture": bool(ready and allow_synthetic_fixture),
+        "ready_for_agent_a_loader_execution": real_loader_ready,
+        "ready_for_synthetic_agent_a_loader_fixture": synthetic_fixture_ready,
+        "index_scope": {
+            "full_declared_scope": not filtered_scope,
+            "filtered_scope": filtered_scope,
+            "scenario_filter": list(scenario_filter) if scenario_filter is not None else None,
+            "node_filter": list(node_filter) if node_filter is not None else None,
+            "real_loader_ready_requires_full_declared_scope": True,
+        },
         "source_generic_loader_packet": generic_packet_path.as_posix(),
         "source_generic_loader_packet_sha256": _repo_blob_or_file_sha256(base_dir, generic_packet_path),
         "policy": {
@@ -1293,7 +1305,13 @@ def build_ev_per_node_manifest_index(
             ),
             "safe_resume_behavior": "Rerun rehashes every present per-node manifest and NPZ; missing/stale units remain blockers.",
         },
-        "remaining_blockers": [] if ready else list(_PER_NODE_INDEX_BLOCKERS),
+        "remaining_blockers": (
+            []
+            if real_loader_ready or synthetic_fixture_ready
+            else ["E3.S2a-FILTERED-INDEX-NOT-REAL-LOADER-READY", *_PER_NODE_INDEX_BLOCKERS]
+            if structurally_ready and filtered_scope
+            else list(_PER_NODE_INDEX_BLOCKERS)
+        ),
     }
     if index_path is not None:
         _write_json(base_dir / index_path, payload)

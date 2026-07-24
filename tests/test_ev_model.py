@@ -2356,6 +2356,13 @@ def test_committed_ev_per_node_manifest_index_matches_builder() -> None:
     assert committed["expected_per_node_unit_count"] == 345
     assert committed["missing_per_node_unit_count"] == 345
     assert committed["ready_for_agent_a_loader_execution"] is False
+    assert committed["index_scope"] == {
+        "filtered_scope": False,
+        "full_declared_scope": True,
+        "node_filter": None,
+        "real_loader_ready_requires_full_declared_scope": True,
+        "scenario_filter": None,
+    }
 
 
 def _write_synthetic_per_node_exports(
@@ -2471,6 +2478,55 @@ def test_ev_per_node_manifest_index_records_checksum_mismatch(tmp_path: Path) ->
     assert index["status"] == "blocked_per_node_manifest_index_not_ready_for_agent_a_loader"
     assert index["checksum_mismatch_count"] == 1
     assert index["stale_per_node_units"][0]["blockers"] == ["array_checksum_mismatch"]
+
+
+def test_ev_per_node_manifest_index_blocks_filtered_accepted_scope_for_real_loader(tmp_path: Path) -> None:
+    packet = _write_synthetic_per_node_exports(tmp_path, scenarios=("low",), artifact_status="accepted")
+
+    index = build_ev_per_node_manifest_index(
+        generic_packet=packet,
+        base_dir=tmp_path,
+        generic_packet_path=Path("metadata/generic_packet.json"),
+        output_dir=Path("data/processed/elaad_profiles/component_outputs/per_node"),
+        manifest_dir=Path("metadata/per_node"),
+        index_path=Path("metadata/per_node_index.json"),
+        timestamp_utc="2026-07-24T18:02:00Z",
+        scenario_filter=("low",),
+    )
+
+    assert index["status"] == "blocked_filtered_per_node_manifest_index_not_real_loader_ready"
+    assert index["verified_per_node_unit_count"] == 2
+    assert index["missing_per_node_unit_count"] == 0
+    assert index["ready_for_agent_a_loader_execution"] is False
+    assert index["index_scope"]["filtered_scope"] is True
+    assert index["index_scope"]["full_declared_scope"] is False
+    assert "E3.S2a-FILTERED-INDEX-NOT-REAL-LOADER-READY" in index["remaining_blockers"]
+
+
+def test_ev_per_node_manifest_index_allows_unfiltered_complete_accepted_fixture(tmp_path: Path) -> None:
+    packet = _write_synthetic_per_node_exports(
+        tmp_path,
+        scenarios=("high", "low", "middle"),
+        artifact_status="accepted",
+    )
+
+    index = build_ev_per_node_manifest_index(
+        generic_packet=packet,
+        base_dir=tmp_path,
+        generic_packet_path=Path("metadata/generic_packet.json"),
+        output_dir=Path("data/processed/elaad_profiles/component_outputs/per_node"),
+        manifest_dir=Path("metadata/per_node"),
+        index_path=Path("metadata/per_node_index.json"),
+        timestamp_utc="2026-07-24T18:02:00Z",
+    )
+
+    assert index["status"] == "accepted_per_node_manifest_index_ready_for_agent_a_loader"
+    assert index["expected_per_node_unit_count"] == 6
+    assert index["verified_per_node_unit_count"] == 6
+    assert index["ready_for_agent_a_loader_execution"] is True
+    assert index["ready_for_synthetic_agent_a_loader_fixture"] is False
+    assert index["index_scope"]["filtered_scope"] is False
+    assert index["remaining_blockers"] == []
 
 
 def test_ev_per_node_manifest_index_rejects_duplicate_scenario_and_node_metadata(tmp_path: Path) -> None:

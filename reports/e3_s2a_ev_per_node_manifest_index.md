@@ -10,7 +10,7 @@ The committed preflight at `data/metadata/ev_adoption/e3_s2a_ev_per_node_manifes
 
 ## Guardrails
 
-The builder verifies repository-relative paths, per-node manifest checksums, NPZ checksums, current Agent A single-node 1D loader-contract fields, candidate-only status, and false flags for held-out/quarantined/API/integrated analysis/event/capacity/final-branch/M-sufficiency claims. It rejects unsafe approval/status tokens and stale generic or multi-node paths.
+The builder verifies repository-relative paths, per-node manifest checksums, NPZ checksums, current Agent A single-node 1D loader-contract fields, candidate-only status, and false flags for held-out/quarantined/API/integrated analysis/event/capacity/final-branch/M-sufficiency claims. It rejects unsafe approval/status tokens and stale generic or multi-node paths. Scenario/node filters remain allowed for synthetic fixtures and diagnostics, but a filtered index is never marked real-loader-ready for the first experiment; real readiness requires the full declared 3 x 115 scope.
 
 ## Resume
 

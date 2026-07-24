@@ -2772,6 +2772,13 @@
       "source_multi_node_sha256": "38081c7f849bb679a19560d1a7f7fd6d8428e35ef6cad2087e4d82a46c1e568d"
     }
   ],
+  "index_scope": {
+    "filtered_scope": false,
+    "full_declared_scope": true,
+    "node_filter": null,
+    "real_loader_ready_requires_full_declared_scope": true,
+    "scenario_filter": null
+  },
   "missing_per_node_unit_count": 345,
   "missing_per_node_units": [
     {
