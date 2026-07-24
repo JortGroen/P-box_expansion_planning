@@ -9,6 +9,8 @@ from urllib import parse
 
 D014_PACKET_NAME = "d014_pv_capacity_source_value_packet.json"
 D014_PACKET_ID = "D014-PV-CAPACITY-SOURCE-VALUE-PACKET"
+D014_STATISTICAL_ORIENTATION_TILT_NAME = "d014_pv_statistical_orientation_tilt_packet.json"
+D014_STATISTICAL_ORIENTATION_TILT_ID = "D014-PV-STATISTICAL-ORIENTATION-TILT-PACKET"
 D014_DATA_ID = "D-014"
 CBS_TABLE_ID = "85005NED"
 CBS_ODATA_BASE = f"https://opendata.cbs.nl/ODataApi/OData/{CBS_TABLE_ID}"
@@ -21,6 +23,8 @@ II3050_REPORT_URL = "https://www.netbeheernederland.nl/publicatie/ii3050-eindrap
 II3050_APPENDICES_URL = "https://www.netbeheernederland.nl/publicatie/bijlagen-ii3050-eindrapport"
 THREEDBAG_API_DOCS_URL = "https://api.3dbag.nl/api.html"
 THREEDBAG_COPYRIGHT_URL = "https://docs.3dbag.nl/en/copyright/"
+PVGIS_API_DOCS_URL = "https://joint-research-centre.ec.europa.eu/photovoltaic-geographical-information-system-pvgis/using-pvgis-5/api-non-interactive-service_en"
+PVLIB_MODELCHAIN_URL = "https://pvlib-python.readthedocs.io/en/stable/user_guide/modeling_topics/modelchain.html"
 ALKMAAR_GM_CODE = "GM0361"
 PLANNING_YEAR = 2035
 
@@ -232,6 +236,141 @@ def build_d014_pv_capacity_source_value_packet() -> dict[str, Any]:
     }
 
 
+def build_d014_pv_statistical_orientation_tilt_packet() -> dict[str, Any]:
+    """Return a proposed lightweight orientation/tilt workflow packet.
+
+    The first real experiment should not require per-building roof extraction.
+    This packet proposes a statistical class route that remains fail-closed
+    until its source, class definitions, weights, and conversion model are signed.
+    """
+    approval_keys = [
+        "statistical_orientation_tilt_source",
+        "orientation_class_bins",
+        "tilt_class_bins",
+        "class_weight_values",
+        "capacity_weighting_convention",
+        "dc_ac_capacity_convention",
+        "pv_conversion_formula_or_pvlib_route",
+        "losses_temperature_clipping_parameters",
+        "pvgis_or_other_sanity_criteria",
+        "d014_capacity_value_artifact",
+        "node_allocation_rule",
+    ]
+    return {
+        "packet_id": D014_STATISTICAL_ORIENTATION_TILT_ID,
+        "data_id": D014_DATA_ID,
+        "created_utc": _now_utc_iso(),
+        "status": "proposed_statistical_orientation_tilt_packet_no_raw_download_no_executable_values",
+        "download_performed": False,
+        "raw_data_committed": False,
+        "first_experiment_scope": {
+            "statistical_orientation_tilt_classes_only": True,
+            "building_or_roof_level_extraction_in_scope": False,
+            "specific_3dbag_per_roof_workflow_in_first_experiment": False,
+            "future_improvement": "A later sensitivity may use 3DBAG or similar roof-plane extraction after explicit PI approval, retrieval/checksum registration, and a longer-run plan.",
+        },
+        "governing_boundaries": {
+            "capacity_route": "PV-CAP-001 remains separate: CBS Alkmaar PV-capacity anchor scaled to 2035 with signed II3050/scenario growth factor.",
+            "capacity_values": "No numeric D-014 capacity, growth factor, DC/AC convention, or node allocation is approved here.",
+            "conversion_parameters": "PV-PARAM-001 remains proposed/fail-closed; PR=0.86/direct-GHI is not approved by this packet.",
+            "weather_route": "WEATHER-001 and D004-SOURCE-MEMBER-ACCEPTANCE provide the realized KNMI weather members; PVGIS remains sanity/provenance only.",
+        },
+        "source_route_comparison": [
+            {
+                "source_id": "pvgis_reference_or_literature_class_template",
+                "role": "candidate source for typical/statistical orientation and tilt class definitions or sanity checks",
+                "url": PVGIS_API_DOCS_URL,
+                "can_support": [
+                    "reference PV geometry/configuration context",
+                    "qualitative seasonal and peak sanity checks after class weights are signed",
+                ],
+                "cannot_support": [
+                    "realized WEATHER-001 path",
+                    "installed capacity total",
+                    "Alkmaar building-level orientation distribution without another signed source",
+                ],
+            },
+            {
+                "source_id": "pvlib_or_equivalent_conversion_route",
+                "role": "candidate future implementation route for class-based plane-of-array conversion if approved",
+                "url": PVLIB_MODELCHAIN_URL,
+                "can_support": [
+                    "transparent class-wise conversion once tilt, azimuth, losses, and weather inputs are signed",
+                    "replacement for the disputed direct-GHI/PR proposal if the PI chooses it",
+                ],
+                "cannot_support": [
+                    "source data or class weights",
+                    "installed capacity or node allocation",
+                ],
+            },
+            {
+                "source_id": "cbs_85005ned_and_ii3050_capacity_route",
+                "role": "capacity total and 2035 scaling route only, not geometry",
+                "url": CBS_ODATA_BASE,
+                "can_support": [
+                    "local Alkmaar capacity anchor and diagnostic installation counts after D-014 retrieval/value approval",
+                    "capacity to distribute across signed statistical classes",
+                ],
+                "cannot_support": [
+                    "orientation or tilt class weights",
+                    "PV conversion performance parameters",
+                ],
+            },
+            {
+                "source_id": "3dbag_deferred_roof_geometry",
+                "role": "future improvement only, not first-experiment input",
+                "url": THREEDBAG_API_DOCS_URL,
+                "can_support": [
+                    "later roof-plane sensitivity or validation if PI approves a heavier workflow",
+                ],
+                "cannot_support": [
+                    "first real experiment orientation/tilt extraction",
+                    "installed PV capacity total or conversion parameters by itself",
+                ],
+            },
+        ],
+        "proposed_artifact_interface": {
+            "artifact_id": "d014_pv_statistical_orientation_tilt_config",
+            "executable_allowed_now": False,
+            "required_fields_before_executable_use": [
+                "approval_status",
+                "approval_ids",
+                "class_table",
+                "orientation_basis_degrees",
+                "tilt_basis_degrees",
+                "class_weight_basis",
+                "weights_sum_to_one",
+                "installed_capacity_kw_input_reference",
+                "capacity_convention",
+                "pv_conversion_config_id",
+                "source_provenance",
+            ],
+            "class_table_required_columns": [
+                "class_id",
+                "azimuth_degrees_from_south_or_declared_basis",
+                "tilt_degrees",
+                "capacity_weight_fraction",
+                "source_or_assumption_id",
+            ],
+            "approval_keys_required_before_executable_use": approval_keys,
+        },
+        "pi_approval_keys_before_executable_use": approval_keys,
+        "pi_questions": [
+            "Which source should define the statistical orientation/tilt class bins and weights for the first experiment?",
+            "Should class weights be capacity-weighted, installation-count-weighted, or area-weighted?",
+            "Should PV-PARAM-001 be amended from direct GHI to a class-wise plane-of-array route before first executable PV use?",
+            "Can node allocation be deferred to a simple signed capacity-allocation rule separate from orientation/tilt classes?",
+        ],
+        "non_claims": [
+            "No statistical class bins or weights are approved.",
+            "No 3DBAG, building-level, roof-level, or location-level geometry extraction is implemented for the first experiment.",
+            "No raw D-014 capacity, PV-map, or geometry data was downloaded.",
+            "No numeric PV capacity, capacity convention, per-node allocation, PR=0.86, or final conversion formula is approved.",
+            "No net-load, event detection, P(E), threshold run, capacity screen, manuscript result, or final paired HP/PV acceptance is produced.",
+        ],
+    }
+
+
 def write_d014_pv_capacity_source_value_packet(metadata_dir: str | Path = "data/metadata") -> Path:
     """Write the proposed D-014 source/value packet and return its path."""
     directory = Path(metadata_dir) / "weather_pv"
@@ -241,13 +380,29 @@ def write_d014_pv_capacity_source_value_packet(metadata_dir: str | Path = "data/
     return path
 
 
+def write_d014_pv_statistical_orientation_tilt_packet(metadata_dir: str | Path = "data/metadata") -> Path:
+    """Write the proposed statistical orientation/tilt packet and return its path."""
+    directory = Path(metadata_dir) / "weather_pv"
+    directory.mkdir(parents=True, exist_ok=True)
+    path = directory / D014_STATISTICAL_ORIENTATION_TILT_NAME
+    path.write_text(
+        json.dumps(build_d014_pv_statistical_orientation_tilt_packet(), indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    return path
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Prepare D-014 PV capacity source/value metadata.")
     parser.add_argument("--metadata-dir", default="data/metadata")
     parser.add_argument("--write-d014-source-value-packet", action="store_true")
+    parser.add_argument("--write-d014-statistical-orientation-tilt", action="store_true")
     args = parser.parse_args(argv)
 
-    path = write_d014_pv_capacity_source_value_packet(args.metadata_dir)
+    if args.write_d014_statistical_orientation_tilt:
+        path = write_d014_pv_statistical_orientation_tilt_packet(args.metadata_dir)
+    else:
+        path = write_d014_pv_capacity_source_value_packet(args.metadata_dir)
     print(path)
     return 0
 
