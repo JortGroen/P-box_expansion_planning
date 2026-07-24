@@ -715,6 +715,19 @@ acceptance tolerance is fixed before the adequacy results are inspected and
 is tied to transformer-result or reinforcement-decision stability rather than
 to an isolated EV-profile percentile.
 
+The E3.S2a EV held-out adequacy preflight scaffold automates the current
+fail-closed boundary before any held-out use. It consumes the accepted EV IC-1
+artifact index and the unsigned EV downstream adequacy criterion packet, records
+the source metadata checksums and candidate output checksum expectations, and
+emits a blocker manifest rather than opening held-out or quarantined batches.
+The manifest explicitly blocks execution until the downstream aggregate
+criterion is PI-signed, Agent A's IC-1 assembly is accepted, held-out access is
+invoked under that signed route, A-016 scenario consistency is resolved, the
+final low/middle/high branch is selected or kept explicitly branched in a signed
+run design, and candidate output files are verified in the consuming worktree.
+It loads no profile arrays, runs no net-load/event/`P(E)` analysis, certifies no
+`M` sufficiency, and produces no manuscript number.
+
 <!-- methods-id: EV-005A -->
 ### EV-005A - Low-Cost Held-Out Replacement
 
