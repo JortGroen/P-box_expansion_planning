@@ -34,6 +34,8 @@ D014_PV_FIRST_EXPERIMENT_APPROVAL_NAME = "d014_pv_first_experiment_approval_pack
 D014_PV_FIRST_EXPERIMENT_APPROVAL_ID = "D014-PV-FIRST-EXPERIMENT-APPROVAL-PACKET"
 D014_PV_FIRST_EXPERIMENT_VALUE_DECISION_NAME = "d014_pv_first_experiment_value_decision_packet.json"
 D014_PV_FIRST_EXPERIMENT_VALUE_DECISION_ID = "D014-PV-FIRST-EXPERIMENT-VALUE-DECISION-PACKET"
+D014_PV_FIRST_EXPERIMENT_VALUE_APPROVAL_NAME = "d014_pv_first_experiment_value_approval_packet.json"
+D014_PV_FIRST_EXPERIMENT_VALUE_APPROVAL_ID = "D014-PV-FIRST-EXPERIMENT-VALUE-APPROVAL-PACKET"
 D014_PV_COMPONENT_OUTPUT_ARTIFACT_SCAFFOLD_NAME = "d014_pv_component_output_artifact_scaffold.json"
 D014_PV_COMPONENT_OUTPUT_ARTIFACT_SCAFFOLD_ID = "D014-PV-COMPONENT-OUTPUT-ARTIFACT-SCAFFOLD"
 D014_DATA_ID = "D-014"
@@ -1973,6 +1975,151 @@ def build_d014_pv_first_experiment_value_decision_packet(
     }
 
 
+
+def build_d014_pv_first_experiment_value_approval_packet(
+    *,
+    value_decision_packet_path: str | Path = "data/metadata/weather_pv/d014_pv_first_experiment_value_decision_packet.json",
+    capacity_value_choice_path: str | Path = "data/metadata/weather_pv/d014_pv_capacity_value_choice_packet.json",
+    capacity_approval_template_path: str | Path = "data/metadata/weather_pv/d014_pv_capacity_approval_template.json",
+    orientation_value_choice_path: str | Path = "data/metadata/weather_pv/d014_pv_orientation_tilt_value_choice_packet.json",
+    conversion_source_choice_path: str | Path = "data/metadata/weather_pv/d014_pv_param_conversion_source_choice_packet.json",
+    component_output_scaffold_path: str | Path = "data/metadata/weather_pv/d014_pv_component_output_artifact_scaffold.json",
+) -> dict[str, Any]:
+    """Return the compact PI-facing first-experiment PV value-approval packet."""
+    value_decision = _metadata_input_record(value_decision_packet_path, D014_PV_FIRST_EXPERIMENT_VALUE_DECISION_ID)
+    capacity_choice = _metadata_input_record(capacity_value_choice_path, D014_CAPACITY_VALUE_CHOICE_ID)
+    capacity_template = _metadata_input_record(capacity_approval_template_path, D014_CAPACITY_APPROVAL_TEMPLATE_ID)
+    orientation_values = _metadata_input_record(orientation_value_choice_path, D014_ORIENTATION_TILT_VALUE_CHOICE_ID)
+    conversion_choice = _metadata_input_record(conversion_source_choice_path, D014_PV_PARAM_CONVERSION_SOURCE_CHOICE_ID)
+    component_scaffold = _metadata_input_record(component_output_scaffold_path, D014_PV_COMPONENT_OUTPUT_ARTIFACT_SCAFFOLD_ID)
+    required_signed_artifacts = [
+        "signed_d014_capacity_artifact",
+        "signed_cbs_anchor_row_period_sector_field_and_value",
+        "signed_ii3050_scenario_column_denominator_formula_and_growth_factor",
+        "signed_a016_ev_hp_pv_scenario_consistency_mapping",
+        "signed_capacity_unit_dc_ac_convention_and_pv_param_capacity_binding",
+        "signed_statistical_orientation_tilt_source_and_value_artifact",
+        "signed_orientation_tilt_bins_angles_weights_and_weight_basis",
+        "signed_pv_param_conversion_formula_or_amendment",
+        "signed_pv_param_loss_temperature_clipping_treatment",
+        "signed_pvgis_qualitative_sanity_boundary_or_tolerance",
+        "signed_node_allocation_rule_and_normalization_denominator",
+        "signed_pv_reactive_power_policy_or_q_zero_convention",
+        "signed_component_output_manifest_path_policy",
+        "signed_final_paired_hp_pv_acceptance_artifact",
+    ]
+    return {
+        "packet_id": D014_PV_FIRST_EXPERIMENT_VALUE_APPROVAL_ID,
+        "data_id": D014_DATA_ID,
+        "created_utc": _now_utc_iso(),
+        "status": "proposed_first_experiment_pv_value_approval_packet_no_executable_values",
+        "download_performed": False,
+        "raw_data_committed": False,
+        "real_pv_generation_performed": False,
+        "input_metadata": {
+            "value_decision_packet": value_decision,
+            "capacity_value_choice_packet": capacity_choice,
+            "capacity_approval_template": capacity_template,
+            "orientation_tilt_value_choice_packet": orientation_values,
+            "pv_param_conversion_source_choice_packet": conversion_choice,
+            "component_output_artifact_scaffold": component_scaffold,
+        },
+        "pi_value_choices_for_signature": {
+            "alkmaar_capacity_anchor": {
+                "recommended_choice_status": "proposed_unsigned_not_executable",
+                "source_table": "CBS 85005NED",
+                "geography_key": ALKMAAR_GM_CODE,
+                "recommended_period_key": "2019JJ00",
+                "recommended_sector_key": "E007161",
+                "recommended_sector_label": "Alle economische activiteit en woningen",
+                "recommended_capacity_field_key": "OpgesteldVermogenVanZonnepanelen_2",
+                "recommended_capacity_field_label": "panel/DC capacity in kWp",
+                "recommended_capacity_convention": "installed_capacity_kwp_dc supplied to PV-PARAM only after signed capacity binding",
+                "why_this_is_concise_first_choice": "matches the II3050 2019 reference denominator candidate recorded in the source evidence; latest 2023 CBS rows remain a sensitivity unless a 2023-to-2035 crosswalk is signed",
+                "alternatives_for_pi": [
+                    "2023JJ00 E007161 latest definitive all-activity row with signed 2023-to-2035 growth crosswalk",
+                    "E007037 homes-only sensitivity if PV is restricted to residential nodes",
+                    "OpgesteldVermogenOmvormers_3 inverter/AC field only if PI signs AC/grid-facing capacity convention",
+                ],
+            },
+            "ii3050_growth_and_scenario_link": {
+                "source_artifact": "D014-II3050-PV-GROWTH-EVIDENCE",
+                "source_publication": "Netbeheer Nederland Bijlagen II3050 eindrapport",
+                "source_table_candidate": "Table A.1 / Zon PV scenario evidence as recorded in D014-II3050-PV-GROWTH-EVIDENCE",
+                "planning_year": PLANNING_YEAR,
+                "scenario_column_candidates": ["2035 KA", "2035 ND", "2035 IA"],
+                "recommended_denominator_candidate": "2019 reference Zon PV national value from the same II3050 evidence packet",
+                "a016_consistency_note": "PI must sign how the selected II3050 scenario column maps to EV and HP scenario/source lineage under A-016; shared low/middle/high labels must not be assumed equivalent",
+            },
+            "statistical_orientation_tilt": {
+                "scope_decision": "PV-ORIENT-001",
+                "first_experiment_scope": "typical/statistical orientation-and-tilt distribution only",
+                "recommended_path": "sign a source-backed statistical distribution if extractable; otherwise explicitly sign the assumption-only five-class prior as a first-screen fallback",
+                "blocked_geometry": ["per-building", "per-roof", "PV-map", "3DBAG", "location-specific geometry"],
+                "must_sign_before_executable_use": [
+                    "source or assumption id",
+                    "azimuth and tilt conventions",
+                    "class bins",
+                    "representative angles",
+                    "weights",
+                    "capacity-weighting convention",
+                    "class-wise conversion treatment",
+                ],
+            },
+            "pv_conversion": {
+                "preferred_candidate": "signed statistical orientation/tilt plane-of-array route using the WEATHER-001 KNMI realized GHI path",
+                "safer_immediate_fallback": "direct KNMI-GHI scalar conversion only if PI explicitly signs it as a first-screen simplification with loss, temperature, and clipping treatment",
+                "pvgis_role": "PVGIS-SARAH3 remains qualitative sanity/provenance/calibration context only, not a realized sampled weather path",
+                "knmi_role": "KNMI station/weather-member GHI and temperature remain the realized WEATHER-001 path consumed by PV and HP pairing",
+            },
+            "reactive_power_and_manifest_policy": {
+                "reactive_power_choice": "sign either q_kvar = 0 for first experiment or another PV reactive-power policy before component-output use",
+                "manifest_path_policy": "component-output array and manifest paths must be non-empty repository-relative paths with no absolute/rooted path and no '..' segments",
+                "checksum_policy": "future PV component-output arrays require SHA-256 in the manifest and must be skipped only when the checksum matches",
+            },
+            "node_allocation": {
+                "status": "explicitly_gated_unsigned",
+                "required_choice": "sign eligible PV nodes, allocation weights, and normalization denominator before node-level PV output",
+                "candidate_routes": [
+                    "single aggregate PV fleet if IC-1 accepts aggregate PV component input",
+                    "simple node-share allocation using a signed existing network/load denominator",
+                    "post-first-experiment spatial refinement only after new source and scope approval",
+                ],
+            },
+        },
+        "machine_readable_fail_closed_gate": {
+            "executable_pv_generation_authorized": False,
+            "real_pv_arrays_written": False,
+            "real_component_output_manifest_written": False,
+            "result_if_invoked_before_required_signatures": "return_value_approval_blocker_manifest_no_arrays",
+            "blocker_manifest_required_fields": [
+                "packet_id",
+                "status",
+                "blocked_by",
+                "missing_signed_artifacts",
+                "input_metadata",
+                "non_claims",
+            ],
+            "blocking_register_ids": [
+                "D014-PV-CAPACITY-APPROVAL-TEMPLATE_successor",
+                "PV-ORIENT-001_values",
+                "PV-PARAM-001_or_signed_amendment",
+                "A-016",
+                "future_node_allocation_rule",
+                "FINAL-PAIRED-HP-PV-ACCEPTANCE",
+                "future_pv_reactive_power_policy",
+                "signed_component_output_manifest_path_policy",
+            ],
+        },
+        "required_signed_artifacts_before_executable_pv": required_signed_artifacts,
+        "non_claims": [
+            "No PV capacity value, II3050 growth factor, scenario column, capacity convention, orientation/tilt bin, orientation/tilt weight, conversion formula, loss value, temperature coefficient, clipping rule, reactive-power policy, node allocation, or component-output path policy is approved.",
+            "No real PV generation, component-output array, net-load, event detection, P(E), threshold run, capacity screen, manuscript result, or final paired HP/PV acceptance is produced.",
+            "No building, roof, location-level, 3DBAG, PV-map, or per-roof geometry workflow is implemented before the first experiment.",
+            "PVGIS remains qualitative sanity/provenance context only and is not a realized sampled WEATHER-001 path.",
+        ],
+    }
+
 def build_d014_pv_component_output_artifact_scaffold_packet(
     *,
     value_decision_packet_path: str | Path = "data/metadata/weather_pv/d014_pv_first_experiment_value_decision_packet.json",
@@ -2168,6 +2315,18 @@ def write_d014_pv_first_experiment_value_decision_packet(metadata_dir: str | Pat
     return path
 
 
+
+def write_d014_pv_first_experiment_value_approval_packet(metadata_dir: str | Path = "data/metadata") -> Path:
+    """Write the proposed first-experiment PV value-approval packet and return its path."""
+    directory = Path(metadata_dir) / "weather_pv"
+    directory.mkdir(parents=True, exist_ok=True)
+    path = directory / D014_PV_FIRST_EXPERIMENT_VALUE_APPROVAL_NAME
+    path.write_text(
+        json.dumps(build_d014_pv_first_experiment_value_approval_packet(), indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    return path
+
 def write_d014_pv_component_output_artifact_scaffold_packet(metadata_dir: str | Path = "data/metadata") -> Path:
     """Write the proposed PV component-output artifact scaffold packet and return its path."""
     directory = Path(metadata_dir) / "weather_pv"
@@ -2192,6 +2351,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--write-d014-pv-param-conversion-source-choice", action="store_true")
     parser.add_argument("--write-d014-pv-first-experiment-approval", action="store_true")
     parser.add_argument("--write-d014-pv-first-experiment-value-decision", action="store_true")
+    parser.add_argument("--write-d014-pv-first-experiment-value-approval", action="store_true")
     parser.add_argument("--write-d014-pv-component-output-artifact-scaffold", action="store_true")
     parser.add_argument("--retrieve-d014-cbs-anchor-evidence", action="store_true")
     parser.add_argument("--retrieve-d014-ii3050-growth-evidence", action="store_true")
@@ -2209,6 +2369,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         path = retrieve_d014_ii3050_growth_evidence(metadata_dir=args.metadata_dir)
     elif args.retrieve_d014_cbs_anchor_evidence:
         path = retrieve_d014_cbs_capacity_anchor_evidence(metadata_dir=args.metadata_dir)
+    elif args.write_d014_pv_first_experiment_value_approval:
+        path = write_d014_pv_first_experiment_value_approval_packet(args.metadata_dir)
     elif args.write_d014_pv_component_output_artifact_scaffold:
         path = write_d014_pv_component_output_artifact_scaffold_packet(args.metadata_dir)
     elif args.write_d014_pv_first_experiment_value_decision:

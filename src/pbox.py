@@ -192,6 +192,37 @@ def assert_nested(pbox_family: PBoxFamily, *, tolerance: float = 0.0) -> None:
             )
 
 
+def probability_estimate_from_counts(
+    successes: int,
+    sample_count: int,
+    *,
+    confidence_level: float = 0.95,
+) -> ProbabilityEstimate:
+    """Return the project-standard binomial estimate from event counts."""
+
+    if sample_count <= 0:
+        raise ValueError("sample_count must be positive")
+    if not 0 <= successes <= sample_count:
+        raise ValueError("successes must be between 0 and sample_count")
+    if not 0.0 < confidence_level < 1.0:
+        raise ValueError("confidence_level must be in (0, 1)")
+    probability = successes / sample_count
+    ci_lower, ci_upper = _wilson_interval(
+        successes,
+        sample_count,
+        confidence_level=confidence_level,
+    )
+    # Roundoff at zero/one counts must not make a serialized CI fail the
+    # invariant that it contains the count-derived probability.
+    return ProbabilityEstimate(
+        probability=probability,
+        ci_lower=min(ci_lower, probability),
+        ci_upper=max(ci_upper, probability),
+        successes=successes,
+        sample_count=sample_count,
+    )
+
+
 def _estimate_probability(
     rho: float,
     sample_seeds: Sequence[int],
@@ -199,18 +230,10 @@ def _estimate_probability(
     confidence_level: float,
 ) -> ProbabilityEstimate:
     successes = sum(1 for seed in sample_seeds if evaluator(rho, seed))
-    probability = successes / len(sample_seeds)
-    ci_lower, ci_upper = _wilson_interval(
+    return probability_estimate_from_counts(
         successes,
         len(sample_seeds),
         confidence_level=confidence_level,
-    )
-    return ProbabilityEstimate(
-        probability=probability,
-        ci_lower=ci_lower,
-        ci_upper=ci_upper,
-        successes=successes,
-        sample_count=len(sample_seeds),
     )
 
 
