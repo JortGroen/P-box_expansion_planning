@@ -26,6 +26,23 @@ G2 values, authorize G3, or produce manuscript numbers.
   serializer; future decision presentation should pass through the guarded
   p-box reporting boundary.
 
+## Output-Error Readiness Manifest
+
+The B-owned guard layer now also exposes an `output-error-paper-readiness-v1`
+blocker manifest. This is not a result manifest and contains no probability
+number. It records the intended result surface, the current final-result
+prerequisite snapshot, a G1-A2 output-error checklist, and a recomputed blocker
+list for the exact items that must be signed or manifested before paper-facing
+output-error p-box reporting is allowed.
+
+The checklist is intentionally fail-closed. It requires the G1-A2 endpoint
+composition formula, loading-endpoint-before-event semantics, forbidden
+probability widening, forbidden independent error sampling, A-013 approval or
+blocker ID, G2 Tier-1 endpoint approval or blocker ID, capacity-convention
+linkage, capacity-denominator provenance, and endpoint records. Serialized
+payload validation recomputes `ready_for_paper` from those fields and rejects
+collapsed probability fields such as `probability` or `defuzzified_probability`.
+
 ## Gates Still Blocking Paper-Facing Outputs
 
 - G2 is pending: no approved Tier-1 endpoint values or adequacy verdict exist.
