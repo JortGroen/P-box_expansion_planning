@@ -1,0 +1,93 @@
+{
+  "data_id": "D-014",
+  "download_performed": false,
+  "executable_gate": {
+    "blocking_register_ids": [
+      "D014-PV-CAPACITY-APPROVAL-TEMPLATE",
+      "A-016",
+      "PV-ORIENT-001",
+      "PV-PARAM-001",
+      "future_node_allocation_rule",
+      "future_final_paired_acceptance"
+    ],
+    "component_source_member_artifact_available": true,
+    "executable_pv_generation_authorized": false,
+    "guard_message": "PV/weather component inputs have accepted weather members, but executable 2035 PV generation remains blocked until capacity, scenario, orientation, allocation, and conversion decisions are signed."
+  },
+  "input_metadata": {
+    "capacity_approval_template": {
+      "packet_id": "D014-PV-CAPACITY-APPROVAL-TEMPLATE",
+      "path": "data/metadata/weather_pv/d014_pv_capacity_approval_template.json",
+      "sha256": "f4124256525f9004d4a12dce5150bc9ad73935661586884f1ff781073a07a6f7",
+      "size_bytes": 5042,
+      "status": "proposed_signed_capacity_artifact_template_no_values"
+    },
+    "orientation_tilt_value_choice": {
+      "packet_id": "D014-PV-ORIENTATION-TILT-VALUE-CHOICE-PACKET",
+      "path": "data/metadata/weather_pv/d014_pv_orientation_tilt_value_choice_packet.json",
+      "sha256": "7d786ce0978c09cdaad2c24b339f0b84d94eb4f13c2c1333202b8223bfd86ba4",
+      "size_bytes": 7734,
+      "status": "proposed_value_choice_packet_no_raw_download_no_executable_values"
+    },
+    "pv_parameter_packet": {
+      "packet_id": null,
+      "path": "data/metadata/weather_pv/d004_pv_parameter_decision_packet.json",
+      "sha256": "b6cac5e40f0466be7df3e6dd5dede11814f6b53b597c252d1b18dbc0426db090",
+      "size_bytes": 10661,
+      "status": "proposed_pending_pi_signoff"
+    },
+    "weather_input_artifact": {
+      "packet_id": "d004_alkmaar_berkhout_2014_2023_v1",
+      "path": "data/metadata/weather_pv/d004_alkmaar_berkhout_2014_2023_v1_weather_input_artifact.json",
+      "sha256": "d56a0d3945b19c0e6e97368e737f13b2825bac50fe5c799688f4e0442a7b71d1",
+      "size_bytes": 18208,
+      "status": "accepted_for_source_member_readiness_final_paired_cold_spell_pending"
+    }
+  },
+  "non_claims": [
+    "No final PV capacity value, growth factor, orientation/tilt distribution, allocation, or conversion formula is approved.",
+    "No PV generation, net-load, event detection, P(E), threshold analysis, capacity screen, manuscript result, or final PV output is produced.",
+    "No roof, building, 3DBAG, or PV-map geometry source is retrieved or used for the first experiment."
+  ],
+  "packet_id": "D014-PV-EXECUTABLE-READINESS-BLOCKERS",
+  "raw_data_committed": false,
+  "readiness_layers": {
+    "capacity_value": {
+      "blocked_by": "PI-signed capacity artifact missing",
+      "decision_id": "D014-PV-CAPACITY-APPROVAL-TEMPLATE",
+      "ready": false
+    },
+    "final_paired_hp_pv_and_cold_spell_acceptance": {
+      "blocked_by": "paired HP/PV validation and HP cold-spell tolerance decisions remain guarded",
+      "decision_id": "future_final_paired_acceptance",
+      "ready": false
+    },
+    "node_allocation": {
+      "blocked_by": "per-node PV allocation rule and provenance unsigned",
+      "decision_id": "future_node_allocation_rule",
+      "ready": false
+    },
+    "orientation_tilt_distribution": {
+      "blocked_by": "statistical source, bins, weights, and conversion treatment unsigned",
+      "decision_id": "PV-ORIENT-001",
+      "ready": false
+    },
+    "pv_conversion_parameters": {
+      "blocked_by": "PV-PARAM conversion treatment not signed",
+      "decision_id": "PV-PARAM-001_or_signed_amendment",
+      "ready": false
+    },
+    "scenario_consistency": {
+      "blocked_by": "EV/HP/PV scenario label mapping not signed",
+      "decision_id": "A-016",
+      "ready": false
+    },
+    "weather_source_member": {
+      "component_source_member_ready": true,
+      "decision_id": "D004-SOURCE-MEMBER-ACCEPTANCE",
+      "pvgis_role": "qualitative sanity/provenance only",
+      "realized_weather_path": "KNMI station 249 Berkhout WEATHER-001 members"
+    }
+  },
+  "status": "proposed_fail_closed_executable_pv_readiness_blockers"
+}

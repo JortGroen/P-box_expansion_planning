@@ -1395,3 +1395,32 @@ def test_hp001_component_output_readiness_blocker_packet_is_not_executable(tmp_p
     payload = json.loads(path.read_text(encoding="utf-8"))
     assert path.name == "hp001_component_output_readiness_blocker_packet.json"
     assert payload["validator"] == "src.hp_model.require_hp001_component_output_readiness_manifest"
+
+
+def test_d014_pv_executable_readiness_blockers_keep_generation_blocked() -> None:
+    packet = pv_capacity.build_d014_pv_executable_readiness_blockers_packet()
+
+    assert packet["packet_id"] == "D014-PV-EXECUTABLE-READINESS-BLOCKERS"
+    assert packet["status"] == "proposed_fail_closed_executable_pv_readiness_blockers"
+    assert packet["input_metadata"]["capacity_approval_template"]["packet_id"] == "D014-PV-CAPACITY-APPROVAL-TEMPLATE"
+    assert packet["input_metadata"]["orientation_tilt_value_choice"]["packet_id"] == "D014-PV-ORIENTATION-TILT-VALUE-CHOICE-PACKET"
+    assert packet["readiness_layers"]["weather_source_member"]["component_source_member_ready"] is True
+    assert packet["readiness_layers"]["capacity_value"]["ready"] is False
+    assert packet["readiness_layers"]["scenario_consistency"]["decision_id"] == "A-016"
+    assert packet["executable_gate"]["executable_pv_generation_authorized"] is False
+    assert "PV-PARAM-001" in packet["executable_gate"]["blocking_register_ids"]
+    assert any("No PV generation" in item for item in packet["non_claims"])
+
+
+def test_committed_d014_pv_executable_readiness_blockers_record_inputs() -> None:
+    payload = json.loads(
+        Path("data/metadata/weather_pv/d014_pv_executable_readiness_blockers.json").read_text(
+            encoding="utf-8"
+        )
+    )
+
+    assert payload["packet_id"] == "D014-PV-EXECUTABLE-READINESS-BLOCKERS"
+    assert payload["executable_gate"]["component_source_member_artifact_available"] is True
+    assert payload["executable_gate"]["executable_pv_generation_authorized"] is False
+    assert len(payload["input_metadata"]["weather_input_artifact"]["sha256"]) == 64
+    assert len(payload["input_metadata"]["pv_parameter_packet"]["sha256"]) == 64

@@ -47,6 +47,7 @@ from src.ev_model import (
     ev_ic1_candidate_member_reference_artifact,
     ev_ic1_component_input_scaffold_artifact,
     ev_ic1_component_output_consumption_packet,
+    ev_ic1_accepted_artifact_index_preflight,
     ev_candidate_profile_checksum_preflight_artifact,
     materialize_ev_ic1_candidate_component_outputs,
     ev_library_integration_artifact_from_manifest,
@@ -1353,6 +1354,100 @@ def test_ev_component_output_consumption_packet_rejects_unsafe_policy() -> None:
 
     with pytest.raises(ValueError, match="held-out access"):
         ev_ic1_component_output_consumption_packet(scaffold, broken)
+
+
+def _committed_ev_accepted_index_inputs() -> tuple[dict[str, object], dict[str, object], str, str]:
+    base = Path("data/metadata/ev_adoption")
+    consumption_path = base / "e2_s2_ev_ic1_component_output_consumption_packet.json"
+    adoption_path = base / "e2_s6_a014_alkmaar_executable_adoption_artifact.json"
+    return (
+        json.loads(consumption_path.read_text(encoding="utf-8")),
+        json.loads(adoption_path.read_text(encoding="utf-8")),
+        _git_blob_sha256(consumption_path),
+        _git_blob_sha256(adoption_path),
+    )
+
+
+def test_committed_ev_ic1_accepted_artifact_index_preflight_matches_builder() -> None:
+    consumption, adoption, consumption_sha, adoption_sha = _committed_ev_accepted_index_inputs()
+
+    expected = ev_ic1_accepted_artifact_index_preflight(
+        consumption,
+        adoption,
+        consumption_packet_sha256=consumption_sha,
+        adoption_artifact_sha256=adoption_sha,
+    )
+    committed = json.loads(
+        Path(
+            "data/metadata/ev_adoption/e2_s2_ev_ic1_accepted_artifact_index_preflight.json"
+        ).read_text(encoding="utf-8")
+    )
+
+    assert committed == expected
+    assert committed["artifact_type"] == "ev_ic1_accepted_artifact_index_preflight"
+    assert committed["status"] == "accepted_ev_metadata_index_for_agent_a_preflight_blocked_for_integrated_results"
+    assert committed["source_artifacts"]["component_output_consumption_packet_sha256"] == consumption_sha
+    assert committed["source_artifacts"]["a014_executable_adoption_artifact_sha256"] == adoption_sha
+    assert {row["scenario"] for row in committed["scenario_index"]} == {"low", "middle", "high"}
+    assert committed["node_axis"]["node_count"] == 115
+    assert committed["accepted_for_agent_a_preflight"] == {
+        "metadata_index_may_be_consumed": True,
+        "agent_a_must_verify_this_index_sha256": True,
+        "agent_a_must_verify_source_artifact_sha256s": True,
+        "agent_a_must_verify_each_output_npz_sha256_before_loading": True,
+        "scenario_branch_must_be_explicit": True,
+        "reject_unknown_scenario_branch": True,
+        "paper_facing_integrated_use_allowed": False,
+    }
+    blocker_ids = {row["blocker_id"] for row in committed["remaining_blockers"]}
+    assert blocker_ids == {
+        "E3.S2a-EV-HELD-OUT-ADEQUACY-NOT-RUN",
+        "EV-005-M-SUFFICIENCY-NOT-CERTIFIED",
+        "G5-FINAL-LOW-MIDDLE-HIGH-BRANCH-NOT-SELECTED",
+        "IC-1-INTEGRATED-NET-LOAD-ASSEMBLY-NOT-RUN",
+        "A-016-CROSS-COMPONENT-SCENARIO-CONSISTENCY-NOT-YET-CHECKED",
+    }
+    assert committed["policy"] == {
+        "candidate_libraries_only": True,
+        "held_out_access": False,
+        "quarantined_access": False,
+        "profile_arrays_loaded_in_this_index": False,
+        "integrated_analysis_performed": False,
+        "event_or_p_e_analysis_performed": False,
+        "capacity_screen_performed": False,
+        "final_low_middle_high_branch_selected": False,
+        "m_sufficiency_claimed": False,
+        "manuscript_numbers_produced": False,
+        "fail_closed_on_unresolved_blockers": True,
+    }
+
+
+def test_ev_ic1_accepted_artifact_index_rejects_scenario_mismatch() -> None:
+    consumption, adoption, _consumption_sha, _adoption_sha = _committed_ev_accepted_index_inputs()
+    broken = json.loads(json.dumps(adoption))
+    broken["scenario_allocations"] = broken["scenario_allocations"][:-1]
+
+    with pytest.raises(ValueError, match="identical low/middle/high scenario coverage"):
+        ev_ic1_accepted_artifact_index_preflight(consumption, broken)
+
+
+def test_ev_ic1_accepted_artifact_index_rejects_unsafe_policy() -> None:
+    consumption, adoption, _consumption_sha, _adoption_sha = _committed_ev_accepted_index_inputs()
+    broken = json.loads(json.dumps(consumption))
+    broken["policy"]["m_sufficiency_claimed"] = True
+
+    with pytest.raises(ValueError, match="library sufficiency"):
+        ev_ic1_accepted_artifact_index_preflight(broken, adoption)
+
+
+def test_ev_ic1_accepted_artifact_index_rejects_public_capacity_drift() -> None:
+    consumption, adoption, _consumption_sha, _adoption_sha = _committed_ev_accepted_index_inputs()
+    broken = json.loads(json.dumps(consumption))
+    first_output = broken["component_output_contract"]["scenario_outputs"][0]
+    first_output["public_selected_member_count_by_capacity_class"]["public_11kw"] += 1
+
+    with pytest.raises(ValueError, match="capacity-class counts"):
+        ev_ic1_accepted_artifact_index_preflight(broken, adoption)
 
 
 def test_committed_ev_candidate_profile_checksum_preflight_records_fast_provenance() -> None:
