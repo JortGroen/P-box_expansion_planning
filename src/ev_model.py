@@ -2623,6 +2623,281 @@ def ev_downstream_adequacy_criterion_packet() -> dict[str, object]:
     }
 
 
+def e3_s2a_ev_heldout_adequacy_preflight_blockers(
+    accepted_artifact_index: Mapping[str, Any],
+    criterion_packet: Mapping[str, Any],
+    *,
+    accepted_artifact_index_path: str = "data/metadata/ev_adoption/e2_s2_ev_ic1_accepted_artifact_index_preflight.json",
+    accepted_artifact_index_sha256: str | None = None,
+    criterion_packet_path: str = "data/metadata/ev_adoption/e3_s2a_ev_adequacy_criterion_packet.json",
+    criterion_packet_sha256: str | None = None,
+    ic1_assembly_status: str = "not_accepted",
+    held_out_access_status: str = "not_invoked",
+    scenario_consistency_status: str = "not_resolved",
+    final_scenario_branch: str | None = None,
+    local_candidate_output_checksums_verified: bool = False,
+) -> dict[str, object]:
+    """Build the fail-closed E3.S2a EV held-out adequacy preflight manifest.
+
+    The preflight intentionally reports blockers instead of running adequacy.
+    It validates candidate-side metadata and criterion status, but never opens
+    held-out/quarantined paths or loads generated profile arrays.
+    """
+
+    if accepted_artifact_index.get("artifact_type") != "ev_ic1_accepted_artifact_index_preflight":
+        raise ValueError("E3.S2a EV preflight requires the accepted EV IC-1 artifact index")
+    if accepted_artifact_index.get("status") != "accepted_ev_metadata_index_for_agent_a_preflight_blocked_for_integrated_results":
+        raise ValueError("EV accepted-artifact index must retain fail-closed preflight status")
+    if criterion_packet.get("artifact_type") != "ev_downstream_adequacy_criterion_packet":
+        raise ValueError("E3.S2a EV preflight requires the downstream adequacy criterion packet")
+    if criterion_packet.get("task_id") != "E3.S2a":
+        raise ValueError("EV adequacy criterion packet must belong to E3.S2a")
+
+    if accepted_artifact_index_sha256 is not None:
+        accepted_artifact_index_sha256 = _require_sha256(
+            accepted_artifact_index_sha256,
+            "accepted_artifact_index_sha256",
+        )
+    if criterion_packet_sha256 is not None:
+        criterion_packet_sha256 = _require_sha256(criterion_packet_sha256, "criterion_packet_sha256")
+
+    policy = accepted_artifact_index.get("policy")
+    if not isinstance(policy, dict):
+        raise ValueError("EV accepted-artifact index must include policy flags")
+    for key in (
+        "held_out_access",
+        "quarantined_access",
+        "integrated_analysis_performed",
+        "event_or_p_e_analysis_performed",
+        "capacity_screen_performed",
+        "final_low_middle_high_branch_selected",
+        "m_sufficiency_claimed",
+        "manuscript_numbers_produced",
+    ):
+        if policy.get(key) is not False:
+            raise ValueError(f"EV accepted-artifact index must keep {key}=False")
+    if policy.get("candidate_libraries_only") is not True:
+        raise ValueError("EV accepted-artifact index must remain candidate-library only")
+    if policy.get("fail_closed_on_unresolved_blockers") is not True:
+        raise ValueError("EV accepted-artifact index must fail closed on unresolved blockers")
+
+    non_claims = criterion_packet.get("non_claims")
+    if not isinstance(non_claims, dict):
+        raise ValueError("EV adequacy criterion packet must include non_claims")
+    for key in (
+        "held_out_access",
+        "profile_arrays_loaded",
+        "integrated_analysis_performed",
+        "event_or_p_e_analysis_performed",
+        "m_sufficiency_claimed",
+        "manuscript_numbers_produced",
+    ):
+        if non_claims.get(key) is not False:
+            raise ValueError(f"EV adequacy criterion packet must keep {key}=False")
+
+    scenario_index = accepted_artifact_index.get("scenario_index")
+    if not isinstance(scenario_index, list):
+        raise ValueError("EV accepted-artifact index must include scenario_index")
+    scenario_names = [_require_non_empty_string(row.get("scenario"), "scenario") for row in scenario_index if isinstance(row, dict)]
+    duplicates = sorted(name for name, count in Counter(scenario_names).items() if count > 1)
+    if duplicates:
+        raise ValueError(f"E3.S2a EV preflight rejects duplicate scenario index rows: {duplicates}")
+    if set(scenario_names) != {"low", "middle", "high"}:
+        raise ValueError("E3.S2a EV preflight requires low/middle/high scenario index coverage")
+
+    missing_inputs: list[dict[str, object]] = []
+    for label, path_value, sha_value in (
+        ("accepted_artifact_index", accepted_artifact_index_path, accepted_artifact_index_sha256),
+        ("criterion_packet", criterion_packet_path, criterion_packet_sha256),
+    ):
+        if not path_value:
+            missing_inputs.append({"input": label, "missing": "path"})
+        if sha_value is None:
+            missing_inputs.append({"input": label, "missing": "sha256"})
+    source_artifacts = accepted_artifact_index.get("source_artifacts")
+    if not isinstance(source_artifacts, dict):
+        raise ValueError("EV accepted-artifact index must include source_artifacts")
+    for key in (
+        "component_output_manifest",
+        "component_output_manifest_sha256",
+        "candidate_member_reference",
+        "candidate_selection_manifest_set",
+        "candidate_selection_manifest_set_sha256",
+        "checksum_preflight",
+        "scenario_config",
+        "scenario_config_sha256",
+        "local_count_metadata",
+    ):
+        value = source_artifacts.get(key)
+        if value in (None, ""):
+            missing_inputs.append({"input": f"source_artifacts.{key}", "missing": "value"})
+    for key in (
+        "component_output_manifest_sha256",
+        "candidate_selection_manifest_set_sha256",
+        "scenario_config_sha256",
+    ):
+        if source_artifacts.get(key) not in (None, ""):
+            _require_sha256(source_artifacts.get(key), key)
+
+    output_checksum_records: list[dict[str, object]] = []
+    for row in scenario_index:
+        if not isinstance(row, dict):
+            raise ValueError("EV scenario_index rows must be mappings")
+        scenario = _require_non_empty_string(row.get("scenario"), "scenario")
+        output_path = _require_non_empty_string(row.get("output_npz_path"), f"{scenario} output_npz_path")
+        output_sha = _require_sha256(row.get("output_sha256"), f"{scenario} output_sha256")
+        if "held_out" in output_path or "quarantined" in output_path:
+            raise ValueError("EV E3.S2a preflight candidate output paths must not reference held-out/quarantined data")
+        output_checksum_records.append(
+            {
+                "scenario": scenario,
+                "output_npz_path": output_path,
+                "expected_sha256": output_sha,
+                "local_checksum_verified_in_this_preflight": bool(local_candidate_output_checksums_verified),
+            }
+        )
+
+    blocker_rows: list[dict[str, object]] = []
+
+    def add_blocker(blocker_id: str, reason: str, *, source: str, resolution: str) -> None:
+        blocker_rows.append(
+            {
+                "blocker_id": blocker_id,
+                "source": source,
+                "status": "blocked",
+                "reason": reason,
+                "resolution_required": resolution,
+            }
+        )
+
+    if criterion_packet.get("status") != "approved_signed_downstream_adequacy_criterion":
+        add_blocker(
+            "E3.S2A-DOWNSTREAM-AGGREGATE-ADEQUACY-CRITERION-NOT-SIGNED",
+            "The criterion packet is still unsigned and PI decision values/tolerances are not available.",
+            source="e3_s2a_ev_adequacy_criterion_packet",
+            resolution="PI signs the downstream integrated criterion and all numerical tolerance fields before any held-out result is inspected.",
+        )
+    if ic1_assembly_status != "accepted":
+        add_blocker(
+            "E3.S2-IC1-ASSEMBLY-NOT-ACCEPTED",
+            "Agent A IC-1 assembly is not accepted as the downstream aggregation surface for adequacy.",
+            source="ic1_assembly_status",
+            resolution="Agent A delivers and PI accepts the IC-1 assembly path for baseline, EV, HP, PV, adoption, and flexibility on one common calendar.",
+        )
+    if held_out_access_status != "explicitly_invoked_after_signed_criterion":
+        add_blocker(
+            "EV-HELD-OUT-ACCESS-NOT-EXPLICITLY-INVOKED",
+            "Held-out access remains closed in this scaffold and has not been explicitly invoked after criterion approval.",
+            source="held_out_access_status",
+            resolution="Invoke held-out access only in a later manifest after E3.S2a criterion approval and IC-1 readiness.",
+        )
+    if scenario_consistency_status != "resolved":
+        add_blocker(
+            "A-016-SCENARIO-CONSISTENCY-NOT-RESOLVED",
+            "Cross-component 2035 source/scenario consistency has not been resolved for EV, HP, PV, and baseline.",
+            source="A-016",
+            resolution="Record the A-016 scenario-consistency manifest before integrated adequacy runs.",
+        )
+    if final_scenario_branch not in {"low", "middle", "high"}:
+        add_blocker(
+            "G5-FINAL-LOW-MIDDLE-HIGH-BRANCH-NOT-SELECTED",
+            "The final 2035 low/middle/high paper branch has not been selected.",
+            source="G5",
+            resolution="Select an approved final branch through the signed G5 route; until then, any adequacy design must keep branches explicit.",
+        )
+    if not local_candidate_output_checksums_verified:
+        add_blocker(
+            "EV-CANDIDATE-OUTPUT-CHECKSUMS-NOT-VERIFIED-IN-CONSUMING-WORKTREE",
+            "The ignored candidate EV component-output NPZ files were not checksummed in this preflight worktree.",
+            source="candidate_output_manifest",
+            resolution="Before executable adequacy, verify each candidate output NPZ against the accepted artifact index in the consuming worktree.",
+        )
+    if missing_inputs:
+        add_blocker(
+            "E3.S2A-MISSING-CHECKSUM-OR-MANIFEST-INPUT",
+            "One or more required metadata paths/checksums are missing from the preflight inputs.",
+            source="preflight_input_validation",
+            resolution="Restore the missing committed manifest path or SHA-256 provenance before invoking adequacy.",
+        )
+
+    for inherited in accepted_artifact_index.get("remaining_blockers", []):
+        if not isinstance(inherited, dict):
+            continue
+        inherited_id = _require_non_empty_string(inherited.get("blocker_id"), "inherited blocker_id")
+        if inherited_id in {row["blocker_id"] for row in blocker_rows}:
+            continue
+        add_blocker(
+            inherited_id,
+            _require_non_empty_string(inherited.get("reason"), "inherited blocker reason"),
+            source="ev_ic1_accepted_artifact_index_preflight",
+            resolution="Resolve the inherited EV accepted-artifact-index blocker before E3.S2a execution.",
+        )
+
+    blocker_rows = sorted(blocker_rows, key=lambda row: str(row["blocker_id"]))
+    return {
+        "schema_version": 1,
+        "artifact_type": "e3_s2a_ev_heldout_adequacy_preflight_blocker_manifest",
+        "artifact_id": "e3_s2a_ev_heldout_adequacy_preflight_blockers",
+        "task_id": "E3.S2a",
+        "status": "blocked_before_held_out_access",
+        "purpose": (
+            "Automate EV-side held-out adequacy preflight checks and emit blockers without opening "
+            "held-out/quarantined batches or producing integrated results."
+        ),
+        "source_artifacts": {
+            "accepted_artifact_index": accepted_artifact_index_path,
+            "accepted_artifact_index_sha256": accepted_artifact_index_sha256,
+            "criterion_packet": criterion_packet_path,
+            "criterion_packet_sha256": criterion_packet_sha256,
+            "component_output_manifest": source_artifacts.get("component_output_manifest"),
+            "component_output_manifest_sha256": source_artifacts.get("component_output_manifest_sha256"),
+            "candidate_selection_manifest_set": source_artifacts.get("candidate_selection_manifest_set"),
+            "candidate_selection_manifest_set_sha256": source_artifacts.get("candidate_selection_manifest_set_sha256"),
+            "checksum_preflight": source_artifacts.get("checksum_preflight"),
+            "scenario_config": source_artifacts.get("scenario_config"),
+            "scenario_config_sha256": source_artifacts.get("scenario_config_sha256"),
+        },
+        "governing_decisions": sorted(
+            set(
+                list(accepted_artifact_index.get("decision_ids", []))
+                + list(criterion_packet.get("governing_decisions", []))
+                + ["A-016", "ALEA-002"]
+            )
+        ),
+        "scenario_scope": {
+            "planning_year": _require_int(accepted_artifact_index.get("planning_year"), "planning_year"),
+            "declared_branches": sorted(scenario_names),
+            "final_scenario_branch": final_scenario_branch,
+            "final_branch_selected": final_scenario_branch in {"low", "middle", "high"},
+        },
+        "candidate_output_checksum_inputs": sorted(output_checksum_records, key=lambda row: str(row["scenario"])),
+        "missing_checksum_or_manifest_inputs": missing_inputs,
+        "later_runner_scaffold": {
+            "candidate_vs_held_out_comparison_planned": True,
+            "compare_after_ic1_net_load_aggregation_only": True,
+            "event_metric_requires_signed_criterion": True,
+            "runner_manifest_required_for_any_result": True,
+            "held_out_access_default": False,
+            "quarantined_access_default": False,
+            "component_only_adequacy_disallowed": True,
+            "alpha_indexed_bounds_required": True,
+        },
+        "blockers": blocker_rows,
+        "blocked": bool(blocker_rows),
+        "policy": {
+            "held_out_access": False,
+            "quarantined_access": False,
+            "profile_arrays_loaded": False,
+            "integrated_analysis_performed": False,
+            "event_or_p_e_analysis_performed": False,
+            "capacity_screen_performed": False,
+            "m_sufficiency_claimed": False,
+            "manuscript_numbers_produced": False,
+            "fail_closed_on_blockers": True,
+        },
+    }
+
+
 def ev005_within_realization_replacement_policy_packet() -> dict[str, object]:
     """Return the EV-005B replacement-policy decision packet."""
 

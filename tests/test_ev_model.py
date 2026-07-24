@@ -10,6 +10,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
+import data.get_ev_adequacy_preflight as ev_adequacy_preflight
 import data.get_ev_component_outputs as ev_component_outputs
 from data.get_ev_component_outputs import (
     EVComponentOutputVerificationError,
@@ -42,6 +43,7 @@ from src.ev_model import (
     ev_candidate_member_selection_manifest_set,
     ev_ic1_adapter_guardrail_packet,
     ev_downstream_adequacy_criterion_packet,
+    e3_s2a_ev_heldout_adequacy_preflight_blockers,
     ev005_within_realization_replacement_policy_packet,
     ev_ic1_candidate_adapter_artifact,
     ev_ic1_candidate_member_reference_artifact,
@@ -1591,6 +1593,99 @@ def test_ev_downstream_adequacy_criterion_packet_is_unsigned_and_downstream() ->
         "m_sufficiency_claimed": False,
         "manuscript_numbers_produced": False,
     }
+
+
+def _committed_ev_heldout_preflight_inputs() -> tuple[dict[str, object], dict[str, object], str, str]:
+    base = Path("data/metadata/ev_adoption")
+    accepted_index_path = base / "e2_s2_ev_ic1_accepted_artifact_index_preflight.json"
+    criterion_path = base / "e3_s2a_ev_adequacy_criterion_packet.json"
+    return (
+        json.loads(accepted_index_path.read_text(encoding="utf-8")),
+        json.loads(criterion_path.read_text(encoding="utf-8")),
+        _git_blob_sha256(accepted_index_path),
+        _git_blob_sha256(criterion_path),
+    )
+
+
+def test_committed_e3_s2a_ev_heldout_adequacy_preflight_matches_builder() -> None:
+    accepted_index, criterion, accepted_sha, criterion_sha = _committed_ev_heldout_preflight_inputs()
+
+    expected = e3_s2a_ev_heldout_adequacy_preflight_blockers(
+        accepted_index,
+        criterion,
+        accepted_artifact_index_sha256=accepted_sha,
+        criterion_packet_sha256=criterion_sha,
+    )
+    committed = json.loads(
+        Path(
+            "data/metadata/ev_adoption/e3_s2a_ev_heldout_adequacy_preflight_blockers.json"
+        ).read_text(encoding="utf-8")
+    )
+
+    assert committed == expected
+    assert committed["artifact_type"] == "e3_s2a_ev_heldout_adequacy_preflight_blocker_manifest"
+    assert committed["status"] == "blocked_before_held_out_access"
+    assert committed["blocked"] is True
+    assert committed["missing_checksum_or_manifest_inputs"] == []
+    blocker_ids = {row["blocker_id"] for row in committed["blockers"]}
+    assert {
+        "E3.S2A-DOWNSTREAM-AGGREGATE-ADEQUACY-CRITERION-NOT-SIGNED",
+        "E3.S2-IC1-ASSEMBLY-NOT-ACCEPTED",
+        "EV-HELD-OUT-ACCESS-NOT-EXPLICITLY-INVOKED",
+        "A-016-SCENARIO-CONSISTENCY-NOT-RESOLVED",
+        "G5-FINAL-LOW-MIDDLE-HIGH-BRANCH-NOT-SELECTED",
+        "EV-CANDIDATE-OUTPUT-CHECKSUMS-NOT-VERIFIED-IN-CONSUMING-WORKTREE",
+        "EV-005-M-SUFFICIENCY-NOT-CERTIFIED",
+    }.issubset(blocker_ids)
+    assert committed["policy"] == {
+        "held_out_access": False,
+        "quarantined_access": False,
+        "profile_arrays_loaded": False,
+        "integrated_analysis_performed": False,
+        "event_or_p_e_analysis_performed": False,
+        "capacity_screen_performed": False,
+        "m_sufficiency_claimed": False,
+        "manuscript_numbers_produced": False,
+        "fail_closed_on_blockers": True,
+    }
+
+
+def test_e3_s2a_ev_heldout_preflight_records_missing_manifest_inputs() -> None:
+    accepted_index, criterion, accepted_sha, criterion_sha = _committed_ev_heldout_preflight_inputs()
+    broken = json.loads(json.dumps(accepted_index))
+    broken["source_artifacts"]["component_output_manifest_sha256"] = ""
+
+    manifest = e3_s2a_ev_heldout_adequacy_preflight_blockers(
+        broken,
+        criterion,
+        accepted_artifact_index_sha256=accepted_sha,
+        criterion_packet_sha256=criterion_sha,
+    )
+
+    assert any(row["input"] == "source_artifacts.component_output_manifest_sha256" for row in manifest["missing_checksum_or_manifest_inputs"])
+    assert any(row["blocker_id"] == "E3.S2A-MISSING-CHECKSUM-OR-MANIFEST-INPUT" for row in manifest["blockers"])
+
+
+def test_e3_s2a_ev_heldout_preflight_rejects_unsafe_heldout_policy() -> None:
+    accepted_index, criterion, _accepted_sha, _criterion_sha = _committed_ev_heldout_preflight_inputs()
+    broken = json.loads(json.dumps(accepted_index))
+    broken["policy"]["held_out_access"] = True
+
+    with pytest.raises(ValueError, match="held_out_access=False"):
+        e3_s2a_ev_heldout_adequacy_preflight_blockers(broken, criterion)
+
+
+def test_ev_adequacy_preflight_cli_builder_is_deterministic(tmp_path: Path) -> None:
+    output_path = tmp_path / "preflight" / "blockers.json"
+
+    first = ev_adequacy_preflight.write_preflight_manifest(output_path)
+    repeated = ev_adequacy_preflight.write_preflight_manifest(output_path)
+    written = json.loads(output_path.read_text(encoding="utf-8"))
+
+    assert written == first == repeated
+    assert written["blocked"] is True
+    assert written["policy"]["held_out_access"] is False
+    assert written["policy"]["profile_arrays_loaded"] is False
 
 
 def test_ev005_replacement_policy_packet_records_approval_and_profile_free_boundary() -> None:

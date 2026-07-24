@@ -20,6 +20,8 @@ D014_CAPACITY_APPROVAL_TEMPLATE_NAME = "d014_pv_capacity_approval_template.json"
 D014_CAPACITY_APPROVAL_TEMPLATE_ID = "D014-PV-CAPACITY-APPROVAL-TEMPLATE"
 D014_PV_EXECUTABLE_READINESS_BLOCKERS_NAME = "d014_pv_executable_readiness_blockers.json"
 D014_PV_EXECUTABLE_READINESS_BLOCKERS_ID = "D014-PV-EXECUTABLE-READINESS-BLOCKERS"
+D014_PV_EXECUTABLE_PREFLIGHT_GUARD_NAME = "d014_pv_executable_preflight_guard.json"
+D014_PV_EXECUTABLE_PREFLIGHT_GUARD_ID = "D014-PV-EXECUTABLE-PREFLIGHT-GUARD"
 D014_STATISTICAL_ORIENTATION_TILT_NAME = "d014_pv_statistical_orientation_tilt_packet.json"
 D014_STATISTICAL_ORIENTATION_TILT_ID = "D014-PV-STATISTICAL-ORIENTATION-TILT-PACKET"
 D014_ORIENTATION_TILT_SOURCE_CHOICE_NAME = "d014_pv_orientation_tilt_source_choice_packet.json"
@@ -884,6 +886,91 @@ def write_d014_pv_executable_readiness_blockers_packet(metadata_dir: str | Path 
     return path
 
 
+def build_d014_pv_executable_preflight_guard_packet(
+    blockers_path: str | Path = "data/metadata/weather_pv/d014_pv_executable_readiness_blockers.json",
+) -> dict[str, Any]:
+    """Return the fail-closed preflight packet for executable PV generation attempts."""
+    blocker_path = Path(blockers_path)
+    blocker_bytes = blocker_path.read_bytes()
+    blocker = json.loads(blocker_bytes.decode("utf-8"))
+    if blocker.get("packet_id") != D014_PV_EXECUTABLE_READINESS_BLOCKERS_ID:
+        raise ValueError("PV executable preflight guard must consume the readiness-blocker packet")
+    gate = blocker["executable_gate"]
+    if gate.get("executable_pv_generation_authorized") is not False:
+        raise ValueError("PV executable preflight guard cannot consume an already-authorizing blocker packet")
+    return {
+        "packet_id": D014_PV_EXECUTABLE_PREFLIGHT_GUARD_ID,
+        "data_id": D014_DATA_ID,
+        "status": "proposed_fail_closed_preflight_no_generation",
+        "download_performed": False,
+        "raw_data_committed": False,
+        "input_blocker_manifest": {
+            "packet_id": D014_PV_EXECUTABLE_READINESS_BLOCKERS_ID,
+            "metadata_path": str(blocker_path).replace("\\", "/"),
+            "metadata_sha256": hashlib.sha256(blocker_bytes).hexdigest(),
+            "metadata_size_bytes": len(blocker_bytes),
+            "status": blocker.get("status"),
+        },
+        "preflight_checks": {
+            "metadata_checksum_recorded": True,
+            "component_source_member_artifact_available": gate.get("component_source_member_artifact_available") is True,
+            "executable_pv_generation_authorized": False,
+            "required_blocking_register_ids": gate.get("blocking_register_ids", []),
+            "all_required_blockers_present": all(
+                item in gate.get("blocking_register_ids", [])
+                for item in [
+                    "D014-PV-CAPACITY-APPROVAL-TEMPLATE",
+                    "A-016",
+                    "PV-ORIENT-001",
+                    "PV-PARAM-001",
+                    "future_node_allocation_rule",
+                    "future_final_paired_acceptance",
+                ]
+            ),
+        },
+        "token_policy": {
+            "unsafe_tokens_for_executable_outputs": [
+                "TODO",
+                "TBD",
+                "placeholder",
+                "synthetic",
+                "proposed",
+                "unsigned",
+                "not-approved",
+            ],
+            "allowlisted_non_executable_metadata_tokens": [
+                "proposed",
+                "unsigned",
+            ],
+            "policy_result": "blocked_metadata_only_no_executable_output",
+        },
+        "executable_gate": {
+            "preflight_ready_for_executable_pv_generation": False,
+            "result_if_invoked": "abort_with_blocker_manifest",
+            "blocking_register_ids": gate.get("blocking_register_ids", []),
+            "guard_message": "Executable PV preflight is blocked by unresolved D-014/PV-PARAM/PV-ORIENT/A-016/allocation/paired-weather gates.",
+        },
+        "non_claims": [
+            "No executable PV preflight passes in this packet.",
+            "No final PV capacity value, growth factor, orientation/tilt distribution, allocation, or conversion formula is approved.",
+            "No PV generation, net-load, event detection, P(E), threshold analysis, capacity screen, manuscript result, or final PV output is produced.",
+            "No roof, building, 3DBAG, or PV-map geometry source is retrieved or used for the first experiment.",
+        ],
+    }
+
+
+def write_d014_pv_executable_preflight_guard_packet(metadata_dir: str | Path = "data/metadata") -> Path:
+    """Write the fail-closed executable PV preflight guard packet and return its path."""
+    directory = Path(metadata_dir) / "weather_pv"
+    directory.mkdir(parents=True, exist_ok=True)
+    path = directory / D014_PV_EXECUTABLE_PREFLIGHT_GUARD_NAME
+    path.write_text(
+        json.dumps(build_d014_pv_executable_preflight_guard_packet(), indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    return path
+
+
 def build_d014_pv_capacity_source_value_packet() -> dict[str, Any]:
     """Return the proposed D-014 source/value packet without raw retrieval.
 
@@ -1731,6 +1818,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--write-d014-capacity-value-choice", action="store_true")
     parser.add_argument("--write-d014-capacity-approval-template", action="store_true")
     parser.add_argument("--write-d014-pv-executable-readiness-blockers", action="store_true")
+    parser.add_argument("--write-d014-pv-executable-preflight-guard", action="store_true")
     parser.add_argument("--write-d014-statistical-orientation-tilt", action="store_true")
     parser.add_argument("--write-d014-orientation-tilt-source-choice", action="store_true")
     parser.add_argument("--write-d014-orientation-tilt-value-choice", action="store_true")
@@ -1739,7 +1827,9 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--retrieve-d014-ii3050-growth-evidence", action="store_true")
     args = parser.parse_args(argv)
 
-    if args.write_d014_pv_executable_readiness_blockers:
+    if args.write_d014_pv_executable_preflight_guard:
+        path = write_d014_pv_executable_preflight_guard_packet(args.metadata_dir)
+    elif args.write_d014_pv_executable_readiness_blockers:
         path = write_d014_pv_executable_readiness_blockers_packet(args.metadata_dir)
     elif args.write_d014_capacity_approval_template:
         path = write_d014_pv_capacity_approval_template_packet(args.metadata_dir)

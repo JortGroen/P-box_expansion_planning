@@ -9,6 +9,7 @@ adequacy and physics checks.
 from __future__ import annotations
 
 import hashlib
+import json
 from dataclasses import dataclass, field
 from pathlib import Path
 from types import MappingProxyType
@@ -1850,6 +1851,152 @@ def build_real_artifact_assembly_preflight(
     }
 
 
+def build_accepted_artifact_loader_blocker_preflight(
+    config: FutureLayerScreenPreflightConfig,
+    artifacts: Sequence[ExecutableInputArtifact],
+    trajectory_config: LoadingTrajectoryPreRunConfig,
+    *,
+    capacity_provenance: Mapping[str, object] | None = None,
+    artifact_sha256_by_path: Mapping[str, str] | None = None,
+    component_output_manifest_paths_by_kind: Mapping[str, str] | None = None,
+    component_output_manifest_sha256_by_path: Mapping[str, str] | None = None,
+    missing_component_output_manifest_blockers: Mapping[str, Sequence[str]] | None = None,
+    repo_root: str | Path | None = None,
+    required_component_kinds: Sequence[ComponentKind] = REQUIRED_INTEGRATION_COMPONENT_KINDS,
+    missing_artifact_blockers: Mapping[str, Sequence[str]] | None = None,
+    downstream_blocker_ids: Sequence[str] = DEFAULT_EXECUTABLE_BRIDGE_BLOCKER_IDS,
+    intended_use: str = "e3_s2_accepted_artifact_loader_blocker_preflight",
+) -> dict[str, object]:
+    """Build a fail-closed blocker manifest before accepted-artifact loading."""
+
+    base = build_real_artifact_assembly_preflight(
+        config,
+        artifacts,
+        trajectory_config,
+        capacity_provenance=capacity_provenance,
+        artifact_sha256_by_path=artifact_sha256_by_path,
+        repo_root=repo_root,
+        required_component_kinds=required_component_kinds,
+        missing_artifact_blockers=missing_artifact_blockers,
+        downstream_blocker_ids=downstream_blocker_ids,
+        intended_use=intended_use,
+    )
+    root = (Path(repo_root) if repo_root is not None else Path(__file__).resolve().parents[2]).resolve()
+    source_checksums = dict(artifact_sha256_by_path or {})
+    component_manifest_paths = dict(component_output_manifest_paths_by_kind or {})
+    component_manifest_checksums = dict(component_output_manifest_sha256_by_path or {})
+    component_missing_blockers = _normalized_blockers_by_kind(
+        missing_component_output_manifest_blockers,
+    )
+    required = tuple(required_component_kinds)
+    artifact_by_kind = {artifact.kind: artifact for artifact in artifacts}
+    blocker_items: list[dict[str, object]] = []
+
+    for artifact in artifacts:
+        if artifact.manifest_path is None:
+            _append_loader_blocker(
+                blocker_items,
+                "source_manifest_path_missing",
+                "executable input artifact does not cite a source manifest path",
+                kind=artifact.kind,
+                artifact_id=artifact.artifact_id,
+                blocker_ids=artifact.blocking_register_ids,
+            )
+            continue
+        # Without an expected digest, a later metadata refresh could silently change
+        # which component artifact is admitted before any scientific run starts.
+        if artifact.manifest_path not in source_checksums:
+            _append_loader_blocker(
+                blocker_items,
+                "source_manifest_expected_checksum_missing",
+                "source manifest must have a version-controlled expected SHA-256 before loader use",
+                kind=artifact.kind,
+                artifact_id=artifact.artifact_id,
+                path=artifact.manifest_path,
+                blocker_ids=(f"E3.S2-{artifact.kind.upper()}-SOURCE-CHECKSUM",),
+            )
+
+    _append_bridge_blockers(blocker_items, base)
+    _append_cross_component_metadata_blockers(blocker_items, artifacts)
+
+    component_records: list[dict[str, object]] = []
+    for kind in required:
+        artifact = artifact_by_kind.get(kind)
+        manifest_path = component_manifest_paths.get(kind)
+        if artifact is None:
+            _append_loader_blocker(
+                blocker_items,
+                "required_component_artifact_missing",
+                "required executable input artifact is absent",
+                kind=kind,
+                blocker_ids=component_missing_blockers.get(kind, (f"E3.S2-{kind.upper()}-EXECUTABLE-ARTIFACT",)),
+            )
+            continue
+        # The loader boundary requires an accepted component-output manifest before
+        # an array path becomes executable; source readiness alone is not enough.
+        if manifest_path is None:
+            _append_loader_blocker(
+                blocker_items,
+                "component_output_manifest_missing",
+                "accepted component-output manifest is required before artifact-loader execution",
+                kind=kind,
+                artifact_id=artifact.artifact_id,
+                blocker_ids=component_missing_blockers.get(kind, (f"E3.S2-{kind.upper()}-COMPONENT-OUTPUT-ARTIFACT",)),
+            )
+            component_records.append(
+                {
+                    "kind": kind,
+                    "artifact_id": artifact.artifact_id,
+                    "path": None,
+                    "state": "missing",
+                }
+            )
+            continue
+        record, record_blockers = _component_output_manifest_preflight_record(
+            root,
+            kind=kind,
+            path=manifest_path,
+            expected_sha256=component_manifest_checksums.get(manifest_path),
+            executable_artifact=artifact,
+        )
+        component_records.append(record)
+        blocker_items.extend(record_blockers)
+
+    blocked_kinds = tuple(
+        sorted(
+            {
+                str(item["kind"])
+                for item in blocker_items
+                if item.get("kind") in _VALID_COMPONENT_KINDS
+            }
+        )
+    )
+    ready_for_artifact_loader_execution = (
+        base["ready_for_real_artifact_assembly"] is True
+        and not blocker_items
+    )
+    return {
+        "intended_use": intended_use,
+        "metadata_preflight_only": True,
+        "ready_for_artifact_loader_execution": ready_for_artifact_loader_execution,
+        "ready_for_integrated_trajectory_acceptance": ready_for_artifact_loader_execution,
+        "no_component_array_loading": True,
+        "no_real_net_load_arrays": True,
+        "no_event_detection": True,
+        "no_event_counts": True,
+        "no_probability_estimate": True,
+        "no_capacity_screen_result": True,
+        "real_artifact_preflight": base,
+        "component_output_manifest_records": tuple(component_records),
+        "blocker_manifest": {
+            "ready": ready_for_artifact_loader_execution,
+            "blocked_component_kinds": blocked_kinds,
+            "blocker_count": len(blocker_items),
+            "items": tuple(blocker_items),
+        },
+    }
+
+
 def validate_future_layer_screen_preflight(
     config: FutureLayerScreenPreflightConfig,
     artifacts: Sequence[ExecutableInputArtifact],
@@ -2488,6 +2635,393 @@ def _optional_npz_text(data: np.lib.npyio.NpzFile, name: str) -> str | None:
         raise ValueError(f"component output artifact NPZ {name} metadata must be scalar")
     value = str(array.item())
     return _require_nonempty(value, name=f"NPZ {name}")
+
+
+_UNSAFE_EXECUTABLE_TOKENS = (
+    "todo",
+    "tbd",
+    "placeholder",
+    "synthetic",
+    "proposed",
+    "unsigned",
+    "not-approved",
+)
+
+
+def _append_loader_blocker(
+    items: list[dict[str, object]],
+    code: str,
+    message: str,
+    *,
+    kind: str | None = None,
+    artifact_id: str | None = None,
+    path: str | None = None,
+    blocker_ids: Sequence[str] = (),
+) -> None:
+    record: dict[str, object] = {
+        "code": _require_nonempty(code, name="blocker code"),
+        "message": _require_nonempty(message, name="blocker message"),
+        "blocker_ids": tuple(_require_nonempty(item, name="blocker_id") for item in blocker_ids),
+    }
+    if kind is not None:
+        record["kind"] = _require_nonempty(kind, name="blocker kind")
+    if artifact_id is not None:
+        record["artifact_id"] = _require_nonempty(artifact_id, name="blocker artifact_id")
+    if path is not None:
+        record["path"] = _require_nonempty(path, name="blocker path")
+    items.append(record)
+
+
+def _append_bridge_blockers(items: list[dict[str, object]], preflight: Mapping[str, object]) -> None:
+    blockers = preflight["blockers"]
+    for path in blockers.get("source_manifest_paths_missing", ()):
+        _append_loader_blocker(
+            items,
+            "source_manifest_missing",
+            "source manifest path is missing from the repository",
+            path=path,
+            blocker_ids=("E3.S2-SOURCE-MANIFEST-MISSING",),
+        )
+    for mismatch in blockers.get("source_manifest_checksum_mismatches", ()):
+        _append_loader_blocker(
+            items,
+            "source_manifest_checksum_mismatch",
+            "source manifest SHA-256 does not match the expected value",
+            path=mismatch["path"],
+            blocker_ids=("E3.S2-SOURCE-CHECKSUM-MISMATCH",),
+        )
+    for path in blockers.get("unmatched_expected_checksum_paths", ()):
+        _append_loader_blocker(
+            items,
+            "unmatched_expected_checksum_path",
+            "expected checksum was supplied for a path not cited by any executable artifact",
+            path=path,
+            blocker_ids=("E3.S2-UNMATCHED-SOURCE-CHECKSUM",),
+        )
+    for kind, blocker_ids in blockers.get("component_artifact_blockers_by_kind", {}).items():
+        _append_loader_blocker(
+            items,
+            "component_artifact_gate_blocked",
+            "component executable-input gate is not accepted",
+            kind=kind,
+            blocker_ids=blocker_ids,
+        )
+    for kind, errors in blockers.get("register_backing_errors_by_kind", {}).items():
+        _append_loader_blocker(
+            items,
+            "component_artifact_register_backing_invalid",
+            "component executable-input signed IDs are not accepted for this artifact boundary",
+            kind=kind,
+            blocker_ids=tuple(str(error) for error in errors),
+        )
+    if blockers.get("capacity_provenance_missing"):
+        _append_loader_blocker(
+            items,
+            "capacity_provenance_missing",
+            "capacity denominator provenance is required before integrated trajectory acceptance",
+            blocker_ids=("G1-A2-CAPACITY-CONVENTION",),
+        )
+    for blocker_id in blockers.get("downstream_gate_blockers", ()):
+        _append_loader_blocker(
+            items,
+            "downstream_gate_blocked",
+            "downstream gate remains unresolved before executable integrated analysis",
+            blocker_ids=(blocker_id,),
+        )
+
+
+def _append_cross_component_metadata_blockers(
+    items: list[dict[str, object]],
+    artifacts: Sequence[ExecutableInputArtifact],
+) -> None:
+    calendars = {artifact.calendar_id for artifact in artifacts}
+    if len(calendars) != 1:
+        _append_loader_blocker(
+            items,
+            "calendar_id_mismatch",
+            "all executable component artifacts must cite one common ALEA-001 calendar before loader use",
+            blocker_ids=("ALEA-001",),
+        )
+    weather_ids = {
+        artifact.shared_weather_driver_id
+        for artifact in artifacts
+        if artifact.kind in {"hp", "pv"}
+    }
+    if weather_ids and (None in weather_ids or len(weather_ids) != 1):
+        _append_loader_blocker(
+            items,
+            "weather_identity_mismatch",
+            "HP and PV executable artifacts must share one WEATHER-001 driver identity",
+            blocker_ids=("WEATHER-001",),
+        )
+    for artifact in artifacts:
+        unsafe_fields = _unsafe_executable_token_fields(
+            {
+                "artifact_id": artifact.artifact_id,
+                "version_id": artifact.version_id,
+                "source_id": artifact.source_id,
+                "member_id": artifact.member_id,
+                "calendar_id": artifact.calendar_id,
+                "shared_weather_driver_id": artifact.shared_weather_driver_id,
+                "node_ids": artifact.node_ids,
+            }
+        )
+        if unsafe_fields:
+            _append_loader_blocker(
+                items,
+                "unsafe_executable_metadata_token",
+                "executable artifact identity metadata contains a disallowed placeholder/status token",
+                kind=artifact.kind,
+                artifact_id=artifact.artifact_id,
+                blocker_ids=("E3.S2-UNSAFE-EXECUTABLE-METADATA",),
+            )
+            items[-1]["fields"] = unsafe_fields
+
+
+def _component_output_manifest_preflight_record(
+    repo_root: Path,
+    *,
+    kind: ComponentKind,
+    path: str,
+    expected_sha256: str | None,
+    executable_artifact: ExecutableInputArtifact,
+) -> tuple[dict[str, object], list[dict[str, object]]]:
+    blockers: list[dict[str, object]] = []
+    record: dict[str, object] = {
+        "kind": kind,
+        "artifact_id": executable_artifact.artifact_id,
+        "path": path,
+        "state": "blocked",
+    }
+    try:
+        resolved = _resolve_repo_artifact_path(repo_root, path, field_name="component_output_manifest_path")
+    except ValueError as exc:
+        _append_loader_blocker(
+            blockers,
+            "component_output_manifest_path_invalid",
+            str(exc),
+            kind=kind,
+            artifact_id=executable_artifact.artifact_id,
+            path=path,
+            blocker_ids=(f"E3.S2-{kind.upper()}-COMPONENT-OUTPUT-MANIFEST-PATH",),
+        )
+        return record, blockers
+    if not resolved.is_file():
+        _append_loader_blocker(
+            blockers,
+            "component_output_manifest_missing",
+            "component-output manifest path is missing from the repository",
+            kind=kind,
+            artifact_id=executable_artifact.artifact_id,
+            path=path,
+            blocker_ids=(f"E3.S2-{kind.upper()}-COMPONENT-OUTPUT-MANIFEST",),
+        )
+        return record, blockers
+    observed = _sha256_file(resolved)
+    record["sha256"] = observed
+    if expected_sha256 is None:
+        _append_loader_blocker(
+            blockers,
+            "component_output_manifest_expected_checksum_missing",
+            "component-output manifest requires a version-controlled expected SHA-256",
+            kind=kind,
+            artifact_id=executable_artifact.artifact_id,
+            path=path,
+            blocker_ids=(f"E3.S2-{kind.upper()}-COMPONENT-OUTPUT-MANIFEST-CHECKSUM",),
+        )
+    else:
+        record["expected_sha256"] = expected_sha256
+        record["checksum_match"] = observed == expected_sha256
+        if observed != expected_sha256:
+            _append_loader_blocker(
+                blockers,
+                "component_output_manifest_checksum_mismatch",
+                "component-output manifest SHA-256 does not match the expected value",
+                kind=kind,
+                artifact_id=executable_artifact.artifact_id,
+                path=path,
+                blocker_ids=(f"E3.S2-{kind.upper()}-COMPONENT-OUTPUT-MANIFEST-CHECKSUM",),
+            )
+    try:
+        manifest = json.loads(resolved.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        _append_loader_blocker(
+            blockers,
+            "component_output_manifest_json_invalid",
+            f"component-output manifest is not valid JSON: {exc.msg}",
+            kind=kind,
+            artifact_id=executable_artifact.artifact_id,
+            path=path,
+            blocker_ids=(f"E3.S2-{kind.upper()}-COMPONENT-OUTPUT-MANIFEST-JSON",),
+        )
+        return record, blockers
+    schema_blockers = _component_output_manifest_schema_blockers(
+        manifest,
+        kind=kind,
+        path=path,
+        executable_artifact=executable_artifact,
+        repo_root=repo_root,
+    )
+    blockers.extend(schema_blockers)
+    if not blockers:
+        record["state"] = "accepted"
+    return record, blockers
+
+
+def _component_output_manifest_schema_blockers(
+    manifest: Mapping[str, object],
+    *,
+    kind: ComponentKind,
+    path: str,
+    executable_artifact: ExecutableInputArtifact,
+    repo_root: Path,
+) -> list[dict[str, object]]:
+    blockers: list[dict[str, object]] = []
+    required_keys = (
+        "artifact_id",
+        "artifact_status",
+        "kind",
+        "component_id",
+        "node_id",
+        "member_id",
+        "source_id",
+        "calendar_id",
+        "timestep_seconds",
+        "array_path",
+        "array_sha256",
+        "provenance",
+    )
+    missing = tuple(key for key in required_keys if key not in manifest)
+    if missing:
+        _append_loader_blocker(
+            blockers,
+            "component_output_manifest_required_keys_missing",
+            "component-output manifest is not in the accepted-artifact loader schema",
+            kind=kind,
+            artifact_id=executable_artifact.artifact_id,
+            path=path,
+            blocker_ids=(f"E3.S2-{kind.upper()}-COMPONENT-OUTPUT-SCHEMA",),
+        )
+        blockers[-1]["missing_keys"] = missing
+        return blockers
+    if manifest["artifact_status"] != "accepted":
+        _append_loader_blocker(
+            blockers,
+            "component_output_manifest_not_accepted",
+            "component-output manifest status must be accepted before loader use",
+            kind=kind,
+            artifact_id=str(manifest["artifact_id"]),
+            path=path,
+            blocker_ids=(f"E3.S2-{kind.upper()}-COMPONENT-OUTPUT-ACCEPTANCE",),
+        )
+    if manifest["kind"] != kind:
+        _append_loader_blocker(
+            blockers,
+            "component_output_manifest_kind_mismatch",
+            "component-output manifest kind must match the executable artifact kind",
+            kind=kind,
+            artifact_id=str(manifest["artifact_id"]),
+            path=path,
+            blocker_ids=(f"E3.S2-{kind.upper()}-COMPONENT-OUTPUT-KIND",),
+        )
+    if manifest["calendar_id"] != executable_artifact.calendar_id:
+        _append_loader_blocker(
+            blockers,
+            "component_output_manifest_calendar_mismatch",
+            "component-output manifest calendar_id must match the executable artifact calendar_id",
+            kind=kind,
+            artifact_id=str(manifest["artifact_id"]),
+            path=path,
+            blocker_ids=("ALEA-001",),
+        )
+    if manifest["timestep_seconds"] != executable_artifact.timestep_seconds:
+        _append_loader_blocker(
+            blockers,
+            "component_output_manifest_cadence_mismatch",
+            "component-output manifest timestep_seconds must match the executable artifact cadence",
+            kind=kind,
+            artifact_id=str(manifest["artifact_id"]),
+            path=path,
+            blocker_ids=("ALEA-001",),
+        )
+    if manifest["node_id"] not in executable_artifact.node_ids:
+        _append_loader_blocker(
+            blockers,
+            "component_output_manifest_node_missing",
+            "component-output manifest node_id must appear in executable artifact node_ids",
+            kind=kind,
+            artifact_id=str(manifest["artifact_id"]),
+            path=path,
+            blocker_ids=(f"E3.S2-{kind.upper()}-NODE-MAPPING",),
+        )
+    shared_weather_driver_id = manifest.get("shared_weather_driver_id")
+    if kind in {"hp", "pv"} and shared_weather_driver_id != executable_artifact.shared_weather_driver_id:
+        _append_loader_blocker(
+            blockers,
+            "component_output_manifest_weather_mismatch",
+            "weather-dependent component-output manifest must use the executable artifact weather driver",
+            kind=kind,
+            artifact_id=str(manifest["artifact_id"]),
+            path=path,
+            blocker_ids=("WEATHER-001",),
+        )
+    provenance = manifest.get("provenance")
+    if not isinstance(provenance, Mapping):
+        _append_loader_blocker(
+            blockers,
+            "component_output_manifest_provenance_missing",
+            "component-output manifest provenance must be a mapping",
+            kind=kind,
+            artifact_id=str(manifest["artifact_id"]),
+            path=path,
+            blocker_ids=(f"E3.S2-{kind.upper()}-PROVENANCE",),
+        )
+    unsafe_fields = _unsafe_executable_token_fields(
+        {key: manifest.get(key) for key in required_keys if key != "provenance"}
+    )
+    if unsafe_fields:
+        _append_loader_blocker(
+            blockers,
+            "component_output_manifest_unsafe_token",
+            "component-output manifest executable fields contain disallowed placeholder/status tokens",
+            kind=kind,
+            artifact_id=str(manifest["artifact_id"]),
+            path=path,
+            blocker_ids=(f"E3.S2-{kind.upper()}-UNSAFE-COMPONENT-OUTPUT-METADATA",),
+        )
+        blockers[-1]["fields"] = unsafe_fields
+    try:
+        _resolve_repo_artifact_path(repo_root, str(manifest["array_path"]), field_name="array_path")
+    except ValueError:
+        _append_loader_blocker(
+            blockers,
+            "component_output_array_path_invalid",
+            "component-output array_path must be repository-relative and contained before loader use",
+            kind=kind,
+            artifact_id=str(manifest["artifact_id"]),
+            path=path,
+            blocker_ids=(f"E3.S2-{kind.upper()}-ARRAY-PATH",),
+        )
+    return blockers
+
+
+def _unsafe_executable_token_fields(values: Mapping[str, object]) -> tuple[str, ...]:
+    unsafe: list[str] = []
+    for field_name, value in values.items():
+        candidates: tuple[object, ...]
+        if value is None:
+            continue
+        if isinstance(value, (tuple, list)):
+            candidates = tuple(value)
+        else:
+            candidates = (value,)
+        for candidate in candidates:
+            text = str(candidate).lower()
+            if any(token in text for token in _UNSAFE_EXECUTABLE_TOKENS):
+                unsafe.append(str(field_name))
+                break
+    return tuple(sorted(set(unsafe)))
+
 
 def _validate_bridge_capacity_provenance(record: Mapping[str, object] | None) -> dict[str, object] | None:
     if record is None:

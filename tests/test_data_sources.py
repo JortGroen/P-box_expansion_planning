@@ -1432,3 +1432,34 @@ def test_committed_d014_pv_executable_readiness_blockers_record_inputs() -> None
     assert payload["executable_gate"]["executable_pv_generation_authorized"] is False
     assert len(payload["input_metadata"]["weather_input_artifact"]["sha256"]) == 64
     assert len(payload["input_metadata"]["pv_parameter_packet"]["sha256"]) == 64
+
+
+def test_d014_pv_executable_preflight_guard_aborts_without_generation() -> None:
+    packet = pv_capacity.build_d014_pv_executable_preflight_guard_packet()
+
+    assert packet["packet_id"] == "D014-PV-EXECUTABLE-PREFLIGHT-GUARD"
+    assert packet["status"] == "proposed_fail_closed_preflight_no_generation"
+    assert packet["input_blocker_manifest"]["packet_id"] == "D014-PV-EXECUTABLE-READINESS-BLOCKERS"
+    assert len(packet["input_blocker_manifest"]["metadata_sha256"]) == 64
+    assert packet["preflight_checks"]["component_source_member_artifact_available"] is True
+    assert packet["preflight_checks"]["executable_pv_generation_authorized"] is False
+    assert packet["preflight_checks"]["all_required_blockers_present"] is True
+    assert packet["executable_gate"]["preflight_ready_for_executable_pv_generation"] is False
+    assert packet["executable_gate"]["result_if_invoked"] == "abort_with_blocker_manifest"
+    assert "placeholder" in packet["token_policy"]["unsafe_tokens_for_executable_outputs"]
+    assert "proposed" in packet["token_policy"]["allowlisted_non_executable_metadata_tokens"]
+    assert any("No executable PV preflight passes" in item for item in packet["non_claims"])
+
+
+def test_committed_d014_pv_executable_preflight_guard_records_blockers() -> None:
+    payload = json.loads(
+        Path("data/metadata/weather_pv/d014_pv_executable_preflight_guard.json").read_text(
+            encoding="utf-8"
+        )
+    )
+
+    assert payload["packet_id"] == "D014-PV-EXECUTABLE-PREFLIGHT-GUARD"
+    assert payload["executable_gate"]["preflight_ready_for_executable_pv_generation"] is False
+    assert payload["executable_gate"]["result_if_invoked"] == "abort_with_blocker_manifest"
+    assert "D014-PV-CAPACITY-APPROVAL-TEMPLATE" in payload["executable_gate"]["blocking_register_ids"]
+    assert "PV-PARAM-001" in payload["executable_gate"]["blocking_register_ids"]
