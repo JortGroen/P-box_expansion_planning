@@ -27,6 +27,7 @@ from src.contracts.net_load import (
     assemble_net_load_from_real_component_outputs,
     assemble_net_load_from_registry_outputs,
     build_ic1_assembly_plan_from_registry,
+    build_accepted_artifact_loader_blocker_preflight,
     build_component_adapter_registry_from_artifacts,
     build_realization_context,
     build_executable_loading_bridge_preflight,
@@ -2370,6 +2371,53 @@ def test_executable_loading_bridge_reports_current_real_project_blockers_fail_cl
     assert bridge["no_probability_estimate"] is True
 
 
+def _safe_executable_input_artifacts() -> list[ExecutableInputArtifact]:
+    return [
+        _executable_input_artifact("baseline", version_id="v1"),
+        _executable_input_artifact("ev", version_id="v1"),
+        _executable_input_artifact("hp", version_id="v1"),
+        _executable_input_artifact("pv", version_id="v1"),
+        _executable_input_artifact("adoption", version_id="v1"),
+        _executable_input_artifact("flexibility", version_id="v1"),
+    ]
+
+
+def _write_loader_component_manifests(
+    tmp_path,
+    artifacts: list[ExecutableInputArtifact],
+    *,
+    overrides_by_kind: dict[str, dict[str, object]] | None = None,
+) -> tuple[dict[str, str], dict[str, str]]:
+    paths_by_kind: dict[str, str] = {}
+    sha_by_path: dict[str, str] = {}
+    for artifact in artifacts:
+        relative_path = f"data/metadata/component_outputs/{artifact.kind}.json"
+        path = tmp_path / relative_path
+        path.parent.mkdir(parents=True, exist_ok=True)
+        node_id = artifact.node_ids[0]
+        manifest: dict[str, object] = {
+            "artifact_id": f"{artifact.kind}-component-output-artifact",
+            "artifact_status": "accepted",
+            "kind": artifact.kind,
+            "component_id": f"{artifact.kind}-component",
+            "node_id": node_id,
+            "member_id": artifact.member_id,
+            "source_id": artifact.source_id,
+            "calendar_id": artifact.calendar_id,
+            "timestep_seconds": artifact.timestep_seconds,
+            "array_path": f"data/processed/component_outputs/{artifact.kind}.npz",
+            "array_sha256": "a" * 64,
+            "provenance": {"source_manifest": artifact.manifest_path or "none"},
+        }
+        if artifact.shared_weather_driver_id is not None:
+            manifest["shared_weather_driver_id"] = artifact.shared_weather_driver_id
+        manifest.update((overrides_by_kind or {}).get(artifact.kind, {}))
+        path.write_text(json.dumps(manifest, sort_keys=True) + "\n", encoding="utf-8")
+        paths_by_kind[artifact.kind] = relative_path
+        sha_by_path[relative_path] = hashlib.sha256(path.read_bytes()).hexdigest()
+    return paths_by_kind, sha_by_path
+
+
 def _write_synthetic_manifest_files(tmp_path, artifacts: list[ExecutableInputArtifact]) -> dict[str, str]:
     expected: dict[str, str] = {}
     for artifact in artifacts:
@@ -2380,6 +2428,174 @@ def _write_synthetic_manifest_files(tmp_path, artifacts: list[ExecutableInputArt
         path.write_bytes(content)
         expected[artifact.manifest_path] = hashlib.sha256(content).hexdigest()
     return expected
+
+
+def test_accepted_artifact_loader_blocker_preflight_accepts_clean_metadata(tmp_path) -> None:
+    artifacts = _safe_executable_input_artifacts()
+    source_sha = _write_synthetic_manifest_files(tmp_path, artifacts)
+    component_paths, component_sha = _write_loader_component_manifests(tmp_path, artifacts)
+
+    preflight = build_accepted_artifact_loader_blocker_preflight(
+        _screen_preflight_config(),
+        artifacts,
+        _trajectory_prerun_config(),
+        capacity_provenance=_synthetic_capacity_provenance(),
+        artifact_sha256_by_path=source_sha,
+        component_output_manifest_paths_by_kind=component_paths,
+        component_output_manifest_sha256_by_path=component_sha,
+        repo_root=tmp_path,
+        downstream_blocker_ids=(),
+    )
+
+    assert preflight["ready_for_artifact_loader_execution"] is True
+    assert preflight["ready_for_integrated_trajectory_acceptance"] is True
+    assert preflight["no_component_array_loading"] is True
+    assert preflight["blocker_manifest"] == {
+        "ready": True,
+        "blocked_component_kinds": (),
+        "blocker_count": 0,
+        "items": (),
+    }
+    assert {record["state"] for record in preflight["component_output_manifest_records"]} == {"accepted"}
+
+
+def test_accepted_artifact_loader_blocker_preflight_requires_expected_source_checksums(tmp_path) -> None:
+    artifacts = _safe_executable_input_artifacts()
+    _write_synthetic_manifest_files(tmp_path, artifacts)
+    component_paths, component_sha = _write_loader_component_manifests(tmp_path, artifacts)
+
+    preflight = build_accepted_artifact_loader_blocker_preflight(
+        _screen_preflight_config(),
+        artifacts,
+        _trajectory_prerun_config(),
+        capacity_provenance=_synthetic_capacity_provenance(),
+        artifact_sha256_by_path={},
+        component_output_manifest_paths_by_kind=component_paths,
+        component_output_manifest_sha256_by_path=component_sha,
+        repo_root=tmp_path,
+        downstream_blocker_ids=(),
+    )
+
+    assert preflight["ready_for_artifact_loader_execution"] is False
+    assert preflight["blocker_manifest"]["blocker_count"] == 6
+    assert {
+        item["code"]
+        for item in preflight["blocker_manifest"]["items"]
+    } == {"source_manifest_expected_checksum_missing"}
+
+
+def test_accepted_artifact_loader_blocker_preflight_reports_missing_component_outputs(tmp_path) -> None:
+    artifacts = _safe_executable_input_artifacts()
+    source_sha = _write_synthetic_manifest_files(tmp_path, artifacts)
+
+    preflight = build_accepted_artifact_loader_blocker_preflight(
+        _screen_preflight_config(),
+        artifacts,
+        _trajectory_prerun_config(),
+        capacity_provenance=_synthetic_capacity_provenance(),
+        artifact_sha256_by_path=source_sha,
+        component_output_manifest_paths_by_kind={"ev": "data/metadata/component_outputs/ev.json"},
+        component_output_manifest_sha256_by_path={},
+        missing_component_output_manifest_blockers={
+            "baseline": ("E2.S5-BASELINE-COMPONENT-OUTPUT",),
+            "hp": ("HP-001-COMPONENT-OUTPUT",),
+            "pv": ("PV-PARAM-001",),
+            "adoption": ("E2.S6-ADOPTION-COMPONENT-OUTPUT",),
+            "flexibility": ("FLEX-VALUES",),
+        },
+        repo_root=tmp_path,
+        downstream_blocker_ids=(),
+    )
+
+    assert preflight["ready_for_artifact_loader_execution"] is False
+    assert set(preflight["blocker_manifest"]["blocked_component_kinds"]) == {
+        "adoption",
+        "baseline",
+        "ev",
+        "flexibility",
+        "hp",
+        "pv",
+    }
+    codes = [item["code"] for item in preflight["blocker_manifest"]["items"]]
+    assert "component_output_manifest_missing" in codes
+    assert "component_output_manifest_expected_checksum_missing" not in codes
+
+
+def test_accepted_artifact_loader_blocker_preflight_rejects_unsafe_tokens(tmp_path) -> None:
+    artifacts = _safe_executable_input_artifacts()
+    source_sha = _write_synthetic_manifest_files(tmp_path, artifacts)
+    component_paths, component_sha = _write_loader_component_manifests(
+        tmp_path,
+        artifacts,
+        overrides_by_kind={"ev": {"member_id": "placeholder-member"}},
+    )
+
+    preflight = build_accepted_artifact_loader_blocker_preflight(
+        _screen_preflight_config(),
+        artifacts,
+        _trajectory_prerun_config(),
+        capacity_provenance=_synthetic_capacity_provenance(),
+        artifact_sha256_by_path=source_sha,
+        component_output_manifest_paths_by_kind=component_paths,
+        component_output_manifest_sha256_by_path=component_sha,
+        repo_root=tmp_path,
+        downstream_blocker_ids=(),
+    )
+
+    assert preflight["ready_for_artifact_loader_execution"] is False
+    blockers = preflight["blocker_manifest"]["items"]
+    assert any(item["code"] == "component_output_manifest_unsafe_token" for item in blockers)
+    assert any(item.get("fields") == ("member_id",) for item in blockers)
+
+
+def test_accepted_artifact_loader_blocker_preflight_rejects_manifest_path_escape(tmp_path) -> None:
+    artifacts = _safe_executable_input_artifacts()
+    source_sha = _write_synthetic_manifest_files(tmp_path, artifacts)
+    component_paths, component_sha = _write_loader_component_manifests(tmp_path, artifacts)
+    component_paths["ev"] = "../outside/ev.json"
+
+    preflight = build_accepted_artifact_loader_blocker_preflight(
+        _screen_preflight_config(),
+        artifacts,
+        _trajectory_prerun_config(),
+        capacity_provenance=_synthetic_capacity_provenance(),
+        artifact_sha256_by_path=source_sha,
+        component_output_manifest_paths_by_kind=component_paths,
+        component_output_manifest_sha256_by_path=component_sha,
+        repo_root=tmp_path,
+        downstream_blocker_ids=(),
+    )
+
+    assert preflight["ready_for_artifact_loader_execution"] is False
+    assert any(
+        item["code"] == "component_output_manifest_path_invalid" and item["kind"] == "ev"
+        for item in preflight["blocker_manifest"]["items"]
+    )
+
+
+def test_accepted_artifact_loader_blocker_preflight_rejects_component_manifest_checksum_mismatch(tmp_path) -> None:
+    artifacts = _safe_executable_input_artifacts()
+    source_sha = _write_synthetic_manifest_files(tmp_path, artifacts)
+    component_paths, component_sha = _write_loader_component_manifests(tmp_path, artifacts)
+    component_sha[component_paths["ev"]] = "0" * 64
+
+    preflight = build_accepted_artifact_loader_blocker_preflight(
+        _screen_preflight_config(),
+        artifacts,
+        _trajectory_prerun_config(),
+        capacity_provenance=_synthetic_capacity_provenance(),
+        artifact_sha256_by_path=source_sha,
+        component_output_manifest_paths_by_kind=component_paths,
+        component_output_manifest_sha256_by_path=component_sha,
+        repo_root=tmp_path,
+        downstream_blocker_ids=(),
+    )
+
+    assert preflight["ready_for_artifact_loader_execution"] is False
+    assert any(
+        item["code"] == "component_output_manifest_checksum_mismatch" and item["kind"] == "ev"
+        for item in preflight["blocker_manifest"]["items"]
+    )
 
 
 def test_real_artifact_assembly_preflight_validates_source_paths_and_checksums(tmp_path) -> None:
