@@ -163,6 +163,7 @@
         "D-014",
         "D014-PV-CAPACITY-SOURCE-VALUE-PACKET",
         "D014-CBS-PV-CAPACITY-ANCHOR-EVIDENCE",
+        "D014-PV-CAPACITY-APPROVAL-TEMPLATE",
         "D014-PV-STATISTICAL-ORIENTATION-TILT-PACKET",
         "FINAL-PAIRED-HP-PV-ACCEPTANCE",
         "COLD-SPELL-ACCEPTANCE"
@@ -213,7 +214,8 @@
         "supporting_report": "reports/e2_s6_a014_executable_adoption_artifact.md",
         "classification_note": "merged PR #235 provides accepted per-node EV adoption allocation metadata for declared low/middle/high branches without choosing the final paper branch",
         "packet_status": "accepted executable per-node EV adoption allocation artifact; no final branch selected",
-        "readiness_bucket": "accepted_metadata_only"
+        "readiness_bucket": "accepted_metadata_only",
+        "component_output_boundary_note": "The A-014 allocation artifact is accepted metadata; a loader-facing component-output manifest remains a separate IC-1 assembly boundary artifact."
       }
     },
     {
@@ -317,10 +319,11 @@
       "PV-PARAM-001",
       "D-014",
       "D014-PV-CAPACITY-SOURCE-VALUE-PACKET",
+      "D014-PV-CAPACITY-APPROVAL-TEMPLATE",
       "FINAL-PAIRED-HP-PV-ACCEPTANCE"
     ],
     "adoption": [
-      "E2.S6-PER-NODE-EXECUTABLE-ADOPTION-ARTIFACT"
+      "E3.S2-ADOPTION-COMPONENT-OUTPUT-MANIFEST"
     ],
     "flexibility": [
       "E3.S1-FLEX-REAL-VALUES-NOT-SIGNED"
