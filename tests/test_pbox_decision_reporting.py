@@ -202,11 +202,20 @@ def test_decision_payload_rejects_collapsed_or_tampered_rows() -> None:
         decision_rows=_decision_rows(),
         report_id="serialized-decision-report",
     ).to_mapping()
-    bad_row = dict(payload["decision_rows"][0])
-    bad_row["defuzzified_probability"] = 0.2
 
-    with pytest.raises(ValueError, match="collapsed fields"):
-        assert_guarded_decision_report_payload({**payload, "decision_rows": [bad_row]})
+    for field in (
+        "defuzzified_probability",
+        "expected_probability",
+        "mean_probability",
+        "p_hat",
+        "p_mid",
+        "probability",
+        "scalar_decision_probability",
+    ):
+        bad_row = dict(payload["decision_rows"][0])
+        bad_row[field] = 0.2
+        with pytest.raises(ValueError, match="collapsed fields"):
+            assert_guarded_decision_report_payload({**payload, "decision_rows": [bad_row]})
 
     with pytest.raises(ValueError, match="paper_facing_allowed"):
         assert_guarded_decision_report_payload({**payload, "paper_facing_allowed": True})
@@ -215,9 +224,35 @@ def test_decision_payload_rejects_collapsed_or_tampered_rows() -> None:
 def test_decision_payload_rejects_duplicate_alpha_metric_rows() -> None:
     row = _decision_rows()[0]
 
-    with pytest.raises(ValueError, match="unique"):
+    with pytest.raises(ValueError, match="strictly increasing"):
         build_guarded_decision_report(
             boundary_payload=_decision_boundary(),
             decision_rows=(row, row),
             report_id="duplicate-decision-rows",
+        )
+
+
+def test_decision_payload_rejects_out_of_order_alpha_metric_rows() -> None:
+    rows = (
+        DecisionReportRow(
+            alpha=0.5,
+            metric_name="rho_star",
+            lower_value=0.2,
+            upper_value=0.6,
+            classification="overlapping-monitor",
+        ),
+        DecisionReportRow(
+            alpha=0.0,
+            metric_name="rho_star",
+            lower_value=0.1,
+            upper_value=0.5,
+            classification="overlapping-monitor",
+        ),
+    )
+
+    with pytest.raises(ValueError, match="strictly increasing"):
+        build_guarded_decision_report(
+            boundary_payload=_decision_boundary(),
+            decision_rows=rows,
+            report_id="out-of-order-decision-rows",
         )
