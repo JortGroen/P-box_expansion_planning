@@ -1,0 +1,40 @@
+{
+  "config_hash": "96b1dc92a060d8ba518f0bf905da17fa3f0fdc49a8035cec8e5aa378670cf0e4",
+  "config_path": "reports/e3_s2b_capacity_provenance_input.json",
+  "extra": {
+    "artifact_type": "e3_s2b_capacity_provenance",
+    "capacity_packet_path": "reports/e3_s2b_capacity_provenance_packet.json",
+    "command": ".\\.venv\\Scripts\\python.exe reports\\e3_s2b_generate_capacity_provenance.py",
+    "git_status_short_before_generation": "",
+    "ready_for_e3_s2b_capacity_prerun": true,
+    "report_path": "reports/E3_S2B_CAPACITY_PROVENANCE.md",
+    "supporting_evidence_sha256_by_path": {
+      "reports/G1_A2_GRID_ERROR_AND_CAPACITY_PROTOCOL.md": "ae03e2081b4e2275d8dbfd6711ac4dd1a08c94ec2b256be107138b2d9c3f6de5",
+      "reports/grid_inventory.md": "db609911f413bf0a30cbfc0a6d502d773b4d139277976296c3d0af28ad0ec128",
+      "reports/transformer_headroom_diagnostic.md": "bb9a73d3ed61b8d16d01495a0a9aa6362047fab23b2cef2fc0190b995be07d25",
+      "reports/transformer_headroom_evidence.json": "e68dc9331b709e583e6502744a242e3004f7e6b273ab9e3aa18c3814a54118ae"
+    },
+    "task_id": "E3.S2b"
+  },
+  "git_commit": "0595b829b560a9850d06224546f2cdff80143c5a",
+  "output_checksums": {
+    "reports/E3_S2B_CAPACITY_PROVENANCE.md": "aa97b83b6bb3e237fca9ffce2c3d263b7eef9745c669ac902d57ca630844ddbd",
+    "reports/e3_s2b_capacity_provenance_packet.json": "f980c7a37175514bfcbea503a6981fe60796e81904eefb252b9d16382f7774fa"
+  },
+  "package_versions": {
+    "hypothesis": "6.156.4",
+    "lightsim2grid": "0.13.1",
+    "matplotlib": "3.11.0",
+    "numba": "0.66.0",
+    "numpy": "2.3.5",
+    "pandapower": "3.5.3",
+    "pandas": "2.3.3",
+    "pytest": "9.1.1",
+    "scipy": "1.16.3",
+    "simbench": "1.6.2"
+  },
+  "schema_version": 1,
+  "seeds": {
+    "none": "deterministic"
+  }
+}
