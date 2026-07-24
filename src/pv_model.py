@@ -811,6 +811,134 @@ def load_pv_capacity_approval_template_packet(path: str | Path) -> PVCapacityApp
 
 
 @dataclass(frozen=True)
+class PVExecutableReadinessBlockersPacket:
+    """Fail-closed D-014 manifest of blockers before executable first-experiment PV generation."""
+
+    packet_id: str
+    data_id: str
+    status: str
+    download_performed: bool
+    raw_data_committed: bool
+    input_metadata: Mapping[str, object]
+    readiness_layers: Mapping[str, object]
+    executable_gate: Mapping[str, object]
+    non_claims: Sequence[str]
+
+    def __post_init__(self) -> None:
+        if self.packet_id != "D014-PV-EXECUTABLE-READINESS-BLOCKERS":
+            raise ValueError("PV executable readiness blockers packet must identify D014-PV-EXECUTABLE-READINESS-BLOCKERS")
+        if self.data_id != "D-014":
+            raise ValueError("PV executable readiness blockers packet must identify D-014")
+        if self.status != "proposed_fail_closed_executable_pv_readiness_blockers":
+            raise ValueError("PV executable readiness blockers packet must remain proposed/fail-closed")
+        if self.download_performed is not False or self.raw_data_committed is not False:
+            raise ValueError("PV executable readiness blockers packet must not claim retrieval or raw committed data")
+        inputs = _audit_json_mapping(self.input_metadata, "input_metadata")
+        layers = _audit_json_mapping(self.readiness_layers, "readiness_layers")
+        gate = _audit_json_mapping(self.executable_gate, "executable_gate")
+        non_claims = tuple(str(item) for item in self.non_claims)
+        expected_inputs = {
+            "weather_input_artifact",
+            "capacity_approval_template",
+            "orientation_tilt_value_choice",
+            "pv_parameter_packet",
+        }
+        missing_inputs = expected_inputs.difference(inputs)
+        if missing_inputs:
+            raise ValueError(f"PV executable blockers packet missing inputs: {sorted(missing_inputs)}")
+        input_packets = {
+            key: str(_audit_json_mapping(value, key).get("packet_id", ""))
+            for key, value in inputs.items()
+        }
+        if input_packets["capacity_approval_template"] != "D014-PV-CAPACITY-APPROVAL-TEMPLATE":
+            raise ValueError("PV executable blockers packet must consume the D-014 capacity approval template")
+        if input_packets["orientation_tilt_value_choice"] != "D014-PV-ORIENTATION-TILT-VALUE-CHOICE-PACKET":
+            raise ValueError("PV executable blockers packet must consume the orientation/tilt value-choice packet")
+        for key, value in inputs.items():
+            record = _audit_json_mapping(value, key)
+            if len(str(record.get("sha256", ""))) != 64:
+                raise ValueError(f"PV executable blockers packet input {key} must record SHA-256")
+
+        required_layers = {
+            "weather_source_member",
+            "capacity_value",
+            "scenario_consistency",
+            "orientation_tilt_distribution",
+            "pv_conversion_parameters",
+            "node_allocation",
+            "final_paired_hp_pv_and_cold_spell_acceptance",
+        }
+        missing_layers = required_layers.difference(layers)
+        if missing_layers:
+            raise ValueError(f"PV executable blockers packet missing readiness layers: {sorted(missing_layers)}")
+        if _audit_json_mapping(layers["weather_source_member"], "weather_source_member").get(
+            "component_source_member_ready"
+        ) is not True:
+            raise ValueError("PV executable blockers packet must preserve accepted source/member weather readiness")
+        for key in required_layers - {"weather_source_member"}:
+            if _audit_json_mapping(layers[key], key).get("ready") is not False:
+                raise ValueError(f"PV executable blockers packet layer {key} must remain blocked")
+        if gate.get("executable_pv_generation_authorized") is not False:
+            raise ValueError("PV executable blockers packet must not authorize PV generation")
+        blockers = tuple(str(item) for item in gate.get("blocking_register_ids", ()))
+        for blocker in ("D014-PV-CAPACITY-APPROVAL-TEMPLATE", "A-016", "PV-ORIENT-001", "PV-PARAM-001"):
+            if blocker not in blockers:
+                raise ValueError(f"PV executable blockers packet missing blocker {blocker}")
+        if not any("No final PV capacity value" in item for item in non_claims):
+            raise ValueError("PV executable blockers packet must state that no PV values are approved")
+        if not any("No PV generation" in item for item in non_claims):
+            raise ValueError("PV executable blockers packet must state that no PV generation is produced")
+        if not any("No roof, building, 3DBAG" in item for item in non_claims):
+            raise ValueError("PV executable blockers packet must preserve PV-ORIENT-001 geometry boundary")
+        object.__setattr__(self, "input_metadata", inputs)
+        object.__setattr__(self, "readiness_layers", layers)
+        object.__setattr__(self, "executable_gate", gate)
+        object.__setattr__(self, "non_claims", non_claims)
+
+    @property
+    def blocking_register_ids(self) -> tuple[str, ...]:
+        return tuple(str(item) for item in self.executable_gate["blocking_register_ids"])
+
+    def require_executable_pv_generation_authorization(self) -> None:
+        """Always fail until all PV capacity, parameter, allocation, and pairing gates are signed."""
+        raise ValueError(
+            "PV executable readiness blockers remain unresolved; generation requires signed capacity, "
+            "A-016 scenario consistency, PV-ORIENT, PV-PARAM, allocation, and paired acceptance gates"
+        )
+
+    def identity_record(self) -> dict[str, object]:
+        return {
+            "packet_id": self.packet_id,
+            "data_id": self.data_id,
+            "status": self.status,
+            "component_source_member_artifact_available": self.executable_gate[
+                "component_source_member_artifact_available"
+            ],
+            "executable_pv_generation_authorized": False,
+            "blocking_register_ids": self.blocking_register_ids,
+            "input_packet_ids": {
+                key: _audit_json_mapping(value, key).get("packet_id") for key, value in self.input_metadata.items()
+            },
+        }
+
+
+def load_pv_executable_readiness_blockers_packet(path: str | Path) -> PVExecutableReadinessBlockersPacket:
+    """Load the fail-closed executable PV readiness-blocker packet."""
+    payload = json.loads(Path(path).read_text(encoding="utf-8"))
+    return PVExecutableReadinessBlockersPacket(
+        packet_id=str(payload.get("packet_id", "")),
+        data_id=str(payload.get("data_id", "")),
+        status=str(payload.get("status", "")),
+        download_performed=bool(payload.get("download_performed")),
+        raw_data_committed=bool(payload.get("raw_data_committed")),
+        input_metadata=payload.get("input_metadata", {}),
+        readiness_layers=payload.get("readiness_layers", {}),
+        executable_gate=payload.get("executable_gate", {}),
+        non_claims=payload.get("non_claims", ()),
+    )
+
+
+@dataclass(frozen=True)
 class PVStatisticalOrientationTiltPacket:
     """Proposed D-014 statistical orientation/tilt packet that stays fail-closed."""
 
