@@ -51,6 +51,7 @@ def _complete_prerequisites(*, g3: bool = False) -> FinalResultPrerequisites:
         capacity_convention_approved=True,
         capacity_denominator_provenance="manifested synthetic capacity denominator",
         output_error_endpoint_records_manifested=True,
+        a016_scenario_consistency_manifested=True,
         g3_vertex_shortcut_approved=g3,
     )
 
@@ -271,6 +272,7 @@ def test_runner_report_boundary_serializes_blocked_synthetic_guard_state() -> No
     assert "approved capacity convention" in guard["missing_prerequisites"]
     assert "capacity denominator provenance" in guard["missing_prerequisites"]
     assert "manifested output-error endpoint event records" in guard["missing_prerequisites"]
+    assert "manifested A-016 scenario consistency" in guard["missing_prerequisites"]
 
 
 def test_runner_report_boundary_blocks_paper_facing_without_endpoint_record() -> None:
