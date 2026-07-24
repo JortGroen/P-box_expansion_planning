@@ -14,9 +14,12 @@ import data.get_weather_pv as weather_pv
 from src.contracts.net_load import validate_executable_input_gate
 from src.hp_model import HeatPumpProfile
 from src.pv_model import (
+    PVCapacityApprovalTemplatePacket,
     PVCapacitySourcePacket,
+    PVCapacityValueChoicePacket,
     PVCBSAnchorEvidencePacket,
     PVGISReference,
+    PVII3050GrowthEvidencePacket,
     PVOrientationTiltSourceChoicePacket,
     PVOrientationTiltValueChoicePacket,
     PVStatisticalOrientationTiltPacket,
@@ -33,8 +36,11 @@ from src.pv_model import (
     check_profile_against_pvgis_reference,
     generate_pv_profile,
     generate_pv_profile_from_input_artifact,
+    load_pv_capacity_approval_template_packet,
     load_pv_capacity_source_packet,
+    load_pv_capacity_value_choice_packet,
     load_pv_cbs_anchor_evidence_packet,
+    load_pv_ii3050_growth_evidence_packet,
     load_pv_orientation_tilt_source_choice_packet,
     load_pv_orientation_tilt_value_choice_packet,
     load_pv_statistical_orientation_tilt_packet,
@@ -74,6 +80,13 @@ def _write_text_with_parents(path: Path, text: str) -> None:
 def _write_bytes_with_parents(path: Path, payload: bytes) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_bytes(payload)
+
+
+def _prepare_d004_tmp_metadata_dir(tmp_path: Path) -> Path:
+    metadata_dst = tmp_path / "metadata" / "weather_pv"
+    metadata_dst.mkdir(parents=True, exist_ok=True)
+    (tmp_path / "data" / "raw" / "weather_pv").mkdir(parents=True, exist_ok=True)
+    return metadata_dst
 
 
 def test_canonical_15min_axis_preserves_local_year_and_dst() -> None:
@@ -588,8 +601,7 @@ def test_committed_d004_member_construction_clarification_records_resolution() -
 
 def test_d004_member_readiness_diagnostics_can_validate_metadata_without_raw_files(tmp_path: Path) -> None:
     metadata_src = Path("data/metadata/weather_pv")
-    metadata_dst = tmp_path / "metadata" / "weather_pv"
-    metadata_dst.mkdir(parents=True)
+    metadata_dst = _prepare_d004_tmp_metadata_dir(tmp_path)
     for name in [
         weather_pv.D004_RETRIEVAL_MANIFEST,
         weather_pv.D004_MEMBER_MANIFEST_NAME,
@@ -723,8 +735,7 @@ def test_committed_d004_acceptance_packet_keeps_decisions_with_pi() -> None:
 
 def test_d004_paired_weather_acceptance_scaffold_is_metadata_only(tmp_path: Path) -> None:
     metadata_src = Path("data/metadata/weather_pv")
-    metadata_dst = tmp_path / "metadata" / "weather_pv"
-    metadata_dst.mkdir(parents=True)
+    metadata_dst = _prepare_d004_tmp_metadata_dir(tmp_path)
     for name in [
         weather_pv.D004_ACCEPTANCE_PACKET_NAME,
         weather_pv.D004_MEMBER_READINESS_DIAGNOSTICS_NAME,
@@ -778,8 +789,7 @@ def test_committed_d004_paired_weather_acceptance_scaffold_keeps_final_gates_blo
 
 def test_d004_acceptance_tolerance_packet_is_metadata_only(tmp_path: Path) -> None:
     metadata_src = Path("data/metadata/weather_pv")
-    metadata_dst = tmp_path / "metadata" / "weather_pv"
-    metadata_dst.mkdir(parents=True)
+    metadata_dst = _prepare_d004_tmp_metadata_dir(tmp_path)
     for name in [
         weather_pv.D004_ACCEPTANCE_PACKET_NAME,
         weather_pv.D004_PAIRED_WEATHER_ACCEPTANCE_SCAFFOLD_NAME,
@@ -846,8 +856,7 @@ def test_committed_d004_acceptance_tolerance_packet_keeps_tolerances_unsigned() 
 
 def test_d004_pi_recommendation_packet_is_concise_and_unsigned(tmp_path: Path) -> None:
     metadata_src = Path("data/metadata/weather_pv")
-    metadata_dst = tmp_path / "metadata" / "weather_pv"
-    metadata_dst.mkdir(parents=True)
+    metadata_dst = _prepare_d004_tmp_metadata_dir(tmp_path)
     for name in [
         weather_pv.D004_ACCEPTANCE_TOLERANCE_PACKET_NAME,
         weather_pv.D004_ACCEPTANCE_PACKET_NAME,
@@ -928,8 +937,7 @@ def test_committed_d004_source_member_acceptance_decision_is_partial() -> None:
 
 def test_d004_weather_input_artifact_builds_from_accepted_source_member_metadata(tmp_path: Path) -> None:
     metadata_src = Path("data/metadata/weather_pv")
-    metadata_dst = tmp_path / "metadata" / "weather_pv"
-    metadata_dst.mkdir(parents=True)
+    metadata_dst = _prepare_d004_tmp_metadata_dir(tmp_path)
     for name in [
         weather_pv.D004_SOURCE_MEMBER_ACCEPTANCE_DECISION_NAME,
         weather_pv.D004_MEMBER_MANIFEST_NAME,
@@ -1696,6 +1704,107 @@ def test_cbs_anchor_evidence_packet_rejects_silent_signed_row_choice() -> None:
         )
 
 
+def test_committed_d014_ii3050_growth_evidence_packet_is_fail_closed() -> None:
+    packet = load_pv_ii3050_growth_evidence_packet(
+        "data/metadata/weather_pv/d014_ii3050_pv_growth_evidence.json"
+    )
+    record = packet.identity_record()
+
+    assert packet.packet_id == "D014-II3050-PV-GROWTH-EVIDENCE"
+    assert packet.approved_route_decision == "PV-CAP-001"
+    assert packet.source_value_packet_id == "D014-PV-CAPACITY-SOURCE-VALUE-PACKET"
+    assert packet.cbs_anchor_evidence_id == "D014-CBS-PV-CAPACITY-ANCHOR-EVIDENCE"
+    assert packet.download_performed is True
+    assert packet.raw_data_committed is False
+    assert record["row_label"] == "Zon PV*"
+    assert record["unit"] == "GW"
+    assert record["planning_year_candidate_scenarios"] == ("KA", "ND", "IA")
+    assert len(record["raw_sha256"]) == 64
+    assert record["raw_size_bytes"] > 1_000_000
+    assert record["executable_growth_factor_approved"] is False
+    assert "ii3050_scenario_column" in packet.missing_approval_keys
+    assert "ii3050_growth_factor_value" in packet.missing_approval_keys
+    assert "PV-PARAM-001_or_amended_conversion_decision" in packet.missing_approval_keys
+    with pytest.raises(ValueError, match="II3050 PV growth values are unsigned"):
+        packet.require_executable_growth_factor_approval()
+
+
+def test_ii3050_growth_evidence_packet_rejects_silent_signed_scenario() -> None:
+    payload = json.loads(
+        Path("data/metadata/weather_pv/d014_ii3050_pv_growth_evidence.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    payload["table_evidence"]["planning_year_2035_candidates"][0]["executable_status"] = "approved"
+
+    with pytest.raises(ValueError, match="scenario candidates must remain unsigned"):
+        PVII3050GrowthEvidencePacket(
+            packet_id=payload["packet_id"],
+            data_id=payload["data_id"],
+            status=payload["status"],
+            download_performed=payload["download_performed"],
+            raw_data_committed=payload["raw_data_committed"],
+            approved_route_decision=payload["approved_route_decision"],
+            source_value_packet_id=payload["source_value_packet_id"],
+            cbs_anchor_evidence_id=payload["cbs_anchor_evidence_id"],
+            capacity_route_boundary=payload["capacity_route_boundary"],
+            pv_param_boundary=payload["pv_param_boundary"],
+            pv_orient_boundary=payload["pv_orient_boundary"],
+            source=payload["source"],
+            raw_bundle=payload["raw_bundle"],
+            table_evidence=payload["table_evidence"],
+            growth_factor_choices_for_pi_review=payload["growth_factor_choices_for_pi_review"],
+            pi_approval_keys_before_executable_use=payload["pi_approval_keys_before_executable_use"],
+            non_claims=payload["non_claims"],
+        )
+
+
+def test_committed_d014_capacity_value_choice_packet_is_fail_closed() -> None:
+    packet = load_pv_capacity_value_choice_packet(
+        "data/metadata/weather_pv/d014_pv_capacity_value_choice_packet.json"
+    )
+    record = packet.identity_record()
+
+    assert packet.packet_id == "D014-PV-CAPACITY-VALUE-CHOICE-PACKET"
+    assert record["cbs_anchor_packet_id"] == "D014-CBS-PV-CAPACITY-ANCHOR-EVIDENCE"
+    assert record["ii3050_growth_packet_id"] == "D014-II3050-PV-GROWTH-EVIDENCE"
+    assert record["primary_equation_id"] == "dc_kwp_source_year_matched_ii3050_ratio"
+    assert record["executable_capacity_value_approved"] is False
+    assert "cbs_source_period_key" in packet.missing_approval_keys
+    assert "ii3050_scenario_column" in packet.missing_approval_keys
+    assert "scenario_source_consistency_with_ev_hp_inputs" in packet.missing_approval_keys
+    assert "PV-PARAM-001_or_amended_conversion_decision" in packet.missing_approval_keys
+    with pytest.raises(ValueError, match="PV capacity value choices are unsigned"):
+        packet.require_executable_capacity_value_approval()
+
+
+def test_capacity_value_choice_packet_rejects_silent_approval() -> None:
+    payload = json.loads(
+        Path("data/metadata/weather_pv/d014_pv_capacity_value_choice_packet.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    payload["pi_recommendation"]["recommendation_status"] = "approved"
+
+    with pytest.raises(ValueError, match="recommendation must remain proposed"):
+        PVCapacityValueChoicePacket(
+            packet_id=payload["packet_id"],
+            data_id=payload["data_id"],
+            status=payload["status"],
+            download_performed=payload["download_performed"],
+            raw_data_committed=payload["raw_data_committed"],
+            governing_decisions=payload["governing_decisions"],
+            source_evidence_inputs=payload["source_evidence_inputs"],
+            candidate_operands_for_pi_review=payload["candidate_operands_for_pi_review"],
+            candidate_equations_for_local_2035_capacity=payload["candidate_equations_for_local_2035_capacity"],
+            scenario_consistency_issue=payload["scenario_consistency_issue"],
+            capacity_convention_recommendation=payload["capacity_convention_recommendation"],
+            pi_recommendation=payload["pi_recommendation"],
+            pi_approval_keys_before_executable_use=payload["pi_approval_keys_before_executable_use"],
+            non_claims=payload["non_claims"],
+        )
+
+
 def test_committed_d014_statistical_orientation_tilt_packet_is_fail_closed() -> None:
     packet = load_pv_statistical_orientation_tilt_packet(
         "data/metadata/weather_pv/d014_pv_statistical_orientation_tilt_packet.json"
@@ -1837,5 +1946,48 @@ def test_orientation_tilt_value_choice_packet_rejects_silent_executable_values()
             candidate_class_sets=payload["candidate_class_sets"],
             pi_recommendation_for_review=payload["pi_recommendation_for_review"],
             pi_approval_keys_before_executable_use=payload["pi_approval_keys_before_executable_use"],
+            non_claims=payload["non_claims"],
+        )
+
+
+def test_committed_d014_capacity_approval_template_is_fail_closed() -> None:
+    packet = load_pv_capacity_approval_template_packet(
+        "data/metadata/weather_pv/d014_pv_capacity_approval_template.json"
+    )
+    record = packet.identity_record()
+
+    assert packet.packet_id == "D014-PV-CAPACITY-APPROVAL-TEMPLATE"
+    assert record["upstream_value_choice_packet_id"] == "D014-PV-CAPACITY-VALUE-CHOICE-PACKET"
+    assert record["capacity_route_decision"] == "PV-CAP-001"
+    assert record["scenario_consistency_decision"] == "A-016"
+    assert record["orientation_scope_decision"] == "PV-ORIENT-001"
+    assert record["recommended_equation_id_for_review"] == "dc_kwp_source_year_matched_ii3050_ratio"
+    assert record["executable_capacity_value_approved"] is False
+    assert "scenario_source_consistency_with_ev_hp_inputs" in packet.missing_approval_keys
+    assert "PV-PARAM-001_or_amended_conversion_decision" in packet.missing_approval_keys
+    with pytest.raises(ValueError, match="unsigned"):
+        packet.require_signed_capacity_artifact()
+
+
+def test_capacity_approval_template_rejects_silent_executable_use() -> None:
+    payload = json.loads(
+        Path("data/metadata/weather_pv/d014_pv_capacity_approval_template.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    payload["executable_gate"]["accepted_for_executable_pv_capacity_input"] = True
+
+    with pytest.raises(ValueError, match="must not allow executable"):
+        PVCapacityApprovalTemplatePacket(
+            packet_id=payload["packet_id"],
+            data_id=payload["data_id"],
+            status=payload["status"],
+            download_performed=payload["download_performed"],
+            raw_data_committed=payload["raw_data_committed"],
+            upstream_value_choice_packet=payload["upstream_value_choice_packet"],
+            approved_route_boundary=payload["approved_route_boundary"],
+            required_signed_artifact_fields=payload["required_signed_artifact_fields"],
+            executable_gate=payload["executable_gate"],
+            recommended_pi_path=payload["recommended_pi_path"],
             non_claims=payload["non_claims"],
         )

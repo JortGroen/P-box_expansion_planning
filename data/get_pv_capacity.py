@@ -12,6 +12,12 @@ D014_PACKET_NAME = "d014_pv_capacity_source_value_packet.json"
 D014_PACKET_ID = "D014-PV-CAPACITY-SOURCE-VALUE-PACKET"
 D014_CBS_ANCHOR_EVIDENCE_NAME = "d014_cbs_85005ned_alkmaar_gm0361_anchor_evidence.json"
 D014_CBS_ANCHOR_EVIDENCE_ID = "D014-CBS-PV-CAPACITY-ANCHOR-EVIDENCE"
+D014_II3050_GROWTH_EVIDENCE_NAME = "d014_ii3050_pv_growth_evidence.json"
+D014_II3050_GROWTH_EVIDENCE_ID = "D014-II3050-PV-GROWTH-EVIDENCE"
+D014_CAPACITY_VALUE_CHOICE_NAME = "d014_pv_capacity_value_choice_packet.json"
+D014_CAPACITY_VALUE_CHOICE_ID = "D014-PV-CAPACITY-VALUE-CHOICE-PACKET"
+D014_CAPACITY_APPROVAL_TEMPLATE_NAME = "d014_pv_capacity_approval_template.json"
+D014_CAPACITY_APPROVAL_TEMPLATE_ID = "D014-PV-CAPACITY-APPROVAL-TEMPLATE"
 D014_STATISTICAL_ORIENTATION_TILT_NAME = "d014_pv_statistical_orientation_tilt_packet.json"
 D014_STATISTICAL_ORIENTATION_TILT_ID = "D014-PV-STATISTICAL-ORIENTATION-TILT-PACKET"
 D014_ORIENTATION_TILT_SOURCE_CHOICE_NAME = "d014_pv_orientation_tilt_source_choice_packet.json"
@@ -28,6 +34,7 @@ CBS_DATA_OVERHEID_PAGE = (
 CBS_STATLINE_PAGE = "https://www.cbs.nl/nl-nl/cijfers/detail/85005NED"
 II3050_REPORT_URL = "https://www.netbeheernederland.nl/publicatie/ii3050-eindrapport"
 II3050_APPENDICES_URL = "https://www.netbeheernederland.nl/publicatie/bijlagen-ii3050-eindrapport"
+II3050_APPENDICES_PDF_URL = "https://www.netbeheernederland.nl/sites/default/files/Bijlagen_II3050_eindrapport__285.pdf"
 THREEDBAG_API_DOCS_URL = "https://api.3dbag.nl/api.html"
 THREEDBAG_COPYRIGHT_URL = "https://docs.3dbag.nl/en/copyright/"
 PVGIS_API_DOCS_URL = "https://joint-research-centre.ec.europa.eu/photovoltaic-geographical-information-system-pvgis/using-pvgis-5/api-non-interactive-service_en"
@@ -260,6 +267,507 @@ def retrieve_d014_cbs_capacity_anchor_evidence(
         encoding="utf-8",
     )
     return metadata_path
+
+
+def build_d014_ii3050_query_urls() -> dict[str, str]:
+    """Return the exact public II3050 URLs used for PV growth evidence."""
+    return {
+        "appendices_publication_page": II3050_APPENDICES_URL,
+        "appendices_pdf": II3050_APPENDICES_PDF_URL,
+        "main_report_publication_page": II3050_REPORT_URL,
+    }
+
+
+def write_d014_ii3050_appendices_raw_pdf(
+    raw_dir: str | Path = "data/raw/pv_capacity",
+    *,
+    timeout_seconds: int = 30,
+) -> Path:
+    """Retrieve the ignored II3050 appendix PDF used for D-014 growth evidence."""
+    directory = Path(raw_dir)
+    directory.mkdir(parents=True, exist_ok=True)
+    path = directory / "d014_ii3050_bijlagen_eindrapport_285.pdf"
+    with request.urlopen(II3050_APPENDICES_PDF_URL, timeout=timeout_seconds) as response:
+        path.write_bytes(response.read())
+    return path
+
+
+def build_d014_ii3050_growth_evidence_packet(raw_pdf_path: str | Path) -> dict[str, Any]:
+    """Build committed metadata from the ignored II3050 appendix PDF.
+
+    The packet records source and row candidates only. It does not select a
+    scenario column, denominator, growth factor, or executable PV capacity.
+    """
+    raw_path = Path(raw_pdf_path)
+    raw_bytes = raw_path.read_bytes()
+    candidate_columns = [
+        {"year": 2019, "scenario": "reference", "column_label": "2019 reference", "zon_pv_gw": 6.2},
+        {"year": 2030, "scenario": "KA", "column_label": "2030 KA", "zon_pv_gw": 59.3},
+        {"year": 2030, "scenario": "ND", "column_label": "2030 ND", "zon_pv_gw": 76.1},
+        {"year": 2030, "scenario": "IA", "column_label": "2030 IA", "zon_pv_gw": 42.1},
+        {"year": 2035, "scenario": "KA", "column_label": "2035 KA", "zon_pv_gw": 75.9},
+        {"year": 2035, "scenario": "ND", "column_label": "2035 ND", "zon_pv_gw": 98.2},
+        {"year": 2035, "scenario": "IA", "column_label": "2035 IA", "zon_pv_gw": 52.6},
+        {"year": 2040, "scenario": "DEC", "column_label": "2040 DEC", "zon_pv_gw": 126.1},
+        {"year": 2040, "scenario": "NAT", "column_label": "2040 NAT", "zon_pv_gw": 122.7},
+        {"year": 2040, "scenario": "EUR", "column_label": "2040 EUR", "zon_pv_gw": 92.6},
+        {"year": 2040, "scenario": "INT", "column_label": "2040 INT", "zon_pv_gw": 68.2},
+        {"year": 2050, "scenario": "DEC", "column_label": "2050 DEC", "zon_pv_gw": 183.1},
+        {"year": 2050, "scenario": "NAT", "column_label": "2050 NAT", "zon_pv_gw": 172.6},
+        {"year": 2050, "scenario": "EUR", "column_label": "2050 EUR", "zon_pv_gw": 126.3},
+        {"year": 2050, "scenario": "INT", "column_label": "2050 INT", "zon_pv_gw": 100.0},
+    ]
+    planning_year_candidates = [
+        {
+            **item,
+            "candidate_role": f"planning_year_2035_{item['scenario'].lower()}_candidate",
+            "executable_status": "candidate_only_unsigned",
+        }
+        for item in candidate_columns
+        if item["year"] == PLANNING_YEAR
+    ]
+    return {
+        "packet_id": D014_II3050_GROWTH_EVIDENCE_ID,
+        "data_id": D014_DATA_ID,
+        "status": "retrieved_source_evidence_values_unsigned",
+        "created_utc": _now_utc_iso(),
+        "download_performed": True,
+        "raw_data_committed": False,
+        "approved_route_decision": "PV-CAP-001",
+        "source_value_packet_id": D014_PACKET_ID,
+        "cbs_anchor_evidence_id": D014_CBS_ANCHOR_EVIDENCE_ID,
+        "capacity_route_boundary": "II3050/scenario PV growth evidence only; CBS Alkmaar anchor row and all executable values remain separate and unsigned",
+        "pv_param_boundary": "PV-PARAM-001 remains proposed/fail-closed; this packet does not approve PR=0.86, direct-GHI, plane-of-array conversion, or PV output",
+        "pv_orient_boundary": "PV-ORIENT-001 lightweight statistical orientation/tilt scope preserved; no roof/building/3DBAG/PV-map retrieval",
+        "source": {
+            "publication": "Bijlagen II3050 eindrapport",
+            "owner": "Netbeheer Nederland",
+            "publication_date": "2023-10-12",
+            "license": "public Netbeheer Nederland web publication/citation route; no redistributable raw data committed",
+            "source_pages": build_d014_ii3050_query_urls(),
+            "planned_use": "PI-reviewed scenario growth evidence for scaling the CBS Alkmaar PV-capacity anchor to planning year 2035",
+        },
+        "raw_bundle": {
+            "path": raw_path.as_posix(),
+            "sha256": hashlib.sha256(raw_bytes).hexdigest(),
+            "size_bytes": len(raw_bytes),
+            "retrieved_utc": _now_utc_iso(),
+            "source_url": II3050_APPENDICES_PDF_URL,
+        },
+        "table_evidence": {
+            "document_section": "A. Cijferbijlage",
+            "table_label": "Tabel A.1",
+            "table_title": "Overzicht voornaamste kengetallen II3050-editie 2: 2030, 2035, 2040 en 2050",
+            "page_candidate": 4,
+            "row_label": "Zon PV*",
+            "unit": "GW",
+            "candidate_columns": candidate_columns,
+            "planning_year_2035_candidates": planning_year_candidates,
+            "extraction_note": (
+                "Values are transcribed as source-evidence candidates from the public Netbeheer Nederland "
+                "appendix page/PDF table. They require PI confirmation of scenario column, denominator, "
+                "and growth-factor formula before executable use."
+            ),
+        },
+        "growth_factor_choices_for_pi_review": {
+            "scenario_column_candidates": planning_year_candidates,
+            "denominator_candidates": [
+                {
+                    "denominator_id": "ii3050_2019_reference_zon_pv_gw",
+                    "value_status": "source_evidence_candidate_unsigned",
+                    "zon_pv_gw": 6.2,
+                    "question": "Use II3050 2019 national PV capacity as the growth denominator?",
+                },
+                {
+                    "denominator_id": "cbs_anchor_year_same_convention",
+                    "value_status": "requires signed CBS period/field/convention and a national/local crosswalk",
+                    "question": "Use a CBS anchor-year denominator or crosswalk instead of the II3050 2019 reference?",
+                },
+            ],
+            "formula_candidates": [
+                {
+                    "formula_id": "national_ii3050_ratio_to_reference",
+                    "formula": "growth_factor = selected_2035_zon_pv_gw / ii3050_2019_reference_zon_pv_gw",
+                    "status": "candidate_only_unsigned",
+                },
+                {
+                    "formula_id": "scenario_crosswalk_to_cbs_anchor_year",
+                    "formula": "growth_factor = selected_2035_scenario_value / signed_anchor_year_reference_value",
+                    "status": "requires PI-defined source/convention crosswalk",
+                },
+            ],
+        },
+        "pi_approval_keys_before_executable_use": [
+            "ii3050_raw_pdf_sha256",
+            "ii3050_source_table_page_or_sheet",
+            "ii3050_row_label",
+            "ii3050_unit",
+            "ii3050_scenario_column",
+            "ii3050_growth_denominator",
+            "ii3050_growth_factor_formula",
+            "ii3050_growth_factor_value",
+            "scenario_source_consistency_with_ev_hp_inputs",
+            "cbs_source_period_key",
+            "cbs_capacity_field_key",
+            "capacity_unit_and_dc_ac_convention",
+            "node_allocation_rule",
+            "statistical_orientation_tilt_distribution_source",
+            "statistical_orientation_tilt_distribution_weights",
+            "PV-PARAM-001_or_amended_conversion_decision",
+        ],
+        "non_claims": [
+            "No executable PV installed-capacity value is approved.",
+            "No II3050 scenario column is selected as final.",
+            "No II3050 growth denominator, formula, or growth-factor value is approved.",
+            "No CBS period, sector/category, capacity field, unit convention, or DC/AC convention is selected as final.",
+            "No per-node PV allocation is approved.",
+            "No statistical orientation/tilt values or PV-PARAM conversion treatment are approved.",
+            "No roof, building, 3DBAG, or PV-map geometry source is retrieved or used.",
+            "No net-load, event detection, P(E), threshold analysis, capacity screen, manuscript result, or final PV output is produced.",
+        ],
+    }
+
+
+def retrieve_d014_ii3050_growth_evidence(
+    *,
+    metadata_dir: str | Path = "data/metadata",
+    raw_dir: str | Path = "data/raw/pv_capacity",
+    timeout_seconds: int = 30,
+) -> Path:
+    """Retrieve II3050 appendix source evidence and write committed metadata."""
+    raw_path = write_d014_ii3050_appendices_raw_pdf(raw_dir, timeout_seconds=timeout_seconds)
+    directory = Path(metadata_dir) / "weather_pv"
+    directory.mkdir(parents=True, exist_ok=True)
+    metadata_path = directory / D014_II3050_GROWTH_EVIDENCE_NAME
+    metadata_path.write_text(
+        json.dumps(build_d014_ii3050_growth_evidence_packet(raw_path), indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    return metadata_path
+
+
+def build_d014_pv_capacity_value_choice_packet(
+    cbs_evidence_path: str | Path = "data/metadata/weather_pv/d014_cbs_85005ned_alkmaar_gm0361_anchor_evidence.json",
+    ii3050_evidence_path: str | Path = "data/metadata/weather_pv/d014_ii3050_pv_growth_evidence.json",
+) -> dict[str, Any]:
+    """Combine CBS and II3050 evidence into an unsigned PI value-choice packet."""
+    cbs_path = Path(cbs_evidence_path)
+    ii_path = Path(ii3050_evidence_path)
+    cbs = json.loads(cbs_path.read_text(encoding="utf-8"))
+    ii3050 = json.loads(ii_path.read_text(encoding="utf-8"))
+    rows = cbs["candidate_value_choices_for_pi_review"]["all_retrieved_alkmaar_rows"]
+    periods = {item["Key"]: item for item in cbs["schema"]["periods"]}
+    sectors = {item["Key"]: item for item in cbs["schema"]["sector_and_capacity_class_codes"]}
+
+    def cbs_operand(period_key: str, sector_key: str, role: str) -> dict[str, Any]:
+        row = next(
+            item
+            for item in rows
+            if item["Perioden"] == period_key and item["SectorEnVermogensklasse"] == sector_key
+        )
+        return {
+            "operand_role": role,
+            "row_id": row["ID"],
+            "period_key": period_key,
+            "period_title": str(periods[period_key].get("Title", "")).strip(),
+            "period_status": periods[period_key].get("Status"),
+            "sector_key": sector_key,
+            "sector_title": sectors[sector_key].get("Title"),
+            "panel_capacity_kwp_operand": row.get("OpgesteldVermogenVanZonnepanelen_2"),
+            "inverter_capacity_kw_operand": row.get("OpgesteldVermogenOmvormers_3"),
+            "installations_count_diagnostic": row.get("Installaties_1"),
+            "operand_status": "candidate_operand_unsigned_not_executable",
+        }
+
+    cbs_operands = [
+        cbs_operand("2019JJ00", "E007161", "source_year_matched_ii3050_reference_all_activity_and_homes"),
+        cbs_operand("2019JJ00", "E007037", "source_year_matched_ii3050_reference_homes_only_sensitivity"),
+        cbs_operand("2023JJ00", "E007161", "latest_definitive_all_activity_and_homes_candidate"),
+        cbs_operand("2023JJ00", "E007037", "latest_definitive_homes_only_sensitivity_candidate"),
+        cbs_operand("2025JJ00", "E007161", "latest_available_provisional_all_activity_and_homes_diagnostic"),
+    ]
+    scenario_operands = ii3050["table_evidence"]["planning_year_2035_candidates"]
+    denominator_operands = ii3050["growth_factor_choices_for_pi_review"]["denominator_candidates"]
+    equations = [
+        {
+            "equation_id": "dc_kwp_source_year_matched_ii3050_ratio",
+            "capacity_convention": "DC panel capacity in kWp",
+            "formula": (
+                "pv_capacity_2035_kwp_dc = cbs_panel_capacity_kwp(period_key, sector_key) "
+                "* ii3050_zon_pv_gw(2035, scenario_column) / ii3050_zon_pv_gw(2019_reference)"
+            ),
+            "recommended_for_pi_review": True,
+            "reason": (
+                "Uses the CBS panel-capacity field and II3050 2019 reference denominator in the same source year "
+                "when the PI selects the 2019 CBS operand; avoids silently double-counting 2019-2023 growth."
+            ),
+            "executable_status": "proposed_recommendation_unsigned",
+        },
+        {
+            "equation_id": "dc_kwp_latest_definitive_with_signed_crosswalk",
+            "capacity_convention": "DC panel capacity in kWp",
+            "formula": (
+                "pv_capacity_2035_kwp_dc = cbs_panel_capacity_kwp(2023JJ00, sector_key) "
+                "* signed_ii3050_growth_factor_from_2023_to_2035"
+            ),
+            "recommended_for_pi_review": False,
+            "reason": (
+                "Uses the latest definitive CBS local anchor, but requires a signed 2023-to-2035 II3050/CBS crosswalk "
+                "because Table A.1 evidence currently records 2019 and scenario-year national values, not a 2023 denominator."
+            ),
+            "executable_status": "blocked_until_growth_crosswalk_signed",
+        },
+        {
+            "equation_id": "ac_kw_inverter_capacity_variant",
+            "capacity_convention": "AC inverter/grid-facing capacity in kW",
+            "formula": (
+                "pv_capacity_2035_kw_ac = cbs_inverter_capacity_kw(period_key, sector_key) "
+                "* signed_ii3050_growth_factor_same_convention"
+            ),
+            "recommended_for_pi_review": False,
+            "reason": (
+                "Potentially closer to grid-facing capacity, but CBS inverter capacity is not available for all periods "
+                "and PV-PARAM-001 must first say whether installed_capacity_kw expects DC peak or AC clipped capacity."
+            ),
+            "executable_status": "blocked_until_capacity_convention_and_growth_denominator_signed",
+        },
+    ]
+    approval_keys = [
+        "D014-PV-CAPACITY-VALUE-CHOICE-PACKET",
+        "cbs_anchor_evidence_packet_id_and_sha256",
+        "ii3050_growth_evidence_packet_id_and_sha256",
+        "alkmaar_geography_key",
+        "cbs_source_period_key",
+        "cbs_sector_category_key",
+        "cbs_capacity_field_key",
+        "capacity_unit_and_dc_ac_convention",
+        "ii3050_scenario_column",
+        "ii3050_growth_denominator",
+        "ii3050_growth_factor_formula",
+        "ii3050_growth_factor_value",
+        "scenario_source_consistency_with_ev_hp_inputs",
+        "node_allocation_rule",
+        "statistical_orientation_tilt_distribution_source",
+        "statistical_orientation_tilt_distribution_weights",
+        "PV-PARAM-001_or_amended_conversion_decision",
+    ]
+    return {
+        "packet_id": D014_CAPACITY_VALUE_CHOICE_ID,
+        "data_id": D014_DATA_ID,
+        "created_utc": _now_utc_iso(),
+        "status": "proposed_value_choice_packet_no_executable_values",
+        "download_performed": False,
+        "raw_data_committed": False,
+        "governing_decisions": {
+            "approved_route": "PV-CAP-001",
+            "scenario_consistency": "A-016 requires EV/HP/PV 2035 source-lineage consistency before integrated use",
+            "conversion_parameters": "PV-PARAM-001 remains proposed/fail-closed",
+            "orientation_scope": "PV-ORIENT-001 statistical orientation/tilt only; no roof/building/3DBAG/PV-map extraction",
+        },
+        "source_evidence_inputs": {
+            "cbs_anchor_packet_id": cbs["packet_id"],
+            "cbs_anchor_metadata_path": cbs_path.as_posix(),
+            "cbs_raw_sha256": cbs["raw_bundle"]["sha256"],
+            "ii3050_growth_packet_id": ii3050["packet_id"],
+            "ii3050_growth_metadata_path": ii_path.as_posix(),
+            "ii3050_raw_sha256": ii3050["raw_bundle"]["sha256"],
+        },
+        "candidate_operands_for_pi_review": {
+            "cbs_alkmaar_capacity_operands": cbs_operands,
+            "ii3050_2035_scenario_operands": scenario_operands,
+            "ii3050_denominator_operands": denominator_operands,
+        },
+        "candidate_equations_for_local_2035_capacity": equations,
+        "scenario_consistency_issue": {
+            "decision_id": "A-016",
+            "issue": (
+                "EV local adoption is anchored to ElaadNL Outlook branches, HP scaling uses PBL/CBS/When2Heat evidence, "
+                "and PV growth candidates use II3050 scenario columns. Shared labels such as low/middle/high must not be "
+                "assumed equivalent to II3050 KA/ND/IA without a signed scenario-consistency mapping."
+            ),
+            "required_manifest_fields_later": [
+                "pv_cbs_source_year",
+                "pv_cbs_capacity_field_key",
+                "pv_capacity_convention",
+                "pv_ii3050_scenario_column",
+                "pv_growth_factor_value",
+                "scenario_consistency_decision_id",
+            ],
+            "executable_status": "blocked_until_A016_consistency_mapping_signed",
+        },
+        "capacity_convention_recommendation": {
+            "recommended_for_pi_review": "Use DC panel capacity in kWp as the signed capacity-value artifact convention, label it explicitly as `installed_capacity_kwp_dc`, and let PV-PARAM-001 or an amendment decide how that maps into PVSystemConfig.installed_capacity_kw.",
+            "rationale": (
+                "CBS panel capacity is available across the complete candidate evidence window and matches PV installed-capacity reporting. "
+                "Using inverter AC kW may be useful as a grid-facing sensitivity, but it should not be silently substituted for PV-PARAM's capacity input."
+            ),
+            "not_approved_by_this_packet": True,
+        },
+        "pi_recommendation": {
+            "recommendation_status": "proposed_unsigned_not_executable",
+            "primary_equation_id": "dc_kwp_source_year_matched_ii3050_ratio",
+            "primary_cbs_operand_role": "source_year_matched_ii3050_reference_all_activity_and_homes",
+            "primary_capacity_convention": "DC kWp labelled as installed_capacity_kwp_dc before PV-PARAM-001",
+            "scenario_selection_rule": "PI selects the II3050 2035 scenario column only after A-016 consistency with EV/HP scenario branches is recorded.",
+            "sensitivity_candidates": [
+                "latest_definitive_2023_all_activity_and_homes_with_signed_2023_to_2035_growth_crosswalk",
+                "homes_only_sector_if PV is restricted to residential nodes",
+                "inverter_AC_capacity_if PI signs AC/grid-facing capacity convention",
+            ],
+        },
+        "pi_approval_keys_before_executable_use": approval_keys,
+        "non_claims": [
+            "No final PV capacity value is approved or computed.",
+            "No CBS row, period, sector/category, field, unit, or DC/AC convention is selected as final.",
+            "No II3050 scenario column, denominator, formula, or growth-factor value is selected as final.",
+            "No A-016 EV/HP/PV scenario-consistency mapping is approved.",
+            "No per-node PV allocation is approved.",
+            "No statistical orientation/tilt values or PV-PARAM conversion treatment are approved.",
+            "No roof, building, 3DBAG, or PV-map geometry source is retrieved or used.",
+            "No PV generation, net-load, event detection, P(E), threshold analysis, capacity screen, manuscript result, or final PV output is produced.",
+        ],
+    }
+
+
+def write_d014_pv_capacity_value_choice_packet(metadata_dir: str | Path = "data/metadata") -> Path:
+    """Write the proposed D-014 PV capacity value-choice packet and return its path."""
+    directory = Path(metadata_dir) / "weather_pv"
+    directory.mkdir(parents=True, exist_ok=True)
+    path = directory / D014_CAPACITY_VALUE_CHOICE_NAME
+    path.write_text(
+        json.dumps(build_d014_pv_capacity_value_choice_packet(), indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    return path
+
+
+def build_d014_pv_capacity_approval_template_packet(
+    value_choice_path: str | Path = "data/metadata/weather_pv/d014_pv_capacity_value_choice_packet.json",
+) -> dict[str, Any]:
+    """Return the unsigned template a later PI-signed PV capacity artifact must satisfy."""
+    value_path = Path(value_choice_path)
+    value_bytes = value_path.read_bytes()
+    value_choice = json.loads(value_bytes.decode("utf-8"))
+    if value_choice.get("packet_id") != D014_CAPACITY_VALUE_CHOICE_ID:
+        raise ValueError("capacity approval template must be built from the D-014 value-choice packet")
+
+    recommended = value_choice["pi_recommendation"]
+    return {
+        "packet_id": D014_CAPACITY_APPROVAL_TEMPLATE_ID,
+        "data_id": D014_DATA_ID,
+        "status": "proposed_signed_capacity_artifact_template_no_values",
+        "download_performed": False,
+        "raw_data_committed": False,
+        "upstream_value_choice_packet": {
+            "packet_id": D014_CAPACITY_VALUE_CHOICE_ID,
+            "metadata_path": str(value_path).replace("\\", "/"),
+            "metadata_sha256": hashlib.sha256(value_bytes).hexdigest(),
+            "metadata_size_bytes": len(value_bytes),
+            "recommendation_status": recommended["recommendation_status"],
+            "recommended_equation_id": recommended["primary_equation_id"],
+            "recommended_capacity_convention": recommended["primary_capacity_convention"],
+        },
+        "approved_route_boundary": {
+            "capacity_route_decision": "PV-CAP-001",
+            "capacity_route_status": "approved route only; executable values pending",
+            "scenario_consistency_decision": "A-016",
+            "pv_parameter_decision": "PV-PARAM-001_or_signed_amendment",
+            "orientation_scope_decision": "PV-ORIENT-001",
+            "orientation_scope_boundary": "statistical orientation/tilt only; no building/roof/3DBAG/PV-map extraction before the first experiment",
+        },
+        "required_signed_artifact_fields": {
+            "artifact_identity": [
+                "capacity_artifact_id",
+                "signed_decision_id",
+                "signed_decision_date",
+                "approval_status",
+                "created_from_value_choice_packet_id",
+            ],
+            "capacity_value": [
+                "installed_capacity_value",
+                "installed_capacity_unit",
+                "capacity_convention",
+                "capacity_scope",
+                "planning_year",
+            ],
+            "cbs_anchor_operand": [
+                "cbs_table_id",
+                "alkmaar_geography_key",
+                "cbs_source_period_key",
+                "cbs_sector_category_key",
+                "cbs_capacity_field_key",
+                "cbs_anchor_value",
+                "cbs_anchor_unit",
+                "cbs_evidence_packet_id",
+                "cbs_evidence_metadata_sha256",
+                "cbs_raw_bundle_sha256",
+            ],
+            "ii3050_growth_operand": [
+                "ii3050_evidence_packet_id",
+                "ii3050_evidence_metadata_sha256",
+                "ii3050_raw_bundle_sha256",
+                "ii3050_scenario_column",
+                "ii3050_numerator_year",
+                "ii3050_denominator_year_or_crosswalk_id",
+                "ii3050_growth_factor_formula",
+                "ii3050_growth_factor_value",
+            ],
+            "a016_scenario_consistency": [
+                "scenario_consistency_mapping_id",
+                "ev_source_scenario_label",
+                "hp_source_scenario_label",
+                "pv_ii3050_scenario_label",
+                "consistency_check_status",
+            ],
+            "allocation_and_conversion_dependencies": [
+                "node_allocation_rule_id",
+                "node_allocation_status",
+                "statistical_orientation_tilt_distribution_id",
+                "statistical_orientation_tilt_status",
+                "pv_param_decision_id",
+                "pv_param_status",
+            ],
+            "audit_outputs": [
+                "content_sha256",
+                "source_metadata_paths",
+                "source_metadata_sha256",
+                "non_claims",
+                "blocked_until",
+            ],
+        },
+        "executable_gate": {
+            "accepted_for_executable_pv_capacity_input": False,
+            "signed_capacity_value_approved": False,
+            "requires_pi_signed_decision": True,
+            "blocking_approval_keys": value_choice["pi_approval_keys_before_executable_use"],
+            "guard_message": "Unsigned D-014 capacity templates cannot provide executable PV installed capacity.",
+        },
+        "recommended_pi_path": {
+            "recommended_template_use": "When PI approves the D-014 value choice, instantiate this template as a new signed artifact rather than mutating evidence packets.",
+            "recommended_capacity_label_before_pv_param": "installed_capacity_kwp_dc",
+            "recommended_equation_id_for_review": recommended["primary_equation_id"],
+            "not_approved_by_this_template": True,
+        },
+        "non_claims": [
+            "No final PV installed-capacity value is approved or computed.",
+            "No CBS row, II3050 scenario, growth factor, or DC/AC convention is signed.",
+            "No node allocation, statistical orientation/tilt value, or PV-PARAM conversion treatment is signed.",
+            "No roof, building, 3DBAG, or PV-map geometry source is retrieved or used for the first experiment.",
+            "No PV generation, net-load, event detection, P(E), threshold analysis, capacity screen, manuscript result, or final PV output is produced.",
+        ],
+    }
+
+
+def write_d014_pv_capacity_approval_template_packet(metadata_dir: str | Path = "data/metadata") -> Path:
+    """Write the unsigned D-014 capacity approval-template packet and return its path."""
+    directory = Path(metadata_dir) / "weather_pv"
+    directory.mkdir(parents=True, exist_ok=True)
+    path = directory / D014_CAPACITY_APPROVAL_TEMPLATE_NAME
+    path.write_text(
+        json.dumps(build_d014_pv_capacity_approval_template_packet(), indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    return path
 
 
 def build_d014_pv_capacity_source_value_packet() -> dict[str, Any]:
@@ -974,13 +1482,22 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Prepare D-014 PV capacity source/value metadata.")
     parser.add_argument("--metadata-dir", default="data/metadata")
     parser.add_argument("--write-d014-source-value-packet", action="store_true")
+    parser.add_argument("--write-d014-capacity-value-choice", action="store_true")
+    parser.add_argument("--write-d014-capacity-approval-template", action="store_true")
     parser.add_argument("--write-d014-statistical-orientation-tilt", action="store_true")
     parser.add_argument("--write-d014-orientation-tilt-source-choice", action="store_true")
     parser.add_argument("--write-d014-orientation-tilt-value-choice", action="store_true")
     parser.add_argument("--retrieve-d014-cbs-anchor-evidence", action="store_true")
+    parser.add_argument("--retrieve-d014-ii3050-growth-evidence", action="store_true")
     args = parser.parse_args(argv)
 
-    if args.retrieve_d014_cbs_anchor_evidence:
+    if args.write_d014_capacity_approval_template:
+        path = write_d014_pv_capacity_approval_template_packet(args.metadata_dir)
+    elif args.write_d014_capacity_value_choice:
+        path = write_d014_pv_capacity_value_choice_packet(args.metadata_dir)
+    elif args.retrieve_d014_ii3050_growth_evidence:
+        path = retrieve_d014_ii3050_growth_evidence(metadata_dir=args.metadata_dir)
+    elif args.retrieve_d014_cbs_anchor_evidence:
         path = retrieve_d014_cbs_capacity_anchor_evidence(metadata_dir=args.metadata_dir)
     elif args.write_d014_orientation_tilt_value_choice:
         path = write_d014_pv_orientation_tilt_value_choice_packet(args.metadata_dir)
