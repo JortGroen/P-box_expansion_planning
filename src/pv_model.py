@@ -939,6 +939,111 @@ def load_pv_executable_readiness_blockers_packet(path: str | Path) -> PVExecutab
 
 
 @dataclass(frozen=True)
+class PVExecutablePreflightGuardPacket:
+    """Fail-closed preflight result for attempts to request executable PV generation."""
+
+    packet_id: str
+    data_id: str
+    status: str
+    download_performed: bool
+    raw_data_committed: bool
+    input_blocker_manifest: Mapping[str, object]
+    preflight_checks: Mapping[str, object]
+    token_policy: Mapping[str, object]
+    executable_gate: Mapping[str, object]
+    non_claims: Sequence[str]
+
+    def __post_init__(self) -> None:
+        if self.packet_id != "D014-PV-EXECUTABLE-PREFLIGHT-GUARD":
+            raise ValueError("PV executable preflight guard must identify D014-PV-EXECUTABLE-PREFLIGHT-GUARD")
+        if self.data_id != "D-014":
+            raise ValueError("PV executable preflight guard must identify D-014")
+        if self.status != "proposed_fail_closed_preflight_no_generation":
+            raise ValueError("PV executable preflight guard must remain proposed/fail-closed")
+        if self.download_performed is not False or self.raw_data_committed is not False:
+            raise ValueError("PV executable preflight guard must not claim retrieval or raw committed data")
+        blocker = _audit_json_mapping(self.input_blocker_manifest, "input_blocker_manifest")
+        checks = _audit_json_mapping(self.preflight_checks, "preflight_checks")
+        token_policy = _audit_json_mapping(self.token_policy, "token_policy")
+        gate = _audit_json_mapping(self.executable_gate, "executable_gate")
+        non_claims = tuple(str(item) for item in self.non_claims)
+        if blocker.get("packet_id") != "D014-PV-EXECUTABLE-READINESS-BLOCKERS":
+            raise ValueError("PV executable preflight guard must consume the readiness-blocker manifest")
+        if len(str(blocker.get("metadata_sha256", ""))) != 64:
+            raise ValueError("PV executable preflight guard must record the blocker manifest SHA-256")
+        if checks.get("component_source_member_artifact_available") is not True:
+            raise ValueError("PV executable preflight guard must preserve weather source/member readiness")
+        if checks.get("executable_pv_generation_authorized") is not False:
+            raise ValueError("PV executable preflight guard must keep executable generation unauthorized")
+        if checks.get("all_required_blockers_present") is not True:
+            raise ValueError("PV executable preflight guard must record all required blockers")
+        unsafe_tokens = tuple(str(item) for item in token_policy.get("unsafe_tokens_for_executable_outputs", ()))
+        for token in ("TODO", "TBD", "placeholder", "synthetic", "proposed", "unsigned", "not-approved"):
+            if token not in unsafe_tokens:
+                raise ValueError(f"PV executable preflight guard missing unsafe token policy entry {token}")
+        if token_policy.get("policy_result") != "blocked_metadata_only_no_executable_output":
+            raise ValueError("PV executable preflight guard must produce only a blocked metadata result")
+        if gate.get("preflight_ready_for_executable_pv_generation") is not False:
+            raise ValueError("PV executable preflight guard must not pass executable preflight")
+        if gate.get("result_if_invoked") != "abort_with_blocker_manifest":
+            raise ValueError("PV executable preflight guard must abort with the blocker manifest")
+        blockers = tuple(str(item) for item in gate.get("blocking_register_ids", ()))
+        for blocker_id in ("D014-PV-CAPACITY-APPROVAL-TEMPLATE", "A-016", "PV-ORIENT-001", "PV-PARAM-001"):
+            if blocker_id not in blockers:
+                raise ValueError(f"PV executable preflight guard missing blocker {blocker_id}")
+        if not any("No executable PV preflight passes" in item for item in non_claims):
+            raise ValueError("PV executable preflight guard must state that no executable preflight passes")
+        if not any("No PV generation" in item for item in non_claims):
+            raise ValueError("PV executable preflight guard must state that no PV generation is produced")
+
+        object.__setattr__(self, "input_blocker_manifest", blocker)
+        object.__setattr__(self, "preflight_checks", checks)
+        object.__setattr__(self, "token_policy", token_policy)
+        object.__setattr__(self, "executable_gate", gate)
+        object.__setattr__(self, "non_claims", non_claims)
+
+    @property
+    def blocking_register_ids(self) -> tuple[str, ...]:
+        return tuple(str(item) for item in self.executable_gate["blocking_register_ids"])
+
+    def require_executable_preflight_passed(self) -> None:
+        """Always fail while the preflight packet represents unresolved blockers."""
+        raise ValueError(
+            "PV executable preflight did not pass; unresolved D-014/PV-PARAM/PV-ORIENT/A-016/"
+            "allocation/paired-weather blockers must be signed before PV generation"
+        )
+
+    def identity_record(self) -> dict[str, object]:
+        return {
+            "packet_id": self.packet_id,
+            "data_id": self.data_id,
+            "status": self.status,
+            "input_blocker_packet_id": self.input_blocker_manifest["packet_id"],
+            "input_blocker_sha256": self.input_blocker_manifest["metadata_sha256"],
+            "preflight_ready_for_executable_pv_generation": False,
+            "result_if_invoked": self.executable_gate["result_if_invoked"],
+            "blocking_register_ids": self.blocking_register_ids,
+        }
+
+
+def load_pv_executable_preflight_guard_packet(path: str | Path) -> PVExecutablePreflightGuardPacket:
+    """Load the fail-closed executable PV preflight guard packet."""
+    payload = json.loads(Path(path).read_text(encoding="utf-8"))
+    return PVExecutablePreflightGuardPacket(
+        packet_id=str(payload.get("packet_id", "")),
+        data_id=str(payload.get("data_id", "")),
+        status=str(payload.get("status", "")),
+        download_performed=bool(payload.get("download_performed")),
+        raw_data_committed=bool(payload.get("raw_data_committed")),
+        input_blocker_manifest=payload.get("input_blocker_manifest", {}),
+        preflight_checks=payload.get("preflight_checks", {}),
+        token_policy=payload.get("token_policy", {}),
+        executable_gate=payload.get("executable_gate", {}),
+        non_claims=payload.get("non_claims", ()),
+    )
+
+
+@dataclass(frozen=True)
 class PVStatisticalOrientationTiltPacket:
     """Proposed D-014 statistical orientation/tilt packet that stays fail-closed."""
 
