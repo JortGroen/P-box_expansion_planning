@@ -1085,6 +1085,9 @@ def test_d014_pv_capacity_source_packet_is_metadata_only(tmp_path: Path) -> None
     assert "GM0361" in cbs["alkmaar_row_filter_template"]
     assert "TypedDataSet" in cbs["alkmaar_row_query_template"]
     assert packet["ii3050_growth_factor_source"]["numeric_growth_factor_approved"] is False
+    assert packet["optional_geometry_allocation_workflow"]["primary_status"] == "deferred_until_after_first_real_experiment"
+    assert "statistical orientation/tilt distribution packet" in packet["optional_geometry_allocation_workflow"]["recommended_next_packet"]
+    assert "statistical_orientation_tilt_distribution_source" in packet["capacity_value_binding_under_review"]["approval_keys_required_before_executable_use"]
     assert "No numeric PV installed capacity is approved." in packet["fail_closed_non_claims"]
 
     path = pv_capacity.write_d014_pv_capacity_source_value_packet(tmp_path)

@@ -4,31 +4,32 @@ Status: proposed PI decision packet only. This packet proposes a first-pass PV c
 
 ## Proposed Primary First-Pass Rule
 
-For each accepted D-004 WEATHER-001 member, use KNMI `Q`-derived `ghi_w_per_m2` directly as a simplified irradiance index:
+For each accepted D-004 WEATHER-001 member, use KNMI `Q`-derived `ghi_w_per_m2` as the realized irradiance driver and represent orientation/tilt through a signed typical/statistical distribution rather than specific roof geometry:
 
-`pv_kw[t] = min(installed_capacity_kw, max(0, installed_capacity_kw * 0.86 * ghi_w_per_m2[t] / 1000.0))`
+`pv_kw[t] = sum_bins min(installed_capacity_kw_bin, max(0, installed_capacity_kw_bin * 0.86 * irradiance_factor_bin[t] * ghi_w_per_m2[t] / 1000.0))`
 
-The proposed template is `pv_param_001_first_pass_ghi_pr086_no_temp_clipped_v1`.
+The proposed template is `pv_param_001_first_pass_statistical_geometry_ghi_pr086_no_temp_clipped_v1`. The distribution source, bin weights, and `irradiance_factor_bin` treatment remain unsigned.
 
 ## Parameter Choices For PI Approval
 
 - Installed capacity: outside PV-PARAM-001. PV-CAP-001 is the separate capacity-source route using a CBS Alkmaar local PV capacity anchor scaled to 2035 with a signed II3050/scenario growth factor; this packet only consumes a signed `installed_capacity_kw` per node/fleet once supplied.
 - Performance ratio: propose `0.86`, traced only to the approved PVGIS reference request `loss_percent=14.0` as `1 - 14/100`.
-- Irradiance basis: use WEATHER-001 `ghi_w_per_m2` directly. This is not a plane-of-array transposition claim.
-- Tilt/aspect: keep PVGIS 35 degree south-facing geometry as qualitative sanity/provenance only in the primary first pass.
+- Irradiance basis: use WEATHER-001 `ghi_w_per_m2` as the realized weather driver. This is not a claim that GHI equals plane-of-array irradiance.
+- Tilt/aspect: per PV-ORIENT-001, use a typical/statistical orientation-and-tilt distribution for the first experiment after the distribution source, bins, weights, and conversion treatment are signed. Do not use per-building or per-roof geometry before the first real experiment.
 - Temperature: propose `temperature_coefficient_per_c=0.0` and `reference_temperature_c=25.0`, disabling temperature correction until a module-specific coefficient is signed.
 - Clipping: propose `clip_to_capacity=true` after nonnegative conversion.
 
 ## Traceability And Boundaries
 
-KNMI station 249 remains the realized weather source. PVGIS-SARAH3 remains qualitative sanity/provenance and the source of the normalized 14% loss setting only; it is not a realized weather path and does not provide installed capacity. PV-PARAM-001 does not decide numeric capacity, capacity convention, 2035 scaling, or per-node allocation. The proposed direct-GHI rule is a first-screen simplification. A later signed transposition/module model may replace it.
+KNMI station 249 remains the realized weather source. PVGIS-SARAH3 remains qualitative sanity/provenance and the source of the normalized 14% loss setting only; it is not a realized weather path and does not provide installed capacity. PV-PARAM-001 does not decide numeric capacity, capacity convention, 2035 scaling, per-node allocation, or statistical orientation/tilt values. The proposed GHI-driven rule with statistical geometry is a first-screen simplification. A later signed roof-level transposition/module model may replace it after the first real experiment.
 
 ## PI Questions
 
 1. Approve or amend the proposed first-pass formula and `performance_ratio=0.86`.
 2. Confirm that executable installed capacity is supplied separately through PV-CAP-001 or an amended signed capacity artifact, not by PV-PARAM-001.
-3. Confirm that PVGIS tilt/aspect remains provenance-only until a plane-of-array treatment is separately signed.
-4. Confirm that temperature correction is disabled for the primary first pass pending a signed module coefficient.
+3. Confirm the PV-ORIENT-001 first-experiment scope: use statistical orientation/tilt classes, not per-roof geometry.
+4. Sign or amend the statistical orientation/tilt distribution source, weights, bins, and conversion treatment before executable PV generation.
+5. Confirm that temperature correction is disabled for the primary first pass pending a signed module coefficient.
 
 ## Suggested STATUS Update
 

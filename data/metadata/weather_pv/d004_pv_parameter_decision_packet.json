@@ -1,122 +1,126 @@
 {
   "blocks_signed_executable_pv_generation": true,
-  "created_utc": "2026-07-23T07:43:15+00:00",
-  "updated_utc": "2026-07-23T12:45:00+00:00",
+  "created_utc": "2026-07-24T08:25:35+00:00",
   "data_id": "D-004",
   "decision_id": "PV-PARAM-001",
   "decision_type": "pi_parameter_signoff_required_before_executable_pv",
-  "status": "proposed_pending_pi_signoff",
-  "parameter_config_status": "unsigned_fail_closed_scaffold",
-  "scope": "PV conversion parameters after WEATHER-001 source/member readiness",
   "governing_inputs": [
     "WEATHER-001",
     "D004-MC-001",
     "D004-SOURCE-MEMBER-ACCEPTANCE",
-    "PV-CAP-001"
+    "PV-CAP-001",
+    "PV-ORIENT-001"
   ],
-  "source_traceability": {
-    "realized_weather_path": "KNMI station 249 Berkhout WEATHER-001 members; GHI from KNMI Q under D004-MC-001",
-    "pvgis_reference_role": "PVGIS-SARAH3 1.0 kWp, 14% loss, fixed 35 degree south-facing requests remain qualitative sanity/provenance and calibration context only",
-    "capacity_source_status": "Installed capacity is outside PV-PARAM-001. PV-CAP-001 is the separate approved source route: use a CBS Alkmaar local PV capacity anchor scaled to 2035 with a signed II3050/scenario growth factor, then provide signed installed_capacity_kw to this conversion template.",
-    "module_or_inverter_source_status": "No module-specific temperature coefficient, inverter clipping curve, or measured plane-of-array source has been signed"
-  },
-  "proposed_primary_first_pass_config_template": {
-    "config_id": "pv_param_001_first_pass_ghi_pr086_no_temp_clipped_v1",
-    "parameter_status_after_pi_signoff": "approved_for_executable_component_use",
-    "signed_parameter_decision_id_after_pi_signoff": "PV-PARAM-001",
-    "installed_capacity_kw": {
-      "value": "caller_supplied_per_node_or_fleet",
-      "default": null,
-      "unit": "kW_ac_or_effective_kWp_consistent_with_signed_adoption_layer",
-      "source": "separate signed capacity artifact governed by PV-CAP-001 or an amended signed route",
-      "fail_closed_rule": "D-004, PVGIS normalized peakpower=1.0, and PV-PARAM-001 do not provide executable installed capacity; require a signed installed_capacity_kw from PV-CAP-001 or an amended signed capacity artifact"
-    },
-    "irradiance_input_basis": {
-      "value": "weather_member_ghi_w_per_m2",
-      "source": "KNMI Q-derived GHI from WEATHER-001 member",
-      "method": "Use GHI directly as the first-pass irradiance index; do not apply tilt/aspect transposition in the primary first-pass rule",
-      "boundary": "This is a simplified first-screen PV conversion, not a claim that GHI equals fixed-plane irradiance"
-    },
-    "reference_irradiance_w_per_m2": {
-      "value": 1000.0,
-      "unit": "W/m2",
-      "source": "PVSystemConfig normalization convention; paired with installed_capacity_kw scaling"
-    },
-    "performance_ratio": {
-      "value": 0.86,
-      "source": "Mapping from approved PVGIS reference request loss_percent=14.0 via PR = 1 - loss_percent / 100",
-      "boundary": "Proposed deterministic first-pass scalar only; not empirical local performance evidence"
-    },
-    "temperature_adjustment": {
-      "temperature_coefficient_per_c": 0.0,
-      "reference_temperature_c": 25.0,
-      "source": "No signed module-specific coefficient is available; proposed primary first pass disables temperature correction while preserving WEATHER-001 temperature for HP/PV pairing and later diagnostics",
-      "boundary": "Does not claim PV modules are temperature-insensitive; a later signed module coefficient may replace this"
-    },
-    "clipping": {
-      "clip_to_capacity": true,
-      "source": "Model guard to prevent output above signed installed_capacity_kw after scalar conversion",
-      "method": "Apply max(0, generation_kw) and then min(generation_kw, installed_capacity_kw)"
-    },
-    "tilt_aspect": {
-      "pvgis_reference_tilt_degrees": 35.0,
-      "pvgis_reference_aspect": "south-facing",
-      "primary_first_pass_use": "provenance_only_not_applied_to_knmi_ghi",
-      "future_upgrade": "A later PI-signed transposition rule may use tilt/aspect for plane-of-array irradiance"
-    }
-  },
+  "methods_wording_proposal": "For the primary first-pass PV component, PV generation is proposed as a deterministic WEATHER-001 GHI-driven profile with PV diversity represented through a signed typical/statistical orientation-and-tilt distribution rather than per-building roof geometry. Installed capacity is not supplied by D-004 or PV-PARAM-001 and must be provided by the separate signed PV-CAP-001 capacity route or an amended signed node/fleet artifact. Conditional on PI approval, the proposed scalar is performance_ratio=0.86, traced to the PVGIS 14% reference loss setting, with temperature_coefficient_per_c=0.0, reference_temperature_c=25.0, and clipping at installed capacity. The statistical geometry distribution source, bins, weights, and conversion treatment remain unsigned. This is a proposed first-screen simplification, not empirical PV performance evidence and not final paired HP/PV or integrated readiness.",
+  "out_of_scope_guards": [
+    "no per-building/per-roof/location-specific PV geometry before the first real experiment",
+    "no final paired HP/PV acceptance",
+    "no cold-spell tolerance approval",
+    "no net-load/event/P(E)/threshold/capacity-screen/manuscript results"
+  ],
+  "parameter_config_status": "unsigned_fail_closed_scaffold",
   "proposed_formula_for_pi_review": {
-    "formula": "pv_kw[t] = min(installed_capacity_kw, max(0, installed_capacity_kw * 0.86 * ghi_w_per_m2[t] / 1000.0))",
-    "temperature_term": "temperature coefficient proposed as 0.0 for the primary first pass; WEATHER-001 temperature remains carried for pairing and future diagnostics",
+    "formula": "pv_kw[t] = sum_bins min(installed_capacity_kw_bin, max(0, installed_capacity_kw_bin * 0.86 * irradiance_factor_bin[t] * ghi_w_per_m2[t] / 1000.0))",
     "inputs_required_before_executable_use": [
       "signed installed_capacity_kw for each PV node/fleet from PV-CAP-001 or an amended signed capacity route",
+      "signed statistical orientation/tilt distribution source, bins, weights, and conversion treatment under PV-ORIENT-001",
       "PI approval of PV-PARAM-001 proposed first-pass conversion",
       "exact WEATHER-001 member identity for paired HP/PV use",
       "cold-spell tolerance signoff before final paired acceptance"
-    ]
+    ],
+    "orientation_tilt_term": "irradiance_factor_bin and capacity split by bin remain unsigned until PV-PARAM-001 signs the statistical orientation/tilt distribution and conversion treatment",
+    "temperature_term": "temperature coefficient proposed as 0.0 for the primary first pass; WEATHER-001 temperature remains carried for pairing and future diagnostics"
+  },
+  "proposed_primary_first_pass_config_template": {
+    "clipping": {
+      "clip_to_capacity": true,
+      "method": "Apply max(0, generation_kw) and then min(generation_kw, installed_capacity_kw)",
+      "source": "Model guard to prevent output above signed installed_capacity_kw after scalar conversion"
+    },
+    "config_id": "pv_param_001_first_pass_statistical_geometry_ghi_pr086_no_temp_clipped_v1",
+    "installed_capacity_kw": {
+      "default": null,
+      "fail_closed_rule": "D-004, PVGIS normalized peakpower=1.0, and PV-PARAM-001 do not provide executable installed capacity; require a signed installed_capacity_kw from PV-CAP-001 or an amended signed capacity artifact",
+      "source": "separate signed capacity artifact governed by PV-CAP-001 or an amended signed route",
+      "unit": "kW_ac_or_effective_kWp_consistent_with_signed_adoption_layer",
+      "value": "caller_supplied_per_node_or_fleet"
+    },
+    "irradiance_input_basis": {
+      "boundary": "This is a simplified first-screen PV conversion, not a claim that GHI equals fixed-plane irradiance",
+      "method": "Use GHI as the realized irradiance driver for the first-pass route; any orientation/tilt adjustment must come from the signed statistical distribution, not location-specific roof geometry",
+      "source": "KNMI Q-derived GHI from WEATHER-001 member",
+      "value": "weather_member_ghi_w_per_m2"
+    },
+    "parameter_status_after_pi_signoff": "approved_for_executable_component_use",
+    "performance_ratio": {
+      "boundary": "Proposed deterministic first-pass scalar only; not empirical local performance evidence",
+      "source": "Mapping from approved PVGIS reference request loss_percent=14.0 via PR = 1 - loss_percent / 100",
+      "value": 0.86
+    },
+    "reference_irradiance_w_per_m2": {
+      "source": "PVSystemConfig normalization convention; paired with installed_capacity_kw scaling",
+      "unit": "W/m2",
+      "value": 1000.0
+    },
+    "signed_parameter_decision_id_after_pi_signoff": "PV-PARAM-001",
+    "temperature_adjustment": {
+      "boundary": "Does not claim PV modules are temperature-insensitive; a later signed module coefficient may replace this",
+      "reference_temperature_c": 25.0,
+      "source": "No signed module-specific coefficient is available; proposed primary first pass disables temperature correction while preserving WEATHER-001 temperature for HP/PV pairing and later diagnostics",
+      "temperature_coefficient_per_c": 0.0
+    },
+    "tilt_aspect": {
+      "approved_scope_decision": "PV-ORIENT-001",
+      "distribution_status": "source_weights_bins_and_conversion_treatment_unsigned",
+      "future_upgrade": "A later PI-signed roof-level workflow may use per-building geometry and pvlib/PV-map methods after the first real experiment",
+      "location_specific_geometry": "deferred_until_after_first_real_experiment",
+      "primary_first_pass_use": "statistical_distribution_required_before_executable_use",
+      "pvgis_reference_aspect": "south-facing",
+      "pvgis_reference_tilt_degrees": 35.0
+    }
   },
   "recommended_decisions": [
     {
+      "fail_closed_rule": "No executable PV profile may be accepted without a signed capacity value from PV-CAP-001 or an amended signed capacity artifact.",
       "field": "installed_capacity_kw",
       "question": "Should PV-PARAM-001 consume only signed installed_capacity_kw supplied by the separate PV-CAP-001 capacity route rather than infer capacity from the normalized 1.0 kWp PVGIS reference?",
-      "recommendation": "Approve no D-004 or PV-PARAM-001 default for executable capacity; require signed installed_capacity_kw for each PV fleet from PV-CAP-001 or an amended signed capacity artifact. PVGIS peakpower=1.0 remains a normalized reference only.",
-      "fail_closed_rule": "No executable PV profile may be accepted without a signed capacity value from PV-CAP-001 or an amended signed capacity artifact."
+      "recommendation": "Approve no D-004 or PV-PARAM-001 default for executable capacity; require signed installed_capacity_kw for each PV fleet from PV-CAP-001 or an amended signed capacity artifact. PVGIS peakpower=1.0 remains a normalized reference only."
     },
     {
+      "fail_closed_rule": "Tilt/aspect cannot change generated PV unless PV-PARAM-001 signs the statistical distribution source, bins, weights, and conversion treatment.",
       "field": "tilt_aspect",
-      "question": "Should PVGIS 35 degree south-facing geometry affect KNMI-driven first-pass PV conversion?",
-      "recommendation": "Keep the PVGIS reference geometry as provenance only for the primary first pass; do not apply it to KNMI GHI until a transposition rule is separately signed.",
-      "fail_closed_rule": "Tilt/aspect cannot change generated PV unless PV-PARAM-001 or a later signed decision approves plane-of-array treatment."
+      "question": "Should first-experiment PV use a typical/statistical orientation-and-tilt distribution rather than fixed PVGIS geometry or per-roof geometry?",
+      "recommendation": "Use a signed typical/statistical orientation-and-tilt distribution for the first experiment. Do not use per-building or per-roof geometry until after the first real experiment."
     },
     {
+      "fail_closed_rule": "Unsigned configs may be used in scaffold tests only and must raise before signed executable PV input use.",
       "field": "losses_or_performance_ratio",
       "question": "Should the primary first-pass scalar use the normalized PVGIS 14% loss as performance_ratio=0.86?",
-      "recommendation": "Approve performance_ratio=0.86 for the first-pass deterministic GHI-to-PV conversion, traced only to the approved PVGIS reference loss setting and not to empirical local PV evidence.",
-      "fail_closed_rule": "Unsigned configs may be used in scaffold tests only and must raise before signed executable PV input use."
+      "recommendation": "Approve performance_ratio=0.86 for the first-pass deterministic GHI-to-PV conversion, traced only to the approved PVGIS reference loss setting and not to empirical local PV evidence."
     },
     {
+      "fail_closed_rule": "No nonzero paper-use coefficient is implied by D-004 source/member acceptance.",
       "field": "temperature_coefficient_per_c",
       "question": "Should the primary first pass disable PV temperature correction until a module-specific coefficient is signed?",
-      "recommendation": "Approve temperature_coefficient_per_c=0.0 with reference_temperature_c=25.0 for the primary first pass, while retaining WEATHER-001 temperature for paired-weather identity and later diagnostics.",
-      "fail_closed_rule": "No nonzero paper-use coefficient is implied by D-004 source/member acceptance."
+      "recommendation": "Approve temperature_coefficient_per_c=0.0 with reference_temperature_c=25.0 for the primary first pass, while retaining WEATHER-001 temperature for paired-weather identity and later diagnostics."
     },
     {
+      "fail_closed_rule": "Unsigned clip_to_capacity values are scaffold-only.",
       "field": "clipping",
       "question": "Should PV generation be clipped at installed_capacity_kw after loss and irradiance conversion?",
-      "recommendation": "Approve clip_to_capacity=true as a guard after nonnegative conversion.",
-      "fail_closed_rule": "Unsigned clip_to_capacity values are scaffold-only."
+      "recommendation": "Approve clip_to_capacity=true as a guard after nonnegative conversion."
     },
     {
+      "fail_closed_rule": "No claim that GHI equals fixed-plane irradiance is allowed; plane-of-array or class-factor conversion requires PI approval.",
       "field": "ghi_vs_plane_of_array",
-      "question": "Should KNMI Q-derived GHI be used directly as the primary first-pass irradiance index?",
-      "recommendation": "Approve direct use of WEATHER-001 GHI for the first-pass simplified PV conversion and explicitly label it as not plane-of-array transposition.",
-      "fail_closed_rule": "No claim that GHI equals fixed-plane irradiance is allowed; plane-of-array conversion requires later PI approval."
+      "question": "Should KNMI Q-derived GHI remain the realized irradiance driver while the statistical orientation/tilt treatment is signed separately?",
+      "recommendation": "Keep WEATHER-001 realized irradiance as KNMI GHI and require a separate signed statistical geometry treatment before executable PV use."
     }
   ],
   "scaffold_contract": {
+    "approved_status": "approved_for_executable_component_use",
     "class": "src.pv_model.PVSystemConfig",
     "guard_method": "PVSystemConfig.require_signed_parameters()",
-    "approved_status": "approved_for_executable_component_use",
     "required_signed_field": "signed_parameter_decision_id",
     "required_signed_value": "PV-PARAM-001",
     "unsigned_statuses": [
@@ -124,10 +128,14 @@
       "proposed_pending_pi_signoff"
     ]
   },
-  "methods_wording_proposal": "For the primary first-pass PV component, PV generation is proposed as a deterministic GHI-indexed profile using the accepted D-004 WEATHER-001 member. KNMI Q-derived GHI is used directly without plane-of-array transposition; PVGIS 35 degree south-facing geometry remains provenance only. Installed capacity is not supplied by D-004 or PV-PARAM-001 and must be provided by the separate signed PV-CAP-001 capacity route or an amended signed node/fleet artifact. Conditional on PI approval, the proposed scalar is performance_ratio=0.86, traced to the PVGIS 14% reference loss setting, with temperature_coefficient_per_c=0.0, reference_temperature_c=25.0, and clipping at installed capacity. This is a proposed first-screen simplification, not empirical PV performance evidence and not final paired HP/PV or integrated readiness.",
-  "out_of_scope_guards": [
-    "no final paired HP/PV acceptance",
-    "no cold-spell tolerance approval",
-    "no net-load/event/P(E)/threshold/capacity-screen/manuscript results"
-  ]
+  "scope": "PV conversion parameters after WEATHER-001 source/member readiness",
+  "source_traceability": {
+    "capacity_source_status": "Installed capacity is outside PV-PARAM-001. PV-CAP-001 is the separate approved source route: use a CBS Alkmaar local PV capacity anchor scaled to 2035 with a signed II3050/scenario growth factor, then provide signed installed_capacity_kw to this conversion template.",
+    "module_or_inverter_source_status": "No module-specific temperature coefficient, inverter clipping curve, or measured plane-of-array source has been signed",
+    "orientation_tilt_scope": "PV-ORIENT-001 approves statistical orientation/tilt diversity for the first experiment but does not approve the distribution source, weights, bins, or conversion treatment.",
+    "pvgis_reference_role": "PVGIS-SARAH3 1.0 kWp, 14% loss, fixed 35 degree south-facing requests remain qualitative sanity/provenance and calibration context only",
+    "realized_weather_path": "KNMI station 249 Berkhout WEATHER-001 members; GHI from KNMI Q under D004-MC-001"
+  },
+  "status": "proposed_pending_pi_signoff",
+  "updated_utc": "2026-07-24T08:25:35+00:00"
 }

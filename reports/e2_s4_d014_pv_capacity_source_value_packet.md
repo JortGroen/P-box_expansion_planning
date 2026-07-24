@@ -12,15 +12,15 @@ PV-CAP-001 approves the route concept: use a local Alkmaar CBS PV-capacity ancho
 - CBS row template: filter `TypedDataSet` by `RegioS eq 'GM0361'`, a PI-selected period key, and a PI-selected sector/size-class key.
 - Capacity field candidates: panel capacity / paneelvermogen, inverter capacity / omvormervermogen, and installation count as diagnostic only. Exact field keys must come from `DataProperties` after retrieval/schema inspection.
 - II3050 growth source: Netbeheer Nederland II3050 edition 2 appendices, Table A.1 row `Zon PV* GW`, with the 2035 scenario column and denominator still requiring PI approval.
-- Optional geometry/allocation: 3DBAG roof geometry, DEGO, Zonnedakje, and CBS building/geography data remain source-discovery or allocation/geometry candidates until concrete data and licenses are registered.
+- Orientation/tilt: per PV-ORIENT-001, the first experiment should use a signed typical/statistical orientation-and-tilt distribution. Building-level geometry sources such as 3DBAG, DEGO, Zonnedakje, and CBS building/geography data are deferred to post-first-experiment allocation or roof-geometry improvements unless a later signed amendment reopens that scope.
 
 ## Fail-Closed Approval Keys
 
-Executable PV capacity remains blocked until all of these are signed: CBS source checksum, Alkmaar geography, CBS source period, CBS capacity field, capacity unit and DC/AC convention, II3050 source checksum or page evidence, II3050 scenario column, II3050 growth-factor value, node allocation rule, and PV-PARAM-001 or an amended conversion decision.
+Executable PV capacity remains blocked until all of these are signed: CBS source checksum, Alkmaar geography, CBS source period, CBS capacity field, capacity unit and DC/AC convention, II3050 source checksum or page evidence, II3050 scenario column, II3050 growth-factor value, node allocation rule, statistical orientation/tilt source and weights, and PV-PARAM-001 or an amended conversion decision.
 
 ## Boundaries
 
-This packet does not approve numeric PV capacity, the `PR = 0.86` direct-GHI conversion proposal, capacity convention, growth factor, per-node allocation, net-load/event analysis, `P(E)`, threshold analysis, capacity screens, or manuscript results.
+This packet does not approve numeric PV capacity, the `PR = 0.86` conversion scalar, capacity convention, growth factor, per-node allocation, statistical orientation/tilt values, net-load/event analysis, `P(E)`, threshold analysis, capacity screens, or manuscript results.
 
 ## Files
 
