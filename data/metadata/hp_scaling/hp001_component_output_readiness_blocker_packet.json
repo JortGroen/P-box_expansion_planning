@@ -7,7 +7,7 @@
     "scenario_consistency": "A-016 approves the scenario-consistency requirement, but the HP integrated-use binding remains unsigned until an explicit scenario_source_consistency approval ID is recorded.",
     "weather_contract": "WEATHER-001 requires HP/PV to consume the same shared weather member identity and calendar."
   },
-  "created_utc": "2026-07-24T13:55:57Z",
+  "created_utc": "2026-07-24T14:39:56Z",
   "current_blockers": [
     "annual HP TWh values and 2035 adoption/electrification/service fractions are unsigned",
     "A-016 scenario-source consistency is not signed for a real integrated case",
