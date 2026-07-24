@@ -34,5 +34,5 @@ No real PV array, PV capacity value, II3050 growth factor, orientation/tilt weig
   `.\.venv\Scripts\python.exe -m pytest -q tests/test_data_sources.py::test_d014_pv_component_output_artifact_scaffold_is_metadata_only tests/test_pv_model.py::test_committed_d014_pv_component_output_artifact_scaffold_fails_closed tests/test_pv_model.py::test_pv_component_output_artifact_scaffold_rejects_silent_generation_claim tests/test_pv_model.py::test_pv_component_output_writer_emits_ic1_compatible_synthetic_fixture tests/test_pv_model.py::test_pv_component_output_accepted_spec_rejects_unsigned_tokens tests/test_methods_registry.py`
   passed: 9 tests.
 - `.\scripts\task.ps1 ownership` passed for Agent C-owned paths.
-- `.\scripts\task.ps1 test-fast` passed: 728 passed, 1 skipped, 7 deselected.
+- `.\scripts\task.ps1 test-fast` passed: 731 passed, 1 skipped, 7 deselected.
 - `git diff --check origin/main...HEAD` passed.
