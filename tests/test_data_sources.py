@@ -1112,6 +1112,26 @@ def test_d014_cbs_odata_url_builder_is_official_and_encoded() -> None:
     with pytest.raises(ValueError, match="entity"):
         pv_capacity.build_cbs_odata_url("TypedDataSet?$filter=bad")
 
+def test_hp001_cold_spell_acceptance_decision_packet_is_proposal_only(tmp_path: Path) -> None:
+    packet = hp_scaling.build_hp001_cold_spell_acceptance_decision_packet()
+
+    assert packet["decision_packet_id"] == "E2-S3-HP001-COLD-SPELL-ACCEPTANCE-READINESS"
+    assert packet["design_id"] == "E2-S3-COLD-SPELL-ACCEPTANCE-DESIGN"
+    assert packet["status"].endswith("no real paired acceptance run")
+    assert [item["gate"] for item in packet["gate_separation"]] == [
+        "source/member identity",
+        "paired HP/PV weather equality",
+        "cold-spell numerical tolerances",
+    ]
+    assert packet["fail_closed_runner"]["runner"] == "src.hp_model.evaluate_hp001_cold_spell_acceptance"
+    assert packet["fail_closed_runner"]["identity_check"] == "src.weather_model.assert_same_weather_realization"
+    assert any("near-freezing" in item for item in packet["diagnostics_to_report_before_final_acceptance"]["near_freezing_defrost_risk"])
+    assert any(item["option"] == "B" for item in packet["pi_approval_options"])
+    assert "No D-004 paired-weather or cold-spell acceptance is signed or run." in packet["non_claims"]
+
+    path = hp_scaling.write_hp001_cold_spell_acceptance_decision_packet(tmp_path)
+    written = json.loads(path.read_text(encoding="utf-8"))
+    assert written["decision_packet_id"] == packet["decision_packet_id"]
 
 def test_d014_cbs_anchor_query_urls_are_narrow_and_official() -> None:
     urls = pv_capacity.build_d014_cbs_anchor_query_urls()

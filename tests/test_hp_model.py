@@ -26,12 +26,14 @@ from src.hp_model import (
     HP001LocalScalingConfig,
     HeatPumpProfile,
     HeatPumpComponentSeries,
+    ColdSpellAcceptanceTolerances,
     When2HeatComponent,
     When2HeatHourlyProfile,
     align_heat_pump_profile,
     build_executable_hp001_profile_from_when2heat_csv,
     build_heat_pump_profile_from_when2heat_csv,
     cold_week_sanity_check,
+    evaluate_hp001_cold_spell_acceptance,
     default_when2heat_components,
     downscale_hourly_to_15min,
     hp001_components_from_local_scaling_config,
@@ -821,6 +823,100 @@ def test_cold_week_sanity_peak_coincides_with_cold_spell() -> None:
     assert sanity.max_load_inside_cold_week_kw == 4.0
     assert sanity.max_load_outside_cold_week_kw == 1.0
 
+
+def _synthetic_acceptance_profile(*, member_id: str = "design-cold-week") -> HeatPumpProfile:
+    timestamps = _quarter_timestamps(14 * 96)
+    temperature = np.full(len(timestamps), 6.0)
+    cold_start = 3 * 96
+    cold_stop = 10 * 96
+    temperature[cold_start:cold_stop] = -5.0
+    temperature[2 * 96 : 3 * 96] = 0.0
+    electric = np.full(len(timestamps), 1.0)
+    electric[2 * 96 : 3 * 96] = 2.0
+    electric[cold_start:cold_stop] = 4.0
+    cop = np.full(len(timestamps), 3.0)
+    cop[2 * 96 : 3 * 96] = 2.6
+    cop[cold_start:cold_stop] = 2.0
+    return HeatPumpProfile(
+        shared_weather_driver_id="knmi_synthetic:design-cold-week",
+        weather_member_id=member_id,
+        weather_source="knmi_synthetic",
+        timestamps_utc=timestamps,
+        electric_kw=electric,
+        thermal_demand_kw=electric * cop,
+        cop=cop,
+        temperature_c=temperature,
+        source_columns=("synthetic_heat", "synthetic_cop"),
+        source_path=None,
+        downscaling_method="test_15min_native",
+        pv_weather_field_names=("ghi_w_per_m2",),
+        weather_content_sha256="0" * 64,
+        weather_provenance={"acceptance_evidence": "synthetic_unit_test_only"},
+    )
+
+
+def _synthetic_signed_tolerances() -> ColdSpellAcceptanceTolerances:
+    return ColdSpellAcceptanceTolerances(
+        tolerance_set_id="synthetic-cold-spell-fixture-v1",
+        approval_id="HP-COLD-SPELL-TOLERANCE-FIXTURE",
+        cold_window_days=(3, 7),
+        near_freezing_band_c=(-1.0, 1.0),
+        max_outside_to_inside_peak_ratio=1.0,
+        max_near_freezing_step_change_fraction_of_peak=0.50,
+        provenance={"scope": "synthetic unit test only"},
+    )
+
+
+def test_hp001_cold_spell_acceptance_refuses_unsigned_tolerances() -> None:
+    profile = _synthetic_acceptance_profile()
+    tolerances = ColdSpellAcceptanceTolerances(
+        tolerance_set_id="unsigned-template",
+        approval_id="",
+        cold_window_days=(3, 7),
+        near_freezing_band_c=(-1.0, 1.0),
+        max_outside_to_inside_peak_ratio=1.0,
+        max_near_freezing_step_change_fraction_of_peak=0.50,
+    )
+
+    with pytest.raises(ValueError, match="signed numerical tolerances"):
+        evaluate_hp001_cold_spell_acceptance(
+            profile,
+            pv_weather_identity_record=profile.weather_identity_record(),
+            tolerances=tolerances,
+        )
+
+
+def test_hp001_cold_spell_acceptance_refuses_mismatched_weather_identity() -> None:
+    profile = _synthetic_acceptance_profile()
+    pv_identity = dict(profile.weather_identity_record())
+    pv_identity["shared_weather_driver_id"] = "knmi_synthetic:different-member"
+
+    with pytest.raises(ValueError, match="weather realization mismatch"):
+        evaluate_hp001_cold_spell_acceptance(
+            profile,
+            pv_weather_identity_record=pv_identity,
+            tolerances=_synthetic_signed_tolerances(),
+        )
+
+
+def test_hp001_cold_spell_acceptance_records_cold_and_near_freezing_diagnostics() -> None:
+    profile = _synthetic_acceptance_profile()
+
+    result = evaluate_hp001_cold_spell_acceptance(
+        profile,
+        pv_weather_identity_record=profile.weather_identity_record(),
+        tolerances=_synthetic_signed_tolerances(),
+    )
+
+    assert result.accepted is True
+    assert result.checks["paired_weather_identity_equal"] is True
+    assert result.cold_window_diagnostics[0]["window_days"] == 3
+    assert result.cold_window_diagnostics[1]["window_days"] == 7
+    assert result.cold_window_diagnostics[1]["max_load_inside_kw"] == 4.0
+    assert result.near_freezing_diagnostics["band_c"] == (-1.0, 1.0)
+    assert result.near_freezing_diagnostics["n_timesteps"] == 96
+    assert result.near_freezing_diagnostics["mean_cop"] == pytest.approx(2.6)
+    assert "annual HP TWh values" in result.non_claims[1]
 
 def test_alignment_requires_shared_weather_driver_identity() -> None:
     hourly = When2HeatHourlyProfile(

@@ -28,6 +28,7 @@ FORMULA_DECISION_PACKET_FILENAME = "hp001_alkmaar_gm0361_scaling_formula_config_
 VALUE_BINDING_READINESS_FILENAME = "hp001_alkmaar_gm0361_value_binding_readiness_packet.json"
 READINESS_APPROVAL_CHECKLIST_FILENAME = "hp001_alkmaar_gm0361_readiness_approval_checklist.json"
 EXECUTABLE_VALUE_BINDING_DECISION_PACKET_FILENAME = "hp001_alkmaar_gm0361_executable_value_binding_decision_packet.json"
+COLD_SPELL_ACCEPTANCE_DECISION_PACKET_FILENAME = "hp001_d004_cold_spell_acceptance_decision_packet.json"
 DOWNLOAD_TIMEOUT_S = 120.0
 PBL_HEAT_TERMS = ("warmte", "heat", "gas", "energie", "energy", "verbruik", "demand", "vraag")
 PBL_DHW_TERMS = ("tapwater", "warm_water", "dhw", "water")
@@ -352,6 +353,107 @@ def build_hp001_value_binding_readiness_packet() -> dict[str, Any]:
 
 
 
+def build_hp001_cold_spell_acceptance_decision_packet() -> dict[str, Any]:
+    """Return the proposed HP/D-004 cold-spell tolerance decision packet."""
+    return {
+        "data_ids": ["D-003", "D-004"],
+        "decision_packet_id": "E2-S3-HP001-COLD-SPELL-ACCEPTANCE-READINESS",
+        "design_id": "E2-S3-COLD-SPELL-ACCEPTANCE-DESIGN",
+        "created_utc": _utc_now(),
+        "status": "proposed tolerance decision packet; no real paired acceptance run",
+        "approved_foundation": {
+            "d003_shape_cop_boundary": "HP-001 approves Dutch residential SFH/MFH space and DHW When2Heat shape/COP columns for internal source use.",
+            "d004_source_member_use": "D004-SOURCE-MEMBER-ACCEPTANCE approves D-004 source/member use for internal first-screen work only.",
+            "weather_contract": "WEATHER-001 requires HP and PV profiles to carry the same member_id, shared_weather_driver_id, source/provenance, content hash, and UTC/local calendar identity.",
+            "cold_spell_design": "E2-S3-COLD-SPELL-ACCEPTANCE-DESIGN approves the diagnostic families but leaves numerical tolerances unsigned.",
+        },
+        "gate_separation": [
+            {
+                "gate": "source/member identity",
+                "question": "Does the accepted D-004 member artifact preserve KNMI/PVGIS provenance and member checksums?",
+                "status": "approved for internal first-screen use only by D004-SOURCE-MEMBER-ACCEPTANCE",
+            },
+            {
+                "gate": "paired HP/PV weather equality",
+                "question": "Do HP and PV outputs report the exact same WEATHER-001 realization before diagnostics are inspected?",
+                "required_fields": [
+                    "member_id",
+                    "shared_weather_driver_id",
+                    "source",
+                    "first_timestamp_utc",
+                    "last_timestamp_utc",
+                    "n_timesteps",
+                    "cadence_seconds",
+                    "content_sha256",
+                ],
+                "status": "unsigned for final paired acceptance",
+            },
+            {
+                "gate": "cold-spell numerical tolerances",
+                "question": "Which explicit tolerances convert cold-window and near-freezing diagnostics into pass/fail evidence?",
+                "status": "unsigned; this packet asks for PI decision only",
+            },
+        ],
+        "diagnostics_to_report_before_final_acceptance": {
+            "coldest_windows": [
+                "coldest rolling 3-day mean temperature window with HP peak, max inside/outside load, mean/min COP",
+                "coldest rolling 7-day mean temperature window with HP peak, max inside/outside load, mean/min COP",
+            ],
+            "near_freezing_defrost_risk": [
+                "number of 15-minute steps inside the signed near-freezing temperature band around 0 degrees C",
+                "mean/max HP load and mean/min COP inside that band",
+                "maximum adjacent-step HP load change touching that band, normalized by annual HP peak load",
+            ],
+            "component_traceability": "report SFH/MFH and space/DHW source/COP columns separately before aggregation",
+            "calendar_traceability": "report UTC/local first/last timestamp, timestep count, cadence, and WEATHER-001 identity records for HP and PV",
+        },
+        "pi_approval_options": [
+            {
+                "option": "A",
+                "label": "approve fixture-runner structure only",
+                "effect": "keeps code fail-closed and defers all numerical pass/fail tolerances; not enough for final D-004/HP acceptance",
+            },
+            {
+                "option": "B",
+                "label": "sign explicit numerical tolerance set",
+                "fields_to_sign": [
+                    "cold_window_days, proposed diagnostic windows: [3, 7]",
+                    "near_freezing_band_c around 0 degrees C, for example [-1, 1] or [-2, 2]",
+                    "max_outside_to_inside_peak_ratio for coldest-window load concentration",
+                    "max_near_freezing_step_change_fraction_of_peak for defrost-risk discontinuity screening",
+                    "whether coldest-window mean COP must be no higher than near-freezing mean COP",
+                ],
+                "effect": "allows a later real paired D-004/When2Heat acceptance run after annual/profile prerequisites are also met",
+            },
+            {
+                "option": "C",
+                "label": "amend or escalate tolerance design",
+                "effect": "requires a new methods/register update before real acceptance can run",
+            },
+        ],
+        "fail_closed_runner": {
+            "runner": "src.hp_model.evaluate_hp001_cold_spell_acceptance",
+            "tolerance_config": "src.hp_model.ColdSpellAcceptanceTolerances",
+            "identity_check": "src.weather_model.assert_same_weather_realization",
+            "unsigned_behavior": "raises before pass/fail diagnostics if cold_spell_tolerances approval_id is blank",
+            "mismatch_behavior": "raises before tolerance evaluation if HP and PV WEATHER-001 identity records differ",
+            "fixture_scope": "unit tests use synthetic profiles and fixture approval IDs only; no real D-004 acceptance result is produced",
+        },
+        "remaining_blockers_before_integrated_hp_use": [
+            "signed annual HP value binding and 2035 adoption/electrification",
+            "A-016 scenario-source consistency approval for the integrated EV/HP/PV 2035 case",
+            "real paired HP/PV WEATHER-001 identity equality evidence over accepted D-004 members",
+            "PI-signed cold-spell numerical tolerances",
+            "real acceptance run and manifest after the above are signed",
+        ],
+        "non_claims": [
+            "No annual HP TWh values are executable.",
+            "No 2035 HP adoption/electrification value is signed.",
+            "No D-004 paired-weather or cold-spell acceptance is signed or run.",
+            "No net-load, event, P(E), threshold, capacity-screen, manuscript, or probability analysis is run.",
+        ],
+    }
+
 def build_hp001_readiness_approval_checklist_packet() -> dict[str, Any]:
     """Return the remaining HP-001 approvals before integrated HP use."""
     annual_value_keys = [
@@ -491,6 +593,15 @@ def build_hp001_executable_value_binding_decision_packet() -> dict[str, Any]:
         ],
     }
 
+
+def write_hp001_cold_spell_acceptance_decision_packet(metadata_dir: Path) -> Path:
+    """Write the proposed HP/D-004 cold-spell tolerance decision packet."""
+    target_dir = metadata_dir / "hp_scaling"
+    target_dir.mkdir(parents=True, exist_ok=True)
+    path = target_dir / COLD_SPELL_ACCEPTANCE_DECISION_PACKET_FILENAME
+    payload = build_hp001_cold_spell_acceptance_decision_packet()
+    path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    return path
 
 def write_hp001_executable_value_binding_decision_packet(metadata_dir: Path) -> Path:
     """Write the proposed executable value-binding decision packet."""
@@ -928,6 +1039,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--write-value-binding-packet", action="store_true", help="Write the proposed HP-001 value-binding readiness packet without executable values.")
     parser.add_argument("--write-readiness-checklist", action="store_true", help="Write the proposed HP-001 final-readiness approval checklist without executable values.")
     parser.add_argument("--write-executable-value-binding-packet", action="store_true", help="Write the proposed HP-001 executable value-binding decision packet without approving values.")
+    parser.add_argument("--write-cold-spell-acceptance-packet", action="store_true", help="Write the proposed HP/D-004 cold-spell tolerance decision packet without running acceptance.")
     parser.add_argument("--download", action="store_true", help="Retrieve/checksum the approved D-013 public sources; no values are produced.")
     parser.add_argument("--inspect-existing", action="store_true", help="Refresh schema metadata from existing ignored D-013 raw files without network or values.")
     parser.add_argument("--resume", action="store_true", help="Skip completed sources whose raw files match checkpoint byte size and SHA-256.")
@@ -943,6 +1055,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         path = write_hp001_readiness_approval_checklist_packet(Path(args.metadata_dir))
     elif args.write_executable_value_binding_packet:
         path = write_hp001_executable_value_binding_decision_packet(Path(args.metadata_dir))
+    elif args.write_cold_spell_acceptance_packet:
+        path = write_hp001_cold_spell_acceptance_decision_packet(Path(args.metadata_dir))
     elif args.write_formula_packet:
         path = write_hp001_scaling_formula_config_decision_packet(Path(args.metadata_dir))
     else:
