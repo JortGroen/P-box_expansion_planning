@@ -442,7 +442,7 @@
     "checksum_preflight": "data/metadata/ev_adoption/e2_s2_ev_candidate_profile_checksum_preflight.json",
     "component_input_scaffold": "data/metadata/ev_adoption/e2_s2_ev_ic1_component_input_scaffold.json",
     "component_output_manifest": "data/metadata/ev_adoption/e2_s2_ev_ic1_candidate_component_output_manifest.json",
-    "component_output_manifest_sha256": "01dcac20e7369a5997bb2a7584cac98e3a62a9ebaff4f44cfc4e6969c3bc4e39"
+    "component_output_manifest_sha256": "2be1c52eca050ee0dd97028d1787a51a4920ee89465328c24032f4e81b56b4fd"
   },
   "source_ids": [
     "D-002",

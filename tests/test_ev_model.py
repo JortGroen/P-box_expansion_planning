@@ -1277,7 +1277,7 @@ def _committed_ev_component_output_consumption_inputs() -> tuple[dict[str, objec
     scaffold = json.loads((base / "e2_s2_ev_ic1_component_input_scaffold.json").read_text(encoding="utf-8"))
     component_output_manifest_path = base / "e2_s2_ev_ic1_candidate_component_output_manifest.json"
     component_output_manifest = json.loads(component_output_manifest_path.read_text(encoding="utf-8"))
-    return scaffold, component_output_manifest, ev_model._sha256_file(component_output_manifest_path)
+    return scaffold, component_output_manifest, _git_blob_sha256(component_output_manifest_path)
 
 
 def test_committed_ev_ic1_component_output_consumption_packet_matches_builder() -> None:
