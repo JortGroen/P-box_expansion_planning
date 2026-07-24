@@ -15,7 +15,7 @@ from typing import Literal, Mapping, Protocol, Sequence
 
 import numpy as np
 
-from src.contracts.loading_trajectory import TimeDomain
+from src.contracts.loading_trajectory import LoadingTrajectoryPreRunConfig, TimeDomain
 from src.rng import ComponentStream, SeedTree
 
 
@@ -54,6 +54,13 @@ ALLOWED_COMPONENT_ARTIFACT_STATUSES: tuple[ComponentArtifactStatus, ...] = (
 
 DEFAULT_REALIZATION_COMPONENTS: tuple[str, ...] = REQUIRED_INTEGRATION_COMPONENT_KINDS
 DEFAULT_SAMPLE_INDEX = 0
+DEFAULT_EXECUTABLE_BRIDGE_BLOCKER_IDS: tuple[str, ...] = (
+    "A-013",
+    "G2",
+    "G1-A2",
+    "A-016",
+)
+
 REGISTER_FILES: tuple[tuple[str, int, int, int], ...] = (
     ("registers/DECISIONS.md", 0, 6, 7),
     ("registers/ASSUMPTIONS.md", 0, 6, 7),
@@ -1652,6 +1659,98 @@ def dry_run_integrated_input_preflight(
         "executable_input_gate": executable_input_gate,
     }
 
+def build_executable_loading_bridge_preflight(
+    config: FutureLayerScreenPreflightConfig,
+    artifacts: Sequence[ExecutableInputArtifact],
+    trajectory_config: LoadingTrajectoryPreRunConfig,
+    *,
+    capacity_provenance: Mapping[str, object] | None = None,
+    required_component_kinds: Sequence[ComponentKind] = REQUIRED_INTEGRATION_COMPONENT_KINDS,
+    missing_artifact_blockers: Mapping[str, Sequence[str]] | None = None,
+    downstream_blocker_ids: Sequence[str] = DEFAULT_EXECUTABLE_BRIDGE_BLOCKER_IDS,
+    intended_use: str = "e3_s2_executable_loading_bridge_preflight",
+) -> dict[str, object]:
+    """Bridge IC-1 executable readiness to IC-2 trajectory manifest readiness.
+
+    This is an array-free dry run. It proves the current artifact gate and the
+    IC-2 pre-run metadata can be represented in one manifest-ready packet, but
+    it does not assemble real net load, build loading arrays, detect events, or
+    estimate probabilities.
+    """
+
+    if trajectory_config.timestep_seconds != config.timestep_seconds:
+        raise ValueError("trajectory pre-run cadence must match the executable input config")
+    if tuple(config.planning_years) != tuple(trajectory_config.planning_years):
+        raise ValueError("trajectory pre-run planning_years must match the executable input config")
+
+    dry_run = dry_run_integrated_input_preflight(
+        config,
+        artifacts,
+        required_component_kinds=required_component_kinds,
+        missing_artifact_blockers=missing_artifact_blockers,
+        intended_use=intended_use,
+    )
+    capacity_record = _validate_bridge_capacity_provenance(capacity_provenance)
+    downstream_blockers = tuple(
+        _require_nonempty(blocker, name="downstream_blocker_id")
+        for blocker in downstream_blocker_ids
+    )
+    component_blockers = {
+        kind: tuple(report.get("blocking_register_ids", ()))
+        for kind, report in dry_run["component_reports"].items()
+        if report["state"] in {"missing", "blocked"}
+    }
+    register_backing_errors = {
+        kind: tuple(report.get("register_backing_errors", ()))
+        for kind, report in dry_run["component_reports"].items()
+        if report.get("register_backing_errors")
+    }
+    ready_for_synthetic_loading_manifest = (
+        dry_run["ready_for_input_assembly"] is True
+        and dry_run["gate_error"] is None
+        and capacity_record is not None
+    )
+    # A real first experiment requires signed downstream model-error, domain,
+    # capacity, and scenario-consistency inputs; this bridge records that stop.
+    ready_for_first_real_experiment = ready_for_synthetic_loading_manifest and not downstream_blockers
+
+    return {
+        "intended_use": intended_use,
+        "dry_run_only": True,
+        "metadata_preflight_only": True,
+        "ready_for_ic1_input_assembly": dry_run["ready_for_input_assembly"],
+        "ready_for_synthetic_loading_manifest": ready_for_synthetic_loading_manifest,
+        "ready_for_first_real_experiment": ready_for_first_real_experiment,
+        "no_real_net_load_arrays": True,
+        "no_event_detection": True,
+        "no_event_counts": True,
+        "no_probability_estimate": True,
+        "no_capacity_screen_result": True,
+        "executable_input_preflight": dry_run,
+        "trajectory_prerun_manifest": trajectory_config.manifest_record(),
+        "capacity_provenance": capacity_record,
+        "blockers": {
+            "component_artifact_blockers_by_kind": component_blockers,
+            "register_backing_errors_by_kind": register_backing_errors,
+            "downstream_gate_blockers": downstream_blockers,
+            "capacity_provenance_missing": capacity_record is None,
+        },
+        "manifest_fields": {
+            "calendar_id": config.metadata.get("calendar_id"),
+            "timestep_seconds": config.timestep_seconds,
+            "planning_years": config.planning_years,
+            "required_component_kinds": tuple(required_component_kinds),
+            "governed_event_metadata": trajectory_config.manifest_record()["governed_event_metadata"],
+            "capacity_provenance": capacity_record,
+            "component_artifact_manifest_paths": (
+                dry_run["executable_input_gate"]["manifest_paths_by_kind"]
+                if dry_run["executable_input_gate"] is not None
+                else {}
+            ),
+        },
+    }
+
+
 def validate_future_layer_screen_preflight(
     config: FutureLayerScreenPreflightConfig,
     artifacts: Sequence[ExecutableInputArtifact],
@@ -1950,6 +2049,29 @@ def validate_net_load_result(result: NetLoadResult) -> None:
 _VALID_COMPONENT_KINDS = frozenset(ComponentKind.__args__)
 _VALID_EXECUTABLE_INPUT_STATUSES = frozenset(ExecutableInputArtifactStatus.__args__)
 
+
+def _validate_bridge_capacity_provenance(record: Mapping[str, object] | None) -> dict[str, object] | None:
+    if record is None:
+        return None
+    required_keys = ("s_nom_agg_kva", "convention_status", "source")
+    missing = [key for key in required_keys if key not in record]
+    if missing:
+        raise ValueError(f"capacity_provenance missing required key(s): {', '.join(missing)}")
+    s_nom_agg_kva = float(record["s_nom_agg_kva"])
+    if not np.isfinite(s_nom_agg_kva) or s_nom_agg_kva <= 0.0:
+        raise ValueError("capacity_provenance s_nom_agg_kva must be finite and positive")
+    convention_status = _require_nonempty(str(record["convention_status"]), name="capacity_provenance convention_status")
+    source = _require_nonempty(str(record["source"]), name="capacity_provenance source")
+    metadata = record.get("metadata", {})
+    if not isinstance(metadata, Mapping):
+        raise TypeError("capacity_provenance metadata must be a mapping")
+    _validate_nonempty_mapping_values(metadata, name="capacity_provenance metadata")
+    return {
+        "s_nom_agg_kva": s_nom_agg_kva,
+        "convention_status": convention_status,
+        "source": source,
+        "metadata": dict(metadata),
+    }
 
 def _validate_artifact_register_backing(artifacts: Sequence[ExecutableInputArtifact]) -> None:
     failures: dict[str, list[str]] = {}
