@@ -770,9 +770,18 @@ one-dimensional `p_kw`/`q_kvar`/`timestamps` arrays for one node. The wrapper
 therefore carries blocker
 `A-LOADER-MULTI-NODE-EV-OUTPUT-CONTRACT-NOT-YET-SIGNED` until Agent A signs a
 multi-node component-output contract or Agent C exports a per-node manifest
-strategy. Held-out access, quarantined access, ElaadNL API calls, integrated
-analysis, adequacy certification, and any `M` sufficiency claim remain false in
-both the recovery and generic-loader manifest packets. G0-A3 has resolved Q-5
+strategy. The EV per-node export strategy is the Agent C-side resolution route:
+it consumes only the generic EV packet, verifies each ignored multi-node source
+NPZ SHA-256 before loading, emits one scenario/node one-dimensional
+`p_kw`/`q_kvar`/`timestamps` NPZ plus manifest per work unit, and checkpoints
+after every node so a restart skips only checksum-verified completed outputs.
+In a clean worktree where the ignored source NPZs are absent, the runner writes
+a blocker manifest with exact missing paths and checksums rather than creating
+placeholder outputs. Written real manifests remain `scaffold` until a later
+signed executable route authorizes accepted loader use. Held-out access,
+quarantined access, ElaadNL API calls, integrated analysis, adequacy
+certification, and any `M` sufficiency claim remain false in the recovery,
+generic-loader, and per-node export manifest packets. G0-A3 has resolved Q-5
 threshold semantics, so EV readiness no longer treats Q-5 itself as a blocker;
 event use still remains blocked by the other unsigned or missing integrated
 prerequisites listed above. It loads no profile arrays for adequacy, runs no

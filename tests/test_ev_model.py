@@ -15,6 +15,7 @@ import data.get_ev_adequacy_preflight as ev_adequacy_preflight
 import data.get_ev_component_outputs as ev_component_outputs
 from data.get_ev_component_outputs import (
     EVComponentOutputVerificationError,
+    export_ev_per_node_component_outputs,
     rebuild_and_verify_ev_component_outputs,
     verify_existing_ev_component_outputs,
     write_generic_loader_manifests,
@@ -76,7 +77,9 @@ from src.contracts.net_load import (
     AcceptedComponentAdapterArtifact,
     ExecutableInputArtifact,
     FutureLayerScreenPreflightConfig,
+    NetLoadRealizationContext,
     build_accepted_artifact_loader_blocker_preflight,
+    load_component_adapter_output_from_npz_artifact,
 )
 from src.rng import SeedTree
 
@@ -2106,6 +2109,223 @@ def test_ev_generic_loader_manifest_writer_is_deterministic(tmp_path: Path) -> N
     assert first == repeated
     assert json.loads((tmp_path / "metadata" / "packet.json").read_text(encoding="utf-8")) == first
     assert len(first["scenario_manifests"]) == 3
+
+def _write_synthetic_multi_node_ev_npz(path: Path, *, node_ids: tuple[str, ...] = ("load_000", "load_001")) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    timestamps = np.array(
+        ["2035-01-01T00:00:00", "2035-01-01T00:15:00", "2035-01-01T00:30:00", "2035-01-01T00:45:00"],
+        dtype="datetime64[s]",
+    )
+    p_kw = np.array([[1.0, 2.0, 3.0, 4.0], [10.0, 20.0, 30.0, 40.0]], dtype=float)[: len(node_ids)]
+    q_kvar = p_kw / 10.0
+    ev_component_outputs._write_deterministic_npz(
+        path,
+        {
+            "node_ids": np.asarray(node_ids),
+            "p_kw_by_node": p_kw,
+            "q_kvar_by_node": q_kvar,
+            "timestamps_utc": timestamps,
+        },
+    )
+    return p_kw, q_kvar, timestamps
+
+
+def _synthetic_generic_packet(source_path: Path, source_sha: str, *, node_ids: tuple[str, ...] = ("load_000", "load_001")) -> dict[str, object]:
+    scenarios = ("high", "low", "middle")
+    scenario_manifests = []
+    manifests_by_scenario = {}
+    for scenario in scenarios:
+        record = {
+            "scenario": scenario,
+            "array_path": source_path.as_posix(),
+            "array_sha256": source_sha,
+            "path": f"metadata/generic/ev_2035_{scenario}.json",
+            "sha256": "0" * 64,
+        }
+        scenario_manifests.append(record)
+        manifests_by_scenario[scenario] = {
+            "artifact_id": f"synthetic_generic_{scenario}",
+            "artifact_status": "blocked_multi_node_contract",
+            "kind": "ev",
+            "component_id": f"ev_component_output_2035_{scenario}",
+            "node_id": "ev_multi_node_axis_115",
+            "member_id": f"ev005b_root20260722_sample0_{scenario}_branch",
+            "source_id": "D-002_D-010_D-012",
+            "calendar_id": "planning-2035-europe-amsterdam-15min",
+            "timestep_seconds": 900,
+            "array_path": source_path.as_posix(),
+            "array_sha256": source_sha,
+            "provenance": {
+                "node_axis": {"node_count": len(node_ids), "node_ids": list(node_ids)},
+                "calendar_mapping": {"rule_id": "EV-CAL-001", "target_calendar_id": "planning-2035-europe-amsterdam-15min"},
+                "a014_allocation_provenance": {"decision_id": "A-014"},
+                "selection_manifest_provenance": {"decision_id": "EV-005B"},
+                "remaining_blockers": [
+                    {"blocker_id": "E3.S2a-EV-HELD-OUT-ADEQUACY-NOT-RUN", "status": "blocked"}
+                ],
+            },
+        }
+    return {
+        "artifact_type": "ev_ic1_generic_component_output_manifest_packet",
+        "artifact_id": "synthetic_ev_generic_packet",
+        "schema_version": 1,
+        "task_id": "E3.S2a",
+        "status": "blocked_ev_generic_loader_manifests_multi_node_contract",
+        "decision_ids": ["A-014", "EV-003", "EV-005", "EV-005B", "EV-007A", "EV-008A", "EV-CAL-001"],
+        "source_ids": ["D-002", "D-010", "D-012"],
+        "policy": {
+            "candidate_libraries_only": True,
+            "held_out_access": False,
+            "quarantined_access": False,
+            "integrated_analysis_performed": False,
+            "event_or_p_e_analysis_performed": False,
+            "m_sufficiency_claimed": False,
+        },
+        "scenario_manifests": scenario_manifests,
+        "manifests_by_scenario": manifests_by_scenario,
+    }
+
+
+def _ev_loader_context() -> NetLoadRealizationContext:
+    tree = SeedTree(20260722)
+    sample_index = 0
+    return NetLoadRealizationContext(
+        scenario="low",
+        planning_year=2035,
+        time_domain="full_year",
+        rho=0.0,
+        root_seed=tree.root_seed,
+        sample_index=sample_index,
+        sample_seed=tree.sample_seed(sample_index),
+        component_streams=(tree.component_stream(sample_index, "ev"),),
+        shared_weather_driver_id="not_weather_dependent",
+    )
+
+
+def test_ev_per_node_export_splits_fixture_into_agent_a_loadable_artifact(tmp_path: Path) -> None:
+    source_path = Path("data/processed/elaad_profiles/component_outputs/ev_fixture_low.npz")
+    p_kw, q_kvar, timestamps = _write_synthetic_multi_node_ev_npz(tmp_path / source_path)
+    source_sha = ev_model._sha256_file(tmp_path / source_path)
+    packet = _synthetic_generic_packet(source_path, source_sha)
+
+    result = export_ev_per_node_component_outputs(
+        generic_packet=packet,
+        base_dir=tmp_path,
+        generic_packet_path=Path("metadata/generic_packet.json"),
+        output_dir=Path("data/processed/elaad_profiles/component_outputs/per_node"),
+        manifest_dir=Path("metadata/per_node"),
+        checkpoint_path=Path("metadata/per_node_checkpoint.json"),
+        timestamp_utc="2026-07-24T17:00:00Z",
+        artifact_status="synthetic_fixture",
+        scenario_filter=("low",),
+        node_filter=("load_001",),
+    )
+
+    assert result["status"] == "per_node_exports_written_scaffold"
+    assert result["completed_per_node_export_count"] == 1
+    export_record = result["completed_per_node_exports"][0]
+    manifest = json.loads((tmp_path / export_record["manifest_path"]).read_text(encoding="utf-8"))
+    loaded = load_component_adapter_output_from_npz_artifact(
+        manifest,
+        _ev_loader_context(),
+        repo_root=tmp_path,
+        expected_calendar_id="planning-2035-europe-amsterdam-15min",
+        expected_node_ids=("load_001",),
+        allow_synthetic_fixture=True,
+    )
+    assert loaded.node_id == "load_001"
+    assert loaded.kind == "ev"
+    np.testing.assert_allclose(loaded.p_kw, p_kw[1])
+    np.testing.assert_allclose(loaded.q_kvar, q_kvar[1])
+    assert np.array_equal(loaded.timestamps, timestamps)
+    assert manifest["provenance"]["source_multi_node_sha256"] == source_sha
+
+
+def test_ev_per_node_export_blocks_missing_source_npz(tmp_path: Path) -> None:
+    source_path = Path("data/processed/elaad_profiles/component_outputs/missing.npz")
+    packet = _synthetic_generic_packet(source_path, "1" * 64)
+
+    result = export_ev_per_node_component_outputs(
+        generic_packet=packet,
+        base_dir=tmp_path,
+        generic_packet_path=Path("metadata/generic_packet.json"),
+        checkpoint_path=Path("metadata/per_node_checkpoint.json"),
+        timestamp_utc="2026-07-24T17:00:00Z",
+        scenario_filter=("low",),
+    )
+
+    assert result["status"] == "blocked_missing_source_component_outputs"
+    assert result["missing_source_component_outputs"][0]["path"] == source_path.as_posix()
+    assert json.loads((tmp_path / "metadata/per_node_checkpoint.json").read_text(encoding="utf-8")) == result
+
+
+def test_ev_per_node_export_blocks_source_checksum_mismatch(tmp_path: Path) -> None:
+    source_path = Path("data/processed/elaad_profiles/component_outputs/ev_fixture_low.npz")
+    _write_synthetic_multi_node_ev_npz(tmp_path / source_path)
+    packet = _synthetic_generic_packet(source_path, "2" * 64)
+
+    result = export_ev_per_node_component_outputs(
+        generic_packet=packet,
+        base_dir=tmp_path,
+        generic_packet_path=Path("metadata/generic_packet.json"),
+        checkpoint_path=Path("metadata/per_node_checkpoint.json"),
+        timestamp_utc="2026-07-24T17:00:00Z",
+        scenario_filter=("low",),
+    )
+
+    assert result["status"] == "blocked_source_component_output_checksum_mismatch"
+    assert result["source_checksum_mismatches"][0]["failure"] == "source_checksum_mismatch"
+
+
+def test_ev_per_node_export_rejects_unsafe_approval_tokens(tmp_path: Path) -> None:
+    source_path = Path("data/processed/elaad_profiles/component_outputs/ev_fixture_low.npz")
+    _write_synthetic_multi_node_ev_npz(tmp_path / source_path)
+    packet = _synthetic_generic_packet(source_path, ev_model._sha256_file(tmp_path / source_path))
+    packet["decision_ids"] = [*packet["decision_ids"], "EV-FUTURE-PLACEHOLDER"]
+
+    with pytest.raises(EVComponentOutputVerificationError, match="Unsafe approval/source token"):
+        export_ev_per_node_component_outputs(
+            generic_packet=packet,
+            base_dir=tmp_path,
+            timestamp_utc="2026-07-24T17:00:00Z",
+            scenario_filter=("low",),
+        )
+
+
+def test_ev_per_node_export_rejects_duplicate_and_missing_node_ids(tmp_path: Path) -> None:
+    source_path = Path("data/processed/elaad_profiles/component_outputs/ev_fixture_low.npz")
+    _write_synthetic_multi_node_ev_npz(tmp_path / source_path)
+    packet = _synthetic_generic_packet(source_path, ev_model._sha256_file(tmp_path / source_path), node_ids=("load_000", "load_000"))
+    with pytest.raises(EVComponentOutputVerificationError, match="duplicate node IDs"):
+        export_ev_per_node_component_outputs(
+            generic_packet=packet,
+            base_dir=tmp_path,
+            timestamp_utc="2026-07-24T17:00:00Z",
+            scenario_filter=("low",),
+        )
+
+    packet = _synthetic_generic_packet(source_path, ev_model._sha256_file(tmp_path / source_path), node_ids=("load_000", "load_002"))
+    with pytest.raises(EVComponentOutputVerificationError, match="node axis does not match"):
+        export_ev_per_node_component_outputs(
+            generic_packet=packet,
+            base_dir=tmp_path,
+            timestamp_utc="2026-07-24T17:00:00Z",
+            scenario_filter=("low",),
+        )
+
+
+def test_ev_per_node_export_rejects_accepted_status_before_approval(tmp_path: Path) -> None:
+    source_path = Path("data/processed/elaad_profiles/component_outputs/ev_fixture_low.npz")
+    _write_synthetic_multi_node_ev_npz(tmp_path / source_path)
+    packet = _synthetic_generic_packet(source_path, ev_model._sha256_file(tmp_path / source_path))
+
+    with pytest.raises(EVComponentOutputVerificationError, match="future signed executable approval"):
+        export_ev_per_node_component_outputs(
+            generic_packet=packet,
+            base_dir=tmp_path,
+            timestamp_utc="2026-07-24T17:00:00Z",
+            scenario_filter=("low",),
+            artifact_status="accepted",
+        )
 
 
 def test_ev005_replacement_policy_packet_records_approval_and_profile_free_boundary() -> None:
