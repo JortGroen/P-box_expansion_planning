@@ -23,6 +23,7 @@ from src.pv_model import (
     PVII3050GrowthEvidencePacket,
     PVOrientationTiltSourceChoicePacket,
     PVOrientationTiltValueChoicePacket,
+    PVParamConversionSourceChoicePacket,
     PVStatisticalOrientationTiltPacket,
     PVSystemConfig,
     PVWeatherInputArtifact,
@@ -45,6 +46,7 @@ from src.pv_model import (
     load_pv_ii3050_growth_evidence_packet,
     load_pv_orientation_tilt_source_choice_packet,
     load_pv_orientation_tilt_value_choice_packet,
+    load_pv_param_conversion_source_choice_packet,
     load_pv_statistical_orientation_tilt_packet,
     load_pv_weather_input_artifact,
     parse_pvgis_monthly_reference,
@@ -1892,6 +1894,51 @@ def test_orientation_tilt_source_choice_packet_rejects_roof_level_scope() -> Non
         )
 
 
+
+def test_committed_d014_pv_param_conversion_source_choice_packet_is_fail_closed() -> None:
+    packet = load_pv_param_conversion_source_choice_packet(
+        "data/metadata/weather_pv/d014_pv_param_conversion_source_choice_packet.json"
+    )
+    record = packet.identity_record()
+
+    assert packet.packet_id == "D014-PV-PARAM-CONVERSION-SOURCE-CHOICE-PACKET"
+    assert packet.download_performed is False
+    assert packet.raw_data_committed is False
+    assert record["executable_allowed_now"] is False
+    assert "pvlib_statistical_orientation_tilt_poa_candidate" in record["candidate_ids"]
+    assert "pvgis_reference_calibration_sanity_candidate" in record["candidate_ids"]
+    assert "direct_ghi_pr_scalar_candidate" in record["candidate_ids"]
+    assert "PV-PARAM-001_or_signed_amendment" in record["blocking_register_ids"]
+    assert "orientation_tilt_value_packet_id" in packet.missing_approval_keys
+    assert "d014_capacity_approval_artifact" in packet.missing_approval_keys
+    assert "PVGIS remains qualitative" in packet.governing_decisions["weather_basis"]
+    with pytest.raises(ValueError, match="PV-PARAM conversion source choice is unsigned"):
+        packet.require_executable_conversion_approval()
+
+
+def test_pv_param_conversion_source_choice_packet_rejects_executable_claim() -> None:
+    payload = json.loads(
+        Path("data/metadata/weather_pv/d014_pv_param_conversion_source_choice_packet.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    payload["executable_gate"]["executable_allowed_now"] = True
+
+    with pytest.raises(ValueError, match="must not allow executable conversion"):
+        PVParamConversionSourceChoicePacket(
+            packet_id=payload["packet_id"],
+            data_id=payload["data_id"],
+            status=payload["status"],
+            download_performed=payload["download_performed"],
+            raw_data_committed=payload["raw_data_committed"],
+            governing_decisions=payload["governing_decisions"],
+            input_dependencies=payload["input_dependencies"],
+            conversion_source_candidates=payload["conversion_source_candidates"],
+            recommendation_for_pi_review=payload["recommendation_for_pi_review"],
+            executable_gate=payload["executable_gate"],
+            pi_approval_keys_before_executable_use=payload["pi_approval_keys_before_executable_use"],
+            non_claims=payload["non_claims"],
+        )
 
 def test_committed_d014_orientation_tilt_value_choice_packet_is_fail_closed() -> None:
     packet = load_pv_orientation_tilt_value_choice_packet(

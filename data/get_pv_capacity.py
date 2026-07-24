@@ -26,6 +26,8 @@ D014_ORIENTATION_TILT_SOURCE_CHOICE_NAME = "d014_pv_orientation_tilt_source_choi
 D014_ORIENTATION_TILT_SOURCE_CHOICE_ID = "D014-PV-ORIENTATION-TILT-SOURCE-CHOICE-PACKET"
 D014_ORIENTATION_TILT_VALUE_CHOICE_NAME = "d014_pv_orientation_tilt_value_choice_packet.json"
 D014_ORIENTATION_TILT_VALUE_CHOICE_ID = "D014-PV-ORIENTATION-TILT-VALUE-CHOICE-PACKET"
+D014_PV_PARAM_CONVERSION_SOURCE_CHOICE_NAME = "d014_pv_param_conversion_source_choice_packet.json"
+D014_PV_PARAM_CONVERSION_SOURCE_CHOICE_ID = "D014-PV-PARAM-CONVERSION-SOURCE-CHOICE-PACKET"
 D014_DATA_ID = "D-014"
 CBS_TABLE_ID = "85005NED"
 CBS_ODATA_BASE = f"https://opendata.cbs.nl/ODataApi/OData/{CBS_TABLE_ID}"
@@ -1545,6 +1547,126 @@ def build_d014_pv_orientation_tilt_value_choice_packet() -> dict[str, Any]:
     }
 
 
+def build_d014_pv_param_conversion_source_choice_packet() -> dict[str, Any]:
+    """Return proposed PV-PARAM conversion-source choices without approving a formula."""
+    approval_keys = [
+        "pv_param_decision_id_or_signed_amendment",
+        "conversion_formula_id",
+        "irradiance_input_basis",
+        "orientation_tilt_value_packet_id",
+        "transposition_model_or_direct_ghi_simplification",
+        "diffuse_fraction_decomposition_rule_if_poa",
+        "albedo_assumption_or_source",
+        "performance_ratio_or_loss_model_source",
+        "temperature_model_and_coefficients",
+        "clipping_rule_and_capacity_convention",
+        "pvgis_reference_sanity_tolerance",
+        "d014_capacity_approval_artifact",
+        "node_allocation_rule",
+        "a016_scenario_consistency_mapping",
+    ]
+    return {
+        "packet_id": D014_PV_PARAM_CONVERSION_SOURCE_CHOICE_ID,
+        "data_id": D014_DATA_ID,
+        "created_utc": _now_utc_iso(),
+        "status": "proposed_conversion_source_choice_no_raw_download_no_executable_formula",
+        "download_performed": False,
+        "raw_data_committed": False,
+        "governing_decisions": {
+            "pv_param_decision_status": "PV-PARAM-001 remains proposed/fail-closed; this packet proposes an amended choice layer only",
+            "orientation_scope": "PV-ORIENT-001 statistical orientation/tilt classes only; no building/roof/3DBAG/PV-map extraction before the first experiment",
+            "capacity_route": "PV-CAP-001/D-014 capacity remains separate and unsigned until a signed capacity artifact exists",
+            "weather_basis": "WEATHER-001 KNMI Q-derived ghi_w_per_m2 remains the realized irradiance path; PVGIS remains qualitative sanity/provenance only",
+        },
+        "input_dependencies": {
+            "weather_member_artifact": "accepted D-004 WEATHER-001 source/member artifact required before component input use",
+            "orientation_tilt_values": "D014-PV-ORIENTATION-TILT-VALUE-CHOICE-PACKET or successor must be signed before executable class use",
+            "capacity_artifact": "D014-PV-CAPACITY-APPROVAL-TEMPLATE successor must provide signed installed capacity and convention",
+            "scenario_consistency": "A-016 mapping must align EV/HP/PV planning-year/scenario labels before executable integrated use",
+        },
+        "conversion_source_candidates": [
+            {
+                "candidate_id": "pvlib_statistical_orientation_tilt_poa_candidate",
+                "candidate_status": "source_candidate_unsigned_not_executable",
+                "description": "Use signed statistical orientation/tilt classes with a pvlib-style plane-of-array workflow applied to the KNMI realized GHI path.",
+                "can_prove": [
+                    "class-specific geometry can affect production timing once class values are signed",
+                    "conversion method can be audited by model/source version and parameter record",
+                ],
+                "cannot_prove_yet": [
+                    "diffuse fraction decomposition rule from GHI alone",
+                    "loss/performance ratio and module temperature coefficients",
+                    "final class weights or capacity convention",
+                ],
+                "pi_decision_needed": [
+                    "choose transposition/decomposition model",
+                    "approve albedo and temperature treatment",
+                    "approve source/version traceability for pvlib or equivalent implementation",
+                ],
+            },
+            {
+                "candidate_id": "pvgis_reference_calibration_sanity_candidate",
+                "candidate_status": "reference_candidate_unsigned_not_realized_weather_not_executable",
+                "description": "Use approved PVGIS-SARAH3 normalized requests only as qualitative seasonal/peak sanity or calibration context.",
+                "can_prove": [
+                    "reference expectation for Alkmaar-like fixed PV output under the normalized setup",
+                    "sanity context for seasonal totals and peak timing",
+                ],
+                "cannot_prove_yet": [
+                    "a sampled realized weather path under ALEA-001",
+                    "local installed capacity or fleet orientation weights",
+                    "a signed conversion formula by itself",
+                ],
+                "pi_decision_needed": [
+                    "approve any numerical PVGIS sanity tolerance before acceptance use",
+                    "confirm PVGIS stays provenance/calibration context only",
+                ],
+            },
+            {
+                "candidate_id": "direct_ghi_pr_scalar_candidate",
+                "candidate_status": "disputed_simple_candidate_unsigned_not_executable",
+                "description": "Use KNMI GHI directly with a scalar performance ratio and clipping only as a transparent fallback if the PI explicitly signs that simplification.",
+                "can_prove": [
+                    "simple monotone nonnegative PV proxy from the realized WEATHER-001 GHI path",
+                    "fast first-screen implementation if signed as an explicit simplification",
+                ],
+                "cannot_prove_yet": [
+                    "orientation/tilt timing effects",
+                    "plane-of-array irradiance or module-temperature behavior",
+                    "the currently disputed PR=0.86 route as an approved method",
+                ],
+                "pi_decision_needed": [
+                    "explicitly approve or reject direct-GHI simplification",
+                    "approve performance ratio/loss source and clipping convention",
+                ],
+            },
+        ],
+        "recommendation_for_pi_review": {
+            "preferred_path": "amend PV-PARAM-001 toward a signed statistical-orientation/tilt plane-of-array conversion route if it can be implemented with public, traceable model assumptions",
+            "fallback_path": "use direct_ghi_pr_scalar_candidate only if the PI signs it as an explicit first-screen simplification despite its missing geometry timing effects",
+            "keep_pvgis_boundary": "PVGIS may calibrate or sanity-check seasonal/peak behavior, but must not become a realized sampled weather path",
+            "do_not_use_as_final_without_signature": True,
+        },
+        "executable_gate": {
+            "executable_allowed_now": False,
+            "result_if_invoked": "abort_until_signed_pv_param_conversion_choice",
+            "blocking_register_ids": [
+                "PV-PARAM-001_or_signed_amendment",
+                "PV-ORIENT-001_values",
+                "D014-PV-CAPACITY-APPROVAL-TEMPLATE_successor",
+                "A-016",
+                "future_node_allocation_rule",
+            ],
+        },
+        "pi_approval_keys_before_executable_use": approval_keys,
+        "non_claims": [
+            "No PV conversion formula is approved by this packet.",
+            "No PR=0.86, direct-GHI, pvlib, plane-of-array, decomposition, albedo, temperature, clipping, or capacity-convention treatment is signed.",
+            "No PV capacity value, growth factor, orientation/tilt values, allocation, PV generation, net-load, event detection, P(E), threshold run, capacity screen, manuscript result, or final paired HP/PV acceptance is produced.",
+            "No roof, building, 3DBAG, or PV-map geometry workflow is implemented before the first experiment.",
+        ],
+    }
+
 def write_d014_pv_capacity_source_value_packet(metadata_dir: str | Path = "data/metadata") -> Path:
     """Write the proposed D-014 source/value packet and return its path."""
     directory = Path(metadata_dir) / "weather_pv"
@@ -1590,6 +1712,18 @@ def write_d014_pv_orientation_tilt_value_choice_packet(metadata_dir: str | Path 
     return path
 
 
+def write_d014_pv_param_conversion_source_choice_packet(metadata_dir: str | Path = "data/metadata") -> Path:
+    """Write the proposed PV-PARAM conversion source-choice packet and return its path."""
+    directory = Path(metadata_dir) / "weather_pv"
+    directory.mkdir(parents=True, exist_ok=True)
+    path = directory / D014_PV_PARAM_CONVERSION_SOURCE_CHOICE_NAME
+    path.write_text(
+        json.dumps(build_d014_pv_param_conversion_source_choice_packet(), indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    return path
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Prepare D-014 PV capacity source/value metadata.")
     parser.add_argument("--metadata-dir", default="data/metadata")
@@ -1600,6 +1734,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--write-d014-statistical-orientation-tilt", action="store_true")
     parser.add_argument("--write-d014-orientation-tilt-source-choice", action="store_true")
     parser.add_argument("--write-d014-orientation-tilt-value-choice", action="store_true")
+    parser.add_argument("--write-d014-pv-param-conversion-source-choice", action="store_true")
     parser.add_argument("--retrieve-d014-cbs-anchor-evidence", action="store_true")
     parser.add_argument("--retrieve-d014-ii3050-growth-evidence", action="store_true")
     args = parser.parse_args(argv)
@@ -1614,6 +1749,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         path = retrieve_d014_ii3050_growth_evidence(metadata_dir=args.metadata_dir)
     elif args.retrieve_d014_cbs_anchor_evidence:
         path = retrieve_d014_cbs_capacity_anchor_evidence(metadata_dir=args.metadata_dir)
+    elif args.write_d014_pv_param_conversion_source_choice:
+        path = write_d014_pv_param_conversion_source_choice_packet(args.metadata_dir)
     elif args.write_d014_orientation_tilt_value_choice:
         path = write_d014_pv_orientation_tilt_value_choice_packet(args.metadata_dir)
     elif args.write_d014_orientation_tilt_source_choice:
