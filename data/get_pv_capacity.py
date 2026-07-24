@@ -18,6 +18,8 @@ D014_CAPACITY_VALUE_CHOICE_NAME = "d014_pv_capacity_value_choice_packet.json"
 D014_CAPACITY_VALUE_CHOICE_ID = "D014-PV-CAPACITY-VALUE-CHOICE-PACKET"
 D014_CAPACITY_APPROVAL_TEMPLATE_NAME = "d014_pv_capacity_approval_template.json"
 D014_CAPACITY_APPROVAL_TEMPLATE_ID = "D014-PV-CAPACITY-APPROVAL-TEMPLATE"
+D014_PV_EXECUTABLE_READINESS_BLOCKERS_NAME = "d014_pv_executable_readiness_blockers.json"
+D014_PV_EXECUTABLE_READINESS_BLOCKERS_ID = "D014-PV-EXECUTABLE-READINESS-BLOCKERS"
 D014_STATISTICAL_ORIENTATION_TILT_NAME = "d014_pv_statistical_orientation_tilt_packet.json"
 D014_STATISTICAL_ORIENTATION_TILT_ID = "D014-PV-STATISTICAL-ORIENTATION-TILT-PACKET"
 D014_ORIENTATION_TILT_SOURCE_CHOICE_NAME = "d014_pv_orientation_tilt_source_choice_packet.json"
@@ -770,6 +772,116 @@ def write_d014_pv_capacity_approval_template_packet(metadata_dir: str | Path = "
     return path
 
 
+def _metadata_input_record(path: str | Path, expected_packet_id: str | None = None) -> dict[str, Any]:
+    metadata_path = Path(path)
+    raw = metadata_path.read_bytes()
+    payload = json.loads(raw.decode("utf-8"))
+    if expected_packet_id is not None and payload.get("packet_id") != expected_packet_id:
+        raise ValueError(f"expected {expected_packet_id} at {metadata_path}")
+    return {
+        "path": str(metadata_path).replace("\\", "/"),
+        "packet_id": payload.get("packet_id") or payload.get("selection_id"),
+        "status": payload.get("status"),
+        "sha256": hashlib.sha256(raw).hexdigest(),
+        "size_bytes": len(raw),
+    }
+
+
+def build_d014_pv_executable_readiness_blockers_packet(
+    *,
+    weather_input_artifact_path: str | Path = "data/metadata/weather_pv/d004_alkmaar_berkhout_2014_2023_v1_weather_input_artifact.json",
+    capacity_template_path: str | Path = "data/metadata/weather_pv/d014_pv_capacity_approval_template.json",
+    orientation_value_choice_path: str | Path = "data/metadata/weather_pv/d014_pv_orientation_tilt_value_choice_packet.json",
+    pv_parameter_packet_path: str | Path = "data/metadata/weather_pv/d004_pv_parameter_decision_packet.json",
+) -> dict[str, Any]:
+    """Return a fail-closed manifest of blockers before executable first-experiment PV input."""
+    weather = _metadata_input_record(weather_input_artifact_path, None)
+    capacity = _metadata_input_record(capacity_template_path, D014_CAPACITY_APPROVAL_TEMPLATE_ID)
+    orientation = _metadata_input_record(orientation_value_choice_path, D014_ORIENTATION_TILT_VALUE_CHOICE_ID)
+    pv_param = _metadata_input_record(pv_parameter_packet_path, None)
+    return {
+        "packet_id": D014_PV_EXECUTABLE_READINESS_BLOCKERS_ID,
+        "data_id": D014_DATA_ID,
+        "status": "proposed_fail_closed_executable_pv_readiness_blockers",
+        "download_performed": False,
+        "raw_data_committed": False,
+        "input_metadata": {
+            "weather_input_artifact": weather,
+            "capacity_approval_template": capacity,
+            "orientation_tilt_value_choice": orientation,
+            "pv_parameter_packet": pv_param,
+        },
+        "readiness_layers": {
+            "weather_source_member": {
+                "decision_id": "D004-SOURCE-MEMBER-ACCEPTANCE",
+                "component_source_member_ready": True,
+                "realized_weather_path": "KNMI station 249 Berkhout WEATHER-001 members",
+                "pvgis_role": "qualitative sanity/provenance only",
+            },
+            "capacity_value": {
+                "decision_id": "D014-PV-CAPACITY-APPROVAL-TEMPLATE",
+                "ready": False,
+                "blocked_by": "PI-signed capacity artifact missing",
+            },
+            "scenario_consistency": {
+                "decision_id": "A-016",
+                "ready": False,
+                "blocked_by": "EV/HP/PV scenario label mapping not signed",
+            },
+            "orientation_tilt_distribution": {
+                "decision_id": "PV-ORIENT-001",
+                "ready": False,
+                "blocked_by": "statistical source, bins, weights, and conversion treatment unsigned",
+            },
+            "pv_conversion_parameters": {
+                "decision_id": "PV-PARAM-001_or_signed_amendment",
+                "ready": False,
+                "blocked_by": "PV-PARAM conversion treatment not signed",
+            },
+            "node_allocation": {
+                "decision_id": "future_node_allocation_rule",
+                "ready": False,
+                "blocked_by": "per-node PV allocation rule and provenance unsigned",
+            },
+            "final_paired_hp_pv_and_cold_spell_acceptance": {
+                "decision_id": "future_final_paired_acceptance",
+                "ready": False,
+                "blocked_by": "paired HP/PV validation and HP cold-spell tolerance decisions remain guarded",
+            },
+        },
+        "executable_gate": {
+            "executable_pv_generation_authorized": False,
+            "component_source_member_artifact_available": True,
+            "blocking_register_ids": [
+                "D014-PV-CAPACITY-APPROVAL-TEMPLATE",
+                "A-016",
+                "PV-ORIENT-001",
+                "PV-PARAM-001",
+                "future_node_allocation_rule",
+                "future_final_paired_acceptance",
+            ],
+            "guard_message": "PV/weather component inputs have accepted weather members, but executable 2035 PV generation remains blocked until capacity, scenario, orientation, allocation, and conversion decisions are signed.",
+        },
+        "non_claims": [
+            "No final PV capacity value, growth factor, orientation/tilt distribution, allocation, or conversion formula is approved.",
+            "No PV generation, net-load, event detection, P(E), threshold analysis, capacity screen, manuscript result, or final PV output is produced.",
+            "No roof, building, 3DBAG, or PV-map geometry source is retrieved or used for the first experiment.",
+        ],
+    }
+
+
+def write_d014_pv_executable_readiness_blockers_packet(metadata_dir: str | Path = "data/metadata") -> Path:
+    """Write the fail-closed executable PV readiness-blocker packet and return its path."""
+    directory = Path(metadata_dir) / "weather_pv"
+    directory.mkdir(parents=True, exist_ok=True)
+    path = directory / D014_PV_EXECUTABLE_READINESS_BLOCKERS_NAME
+    path.write_text(
+        json.dumps(build_d014_pv_executable_readiness_blockers_packet(), indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    return path
+
+
 def build_d014_pv_capacity_source_value_packet() -> dict[str, Any]:
     """Return the proposed D-014 source/value packet without raw retrieval.
 
@@ -1484,6 +1596,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--write-d014-source-value-packet", action="store_true")
     parser.add_argument("--write-d014-capacity-value-choice", action="store_true")
     parser.add_argument("--write-d014-capacity-approval-template", action="store_true")
+    parser.add_argument("--write-d014-pv-executable-readiness-blockers", action="store_true")
     parser.add_argument("--write-d014-statistical-orientation-tilt", action="store_true")
     parser.add_argument("--write-d014-orientation-tilt-source-choice", action="store_true")
     parser.add_argument("--write-d014-orientation-tilt-value-choice", action="store_true")
@@ -1491,7 +1604,9 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--retrieve-d014-ii3050-growth-evidence", action="store_true")
     args = parser.parse_args(argv)
 
-    if args.write_d014_capacity_approval_template:
+    if args.write_d014_pv_executable_readiness_blockers:
+        path = write_d014_pv_executable_readiness_blockers_packet(args.metadata_dir)
+    elif args.write_d014_capacity_approval_template:
         path = write_d014_pv_capacity_approval_template_packet(args.metadata_dir)
     elif args.write_d014_capacity_value_choice:
         path = write_d014_pv_capacity_value_choice_packet(args.metadata_dir)
