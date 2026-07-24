@@ -1,0 +1,390 @@
+{
+  "artifact_id": "e2_s2_ev_ic1_candidate_component_output_manifest",
+  "artifact_type": "ev_ic1_candidate_component_output_manifest",
+  "calendar_mapping": {
+    "n_timesteps": 35040,
+    "rule_id": "EV-CAL-001",
+    "rule_version": "ordinal-v1",
+    "source_calendar_id": "elaad-2025-europe-amsterdam-15min",
+    "source_timestep_i_maps_to_target_timestep_i": true,
+    "target_calendar_id": "planning-2035-europe-amsterdam-15min",
+    "weekday_mismatch_recorded_as_limitation": true
+  },
+  "component_kind": "ev",
+  "decision_ids": [
+    "EV-003",
+    "EV-005",
+    "EV-005B",
+    "EV-007A",
+    "A-014",
+    "EV-008A",
+    "EV-CAL-001",
+    "RNG-001"
+  ],
+  "ic1_boundary": {
+    "agent_a_must_load_ignored_output_files_by_manifest_checksum": true,
+    "component_adapter_output_ready_for_agent_a_preflight": true,
+    "contains_ev_component_outputs_only": true,
+    "not_a_net_load_result": true
+  },
+  "materialization": {
+    "candidate_files_reverified_before_array_loading": true,
+    "candidate_processed_file_count": 22,
+    "loaded_candidate_profile_batches": 22,
+    "method": "candidate_only_selection_sum_by_node_after_sha256_reverification",
+    "output_directory": "data/processed/elaad_profiles/component_outputs",
+    "output_files": [
+      {
+        "array_shape": [
+          115,
+          35040
+        ],
+        "byte_size": 10421479,
+        "n_timesteps": 35040,
+        "node_count": 115,
+        "path": "data/processed/elaad_profiles/component_outputs/ev_ic1_candidate_component_output_high.npz",
+        "scenario": "high",
+        "sha256": "dd95f30d74da00b6fb87c2ced8f402b4d612c59a28e7d1d33e9e82fcd7a805d5"
+      },
+      {
+        "array_shape": [
+          115,
+          35040
+        ],
+        "byte_size": 9198011,
+        "n_timesteps": 35040,
+        "node_count": 115,
+        "path": "data/processed/elaad_profiles/component_outputs/ev_ic1_candidate_component_output_low.npz",
+        "scenario": "low",
+        "sha256": "a896794ddd9f004fe945c62a5b84b2b1b6e9381cbecd80b17ca7c749de68ce65"
+      },
+      {
+        "array_shape": [
+          115,
+          35040
+        ],
+        "byte_size": 9885919,
+        "n_timesteps": 35040,
+        "node_count": 115,
+        "path": "data/processed/elaad_profiles/component_outputs/ev_ic1_candidate_component_output_middle.npz",
+        "scenario": "middle",
+        "sha256": "38081c7f849bb679a19560d1a7f7fd6d8428e35ef6cad2087e4d82a46c1e568d"
+      }
+    ],
+    "reverified_candidate_files": [
+      {
+        "byte_size": 394116,
+        "n_profiles": 100,
+        "n_timesteps": 35040,
+        "processed_path": "data/processed/elaad_profiles/A_home_vancar_cp_y2030_batchseed140001_n100.npz",
+        "sha256": "e550931ead774e7a9c42a4ff06f221eb1d2c3337bc4f43e57e0ff00bd63a0f2c"
+      },
+      {
+        "byte_size": 394021,
+        "n_profiles": 100,
+        "n_timesteps": 35040,
+        "processed_path": "data/processed/elaad_profiles/A_home_vancar_cp_y2030_batchseed140101_n100.npz",
+        "sha256": "59efcf0fb3823874f513e05268f504261ab6a835568a973f37d43acea7bb4f38"
+      },
+      {
+        "byte_size": 394077,
+        "n_profiles": 100,
+        "n_timesteps": 35040,
+        "processed_path": "data/processed/elaad_profiles/A_home_vancar_cp_y2030_batchseed140201_n100.npz",
+        "sha256": "9d0e1282810fd9c233d95cbe6e7c93db6f2a8c55d8524b2ed95d7b7e500dd8c3"
+      },
+      {
+        "byte_size": 393494,
+        "n_profiles": 100,
+        "n_timesteps": 35040,
+        "processed_path": "data/processed/elaad_profiles/A_home_vancar_cp_y2030_batchseed140301_n100.npz",
+        "sha256": "709e28efffabc10b5514d39cbcfc577576ee3f4b9bb288324b097ea3dbaddda5"
+      },
+      {
+        "byte_size": 393615,
+        "n_profiles": 100,
+        "n_timesteps": 35040,
+        "processed_path": "data/processed/elaad_profiles/A_home_vancar_cp_y2030_batchseed140401_n100.npz",
+        "sha256": "ec00d29fdbcec28a78620d688bfb583ec73265f23a29272883ae7036957645a1"
+      },
+      {
+        "byte_size": 393573,
+        "n_profiles": 100,
+        "n_timesteps": 35040,
+        "processed_path": "data/processed/elaad_profiles/A_home_vancar_cp_y2030_batchseed140501_n100.npz",
+        "sha256": "41594ea943a7a3596d538e357715962f21b19300f5c22afdab684a8f527e606d"
+      },
+      {
+        "byte_size": 394746,
+        "n_profiles": 100,
+        "n_timesteps": 35040,
+        "processed_path": "data/processed/elaad_profiles/A_home_vancar_cp_y2030_batchseed140601_n100.npz",
+        "sha256": "4259c8fd913da7ced072b564c357c4b1d18d6e1849791e63e5f5e6b1c55d5230"
+      },
+      {
+        "byte_size": 393364,
+        "n_profiles": 100,
+        "n_timesteps": 35040,
+        "processed_path": "data/processed/elaad_profiles/A_home_vancar_cp_y2030_batchseed140701_n100.npz",
+        "sha256": "245a578e4365d4f92c34dd8f42fe174ca348759fae7754d2b175ca8a0081cf46"
+      },
+      {
+        "byte_size": 393870,
+        "n_profiles": 100,
+        "n_timesteps": 35040,
+        "processed_path": "data/processed/elaad_profiles/A_home_vancar_cp_y2030_batchseed140801_n100.npz",
+        "sha256": "0afcaae4bae6084b2e1d18dd684741c5e7e368d12f52c99b613e064add191ac4"
+      },
+      {
+        "byte_size": 394145,
+        "n_profiles": 100,
+        "n_timesteps": 35040,
+        "processed_path": "data/processed/elaad_profiles/A_home_vancar_cp_y2030_batchseed140901_n100.npz",
+        "sha256": "f355f90d31628af38850069ffec4413513f949d0b30c363e3204e14a7d99a231"
+      },
+      {
+        "byte_size": 587871,
+        "n_profiles": 100,
+        "n_timesteps": 35040,
+        "processed_path": "data/processed/elaad_profiles/B_public_11kw_vancar_cp_y2030_batchseed152001_n100.npz",
+        "sha256": "3e6a59a852ca720afd7501c5e24d1d10c961effba4595c47686fdba7c9d4b70b"
+      },
+      {
+        "byte_size": 588561,
+        "n_profiles": 100,
+        "n_timesteps": 35040,
+        "processed_path": "data/processed/elaad_profiles/B_public_11kw_vancar_cp_y2030_batchseed152101_n100.npz",
+        "sha256": "355dc279aaaae3951ca6f1b12998e271fd0af00cda4bbaaf73f5899492715273"
+      },
+      {
+        "byte_size": 590418,
+        "n_profiles": 100,
+        "n_timesteps": 35040,
+        "processed_path": "data/processed/elaad_profiles/B_public_11kw_vancar_cp_y2030_batchseed152201_n100.npz",
+        "sha256": "d6af85428f4e34b8a7b1a87a5f661317e3ee61d370a57e91450a28fdfd48ea22"
+      },
+      {
+        "byte_size": 950749,
+        "n_profiles": 100,
+        "n_timesteps": 35040,
+        "processed_path": "data/processed/elaad_profiles/B_public_13kw_vancar_cp_y2030_batchseed152301_n100.npz",
+        "sha256": "5d69d13adda8b1ffa7019a756d63cb68a38019fb60c92b32da2cf64d209565f9"
+      },
+      {
+        "byte_size": 949461,
+        "n_profiles": 100,
+        "n_timesteps": 35040,
+        "processed_path": "data/processed/elaad_profiles/B_public_13kw_vancar_cp_y2030_batchseed152401_n100.npz",
+        "sha256": "3c3b4c60fde7c3fc22c03aa88c025f8bdb4c63cd55ace3af92cd7f39c2f4221f"
+      },
+      {
+        "byte_size": 950446,
+        "n_profiles": 100,
+        "n_timesteps": 35040,
+        "processed_path": "data/processed/elaad_profiles/B_public_13kw_vancar_cp_y2030_batchseed152501_n100.npz",
+        "sha256": "fc3ab1ef7eefd60bc8b65c0176d8123ec5467379203621841bddaac2b370c1df"
+      },
+      {
+        "byte_size": 905910,
+        "n_profiles": 100,
+        "n_timesteps": 35040,
+        "processed_path": "data/processed/elaad_profiles/B_public_15kw_vancar_cp_y2030_batchseed152601_n100.npz",
+        "sha256": "5dd5651cded0974e23b6d0934c7ba467b42d74b62b643ee8ed83b80aed108f9c"
+      },
+      {
+        "byte_size": 904798,
+        "n_profiles": 100,
+        "n_timesteps": 35040,
+        "processed_path": "data/processed/elaad_profiles/B_public_15kw_vancar_cp_y2030_batchseed152701_n100.npz",
+        "sha256": "00035179b1012e9f0ce32ba98aedcffe6e050214838d70eab581fd811b94050f"
+      },
+      {
+        "byte_size": 905768,
+        "n_profiles": 100,
+        "n_timesteps": 35040,
+        "processed_path": "data/processed/elaad_profiles/B_public_15kw_vancar_cp_y2030_batchseed152801_n100.npz",
+        "sha256": "274bf965e6f0c07d8c33c86f62b2febb7ff8fe21026884aae89213b89735a7ac"
+      },
+      {
+        "byte_size": 740877,
+        "n_profiles": 100,
+        "n_timesteps": 35040,
+        "processed_path": "data/processed/elaad_profiles/B_public_22kw_vancar_cp_y2030_batchseed152901_n100.npz",
+        "sha256": "21476f45e867b37be0dc9e78c4d17faa41fd6eeb58acc1d971e3449ce61b8437"
+      },
+      {
+        "byte_size": 738609,
+        "n_profiles": 100,
+        "n_timesteps": 35040,
+        "processed_path": "data/processed/elaad_profiles/B_public_22kw_vancar_cp_y2030_batchseed153001_n100.npz",
+        "sha256": "f28f83f190b8c0c8d66f7eee7efa6e27009743403bbb27a88a35695f5c49a377"
+      },
+      {
+        "byte_size": 740611,
+        "n_profiles": 100,
+        "n_timesteps": 35040,
+        "processed_path": "data/processed/elaad_profiles/B_public_22kw_vancar_cp_y2030_batchseed153101_n100.npz",
+        "sha256": "ce6558b4ed9a12f0f8fa36d9a69a46f560f6f9297464c4d3052dad869e059737"
+      }
+    ],
+    "timestamp_utc": "2026-07-24T10:16:53.942281Z"
+  },
+  "planning_year": 2035,
+  "policy": {
+    "candidate_libraries_only": true,
+    "candidate_profile_arrays_loaded_for_ev_component_output_only": true,
+    "capacity_screen_performed": false,
+    "event_or_p_e_analysis_performed": false,
+    "final_low_middle_high_branch_selected": false,
+    "held_out_access": false,
+    "integrated_analysis_performed": false,
+    "m_sufficiency_claimed": false,
+    "manuscript_numbers_produced": false,
+    "quarantined_access": false
+  },
+  "scenario_outputs": [
+    {
+      "calendar_mapping_rule_id": "EV-CAL-001",
+      "component_streams": {
+        "ev_home": {
+          "component": "ev_home",
+          "sample_index": 0,
+          "seed": 16660882955939240118,
+          "stream_id": "sample_0:ev_home:seed_e73758c6791e58b6"
+        },
+        "ev_public": {
+          "component": "ev_public",
+          "sample_index": 0,
+          "seed": 316075658975485993,
+          "stream_id": "sample_0:ev_public:seed_0462ed231f61a029"
+        }
+      },
+      "duplicate_selected_row_count": 16436,
+      "node_count": 115,
+      "output_file": {
+        "array_shape": [
+          115,
+          35040
+        ],
+        "byte_size": 10421479,
+        "n_timesteps": 35040,
+        "node_count": 115,
+        "path": "data/processed/elaad_profiles/component_outputs/ev_ic1_candidate_component_output_high.npz",
+        "scenario": "high",
+        "sha256": "dd95f30d74da00b6fb87c2ced8f402b4d612c59a28e7d1d33e9e82fcd7a805d5"
+      },
+      "planning_year": 2035,
+      "public_selected_member_count_by_capacity_class": {
+        "public_11kw": 1535,
+        "public_13kw": 1535,
+        "public_15kw": 1534,
+        "public_22kw": 1534
+      },
+      "scenario": "high",
+      "selected_member_count": 16481,
+      "selected_member_count_by_component": {
+        "ev_home": 10343,
+        "ev_public": 6138
+      },
+      "total_conservation_verified_against_selection_manifest": true
+    },
+    {
+      "calendar_mapping_rule_id": "EV-CAL-001",
+      "component_streams": {
+        "ev_home": {
+          "component": "ev_home",
+          "sample_index": 0,
+          "seed": 16660882955939240118,
+          "stream_id": "sample_0:ev_home:seed_e73758c6791e58b6"
+        },
+        "ev_public": {
+          "component": "ev_public",
+          "sample_index": 0,
+          "seed": 316075658975485993,
+          "stream_id": "sample_0:ev_public:seed_0462ed231f61a029"
+        }
+      },
+      "duplicate_selected_row_count": 12041,
+      "node_count": 115,
+      "output_file": {
+        "array_shape": [
+          115,
+          35040
+        ],
+        "byte_size": 9198011,
+        "n_timesteps": 35040,
+        "node_count": 115,
+        "path": "data/processed/elaad_profiles/component_outputs/ev_ic1_candidate_component_output_low.npz",
+        "scenario": "low",
+        "sha256": "a896794ddd9f004fe945c62a5b84b2b1b6e9381cbecd80b17ca7c749de68ce65"
+      },
+      "planning_year": 2035,
+      "public_selected_member_count_by_capacity_class": {
+        "public_11kw": 1046,
+        "public_13kw": 1046,
+        "public_15kw": 1046,
+        "public_22kw": 1045
+      },
+      "scenario": "low",
+      "selected_member_count": 12175,
+      "selected_member_count_by_component": {
+        "ev_home": 7992,
+        "ev_public": 4183
+      },
+      "total_conservation_verified_against_selection_manifest": true
+    },
+    {
+      "calendar_mapping_rule_id": "EV-CAL-001",
+      "component_streams": {
+        "ev_home": {
+          "component": "ev_home",
+          "sample_index": 0,
+          "seed": 16660882955939240118,
+          "stream_id": "sample_0:ev_home:seed_e73758c6791e58b6"
+        },
+        "ev_public": {
+          "component": "ev_public",
+          "sample_index": 0,
+          "seed": 316075658975485993,
+          "stream_id": "sample_0:ev_public:seed_0462ed231f61a029"
+        }
+      },
+      "duplicate_selected_row_count": 14435,
+      "node_count": 115,
+      "output_file": {
+        "array_shape": [
+          115,
+          35040
+        ],
+        "byte_size": 9885919,
+        "n_timesteps": 35040,
+        "node_count": 115,
+        "path": "data/processed/elaad_profiles/component_outputs/ev_ic1_candidate_component_output_middle.npz",
+        "scenario": "middle",
+        "sha256": "38081c7f849bb679a19560d1a7f7fd6d8428e35ef6cad2087e4d82a46c1e568d"
+      },
+      "planning_year": 2035,
+      "public_selected_member_count_by_capacity_class": {
+        "public_11kw": 1282,
+        "public_13kw": 1282,
+        "public_15kw": 1282,
+        "public_22kw": 1281
+      },
+      "scenario": "middle",
+      "selected_member_count": 14513,
+      "selected_member_count_by_component": {
+        "ev_home": 9386,
+        "ev_public": 5127
+      },
+      "total_conservation_verified_against_selection_manifest": true
+    }
+  ],
+  "schema_version": 1,
+  "source_artifacts": {
+    "checksum_preflight": "data/metadata/ev_adoption/e2_s2_ev_candidate_profile_checksum_preflight.json",
+    "component_input_scaffold": "data/metadata/ev_adoption/e2_s2_ev_ic1_component_input_scaffold.json",
+    "selection_manifest_set": "data/metadata/ev_adoption/e2_s2_ev005b_candidate_selection_manifests.json.gz"
+  },
+  "status": "candidate_only_ev_component_outputs_materialized_for_ic1_preflight",
+  "task_id": "E2.S2"
+}
