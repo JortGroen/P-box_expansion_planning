@@ -49,6 +49,27 @@ REQUIRED_COLD_SPELL_TOLERANCE_FIELDS = (
 )
 
 
+
+PV_COMPONENT_OUTPUT_RUNNER_REQUIRED_ARTIFACTS = (
+    "capacity_growth_artifact",
+    "statistical_orientation_tilt_artifact",
+    "pv_conversion_artifact",
+    "node_allocation_artifact",
+    "reactive_power_policy_artifact",
+    "component_output_manifest_path_policy_artifact",
+    "a016_scenario_consistency_artifact",
+    "final_paired_hp_pv_weather_acceptance_artifact",
+)
+PV_COMPONENT_OUTPUT_RUNNER_APPROVAL_ALIASES = {
+    "capacity_growth_artifact": "capacity_artifact",
+    "statistical_orientation_tilt_artifact": "orientation_tilt_artifact",
+    "pv_conversion_artifact": "pv_param_artifact",
+    "node_allocation_artifact": "node_allocation_artifact",
+    "reactive_power_policy_artifact": "reactive_power_policy_artifact",
+    "component_output_manifest_path_policy_artifact": "component_output_manifest_path_policy",
+    "a016_scenario_consistency_artifact": "a016_scenario_consistency_artifact",
+    "final_paired_hp_pv_weather_acceptance_artifact": "paired_hp_pv_acceptance_artifact",
+}
 @dataclass(frozen=True)
 class PVSystemConfig:
     """Explicit deterministic PV conversion parameters for one PV fleet."""
@@ -3014,6 +3035,186 @@ def write_pv_component_output_npz_artifact(
     target_manifest.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     return manifest
 
+
+def build_pv_component_output_runner_preflight(
+    *,
+    value_approval_packet_path: str | Path = "data/metadata/weather_pv/d014_pv_first_experiment_value_approval_packet.json",
+    scaffold_packet_path: str | Path = "data/metadata/weather_pv/d014_pv_component_output_artifact_scaffold.json",
+    signed_artifact_paths: Mapping[str, str | Path] | None = None,
+    profile: PVGenerationProfile | None = None,
+    spec: PVComponentOutputArtifactSpec | None = None,
+    array_path: str | Path | None = None,
+    manifest_path: str | Path | None = None,
+    base_dir: str | Path | None = None,
+    paired_weather_identity: Mapping[str, object] | WeatherMember | None = None,
+    requested_artifact_status: str = "accepted",
+    allow_synthetic_fixture: bool = False,
+    write_output: bool = False,
+) -> dict[str, object]:
+    """Run the fail-closed PV component-output preflight and optional writer.
+
+    Real first-experiment PV output is blocked until every required signed
+    artifact is present. Synthetic fixtures may exercise the IC-1 writer only
+    when all inputs are explicitly marked ``synthetic_fixture``.
+    """
+    value_approval = load_pv_first_experiment_value_approval_packet(value_approval_packet_path)
+    scaffold = load_pv_component_output_artifact_scaffold_packet(scaffold_packet_path)
+    signed_paths = dict(signed_artifact_paths or {})
+    artifact_records: dict[str, object] = {}
+    blockers: list[str] = []
+
+    if requested_artifact_status not in {"accepted", "synthetic_fixture"}:
+        blockers.append("requested_artifact_status_invalid")
+    if requested_artifact_status == "accepted" and not signed_paths:
+        blockers.append("premature_accepted_status_unsigned_inputs")
+    if requested_artifact_status == "synthetic_fixture" and not allow_synthetic_fixture:
+        blockers.append("synthetic_fixture_not_explicitly_allowed")
+
+    for artifact_key in PV_COMPONENT_OUTPUT_RUNNER_REQUIRED_ARTIFACTS:
+        path_value = signed_paths.get(artifact_key)
+        if path_value is None:
+            blockers.append(f"missing_signed_artifact:{artifact_key}")
+            continue
+        try:
+            record = _load_pv_runner_signed_artifact(
+                artifact_key,
+                path_value,
+                allow_synthetic_fixture=allow_synthetic_fixture,
+                base_dir=base_dir,
+            )
+        except ValueError as exc:
+            blockers.append(f"invalid_signed_artifact:{artifact_key}:{exc}")
+        else:
+            artifact_records[artifact_key] = record
+
+    if "statistical_orientation_tilt_artifact" in artifact_records:
+        orientation_record = _audit_json_mapping(
+            artifact_records["statistical_orientation_tilt_artifact"],
+            "statistical_orientation_tilt_artifact",
+        )
+        scope = str(orientation_record.get("first_experiment_orientation_scope", ""))
+        if scope != "statistical_typical_only":
+            blockers.append("orientation_scope_not_statistical_typical_only")
+        geometry_text = json.dumps(orientation_record.get("geometry_workflow", ""), sort_keys=True).lower()
+        if _contains_forbidden_first_experiment_geometry(geometry_text):
+            blockers.append("forbidden_roof_or_building_geometry_hook")
+
+    if paired_weather_identity is None:
+        if write_output:
+            blockers.append("missing_paired_weather_identity")
+    elif profile is not None:
+        identity = paired_weather_identity.identity_record() if isinstance(paired_weather_identity, WeatherMember) else dict(paired_weather_identity)
+        for key, expected in profile.identity_record().items():
+            if key in {"member_id", "shared_weather_driver_id", "content_sha256", "calendar_id"} and key in identity:
+                if identity.get(key) != expected:
+                    blockers.append(f"paired_weather_identity_mismatch:{key}")
+
+    if write_output:
+        if profile is None:
+            blockers.append("missing_pv_profile")
+        if spec is None:
+            blockers.append("missing_component_output_spec")
+        if array_path is None:
+            blockers.append("missing_array_path")
+        if manifest_path is None:
+            blockers.append("missing_manifest_path")
+        if array_path is not None:
+            try:
+                _validate_relative_artifact_path(array_path, "array_path")
+            except ValueError as exc:
+                blockers.append(f"unsafe_array_path:{exc}")
+        if manifest_path is not None:
+            try:
+                _validate_relative_artifact_path(manifest_path, "manifest_path")
+            except ValueError as exc:
+                blockers.append(f"unsafe_manifest_path:{exc}")
+        if spec is not None:
+            if spec.artifact_status != requested_artifact_status:
+                blockers.append("spec_status_does_not_match_request")
+            expected_approvals = _runner_approval_ids_from_records(artifact_records)
+            for approval_key, approval_value in expected_approvals.items():
+                spec_value = spec.approval_ids.get(approval_key)
+                if spec_value != approval_value:
+                    blockers.append(f"spec_approval_id_mismatch:{approval_key}")
+            if spec.artifact_status == "synthetic_fixture" and not allow_synthetic_fixture:
+                blockers.append("synthetic_fixture_spec_not_allowed")
+
+    real_generation_authorized = (
+        not blockers
+        and write_output
+        and spec is not None
+        and spec.artifact_status == "accepted"
+        and requested_artifact_status == "accepted"
+    )
+    synthetic_generation_authorized = (
+        not blockers
+        and write_output
+        and allow_synthetic_fixture
+        and spec is not None
+        and spec.artifact_status == "synthetic_fixture"
+        and requested_artifact_status == "synthetic_fixture"
+    )
+    output_manifest: dict[str, object] | None = None
+    if real_generation_authorized or synthetic_generation_authorized:
+        if profile is None or spec is None or array_path is None or manifest_path is None:
+            raise ValueError("PV runner reached output write without complete inputs")
+        output_manifest = write_pv_component_output_npz_artifact(
+            profile,
+            spec,
+            array_path=array_path,
+            manifest_path=manifest_path,
+            base_dir=base_dir,
+        )
+
+    status = "blocked_no_pv_component_output"
+    if output_manifest is not None and synthetic_generation_authorized:
+        status = "synthetic_fixture_component_output_written"
+    elif output_manifest is not None and real_generation_authorized:
+        status = "accepted_component_output_written"
+    elif not blockers:
+        status = "ready_for_signed_component_output_write_no_arrays"
+
+    return {
+        "packet_id": "D014-PV-COMPONENT-OUTPUT-RUNNER-PREFLIGHT",
+        "data_id": "D-014",
+        "status": status,
+        "value_approval_packet_id": value_approval.packet_id,
+        "component_output_scaffold_packet_id": scaffold.packet_id,
+        "requested_artifact_status": requested_artifact_status,
+        "allow_synthetic_fixture": allow_synthetic_fixture,
+        "write_output_requested": write_output,
+        "real_pv_generation_authorized": real_generation_authorized,
+        "synthetic_fixture_generation_authorized": synthetic_generation_authorized,
+        "real_pv_arrays_written": bool(output_manifest is not None and real_generation_authorized),
+        "synthetic_fixture_arrays_written": bool(output_manifest is not None and synthetic_generation_authorized),
+        "component_output_manifest": output_manifest,
+        "input_metadata": {
+            "value_approval_packet": _file_input_record(value_approval_packet_path, value_approval.packet_id),
+            "component_output_scaffold": _file_input_record(scaffold_packet_path, scaffold.packet_id),
+            "signed_artifacts": artifact_records,
+        },
+        "required_signed_artifacts": PV_COMPONENT_OUTPUT_RUNNER_REQUIRED_ARTIFACTS,
+        "blocker_ids": tuple(blockers),
+        "non_claims": (
+            "No real PV generation is authorized unless every required signed artifact is accepted and checksum-backed.",
+            "Current committed D-014 value packets remain proposed and produce blocker manifests only.",
+            "Synthetic fixture output is unit-test plumbing and is not a PV scientific result.",
+            "No roof, building, location-level, 3DBAG, PV-map, or per-roof geometry workflow is allowed in the first-experiment path.",
+            "No net-load, event detection, P(E), threshold run, capacity screen, manuscript result, or final paired HP/PV acceptance is produced by this preflight.",
+        ),
+    }
+
+
+def write_pv_component_output_runner_preflight(
+    output_path: str | Path,
+    **kwargs: object,
+) -> dict[str, object]:
+    """Write the PV component-output runner preflight/blocker manifest."""
+    manifest = build_pv_component_output_runner_preflight(**kwargs)
+    path = Path(output_path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    return manifest
 def generate_pv_profile_from_input_artifact(
     weather: WeatherMember,
     config: PVSystemConfig,
@@ -3260,6 +3461,109 @@ def _validate_weather_input_member_record(member: Mapping[str, object], *, accep
         raise ValueError("member n_timesteps must be positive")
 
 
+
+def _load_pv_runner_signed_artifact(
+    artifact_key: str,
+    path_value: str | Path,
+    *,
+    allow_synthetic_fixture: bool,
+    base_dir: str | Path | None = None,
+) -> Mapping[str, object]:
+    manifest_path = _validate_relative_artifact_path(path_value, f"{artifact_key}_path")
+    path = manifest_path if base_dir is None else Path(base_dir) / manifest_path
+    if not path.is_file():
+        raise ValueError("path_missing")
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    record = _audit_json_mapping(payload, artifact_key)
+    artifact_id = str(record.get("artifact_id", ""))
+    artifact_status = str(record.get("artifact_status", ""))
+    approval_id = str(record.get("approval_id", ""))
+    source_id = str(record.get("source_id", ""))
+    source_sha256 = str(record.get("source_sha256", ""))
+    if not artifact_id:
+        raise ValueError("artifact_id_missing")
+    if artifact_status not in {"accepted", "synthetic_fixture"}:
+        raise ValueError("artifact_status_must_be_accepted_or_synthetic_fixture")
+    if artifact_status == "synthetic_fixture" and not allow_synthetic_fixture:
+        raise ValueError("synthetic_fixture_not_allowed")
+    if not approval_id:
+        raise ValueError("approval_id_missing")
+    if artifact_status == "accepted" and _contains_stale_or_template_token(approval_id):
+        raise ValueError("approval_id_has_stale_or_template_token")
+    if artifact_status == "synthetic_fixture" and record.get("synthetic_fixture") is not True:
+        raise ValueError("synthetic_fixture_flag_missing")
+    if not source_id:
+        raise ValueError("source_id_missing")
+    if len(source_sha256) != 64 or not all(char in "0123456789abcdefABCDEF" for char in source_sha256):
+        raise ValueError("source_sha256_missing_or_invalid")
+    return MappingProxyType(
+        {
+            **dict(record),
+            "artifact_key": artifact_key,
+            "path": manifest_path.as_posix(),
+            "file_sha256": _sha256_file(path),
+            "approval_alias": PV_COMPONENT_OUTPUT_RUNNER_APPROVAL_ALIASES[artifact_key],
+        }
+    )
+
+
+def _runner_approval_ids_from_records(records: Mapping[str, object]) -> dict[str, str]:
+    approvals: dict[str, str] = {}
+    for artifact_key, approval_alias in PV_COMPONENT_OUTPUT_RUNNER_APPROVAL_ALIASES.items():
+        if artifact_key not in records:
+            continue
+        record = _audit_json_mapping(records[artifact_key], artifact_key)
+        approvals[approval_alias] = str(record.get("approval_id", ""))
+    return approvals
+
+
+def _file_input_record(path_value: str | Path, packet_id: str) -> dict[str, object]:
+    path = _validate_relative_artifact_path(path_value, "input_path")
+    if not path.is_file():
+        raise ValueError(f"input metadata file does not exist: {path.as_posix()}")
+    return {
+        "packet_id": packet_id,
+        "path": path.as_posix(),
+        "sha256": _sha256_file(path),
+        "size_bytes": path.stat().st_size,
+    }
+
+
+def _contains_stale_or_template_token(value: object) -> bool:
+    text = str(value).lower()
+    stale_tokens = (
+        "unsigned",
+        "proposed",
+        "placeholder",
+        "synthetic",
+        "fixture",
+        "future",
+        "pending",
+        "todo",
+        "tbd",
+        "not-approved",
+        "not_approved",
+        "not approved",
+    )
+    has_template_brackets = ("<" in text and ">" in text) or ("&lt;" in text and "&gt;" in text)
+    return has_template_brackets or any(token in text for token in stale_tokens)
+
+
+def _contains_forbidden_first_experiment_geometry(text: str) -> bool:
+    lowered = str(text).lower()
+    forbidden = (
+        "3dbag",
+        "pv-map",
+        "pv_map",
+        "per-building",
+        "per building",
+        "building-level",
+        "roof-level",
+        "per-roof",
+        "per roof",
+        "location-specific",
+    )
+    return any(token in lowered for token in forbidden)
 def _validate_relative_artifact_path(value: str | Path, name: str) -> Path:
     raw = str(value)
     if not raw.strip():

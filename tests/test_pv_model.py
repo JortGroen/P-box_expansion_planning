@@ -19,6 +19,8 @@ from src.pv_model import (
     PVCapacityValueChoicePacket,
     PVComponentOutputArtifactScaffoldPacket,
     PVComponentOutputArtifactSpec,
+    PV_COMPONENT_OUTPUT_RUNNER_APPROVAL_ALIASES,
+    PV_COMPONENT_OUTPUT_RUNNER_REQUIRED_ARTIFACTS,
     PVCBSAnchorEvidencePacket,
     PVExecutablePreflightGuardPacket,
     PVExecutableReadinessBlockersPacket,
@@ -39,6 +41,7 @@ from src.pv_model import (
     assert_pv_weather_artifact_allows_consumer_use,
     assert_weather_member_matches_input_artifact,
     build_pv_ic1_executable_input_artifact,
+    build_pv_component_output_runner_preflight,
     build_pv_final_acceptance_gate_packet,
     build_pv_paired_readiness_preflight_packet,
     check_profile_against_pvgis_reference,
@@ -65,6 +68,7 @@ from src.pv_model import (
     summarize_pv_profile,
     validate_canonical_15min_calendar,
     write_pv_component_output_npz_artifact,
+    write_pv_component_output_runner_preflight,
 )
 from src.rng import SeedTree
 from src.weather_model import assert_same_weather_realization
@@ -2519,6 +2523,311 @@ def test_pv_component_output_accepted_spec_rejects_unsigned_tokens(bad_approval_
             provenance={"source": "not-used"},
         )
 
+
+def _write_pv_runner_artifacts(
+    base_dir: Path,
+    *,
+    status: str = "synthetic_fixture",
+    approval_prefix: str = "SIGNED-FIXTURE",
+    omit: str | None = None,
+    bad_approval_key: str | None = None,
+    bad_approval_value: str = "future-approval",
+    missing_source_checksum_key: str | None = None,
+    orientation_geometry_workflow: str = "statistical_orientation_tilt_classes",
+) -> tuple[dict[str, str], dict[str, str]]:
+    paths: dict[str, str] = {}
+    approvals: dict[str, str] = {}
+    for artifact_key in PV_COMPONENT_OUTPUT_RUNNER_REQUIRED_ARTIFACTS:
+        if artifact_key == omit:
+            continue
+        approval_alias = PV_COMPONENT_OUTPUT_RUNNER_APPROVAL_ALIASES[artifact_key]
+        approval_id = f"{approval_prefix}-{artifact_key.upper().replace('_', '-') }"
+        if artifact_key == bad_approval_key:
+            approval_id = bad_approval_value
+        payload: dict[str, object] = {
+            "artifact_id": f"{approval_prefix.lower()}-{artifact_key}",
+            "artifact_status": status,
+            "approval_id": approval_id,
+            "source_id": f"{approval_prefix}-SOURCE-{artifact_key}",
+            "source_sha256": "a" * 64,
+        }
+        if status == "synthetic_fixture":
+            payload["synthetic_fixture"] = True
+        if artifact_key == "statistical_orientation_tilt_artifact":
+            payload["first_experiment_orientation_scope"] = "statistical_typical_only"
+            payload["geometry_workflow"] = orientation_geometry_workflow
+        if artifact_key == missing_source_checksum_key:
+            payload.pop("source_sha256")
+        rel_path = Path("signed_pv_runner") / f"{artifact_key}.json"
+        full_path = base_dir / rel_path
+        full_path.parent.mkdir(parents=True, exist_ok=True)
+        full_path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        paths[artifact_key] = rel_path.as_posix()
+        approvals[approval_alias] = approval_id
+    return paths, approvals
+
+
+def test_committed_d014_pv_component_output_runner_preflight_blocks_unsigned_values() -> None:
+    payload = json.loads(
+        Path("data/metadata/weather_pv/d014_pv_component_output_runner_preflight.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    built = build_pv_component_output_runner_preflight()
+
+    assert payload["packet_id"] == "D014-PV-COMPONENT-OUTPUT-RUNNER-PREFLIGHT"
+    assert payload["status"] == "blocked_no_pv_component_output"
+    assert payload["real_pv_generation_authorized"] is False
+    assert payload["real_pv_arrays_written"] is False
+    assert payload["component_output_manifest"] is None
+    assert payload["input_metadata"]["value_approval_packet"]["packet_id"] == (
+        "D014-PV-FIRST-EXPERIMENT-VALUE-APPROVAL-PACKET"
+    )
+    assert "missing_signed_artifact:capacity_growth_artifact" in payload["blocker_ids"]
+    assert "missing_signed_artifact:final_paired_hp_pv_weather_acceptance_artifact" in payload["blocker_ids"]
+    assert payload["blocker_ids"] == list(built["blocker_ids"])
+
+
+def test_pv_component_output_runner_writes_synthetic_fixture_and_loads_through_ic1(tmp_path: Path) -> None:
+    weather = _short_weather(temperature_c=[20.0, 20.0, 20.0, 20.0], ghi_w_per_m2=[0.0, 500.0, 1000.0, 0.0])
+    config = PVSystemConfig(
+        installed_capacity_kw=2.0,
+        performance_ratio=1.0,
+        reference_irradiance_w_per_m2=1000.0,
+        temperature_coefficient_per_c=0.0,
+        reference_temperature_c=25.0,
+        clip_to_capacity=True,
+        config_id="synthetic-fixture-runner-config",
+        parameter_status="approved_for_executable_component_use",
+        signed_parameter_decision_id="SIGNED-FIXTURE-PV-PARAM",
+    )
+    profile = generate_pv_profile(weather, config)
+    signed_paths, approvals = _write_pv_runner_artifacts(tmp_path)
+    spec = PVComponentOutputArtifactSpec(
+        artifact_id="pv-synthetic-runner-output-artifact",
+        artifact_status="synthetic_fixture",
+        component_id="pv-synthetic-node-a",
+        node_id="node-a",
+        member_id=profile.weather_member_id,
+        source_id="synthetic-signed-fixture-pv-source",
+        calendar_id="synthetic_calendar_2025_4step",
+        shared_weather_driver_id=profile.shared_weather_driver_id,
+        approval_ids=approvals,
+        provenance={"synthetic_fixture": True, "runner": "unit-test"},
+    )
+    result = build_pv_component_output_runner_preflight(
+        signed_artifact_paths=signed_paths,
+        profile=profile,
+        spec=spec,
+        array_path="artifacts/pv_runner_fixture.npz",
+        manifest_path="artifacts/pv_runner_fixture_manifest.json",
+        base_dir=tmp_path,
+        paired_weather_identity=profile.identity_record(),
+        requested_artifact_status="synthetic_fixture",
+        allow_synthetic_fixture=True,
+        write_output=True,
+    )
+
+    assert result["status"] == "synthetic_fixture_component_output_written"
+    assert result["real_pv_arrays_written"] is False
+    assert result["synthetic_fixture_arrays_written"] is True
+    assert result["blocker_ids"] == ()
+    manifest = result["component_output_manifest"]
+    assert manifest["array_path"] == "artifacts/pv_runner_fixture.npz"
+    assert (tmp_path / manifest["array_path"]).is_file()
+
+    context = NetLoadRealizationContext(
+        scenario="synthetic-fixture",
+        planning_year=2035,
+        time_domain="full_year",
+        rho=0.0,
+        root_seed=20260724,
+        sample_index=0,
+        sample_seed=SeedTree(20260724).sample_seed(0),
+        component_streams=(SeedTree(20260724).component_stream(0, "pv"),),
+        shared_weather_driver_id=profile.shared_weather_driver_id,
+    )
+    adapter_output = load_component_adapter_output_from_npz_artifact(
+        manifest,
+        context,
+        repo_root=tmp_path,
+        expected_calendar_id="synthetic_calendar_2025_4step",
+        expected_node_ids=("node-a",),
+        allow_synthetic_fixture=True,
+    )
+    np.testing.assert_allclose(adapter_output.p_kw, -np.asarray(profile.generation_kw))
+
+
+def test_pv_component_output_runner_write_helper_persists_blocker(tmp_path: Path) -> None:
+    output_path = tmp_path / "runner_preflight.json"
+    manifest = write_pv_component_output_runner_preflight(output_path)
+    payload = json.loads(output_path.read_text(encoding="utf-8"))
+
+    assert manifest["packet_id"] == "D014-PV-COMPONENT-OUTPUT-RUNNER-PREFLIGHT"
+    assert payload["status"] == "blocked_no_pv_component_output"
+    assert payload["real_pv_arrays_written"] is False
+
+
+def test_pv_component_output_runner_rejects_missing_source_checksum(tmp_path: Path) -> None:
+    signed_paths, _approvals = _write_pv_runner_artifacts(
+        tmp_path,
+        missing_source_checksum_key="capacity_growth_artifact",
+    )
+    result = build_pv_component_output_runner_preflight(
+        signed_artifact_paths=signed_paths,
+        base_dir=tmp_path,
+        requested_artifact_status="synthetic_fixture",
+        allow_synthetic_fixture=True,
+    )
+
+    assert any("capacity_growth_artifact:source_sha256_missing_or_invalid" in item for item in result["blocker_ids"])
+
+
+def test_pv_component_output_runner_rejects_unsafe_status_tokens(tmp_path: Path) -> None:
+    signed_paths, _approvals = _write_pv_runner_artifacts(
+        tmp_path,
+        status="accepted",
+        approval_prefix="SIGNED",
+        bad_approval_key="capacity_growth_artifact",
+        bad_approval_value="future-capacity-approval",
+    )
+    result = build_pv_component_output_runner_preflight(
+        signed_artifact_paths=signed_paths,
+        base_dir=tmp_path,
+        requested_artifact_status="accepted",
+    )
+
+    assert any("capacity_growth_artifact:approval_id_has_stale_or_template_token" in item for item in result["blocker_ids"])
+    assert result["real_pv_arrays_written"] is False
+
+
+def test_pv_component_output_runner_rejects_paired_weather_identity_mismatch(tmp_path: Path) -> None:
+    weather = _short_weather(temperature_c=[20.0, 20.0, 20.0, 20.0], ghi_w_per_m2=[0.0, 500.0, 1000.0, 0.0])
+    profile = generate_pv_profile(
+        weather,
+        PVSystemConfig(
+            installed_capacity_kw=2.0,
+            performance_ratio=1.0,
+            reference_irradiance_w_per_m2=1000.0,
+            temperature_coefficient_per_c=0.0,
+            reference_temperature_c=25.0,
+            clip_to_capacity=True,
+            config_id="synthetic-fixture-mismatch-config",
+            parameter_status="approved_for_executable_component_use",
+            signed_parameter_decision_id="SIGNED-FIXTURE-PV-PARAM",
+        ),
+    )
+    signed_paths, approvals = _write_pv_runner_artifacts(tmp_path)
+    spec = PVComponentOutputArtifactSpec(
+        artifact_id="pv-synthetic-runner-output-artifact",
+        artifact_status="synthetic_fixture",
+        component_id="pv-synthetic-node-a",
+        node_id="node-a",
+        member_id=profile.weather_member_id,
+        source_id="synthetic-signed-fixture-pv-source",
+        calendar_id="synthetic_calendar_2025_4step",
+        shared_weather_driver_id=profile.shared_weather_driver_id,
+        approval_ids=approvals,
+        provenance={"synthetic_fixture": True},
+    )
+    bad_identity = dict(profile.identity_record())
+    bad_identity["shared_weather_driver_id"] = "different-weather-driver"
+
+    result = build_pv_component_output_runner_preflight(
+        signed_artifact_paths=signed_paths,
+        profile=profile,
+        spec=spec,
+        array_path="artifacts/pv_runner_fixture.npz",
+        manifest_path="artifacts/pv_runner_fixture_manifest.json",
+        base_dir=tmp_path,
+        paired_weather_identity=bad_identity,
+        requested_artifact_status="synthetic_fixture",
+        allow_synthetic_fixture=True,
+        write_output=True,
+    )
+
+    assert "paired_weather_identity_mismatch:shared_weather_driver_id" in result["blocker_ids"]
+    assert result["synthetic_fixture_arrays_written"] is False
+
+
+def test_pv_component_output_runner_blocks_missing_allocation_artifact(tmp_path: Path) -> None:
+    signed_paths, _approvals = _write_pv_runner_artifacts(tmp_path, omit="node_allocation_artifact")
+    result = build_pv_component_output_runner_preflight(
+        signed_artifact_paths=signed_paths,
+        base_dir=tmp_path,
+        requested_artifact_status="synthetic_fixture",
+        allow_synthetic_fixture=True,
+    )
+
+    assert "missing_signed_artifact:node_allocation_artifact" in result["blocker_ids"]
+
+
+def test_pv_component_output_runner_blocks_premature_accepted_status() -> None:
+    result = build_pv_component_output_runner_preflight(requested_artifact_status="accepted")
+
+    assert "premature_accepted_status_unsigned_inputs" in result["blocker_ids"]
+    assert result["real_pv_generation_authorized"] is False
+
+
+def test_pv_component_output_runner_blocks_non_repo_relative_output_paths(tmp_path: Path) -> None:
+    weather = _short_weather(temperature_c=[20.0, 20.0, 20.0, 20.0], ghi_w_per_m2=[0.0, 500.0, 1000.0, 0.0])
+    profile = generate_pv_profile(
+        weather,
+        PVSystemConfig(
+            installed_capacity_kw=2.0,
+            performance_ratio=1.0,
+            reference_irradiance_w_per_m2=1000.0,
+            temperature_coefficient_per_c=0.0,
+            reference_temperature_c=25.0,
+            clip_to_capacity=True,
+            config_id="synthetic-fixture-path-runner-config",
+            parameter_status="approved_for_executable_component_use",
+            signed_parameter_decision_id="SIGNED-FIXTURE-PV-PARAM",
+        ),
+    )
+    signed_paths, approvals = _write_pv_runner_artifacts(tmp_path)
+    spec = PVComponentOutputArtifactSpec(
+        artifact_id="pv-synthetic-runner-output-artifact",
+        artifact_status="synthetic_fixture",
+        component_id="pv-synthetic-node-a",
+        node_id="node-a",
+        member_id=profile.weather_member_id,
+        source_id="synthetic-signed-fixture-pv-source",
+        calendar_id="synthetic_calendar_2025_4step",
+        shared_weather_driver_id=profile.shared_weather_driver_id,
+        approval_ids=approvals,
+        provenance={"synthetic_fixture": True},
+    )
+    result = build_pv_component_output_runner_preflight(
+        signed_artifact_paths=signed_paths,
+        profile=profile,
+        spec=spec,
+        array_path="../pv_runner_fixture.npz",
+        manifest_path="artifacts/pv_runner_fixture_manifest.json",
+        base_dir=tmp_path,
+        paired_weather_identity=profile.identity_record(),
+        requested_artifact_status="synthetic_fixture",
+        allow_synthetic_fixture=True,
+        write_output=True,
+    )
+
+    assert any(str(item).startswith("unsafe_array_path:") for item in result["blocker_ids"])
+    assert result["synthetic_fixture_arrays_written"] is False
+
+
+def test_pv_component_output_runner_blocks_roof_geometry_hook(tmp_path: Path) -> None:
+    signed_paths, _approvals = _write_pv_runner_artifacts(
+        tmp_path,
+        orientation_geometry_workflow="3DBAG roof-level per-building extraction",
+    )
+    result = build_pv_component_output_runner_preflight(
+        signed_artifact_paths=signed_paths,
+        base_dir=tmp_path,
+        requested_artifact_status="synthetic_fixture",
+        allow_synthetic_fixture=True,
+    )
+
+    assert "forbidden_roof_or_building_geometry_hook" in result["blocker_ids"]
 def test_committed_d014_pv_executable_preflight_guard_fails_closed() -> None:
     packet = load_pv_executable_preflight_guard_packet(
         "data/metadata/weather_pv/d014_pv_executable_preflight_guard.json"

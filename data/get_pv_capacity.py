@@ -38,6 +38,8 @@ D014_PV_FIRST_EXPERIMENT_VALUE_APPROVAL_NAME = "d014_pv_first_experiment_value_a
 D014_PV_FIRST_EXPERIMENT_VALUE_APPROVAL_ID = "D014-PV-FIRST-EXPERIMENT-VALUE-APPROVAL-PACKET"
 D014_PV_COMPONENT_OUTPUT_ARTIFACT_SCAFFOLD_NAME = "d014_pv_component_output_artifact_scaffold.json"
 D014_PV_COMPONENT_OUTPUT_ARTIFACT_SCAFFOLD_ID = "D014-PV-COMPONENT-OUTPUT-ARTIFACT-SCAFFOLD"
+D014_PV_COMPONENT_OUTPUT_RUNNER_PREFLIGHT_NAME = "d014_pv_component_output_runner_preflight.json"
+D014_PV_COMPONENT_OUTPUT_RUNNER_PREFLIGHT_ID = "D014-PV-COMPONENT-OUTPUT-RUNNER-PREFLIGHT"
 D014_DATA_ID = "D-014"
 CBS_TABLE_ID = "85005NED"
 CBS_ODATA_BASE = f"https://opendata.cbs.nl/ODataApi/OData/{CBS_TABLE_ID}"
@@ -2337,6 +2339,20 @@ def write_d014_pv_component_output_artifact_scaffold_packet(metadata_dir: str | 
         encoding="utf-8",
     )
     return path
+
+def write_d014_pv_component_output_runner_preflight(metadata_dir: str | Path = "data/metadata") -> Path:
+    """Write the current fail-closed PV component-output runner preflight."""
+    import sys
+    repo_root = Path(__file__).resolve().parents[1]
+    if str(repo_root) not in sys.path:
+        sys.path.insert(0, str(repo_root))
+    from src.pv_model import write_pv_component_output_runner_preflight
+
+    directory = Path(metadata_dir) / "weather_pv"
+    directory.mkdir(parents=True, exist_ok=True)
+    path = directory / D014_PV_COMPONENT_OUTPUT_RUNNER_PREFLIGHT_NAME
+    write_pv_component_output_runner_preflight(path)
+    return path
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Prepare D-014 PV capacity source/value metadata.")
     parser.add_argument("--metadata-dir", default="data/metadata")
@@ -2353,6 +2369,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--write-d014-pv-first-experiment-value-decision", action="store_true")
     parser.add_argument("--write-d014-pv-first-experiment-value-approval", action="store_true")
     parser.add_argument("--write-d014-pv-component-output-artifact-scaffold", action="store_true")
+    parser.add_argument("--write-d014-pv-component-output-runner-preflight", action="store_true")
     parser.add_argument("--retrieve-d014-cbs-anchor-evidence", action="store_true")
     parser.add_argument("--retrieve-d014-ii3050-growth-evidence", action="store_true")
     args = parser.parse_args(argv)
@@ -2371,6 +2388,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         path = retrieve_d014_cbs_capacity_anchor_evidence(metadata_dir=args.metadata_dir)
     elif args.write_d014_pv_first_experiment_value_approval:
         path = write_d014_pv_first_experiment_value_approval_packet(args.metadata_dir)
+    elif args.write_d014_pv_component_output_runner_preflight:
+        path = write_d014_pv_component_output_runner_preflight(args.metadata_dir)
     elif args.write_d014_pv_component_output_artifact_scaffold:
         path = write_d014_pv_component_output_artifact_scaffold_packet(args.metadata_dir)
     elif args.write_d014_pv_first_experiment_value_decision:
