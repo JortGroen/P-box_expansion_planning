@@ -2132,6 +2132,248 @@ def ev_ic1_accepted_artifact_index_preflight(
     }
 
 
+EV_GENERIC_COMPONENT_OUTPUT_MANIFEST_DIR = "data/metadata/ev_adoption/generic_component_output_manifests"
+EV_GENERIC_COMPONENT_OUTPUT_PACKET_PATH = (
+    "data/metadata/ev_adoption/e3_s2a_ev_ic1_generic_component_output_manifest_packet.json"
+)
+EV_AGENT_A_AGGREGATE_NODE_ID = "load_000_to_load_114"
+
+
+def ev_ic1_generic_component_output_loader_manifests(
+    accepted_artifact_index: Mapping[str, Any],
+    recovery_preflight: Mapping[str, Any],
+    *,
+    accepted_artifact_index_path: str = "data/metadata/ev_adoption/e2_s2_ev_ic1_accepted_artifact_index_preflight.json",
+    accepted_artifact_index_sha256: str | None = None,
+    recovery_preflight_path: str = "data/metadata/ev_adoption/e3_s2a_ev_component_output_recovery_preflight.json",
+    recovery_preflight_sha256: str | None = None,
+    manifest_directory: str = EV_GENERIC_COMPONENT_OUTPUT_MANIFEST_DIR,
+    manifest_sha256_by_path: Mapping[str, str] | None = None,
+) -> dict[str, object]:
+    """Build Agent A-loader-compatible EV component-output manifests.
+
+    The returned wrapper is metadata-only. It translates the richer EV
+    candidate-output index into the generic IC-1 manifest keys that Agent A's
+    loader preflight validates, while preserving EV fail-closed blockers in
+    provenance instead of authorizing adequacy or integrated use.
+    """
+
+    if accepted_artifact_index.get("artifact_type") != "ev_ic1_accepted_artifact_index_preflight":
+        raise ValueError("generic EV loader manifests require the EV accepted-artifact index")
+    if accepted_artifact_index.get("status") != "accepted_ev_metadata_index_for_agent_a_preflight_blocked_for_integrated_results":
+        raise ValueError("generic EV loader manifests require the accepted EV metadata index")
+    if recovery_preflight.get("artifact_type") != "ev_component_output_recovery_preflight":
+        raise ValueError("generic EV loader manifests require the EV component-output recovery preflight")
+    if recovery_preflight.get("status") != "component_outputs_rebuilt_and_verified":
+        raise ValueError("generic EV loader manifests require verified rebuilt component outputs")
+
+    if accepted_artifact_index_sha256 is not None:
+        accepted_artifact_index_sha256 = _require_sha256(
+            accepted_artifact_index_sha256,
+            "accepted_artifact_index_sha256",
+        )
+    if recovery_preflight_sha256 is not None:
+        recovery_preflight_sha256 = _require_sha256(
+            recovery_preflight_sha256,
+            "recovery_preflight_sha256",
+        )
+
+    for label, policy in (
+        ("accepted artifact index", accepted_artifact_index.get("policy")),
+        ("recovery preflight", recovery_preflight.get("policy")),
+    ):
+        if not isinstance(policy, Mapping):
+            raise ValueError(f"EV {label} must include policy flags")
+        for key in (
+            "held_out_access",
+            "quarantined_access",
+            "integrated_analysis_performed",
+        ):
+            if policy.get(key) is not False:
+                raise ValueError(f"EV {label} must keep {key}=False")
+        if policy.get("m_sufficiency_claim") is True or policy.get("m_sufficiency_claimed") is True:
+            raise ValueError(f"EV {label} must not claim M sufficiency")
+    if accepted_artifact_index["policy"].get("candidate_libraries_only") is not True:
+        raise ValueError("generic EV loader manifests require candidate-library-only EV metadata")
+    if recovery_preflight["policy"].get("elaad_api_calls") is not False:
+        raise ValueError("generic EV loader manifests must not depend on new ElaadNL API calls")
+    if recovery_preflight["policy"].get("profile_arrays_loaded_during_candidate_restore") is not False:
+        raise ValueError("generic EV loader manifests require restore-only recovery metadata")
+    source_root = recovery_preflight.get("candidate_source_root")
+    if not isinstance(source_root, Mapping) or source_root.get("absolute_path_committed") is not False:
+        raise ValueError("generic EV loader manifests must not commit absolute candidate-source roots")
+
+    scenario_index = accepted_artifact_index.get("scenario_index")
+    if not isinstance(scenario_index, list):
+        raise ValueError("generic EV loader manifests require a scenario index")
+    scenario_names = [_require_non_empty_string(row.get("scenario"), "scenario") for row in scenario_index if isinstance(row, Mapping)]
+    duplicates = sorted(name for name, count in Counter(scenario_names).items() if count > 1)
+    if duplicates:
+        raise ValueError(f"generic EV loader manifests reject duplicate scenarios: {duplicates}")
+    if set(scenario_names) != {"low", "middle", "high"}:
+        raise ValueError("generic EV loader manifests require low/middle/high scenario coverage")
+
+    rebuilt_records = recovery_preflight.get("rebuilt_component_outputs")
+    if not isinstance(rebuilt_records, list):
+        raise ValueError("generic EV loader manifests require rebuilt component-output records")
+    rebuilt_by_scenario: dict[str, Mapping[str, Any]] = {}
+    for record in rebuilt_records:
+        if not isinstance(record, Mapping):
+            raise ValueError("rebuilt component-output records must be mappings")
+        scenario = _require_non_empty_string(record.get("scenario"), "rebuilt scenario")
+        if scenario in rebuilt_by_scenario:
+            raise ValueError(f"generic EV loader manifests reject duplicate rebuilt scenario: {scenario}")
+        rebuilt_by_scenario[scenario] = record
+    if set(rebuilt_by_scenario) != set(scenario_names):
+        raise ValueError("generic EV loader manifests require rebuilt outputs for every declared scenario")
+
+    calendar = accepted_artifact_index.get("calendar_mapping")
+    node_axis = accepted_artifact_index.get("node_axis")
+    source_artifacts = accepted_artifact_index.get("source_artifacts")
+    if not isinstance(calendar, Mapping) or not isinstance(node_axis, Mapping) or not isinstance(source_artifacts, Mapping):
+        raise ValueError("generic EV loader manifests require calendar, node-axis, and source-artifact metadata")
+    if calendar.get("rule_id") != EV_CALENDAR_MAPPING_RULE_ID:
+        raise ValueError("generic EV loader manifests require EV-CAL-001 calendar mapping")
+    if _require_int(calendar.get("n_timesteps"), "calendar n_timesteps") != EXPECTED_FULL_YEAR_STEPS:
+        raise ValueError("generic EV loader manifests require 35,040 timesteps")
+    if _require_int(calendar.get("timestep_seconds"), "calendar timestep_seconds") != 900:
+        raise ValueError("generic EV loader manifests require 900-second cadence")
+    if node_axis.get("node_count") != 115:
+        raise ValueError("generic EV loader manifests require the 115-node EV axis")
+
+    manifest_dir = _require_non_empty_string(manifest_directory, "manifest_directory").rstrip("/")
+    manifest_sha256_by_path = dict(manifest_sha256_by_path or {})
+    manifests: list[dict[str, object]] = []
+    scenario_manifest_records: list[dict[str, object]] = []
+    for row in sorted((r for r in scenario_index if isinstance(r, Mapping)), key=lambda item: str(item["scenario"])):
+        scenario = str(row["scenario"])
+        rebuilt = rebuilt_by_scenario[scenario]
+        output_path = _require_non_empty_string(row.get("output_npz_path"), f"{scenario} output_npz_path")
+        output_sha = _require_sha256(row.get("output_sha256"), f"{scenario} output_sha256")
+        if rebuilt.get("path") != output_path or rebuilt.get("sha256") != output_sha:
+            raise ValueError("generic EV loader manifests require recovery output checksums to match the accepted index")
+        manifest_path = f"{manifest_dir}/ev_2035_{scenario}.json"
+        member_id = f"ev005b_root20260722_sample0_{scenario}_branch"
+        manifest = {
+            "artifact_id": f"e3_s2a_ev_ic1_generic_component_output_2035_{scenario}",
+            "artifact_status": "accepted",
+            "kind": "ev",
+            "component_id": f"ev_component_output_2035_{scenario}",
+            "node_id": EV_AGENT_A_AGGREGATE_NODE_ID,
+            "member_id": member_id,
+            "source_id": "D-002_D-010_D-012",
+            "calendar_id": calendar.get("target_calendar_id"),
+            "timestep_seconds": 900,
+            "array_path": output_path,
+            "array_sha256": output_sha,
+            "provenance": {
+                "artifact_type": "ev_generic_ic1_component_output_manifest",
+                "scenario": scenario,
+                "planning_year": 2035,
+                "candidate_only": True,
+                "held_out_access": False,
+                "quarantined_access": False,
+                "m_sufficiency_claimed": False,
+                "integrated_analysis_performed": False,
+                "event_or_p_e_analysis_performed": False,
+                "capacity_screen_performed": False,
+                "final_low_middle_high_branch_selected": False,
+                "profile_arrays_loaded_by_manifest_builder": False,
+                "agent_a_schema_target": "build_accepted_artifact_loader_blocker_preflight",
+                "aggregate_node_id_note": (
+                    "The generic loader schema has a single node_id field; the EV NPZ carries the full "
+                    "115-row node axis recorded here."
+                ),
+                "node_axis": node_axis,
+                "calendar_mapping": calendar,
+                "scenario_index_record": dict(row),
+                "source_profile_libraries": accepted_artifact_index.get("source_profile_libraries"),
+                "a014_allocation_provenance": accepted_artifact_index.get("a014_allocation_provenance"),
+                "selection_manifest_provenance": accepted_artifact_index.get("selection_manifest_provenance"),
+                "source_artifacts": {
+                    **dict(source_artifacts),
+                    "accepted_artifact_index": accepted_artifact_index_path,
+                    "accepted_artifact_index_sha256": accepted_artifact_index_sha256,
+                    "component_output_recovery_preflight": recovery_preflight_path,
+                    "component_output_recovery_preflight_sha256": recovery_preflight_sha256,
+                },
+                "remaining_blockers": accepted_artifact_index.get("remaining_blockers"),
+            },
+        }
+        manifests.append(manifest)
+        scenario_manifest_records.append(
+            {
+                "scenario": scenario,
+                "path": manifest_path,
+                "sha256": manifest_sha256_by_path.get(manifest_path),
+                "array_path": output_path,
+                "array_sha256": output_sha,
+                "agent_a_loader_inputs": {
+                    "component_output_manifest_paths_by_kind": {"ev": manifest_path},
+                    "component_output_manifest_sha256_by_path": (
+                        {manifest_path: manifest_sha256_by_path[manifest_path]}
+                        if manifest_path in manifest_sha256_by_path
+                        else {}
+                    ),
+                },
+            }
+        )
+
+    missing_manifest_sha = [record["path"] for record in scenario_manifest_records if not record.get("sha256")]
+    return {
+        "artifact_type": "ev_ic1_generic_component_output_manifest_packet",
+        "artifact_id": "e3_s2a_ev_ic1_generic_component_output_manifest_packet",
+        "schema_version": 1,
+        "task_id": "E3.S2a",
+        "status": "accepted_ev_generic_loader_manifests_candidate_only_blocked_for_integrated_results",
+        "component_kind": "ev",
+        "planning_year": 2035,
+        "decision_ids": accepted_artifact_index.get("decision_ids"),
+        "source_ids": accepted_artifact_index.get("source_ids"),
+        "generic_loader_schema": {
+            "compatible_with": "build_accepted_artifact_loader_blocker_preflight",
+            "required_keys_present_in_each_manifest": [
+                "artifact_id",
+                "artifact_status",
+                "kind",
+                "component_id",
+                "node_id",
+                "member_id",
+                "source_id",
+                "calendar_id",
+                "timestep_seconds",
+                "array_path",
+                "array_sha256",
+                "provenance",
+            ],
+            "scenario_branch_must_be_explicit": True,
+        },
+        "scenario_manifests": scenario_manifest_records,
+        "manifests_by_scenario": {record["scenario"]: manifest for record, manifest in zip(scenario_manifest_records, manifests, strict=True)},
+        "source_artifacts": {
+            "accepted_artifact_index": accepted_artifact_index_path,
+            "accepted_artifact_index_sha256": accepted_artifact_index_sha256,
+            "component_output_recovery_preflight": recovery_preflight_path,
+            "component_output_recovery_preflight_sha256": recovery_preflight_sha256,
+        },
+        "remaining_blockers": accepted_artifact_index.get("remaining_blockers"),
+        "missing_generic_manifest_sha256_paths": missing_manifest_sha,
+        "policy": {
+            "candidate_libraries_only": True,
+            "held_out_access": False,
+            "quarantined_access": False,
+            "profile_arrays_loaded_by_manifest_builder": False,
+            "integrated_analysis_performed": False,
+            "event_or_p_e_analysis_performed": False,
+            "capacity_screen_performed": False,
+            "final_low_middle_high_branch_selected": False,
+            "m_sufficiency_claimed": False,
+            "manuscript_numbers_produced": False,
+            "fail_closed_on_unresolved_blockers": True,
+        },
+    }
+
+
 def ev_ic1_candidate_adapter_artifact(
     readiness_record: Mapping[str, Any],
     *,

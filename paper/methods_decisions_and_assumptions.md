@@ -755,14 +755,22 @@ artifact root, hashes each source file before copying, and skips an existing
 target file only when its SHA-256 matches the committed checksum preflight.
 Its checkpoint records config identity, expected component-output checksums,
 restored source-member batch metadata, and resume instructions, but deliberately
-does not commit an absolute artifact-root path. Held-out access, quarantined
-access, ElaadNL API calls, integrated analysis, adequacy certification, and any
-`M` sufficiency claim remain false in this recovery manifest. G0-A3 has
-resolved Q-5 threshold semantics, so EV readiness no longer treats Q-5 itself
-as a blocker; event use still remains blocked by the other unsigned or missing
-integrated prerequisites listed above. It loads no profile arrays for adequacy,
-runs no net-load/event/`P(E)` analysis, certifies no `M` sufficiency, and
-produces no manuscript number.
+does not commit an absolute artifact-root path. The EV generic component-output
+manifest wrapper translates each declared 2035 low/middle/high candidate EV NPZ
+into Agent A's accepted-artifact loader schema with explicit scenario branch,
+array path and SHA-256, EV-005B member-selection provenance, EV-CAL-001 calendar
+provenance, A-014 node/allocation provenance, and source IDs. The wrapper uses
+one aggregate node-axis token required by the current generic schema while
+retaining the full 115-node axis in provenance; it is accepted only for
+candidate EV component-output loader preflight and remains blocked for
+paper-facing integrated adequacy use. Held-out access, quarantined access,
+ElaadNL API calls, integrated analysis, adequacy certification, and any `M`
+sufficiency claim remain false in both the recovery and generic-loader manifest
+packets. G0-A3 has resolved Q-5 threshold semantics, so EV readiness no longer
+treats Q-5 itself as a blocker; event use still remains blocked by the other
+unsigned or missing integrated prerequisites listed above. It loads no profile
+arrays for adequacy, runs no net-load/event/`P(E)` analysis, certifies no `M`
+sufficiency, and produces no manuscript number.
 
 <!-- methods-id: EV-005A -->
 ### EV-005A - Low-Cost Held-Out Replacement
