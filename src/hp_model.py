@@ -620,7 +620,6 @@ def hp001_residential_when2heat_components(
     return tuple(components)
 
 
-
 def hp001_final_readiness_missing_approval_keys(
     approval_ids: Mapping[str, str],
 ) -> tuple[str, ...]:
@@ -642,7 +641,6 @@ def require_hp001_final_readiness_approvals(approval_ids: Mapping[str, str]) -> 
             "scenario-consistency, paired-weather, and cold-spell approvals; "
             f"missing={missing}"
         )
-
 
 
 def hp001_profile_artifact_consumption_missing_approval_keys(
@@ -1260,8 +1258,6 @@ def _when2heat_use_columns(
         columns.add(component.heat_column)
         columns.add(component.cop_column)
     return columns
-
-
 
 
 def _require_non_empty_text(record: Mapping[str, Any], key: str, *, label: str) -> str:

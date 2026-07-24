@@ -352,7 +352,6 @@ def build_hp001_value_binding_readiness_packet() -> dict[str, Any]:
     }
 
 
-
 def build_hp001_readiness_approval_checklist_packet() -> dict[str, Any]:
     """Return the remaining HP-001 approvals before integrated HP use."""
     annual_value_keys = [
@@ -418,8 +417,6 @@ def build_hp001_readiness_approval_checklist_packet() -> dict[str, Any]:
             "No net-load, event, P(E), threshold, capacity-screen, manuscript, or probability analysis is run.",
         ],
     }
-
-
 
 
 def build_hp001_executable_value_binding_decision_packet() -> dict[str, Any]:
@@ -493,8 +490,6 @@ def build_hp001_executable_value_binding_decision_packet() -> dict[str, Any]:
     }
 
 
-
-
 def build_hp001_profile_artifact_consumption_manifest_template() -> dict[str, Any]:
     """Return a fail-closed template for future HP profile artifact consumption."""
     annual_keys = [
@@ -561,8 +556,6 @@ def write_hp001_executable_value_binding_decision_packet(metadata_dir: Path) -> 
     return path
 
 
-
-
 def write_hp001_profile_artifact_consumption_manifest_template(metadata_dir: Path) -> Path:
     """Write the proposed future HP profile consumption manifest template."""
     target_dir = metadata_dir / "hp_scaling"
@@ -571,6 +564,7 @@ def write_hp001_profile_artifact_consumption_manifest_template(metadata_dir: Pat
     payload = build_hp001_profile_artifact_consumption_manifest_template()
     path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     return path
+
 
 def write_hp001_readiness_approval_checklist_packet(metadata_dir: Path) -> Path:
     """Write the proposed HP-001 approval checklist for PI review."""
