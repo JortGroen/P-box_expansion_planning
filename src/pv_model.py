@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
+import hashlib
 import json
 from pathlib import Path
 from types import MappingProxyType
@@ -1893,6 +1894,250 @@ def load_pv_first_experiment_value_decision_packet(path: str | Path) -> PVFirstE
         non_claims=payload.get("non_claims", ()),
     )
 
+
+@dataclass(frozen=True)
+class PVComponentOutputArtifactScaffoldPacket:
+    """Fail-closed scaffold for future PV component-output artifact generation."""
+
+    packet_id: str
+    data_id: str
+    status: str
+    download_performed: bool
+    raw_data_committed: bool
+    component_output_generation_performed: bool
+    input_metadata: Mapping[str, object]
+    current_unsigned_packet_behavior: Mapping[str, object]
+    future_component_output_manifest_schema: Mapping[str, object]
+    future_runner_contract: Mapping[str, object]
+    executable_gate: Mapping[str, object]
+    pi_approval_keys_before_executable_use: Sequence[str]
+    non_claims: Sequence[str]
+
+    def __post_init__(self) -> None:
+        if self.packet_id != "D014-PV-COMPONENT-OUTPUT-ARTIFACT-SCAFFOLD":
+            raise ValueError("PV component-output scaffold must identify D014-PV-COMPONENT-OUTPUT-ARTIFACT-SCAFFOLD")
+        if self.data_id != "D-014":
+            raise ValueError("PV component-output scaffold must identify D-014")
+        if not str(self.status).startswith("proposed_"):
+            raise ValueError("PV component-output scaffold must remain proposed until PI approval")
+        if self.download_performed is not False or self.raw_data_committed is not False:
+            raise ValueError("PV component-output scaffold must not claim raw retrieval or committed raw data")
+        if self.component_output_generation_performed is not False:
+            raise ValueError("PV component-output scaffold must not claim component-output generation")
+        inputs = _audit_json_mapping(self.input_metadata, "input_metadata")
+        behavior = _audit_json_mapping(self.current_unsigned_packet_behavior, "current_unsigned_packet_behavior")
+        schema = _audit_json_mapping(self.future_component_output_manifest_schema, "future_component_output_manifest_schema")
+        runner = _audit_json_mapping(self.future_runner_contract, "future_runner_contract")
+        gate = _audit_json_mapping(self.executable_gate, "executable_gate")
+        approval_keys = tuple(str(item) for item in self.pi_approval_keys_before_executable_use)
+        non_claims = tuple(str(item) for item in self.non_claims)
+
+        required_inputs = {
+            "first_experiment_value_decision_packet": "D014-PV-FIRST-EXPERIMENT-VALUE-DECISION-PACKET",
+            "executable_preflight_guard": "D014-PV-EXECUTABLE-PREFLIGHT-GUARD",
+        }
+        for key, packet_id in required_inputs.items():
+            record = _audit_json_mapping(inputs.get(key, {}), f"input_metadata.{key}")
+            if record.get("packet_id") != packet_id:
+                raise ValueError(f"PV component-output scaffold input {key} must reference {packet_id}")
+            if len(str(record.get("sha256", ""))) != 64:
+                raise ValueError(f"PV component-output scaffold input {key} must record SHA-256")
+        weather = _audit_json_mapping(inputs.get("weather_input_artifact", {}), "input_metadata.weather_input_artifact")
+        if not weather.get("packet_id"):
+            raise ValueError("PV component-output scaffold must reference the D-004 weather input artifact")
+        if len(str(weather.get("sha256", ""))) != 64:
+            raise ValueError("PV component-output scaffold weather artifact must record SHA-256")
+        if behavior.get("current_committed_d014_packets_are_executable") is not False:
+            raise ValueError("current committed D-014 packets must be rejected while unsigned")
+        if behavior.get("result_if_current_packets_are_invoked") != "abort_with_component_output_blocker_manifest":
+            raise ValueError("current unsigned D-014 packet behavior must abort with a blocker manifest")
+        required_manifest_fields = set(str(item) for item in schema.get("manifest_required_fields", ()))
+        for field_name in (
+            "artifact_id",
+            "artifact_status",
+            "kind",
+            "component_id",
+            "node_id",
+            "member_id",
+            "source_id",
+            "calendar_id",
+            "timestep_seconds",
+            "shared_weather_driver_id",
+            "array_path",
+            "array_sha256",
+            "provenance",
+        ):
+            if field_name not in required_manifest_fields:
+                raise ValueError(f"PV component-output scaffold manifest schema missing {field_name}")
+        if set(str(item) for item in schema.get("npz_required_arrays", ())) != {"p_kw", "q_kvar", "timestamps"}:
+            raise ValueError("PV component-output scaffold must require p_kw, q_kvar, and timestamps arrays")
+        if "negative p_kw" not in str(schema.get("ic1_sign_convention", "")):
+            raise ValueError("PV component-output scaffold must record negative p_kw export convention")
+        if "unsigned" not in str(schema.get("q_kvar_policy", "")):
+            raise ValueError("PV component-output scaffold must keep PV reactive-power policy unsigned")
+        if runner.get("writer_function") != "src.pv_model.write_pv_component_output_npz_artifact":
+            raise ValueError("PV component-output scaffold must point to the PV-owned writer function")
+        if not runner.get("checkpoint_resume_policy"):
+            raise ValueError("PV component-output scaffold must record checkpoint/resume behavior")
+        if gate.get("component_output_generation_authorized") is not False:
+            raise ValueError("PV component-output scaffold must not authorize component-output generation")
+        if gate.get("result_if_invoked") != "abort_until_signed_pv_component_output_inputs":
+            raise ValueError("PV component-output scaffold must abort until signed component-output inputs")
+        blockers = tuple(str(item) for item in gate.get("blocking_register_ids", ()))
+        for blocker in (
+            "D014-PV-CAPACITY-APPROVAL-TEMPLATE_successor",
+            "PV-ORIENT-001_values",
+            "PV-PARAM-001_or_signed_amendment",
+            "A-016",
+            "future_node_allocation_rule",
+            "FINAL-PAIRED-HP-PV-ACCEPTANCE",
+        ):
+            if blocker not in blockers:
+                raise ValueError(f"PV component-output scaffold missing blocker {blocker}")
+        required_keys = {
+            "signed_d014_capacity_artifact",
+            "signed_statistical_orientation_tilt_artifact",
+            "signed_pv_param_conversion_artifact",
+            "signed_node_allocation_artifact",
+            "signed_a016_scenario_consistency_artifact",
+            "signed_final_paired_hp_pv_acceptance_artifact",
+            "signed_pv_reactive_power_policy_or_q_zero_convention",
+        }
+        missing_keys = required_keys.difference(approval_keys)
+        if missing_keys:
+            raise ValueError(f"PV component-output scaffold missing approval keys: {sorted(missing_keys)}")
+        if not any("No real PV component-output" in item for item in non_claims):
+            raise ValueError("PV component-output scaffold must state no real output is generated")
+        if not any("No roof, building" in item and "PV-map" in item for item in non_claims):
+            raise ValueError("PV component-output scaffold must defer heavy geometry")
+
+        object.__setattr__(self, "input_metadata", inputs)
+        object.__setattr__(self, "current_unsigned_packet_behavior", behavior)
+        object.__setattr__(self, "future_component_output_manifest_schema", schema)
+        object.__setattr__(self, "future_runner_contract", runner)
+        object.__setattr__(self, "executable_gate", gate)
+        object.__setattr__(self, "pi_approval_keys_before_executable_use", approval_keys)
+        object.__setattr__(self, "non_claims", non_claims)
+
+    @property
+    def missing_approval_keys(self) -> tuple[str, ...]:
+        return self.pi_approval_keys_before_executable_use
+
+    @property
+    def blocking_register_ids(self) -> tuple[str, ...]:
+        return tuple(str(item) for item in self.executable_gate["blocking_register_ids"])
+
+    def require_component_output_generation_allowed(self) -> None:
+        """Always fail until all PV component-output approvals are signed."""
+        raise ValueError(
+            "PV component-output artifact generation is blocked until signed capacity, orientation/tilt, "
+            "PV-PARAM, allocation, A-016, paired acceptance, and reactive-power policy artifacts exist"
+        )
+
+    def identity_record(self) -> dict[str, object]:
+        return {
+            "packet_id": self.packet_id,
+            "data_id": self.data_id,
+            "status": self.status,
+            "input_packet_ids": {
+                key: _audit_json_mapping(value, f"input_metadata.{key}")["packet_id"]
+                for key, value in self.input_metadata.items()
+            },
+            "blocking_register_ids": self.blocking_register_ids,
+            "missing_approval_keys": self.missing_approval_keys,
+            "component_output_generation_authorized": False,
+        }
+
+
+def load_pv_component_output_artifact_scaffold_packet(path: str | Path) -> PVComponentOutputArtifactScaffoldPacket:
+    """Load the proposed D-014 PV component-output artifact scaffold packet."""
+    payload = json.loads(Path(path).read_text(encoding="utf-8"))
+    return PVComponentOutputArtifactScaffoldPacket(
+        packet_id=str(payload.get("packet_id", "")),
+        data_id=str(payload.get("data_id", "")),
+        status=str(payload.get("status", "")),
+        download_performed=bool(payload.get("download_performed")),
+        raw_data_committed=bool(payload.get("raw_data_committed")),
+        component_output_generation_performed=bool(payload.get("component_output_generation_performed")),
+        input_metadata=payload.get("input_metadata", {}),
+        current_unsigned_packet_behavior=payload.get("current_unsigned_packet_behavior", {}),
+        future_component_output_manifest_schema=payload.get("future_component_output_manifest_schema", {}),
+        future_runner_contract=payload.get("future_runner_contract", {}),
+        executable_gate=payload.get("executable_gate", {}),
+        pi_approval_keys_before_executable_use=payload.get("pi_approval_keys_before_executable_use", ()),
+        non_claims=payload.get("non_claims", ()),
+    )
+
+
+@dataclass(frozen=True)
+class PVComponentOutputArtifactSpec:
+    """Accepted or synthetic-fixture spec for writing a PV IC-1 component output."""
+
+    artifact_id: str
+    artifact_status: str
+    component_id: str
+    node_id: str
+    member_id: str
+    source_id: str
+    calendar_id: str
+    shared_weather_driver_id: str
+    approval_ids: Mapping[str, object]
+    provenance: Mapping[str, object]
+    timestep_seconds: int = STEP_SECONDS_15MIN
+
+    def __post_init__(self) -> None:
+        for field_name in ("artifact_id", "component_id", "node_id", "member_id", "source_id", "calendar_id", "shared_weather_driver_id"):
+            value = getattr(self, field_name)
+            if not isinstance(value, str) or not value:
+                raise ValueError(f"{field_name} must be a non-empty string")
+        if self.artifact_status not in {"accepted", "synthetic_fixture"}:
+            raise ValueError("PV component-output artifact_status must be accepted or synthetic_fixture")
+        if int(self.timestep_seconds) != STEP_SECONDS_15MIN:
+            raise ValueError("PV component-output timestep_seconds must be 900")
+        approvals = _audit_json_mapping(self.approval_ids, "approval_ids")
+        provenance = _audit_json_mapping(self.provenance, "provenance")
+        required = {
+            "capacity_artifact",
+            "orientation_tilt_artifact",
+            "pv_param_artifact",
+            "node_allocation_artifact",
+            "a016_scenario_consistency_artifact",
+            "paired_hp_pv_acceptance_artifact",
+            "reactive_power_policy_artifact",
+        }
+        missing = required.difference(approvals)
+        if missing:
+            raise ValueError(f"PV component-output spec missing approval IDs: {sorted(missing)}")
+        if self.artifact_status == "accepted":
+            for key, value in approvals.items():
+                value_text = str(value).lower()
+                if any(token in value_text for token in ("unsigned", "proposed", "placeholder", "synthetic", "fixture")):
+                    raise ValueError(f"accepted PV component-output spec has unsigned approval token for {key}")
+        if self.artifact_status == "synthetic_fixture" and provenance.get("synthetic_fixture") is not True:
+            raise ValueError("synthetic_fixture PV component-output specs must mark provenance.synthetic_fixture=True")
+        object.__setattr__(self, "timestep_seconds", int(self.timestep_seconds))
+        object.__setattr__(self, "approval_ids", approvals)
+        object.__setattr__(self, "provenance", provenance)
+
+    def manifest_base(self) -> dict[str, object]:
+        return {
+            "artifact_id": self.artifact_id,
+            "artifact_status": self.artifact_status,
+            "kind": "pv",
+            "component_id": self.component_id,
+            "node_id": self.node_id,
+            "member_id": self.member_id,
+            "source_id": self.source_id,
+            "calendar_id": self.calendar_id,
+            "timestep_seconds": self.timestep_seconds,
+            "shared_weather_driver_id": self.shared_weather_driver_id,
+            "provenance": {
+                **dict(self.provenance),
+                "approval_ids": dict(self.approval_ids),
+                "p_kw_sign_convention": "pv_generation_export_is_negative_p_kw",
+            },
+        }
+
 @dataclass(frozen=True)
 class PVGenerationProfile:
     """PV generation produced from one validated paired weather member."""
@@ -2475,6 +2720,75 @@ def assert_weather_member_matches_input_artifact(
     return member
 
 
+
+def write_pv_component_output_npz_artifact(
+    profile: PVGenerationProfile,
+    spec: PVComponentOutputArtifactSpec,
+    *,
+    array_path: str | Path,
+    manifest_path: str | Path,
+    base_dir: str | Path | None = None,
+) -> dict[str, object]:
+    """Write an IC-1-compatible PV component-output NPZ and manifest.
+
+    The function is usable for synthetic fixtures today and for accepted PV
+    artifacts later. It does not bypass governance: accepted specs reject
+    unsigned/proposed/synthetic approval tokens before any file is written.
+    """
+    if profile.shared_weather_driver_id != spec.shared_weather_driver_id:
+        raise ValueError("PV component-output spec must use the profile shared_weather_driver_id")
+    if profile.weather_member_id != spec.member_id:
+        raise ValueError("PV component-output spec member_id must match the PV profile weather member")
+    base = None if base_dir is None else Path(base_dir)
+    manifest_array_path = Path(array_path)
+    manifest_output_path = Path(manifest_path)
+    target_array = manifest_array_path if base is None or manifest_array_path.is_absolute() else base / manifest_array_path
+    target_manifest = manifest_output_path if base is None or manifest_output_path.is_absolute() else base / manifest_output_path
+    target_array.parent.mkdir(parents=True, exist_ok=True)
+    target_manifest.parent.mkdir(parents=True, exist_ok=True)
+    timestamps = np.asarray(
+        [
+            np.datetime64(timestamp.astimezone(UTC).replace(tzinfo=None), "s")
+            for timestamp in profile.timestamps_utc
+        ],
+        dtype="datetime64[s]",
+    )
+    generation_kw = np.asarray(profile.generation_kw, dtype=np.float64)
+    p_kw = -generation_kw
+    q_kvar = np.zeros_like(p_kw, dtype=np.float64)
+    np.savez(
+        target_array,
+        p_kw=p_kw,
+        q_kvar=q_kvar,
+        timestamps=timestamps,
+        artifact_id=np.asarray(spec.artifact_id),
+        component_id=np.asarray(spec.component_id),
+        kind=np.asarray("pv"),
+        node_id=np.asarray(spec.node_id),
+        member_id=np.asarray(spec.member_id),
+        source_id=np.asarray(spec.source_id),
+        calendar_id=np.asarray(spec.calendar_id),
+        timestep_seconds=np.asarray(str(spec.timestep_seconds)),
+        shared_weather_driver_id=np.asarray(spec.shared_weather_driver_id),
+    )
+    array_sha256 = _sha256_file(target_array)
+    manifest = {
+        **spec.manifest_base(),
+        "array_path": str(manifest_array_path).replace(chr(92), "/"),
+        "array_sha256": array_sha256,
+        "timestep_count": int(generation_kw.size),
+        "weather_member_id": profile.weather_member_id,
+        "weather_content_sha256": profile.weather_content_sha256,
+        "pv_generation_summary": {
+            "annual_or_window_energy_kwh": profile.annual_energy_kwh(),
+            "peak_generation_kw": profile.peak_kw(),
+            "p_kw_sign_convention": "pv_generation_export_is_negative_p_kw",
+            "q_kvar_policy": "zero_fixture_or_later_signed_policy",
+        },
+    }
+    target_manifest.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    return manifest
+
 def generate_pv_profile_from_input_artifact(
     weather: WeatherMember,
     config: PVSystemConfig,
@@ -2720,6 +3034,14 @@ def _validate_weather_input_member_record(member: Mapping[str, object], *, accep
     if int(member["n_timesteps"]) <= 0:
         raise ValueError("member n_timesteps must be positive")
 
+
+
+def _sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with Path(path).open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
 
 def _audit_json_mapping(raw: Mapping[str, object], label: str) -> Mapping[str, object]:
     if not isinstance(raw, Mapping):
