@@ -15,6 +15,7 @@ from src.contracts.net_load import validate_executable_input_gate
 from src.hp_model import HeatPumpProfile
 from src.pv_model import (
     PVCapacitySourcePacket,
+    PVCBSAnchorEvidencePacket,
     PVGISReference,
     PVOrientationTiltSourceChoicePacket,
     PVOrientationTiltValueChoicePacket,
@@ -33,6 +34,7 @@ from src.pv_model import (
     generate_pv_profile,
     generate_pv_profile_from_input_artifact,
     load_pv_capacity_source_packet,
+    load_pv_cbs_anchor_evidence_packet,
     load_pv_orientation_tilt_source_choice_packet,
     load_pv_orientation_tilt_value_choice_packet,
     load_pv_statistical_orientation_tilt_packet,
@@ -1637,6 +1639,60 @@ def test_pv_capacity_source_packet_rejects_silent_executable_values() -> None:
             ii3050_growth_factor_source=payload["ii3050_growth_factor_source"],
             capacity_value_binding_under_review=payload["capacity_value_binding_under_review"],
             fail_closed_non_claims=payload["fail_closed_non_claims"],
+        )
+
+
+def test_committed_d014_cbs_anchor_evidence_packet_is_fail_closed() -> None:
+    packet = load_pv_cbs_anchor_evidence_packet(
+        "data/metadata/weather_pv/d014_cbs_85005ned_alkmaar_gm0361_anchor_evidence.json"
+    )
+    record = packet.identity_record()
+
+    assert packet.packet_id == "D014-CBS-PV-CAPACITY-ANCHOR-EVIDENCE"
+    assert packet.approved_route_decision == "PV-CAP-001"
+    assert packet.source_value_packet_id == "D014-PV-CAPACITY-SOURCE-VALUE-PACKET"
+    assert packet.download_performed is True
+    assert packet.raw_data_committed is False
+    assert record["table_id"] == "85005NED"
+    assert record["alkmaar_row_count"] == 63
+    assert len(record["raw_sha256"]) == 64
+    assert record["raw_size_bytes"] > 0
+    assert record["executable_capacity_value_approved"] is False
+    assert "latest_definitive_all_activity_and_homes_candidate" in record["candidate_row_roles"]
+    assert "cbs_source_period_key" in packet.missing_approval_keys
+    assert "cbs_capacity_field_key" in packet.missing_approval_keys
+    assert "ii3050_growth_factor_value" in packet.missing_approval_keys
+    assert "PV-PARAM-001_or_amended_conversion_decision" in packet.missing_approval_keys
+    with pytest.raises(ValueError, match="CBS PV capacity anchor values are unsigned"):
+        packet.require_executable_capacity_anchor_approval()
+
+
+def test_cbs_anchor_evidence_packet_rejects_silent_signed_row_choice() -> None:
+    payload = json.loads(
+        Path("data/metadata/weather_pv/d014_cbs_85005ned_alkmaar_gm0361_anchor_evidence.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    payload["candidate_value_choices_for_pi_review"]["exact_row_candidates"][0]["executable_status"] = "approved"
+
+    with pytest.raises(ValueError, match="row candidates must remain unsigned"):
+        PVCBSAnchorEvidencePacket(
+            packet_id=payload["packet_id"],
+            data_id=payload["data_id"],
+            status=payload["status"],
+            download_performed=payload["download_performed"],
+            raw_data_committed=payload["raw_data_committed"],
+            approved_route_decision=payload["approved_route_decision"],
+            source_value_packet_id=payload["source_value_packet_id"],
+            capacity_route_boundary=payload["capacity_route_boundary"],
+            pv_param_boundary=payload["pv_param_boundary"],
+            pv_orient_boundary=payload["pv_orient_boundary"],
+            source=payload["source"],
+            raw_bundle=payload["raw_bundle"],
+            schema=payload["schema"],
+            candidate_value_choices_for_pi_review=payload["candidate_value_choices_for_pi_review"],
+            pi_approval_keys_before_executable_use=payload["pi_approval_keys_before_executable_use"],
+            non_claims=payload["non_claims"],
         )
 
 
