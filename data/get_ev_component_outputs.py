@@ -192,12 +192,22 @@ def rebuild_and_verify_ev_component_outputs(
         str(record.get("scenario")): record
         for record in _require_output_records(committed_component_output_manifest)
     }
+    observed_records = _require_output_records(observed_manifest)
+    observed_by_scenario = {str(record.get("scenario")): record for record in observed_records}
+    expected_scenarios = set(expected_by_scenario)
+    observed_scenarios = set(observed_by_scenario)
+    if observed_scenarios != expected_scenarios:
+        missing = sorted(expected_scenarios - observed_scenarios)
+        extra = sorted(observed_scenarios - expected_scenarios)
+        raise EVComponentOutputVerificationError(
+            "Rebuilt EV component-output scenario set mismatch: "
+            f"missing: {', '.join(missing) if missing else '--'}; "
+            f"extra: {', '.join(extra) if extra else '--'}"
+        )
     mismatches: list[dict[str, str]] = []
-    for record in _require_output_records(observed_manifest):
-        scenario = str(record.get("scenario"))
-        expected = expected_by_scenario.get(scenario)
-        if expected is None:
-            raise EVComponentOutputVerificationError(f"Unexpected rebuilt EV scenario: {scenario}")
+    for scenario in sorted(observed_by_scenario):
+        record = observed_by_scenario[scenario]
+        expected = expected_by_scenario[scenario]
         for key in ("path", "sha256"):
             if record.get(key) != expected.get(key):
                 mismatches.append(
@@ -279,4 +289,3 @@ def main(argv: Sequence[str] | None = None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

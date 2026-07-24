@@ -10,6 +10,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
+import data.get_ev_component_outputs as ev_component_outputs
 from data.get_ev_component_outputs import (
     EVComponentOutputVerificationError,
     rebuild_and_verify_ev_component_outputs,
@@ -1023,6 +1024,51 @@ def test_ev_component_output_verifier_rebuilds_and_matches_committed_manifest(
         committed_manifest["scenario_outputs"][0]["output_file"]["sha256"]
     )
 
+
+
+def test_ev_component_output_rebuild_rejects_missing_observed_scenario(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    scaffold, preflight, selection_manifest, _expected_sum = _synthetic_component_output_inputs(tmp_path)
+    committed_manifest = materialize_ev_ic1_candidate_component_outputs(
+        scaffold,
+        preflight,
+        selection_manifest,
+        base_dir=tmp_path,
+        output_dir=Path("data") / "processed" / "elaad_profiles" / "component_outputs",
+        materialized_timestamp_utc="2026-07-24T12:30:00Z",
+    )
+    extra_record = json.loads(json.dumps(committed_manifest["materialization"]["output_files"][0]))
+    extra_record["scenario"] = "middle"
+    extra_record["path"] = extra_record["path"].replace("_low.npz", "_middle.npz")
+    committed_manifest["materialization"]["output_files"].append(extra_record)
+
+    def fake_materializer(*_args: object, **_kwargs: object) -> dict[str, object]:
+        return materialize_ev_ic1_candidate_component_outputs(
+            scaffold,
+            preflight,
+            selection_manifest,
+            base_dir=tmp_path,
+            output_dir=Path("data") / "processed" / "elaad_profiles" / "component_outputs",
+            materialized_timestamp_utc="2026-07-24T12:45:00Z",
+        )
+
+    monkeypatch.setattr(ev_component_outputs, "materialize_ev_ic1_candidate_component_outputs", fake_materializer)
+
+    with pytest.raises(EVComponentOutputVerificationError, match="scenario set mismatch") as excinfo:
+        rebuild_and_verify_ev_component_outputs(
+            component_input_scaffold=scaffold,
+            checksum_preflight=preflight,
+            selection_manifest_set=selection_manifest,
+            committed_component_output_manifest=committed_manifest,
+            base_dir=tmp_path,
+            output_dir=Path("data") / "processed" / "elaad_profiles" / "component_outputs",
+            timestamp_utc="2026-07-24T12:45:00Z",
+        )
+
+    assert "missing: middle" in str(excinfo.value)
+    assert "extra: --" in str(excinfo.value)
 
 def test_ev_component_output_verifier_fails_closed_when_outputs_missing(
     tmp_path: Path,
