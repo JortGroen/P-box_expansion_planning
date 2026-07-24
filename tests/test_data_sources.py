@@ -1206,6 +1206,58 @@ def test_committed_d014_ii3050_growth_evidence_metadata_records_unsigned_candida
     assert any("No II3050 growth denominator" in item for item in payload["non_claims"])
 
 
+def test_d014_capacity_value_choice_packet_combines_evidence_without_executable_value(tmp_path: Path) -> None:
+    packet = pv_capacity.build_d014_pv_capacity_value_choice_packet()
+
+    assert packet["packet_id"] == "D014-PV-CAPACITY-VALUE-CHOICE-PACKET"
+    assert packet["data_id"] == "D-014"
+    assert packet["status"] == "proposed_value_choice_packet_no_executable_values"
+    assert packet["download_performed"] is False
+    assert packet["raw_data_committed"] is False
+    assert packet["source_evidence_inputs"]["cbs_anchor_packet_id"] == "D014-CBS-PV-CAPACITY-ANCHOR-EVIDENCE"
+    assert packet["source_evidence_inputs"]["ii3050_growth_packet_id"] == "D014-II3050-PV-GROWTH-EVIDENCE"
+    operands = packet["candidate_operands_for_pi_review"]
+    assert any(
+        item["operand_role"] == "source_year_matched_ii3050_reference_all_activity_and_homes"
+        for item in operands["cbs_alkmaar_capacity_operands"]
+    )
+    assert {item["scenario"] for item in operands["ii3050_2035_scenario_operands"]} == {"KA", "ND", "IA"}
+    equations = {item["equation_id"]: item for item in packet["candidate_equations_for_local_2035_capacity"]}
+    assert equations["dc_kwp_source_year_matched_ii3050_ratio"]["recommended_for_pi_review"] is True
+    assert equations["dc_kwp_source_year_matched_ii3050_ratio"]["executable_status"] == "proposed_recommendation_unsigned"
+    assert packet["scenario_consistency_issue"]["decision_id"] == "A-016"
+    assert packet["scenario_consistency_issue"]["executable_status"] == "blocked_until_A016_consistency_mapping_signed"
+    assert packet["capacity_convention_recommendation"]["not_approved_by_this_packet"] is True
+    assert "ii3050_growth_factor_value" in packet["pi_approval_keys_before_executable_use"]
+    assert any("No final PV capacity value" in item for item in packet["non_claims"])
+
+    path = pv_capacity.write_d014_pv_capacity_value_choice_packet(tmp_path)
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    assert path.name == "d014_pv_capacity_value_choice_packet.json"
+    assert payload["pi_recommendation"]["recommendation_status"] == "proposed_unsigned_not_executable"
+
+
+def test_committed_d014_capacity_value_choice_packet_records_recommendation_as_unsigned() -> None:
+    payload = json.loads(
+        Path("data/metadata/weather_pv/d014_pv_capacity_value_choice_packet.json").read_text(
+            encoding="utf-8"
+        )
+    )
+
+    assert payload["packet_id"] == "D014-PV-CAPACITY-VALUE-CHOICE-PACKET"
+    assert payload["source_evidence_inputs"]["cbs_anchor_packet_id"] == "D014-CBS-PV-CAPACITY-ANCHOR-EVIDENCE"
+    assert payload["source_evidence_inputs"]["ii3050_growth_packet_id"] == "D014-II3050-PV-GROWTH-EVIDENCE"
+    assert len(payload["source_evidence_inputs"]["cbs_raw_sha256"]) == 64
+    assert len(payload["source_evidence_inputs"]["ii3050_raw_sha256"]) == 64
+    assert payload["pi_recommendation"]["primary_equation_id"] == "dc_kwp_source_year_matched_ii3050_ratio"
+    assert payload["pi_recommendation"]["recommendation_status"] == "proposed_unsigned_not_executable"
+    assert "A-016" in payload["governing_decisions"]["scenario_consistency"]
+    assert "PV-PARAM-001 remains proposed" in payload["governing_decisions"]["conversion_parameters"]
+    assert "no roof/building/3DBAG/PV-map" in payload["governing_decisions"]["orientation_scope"]
+    assert "scenario_source_consistency_with_ev_hp_inputs" in payload["pi_approval_keys_before_executable_use"]
+    assert any("No PV generation" in item for item in payload["non_claims"])
+
+
 def test_d014_statistical_orientation_tilt_packet_is_lightweight_and_metadata_only(tmp_path: Path) -> None:
     packet = pv_capacity.build_d014_pv_statistical_orientation_tilt_packet()
 

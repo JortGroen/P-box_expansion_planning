@@ -32,6 +32,8 @@ from src.contracts.net_load import (
     build_executable_loading_bridge_preflight,
     build_net_load_result,
     build_real_artifact_assembly_preflight,
+    load_component_adapter_output_from_npz_artifact,
+    load_net_load_component_from_npz_artifact,
     dry_run_integrated_input_preflight,
     net_load_component_from_adapter_output,
     prepare_loading_input_from_registry_outputs,
@@ -177,6 +179,78 @@ def _adapter_outputs(context) -> list[ComponentAdapterOutput]:
         _adapter_output(context, "adoption-a", "adoption", [0.0, 0.0, 0.0, 0.0], member_id="adoption-1"),
         _adapter_output(context, "flex-a", "flexibility", [-0.2, -0.2, 0.0, 0.0], member_id="rho-0.5"),
     ]
+
+
+
+def _write_component_output_npz_artifact(
+    tmp_path,
+    context,
+    *,
+    kind: str = "ev",
+    artifact_status: str = "accepted",
+    node_id: str = "node-a",
+    p_kw: np.ndarray | None = None,
+    q_kvar: np.ndarray | None = None,
+    timestamps: np.ndarray | None = None,
+    shared_weather_driver_id: str | None = None,
+    npz_overrides: dict[str, object | None] | None = None,
+    manifest_overrides: dict[str, object | None] | None = None,
+) -> dict[str, object]:
+    arrays_dir = tmp_path / "component-arrays"
+    arrays_dir.mkdir(parents=True, exist_ok=True)
+    array_path = arrays_dir / f"{kind}.npz"
+    timestamps = _calendar() if timestamps is None else timestamps
+    p_kw = np.array([1.0, 2.0, 3.0, 4.0], dtype=float) if p_kw is None else p_kw
+    q_kvar = np.array([0.1, 0.2, 0.3, 0.4], dtype=float) if q_kvar is None else q_kvar
+    weather_id = shared_weather_driver_id
+    if kind in {"hp", "pv"} and weather_id is None:
+        weather_id = context.shared_weather_driver_id
+    arrays: dict[str, object] = {
+        "p_kw": p_kw,
+        "q_kvar": q_kvar,
+        "timestamps": timestamps,
+        "artifact_id": f"{kind}-array-artifact",
+        "component_id": f"{kind}-component",
+        "kind": kind,
+        "node_id": node_id,
+        "member_id": f"{kind}-member",
+        "source_id": f"{kind}-source",
+        "calendar_id": "calendar-2035-15min",
+        "timestep_seconds": "900",
+    }
+    if weather_id is not None:
+        arrays["shared_weather_driver_id"] = weather_id
+    for key, value in (npz_overrides or {}).items():
+        if value is None:
+            arrays.pop(key, None)
+        else:
+            arrays[key] = value
+    np.savez(array_path, **arrays)
+    array_sha256 = hashlib.sha256(array_path.read_bytes()).hexdigest()
+    manifest: dict[str, object] = {
+        "artifact_id": f"{kind}-array-artifact",
+        "kind": kind,
+        "artifact_status": artifact_status,
+        "component_id": f"{kind}-component",
+        "node_id": node_id,
+        "member_id": f"{kind}-member",
+        "source_id": f"{kind}-source",
+        "calendar_id": "calendar-2035-15min",
+        "timestep_seconds": 900,
+        "timestep_count": int(np.asarray(timestamps).size),
+        "shared_weather_driver_id": weather_id,
+        "array_path": array_path.relative_to(tmp_path).as_posix(),
+        "array_sha256": array_sha256,
+        "provenance": {"readiness_artifact": "synthetic-loader-fixture"},
+    }
+    if weather_id is None:
+        manifest.pop("shared_weather_driver_id")
+    for key, value in (manifest_overrides or {}).items():
+        if value is None:
+            manifest.pop(key, None)
+        else:
+            manifest[key] = value
+    return manifest
 
 
 def _adapter_skeletons(
@@ -474,6 +548,170 @@ def test_net_load_provider_protocol_preserves_crn_and_member_traceability() -> N
     assert not np.array_equal(first.p_net_kw, different_seed.p_net_kw)
 
     validate_net_load_result(first)
+
+
+
+def test_npz_artifact_loader_returns_adapter_output_and_component(tmp_path) -> None:
+    context = _realization_context()
+    manifest = _write_component_output_npz_artifact(tmp_path, context, kind="ev")
+
+    output = load_component_adapter_output_from_npz_artifact(
+        manifest,
+        context,
+        repo_root=tmp_path,
+        expected_calendar_id="calendar-2035-15min",
+        expected_node_ids=("node-a", "node-b"),
+    )
+    component = load_net_load_component_from_npz_artifact(
+        manifest,
+        context,
+        repo_root=tmp_path,
+        expected_calendar_id="calendar-2035-15min",
+        expected_node_ids=("node-a", "node-b"),
+    )
+
+    assert output.component_id == "ev-component"
+    assert output.metadata["array_sha256"] == manifest["array_sha256"]
+    assert output.metadata["provenance"] == {"readiness_artifact": "synthetic-loader-fixture"}
+    assert "threshold_pu" not in output.metadata
+    assert "overload" not in output.metadata
+    assert component.provenance.component_id == "ev-component"
+    assert np.allclose(component.p_kw, [1.0, 2.0, 3.0, 4.0])
+
+
+def test_npz_artifact_loader_requires_explicit_synthetic_fixture_opt_in(tmp_path) -> None:
+    context = _realization_context()
+    manifest = _write_component_output_npz_artifact(
+        tmp_path,
+        context,
+        kind="ev",
+        artifact_status="synthetic_fixture",
+    )
+
+    with pytest.raises(ValueError, match="allow_synthetic_fixture"):
+        load_component_adapter_output_from_npz_artifact(manifest, context, repo_root=tmp_path)
+
+    output = load_component_adapter_output_from_npz_artifact(
+        manifest,
+        context,
+        repo_root=tmp_path,
+        allow_synthetic_fixture=True,
+    )
+    assert output.metadata["artifact_status"] == "synthetic_fixture"
+
+
+def test_npz_artifact_loader_fails_closed_before_array_loading(tmp_path) -> None:
+    context = _realization_context()
+    unsigned = _write_component_output_npz_artifact(
+        tmp_path,
+        context,
+        kind="ev",
+        artifact_status="scaffold",
+    )
+    with pytest.raises(ValueError, match="status must be accepted"):
+        load_component_adapter_output_from_npz_artifact(unsigned, context, repo_root=tmp_path)
+
+    absolute_path = _write_component_output_npz_artifact(tmp_path, context, kind="ev")
+    absolute_path["array_path"] = str(tmp_path / "component-arrays" / "ev.npz")
+    with pytest.raises(ValueError, match="array_path must be repository-relative"):
+        load_component_adapter_output_from_npz_artifact(absolute_path, context, repo_root=tmp_path)
+
+    traversal = _write_component_output_npz_artifact(tmp_path, context, kind="ev")
+    traversal["array_path"] = "../outside.npz"
+    with pytest.raises(ValueError, match="array_path must stay within repo_root"):
+        load_component_adapter_output_from_npz_artifact(traversal, context, repo_root=tmp_path)
+
+    missing_checksum = _write_component_output_npz_artifact(
+        tmp_path,
+        context,
+        kind="ev",
+        manifest_overrides={"array_sha256": None},
+    )
+    with pytest.raises(ValueError, match="array_sha256"):
+        load_component_adapter_output_from_npz_artifact(missing_checksum, context, repo_root=tmp_path)
+
+    mismatched_checksum = _write_component_output_npz_artifact(tmp_path, context, kind="ev")
+    mismatched_checksum["array_sha256"] = "0" * 64
+    with pytest.raises(ValueError, match="array_sha256 does not match"):
+        load_component_adapter_output_from_npz_artifact(mismatched_checksum, context, repo_root=tmp_path)
+
+
+def test_npz_artifact_loader_rejects_shape_calendar_node_and_provenance_errors(tmp_path) -> None:
+    context = _realization_context()
+    bad_shape = _write_component_output_npz_artifact(
+        tmp_path,
+        context,
+        kind="ev",
+        npz_overrides={"q_kvar": np.array([0.1, 0.2], dtype=float)},
+    )
+    with pytest.raises(ValueError, match="arrays must have identical"):
+        load_component_adapter_output_from_npz_artifact(bad_shape, context, repo_root=tmp_path)
+
+    bad_calendar = _write_component_output_npz_artifact(tmp_path, context, kind="ev")
+    with pytest.raises(ValueError, match="calendar_id"):
+        load_component_adapter_output_from_npz_artifact(
+            bad_calendar,
+            context,
+            repo_root=tmp_path,
+            expected_calendar_id="different-calendar",
+        )
+
+    bad_node = _write_component_output_npz_artifact(tmp_path, context, kind="ev")
+    with pytest.raises(ValueError, match="node_id"):
+        load_component_adapter_output_from_npz_artifact(
+            bad_node,
+            context,
+            repo_root=tmp_path,
+            expected_node_ids=("node-b",),
+        )
+
+    missing_provenance = _write_component_output_npz_artifact(
+        tmp_path,
+        context,
+        kind="ev",
+        manifest_overrides={"provenance": None},
+    )
+    with pytest.raises(TypeError, match="provenance"):
+        load_component_adapter_output_from_npz_artifact(missing_provenance, context, repo_root=tmp_path)
+
+    nonfinite = _write_component_output_npz_artifact(
+        tmp_path,
+        context,
+        kind="ev",
+        p_kw=np.array([1.0, np.nan, 3.0, 4.0], dtype=float),
+    )
+    with pytest.raises(ValueError, match="finite"):
+        load_component_adapter_output_from_npz_artifact(nonfinite, context, repo_root=tmp_path)
+
+
+def test_npz_artifact_loader_preserves_weather_identity_for_hp_pv(tmp_path) -> None:
+    context = _realization_context()
+    hp_manifest = _write_component_output_npz_artifact(tmp_path, context, kind="hp")
+    hp_output = load_component_adapter_output_from_npz_artifact(
+        hp_manifest,
+        context,
+        repo_root=tmp_path,
+    )
+    assert hp_output.shared_weather_driver_id == context.shared_weather_driver_id
+
+    wrong_weather = _write_component_output_npz_artifact(
+        tmp_path,
+        context,
+        kind="pv",
+        shared_weather_driver_id="weather:not-the-context",
+    )
+    with pytest.raises(ValueError, match="context shared_weather_driver_id"):
+        load_component_adapter_output_from_npz_artifact(wrong_weather, context, repo_root=tmp_path)
+
+    missing_weather = _write_component_output_npz_artifact(
+        tmp_path,
+        context,
+        kind="hp",
+        manifest_overrides={"shared_weather_driver_id": None},
+        npz_overrides={"shared_weather_driver_id": None},
+    )
+    with pytest.raises(ValueError, match="context shared_weather_driver_id"):
+        load_component_adapter_output_from_npz_artifact(missing_weather, context, repo_root=tmp_path)
 
 
 def test_realization_context_is_deterministic_and_manifestable_from_public_args() -> None:
