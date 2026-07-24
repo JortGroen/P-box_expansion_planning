@@ -357,6 +357,156 @@ def load_pv_cbs_anchor_evidence_packet(path: str | Path) -> PVCBSAnchorEvidenceP
 
 
 @dataclass(frozen=True)
+class PVII3050GrowthEvidencePacket:
+    """Retrieved II3050 PV growth evidence with unsigned scenario choices."""
+
+    packet_id: str
+    data_id: str
+    status: str
+    download_performed: bool
+    raw_data_committed: bool
+    approved_route_decision: str
+    source_value_packet_id: str
+    cbs_anchor_evidence_id: str
+    capacity_route_boundary: str
+    pv_param_boundary: str
+    pv_orient_boundary: str
+    source: Mapping[str, object]
+    raw_bundle: Mapping[str, object]
+    table_evidence: Mapping[str, object]
+    growth_factor_choices_for_pi_review: Mapping[str, object]
+    pi_approval_keys_before_executable_use: Sequence[str]
+    non_claims: Sequence[str]
+
+    def __post_init__(self) -> None:
+        if self.packet_id != "D014-II3050-PV-GROWTH-EVIDENCE":
+            raise ValueError("II3050 growth evidence must identify D014-II3050-PV-GROWTH-EVIDENCE")
+        if self.data_id != "D-014":
+            raise ValueError("II3050 growth evidence must identify D-014")
+        if self.status != "retrieved_source_evidence_values_unsigned":
+            raise ValueError("II3050 growth evidence must remain retrieved evidence with unsigned values")
+        if self.download_performed is not True:
+            raise ValueError("II3050 growth evidence must record that source evidence was downloaded")
+        if self.raw_data_committed is not False:
+            raise ValueError("II3050 raw growth evidence must remain ignored/uncommitted")
+        if self.approved_route_decision != "PV-CAP-001":
+            raise ValueError("II3050 growth evidence must be governed by PV-CAP-001")
+        if self.source_value_packet_id != "D014-PV-CAPACITY-SOURCE-VALUE-PACKET":
+            raise ValueError("II3050 growth evidence must link to the D-014 capacity source/value packet")
+        if self.cbs_anchor_evidence_id != "D014-CBS-PV-CAPACITY-ANCHOR-EVIDENCE":
+            raise ValueError("II3050 growth evidence must link to the CBS anchor evidence packet")
+        if "CBS Alkmaar anchor row" not in self.capacity_route_boundary:
+            raise ValueError("II3050 growth evidence must keep the CBS anchor row separate")
+        if "PV-PARAM-001 remains proposed" not in self.pv_param_boundary:
+            raise ValueError("II3050 growth evidence must keep PV-PARAM-001 fail-closed")
+        if "no roof/building/3DBAG/PV-map retrieval" not in self.pv_orient_boundary:
+            raise ValueError("II3050 growth evidence must preserve PV-ORIENT-001 lightweight scope")
+        source = _audit_json_mapping(self.source, "source")
+        raw_bundle = _audit_json_mapping(self.raw_bundle, "raw_bundle")
+        table = _audit_json_mapping(self.table_evidence, "table_evidence")
+        choices = _audit_json_mapping(self.growth_factor_choices_for_pi_review, "growth_factor_choices_for_pi_review")
+        approval_keys = tuple(str(item) for item in self.pi_approval_keys_before_executable_use)
+        non_claims = tuple(str(item) for item in self.non_claims)
+        if source.get("owner") != "Netbeheer Nederland":
+            raise ValueError("II3050 growth evidence source must be Netbeheer Nederland")
+        if not str(raw_bundle.get("path", "")).startswith("data/raw/pv_capacity/"):
+            raise ValueError("II3050 raw evidence must stay under ignored data/raw/pv_capacity")
+        if len(str(raw_bundle.get("sha256", ""))) != 64:
+            raise ValueError("II3050 raw evidence must record a SHA-256 checksum")
+        if int(raw_bundle.get("size_bytes", 0)) <= 0:
+            raise ValueError("II3050 raw evidence must record a positive file size")
+        if table.get("row_label") != "Zon PV*" or table.get("unit") != "GW":
+            raise ValueError("II3050 evidence must identify the Zon PV* GW row")
+        planning_rows = tuple(
+            _audit_json_mapping(item, "II3050 planning-year candidate")
+            for item in table.get("planning_year_2035_candidates", ())
+        )
+        if {str(item.get("scenario")) for item in planning_rows} != {"KA", "ND", "IA"}:
+            raise ValueError("II3050 evidence must list all 2035 KA/ND/IA candidates")
+        for row in planning_rows:
+            if row.get("executable_status") != "candidate_only_unsigned":
+                raise ValueError("II3050 scenario candidates must remain unsigned")
+        required_keys = {
+            "ii3050_raw_pdf_sha256",
+            "ii3050_scenario_column",
+            "ii3050_growth_denominator",
+            "ii3050_growth_factor_formula",
+            "ii3050_growth_factor_value",
+            "scenario_source_consistency_with_ev_hp_inputs",
+            "cbs_capacity_field_key",
+            "capacity_unit_and_dc_ac_convention",
+            "statistical_orientation_tilt_distribution_weights",
+            "PV-PARAM-001_or_amended_conversion_decision",
+        }
+        missing = required_keys.difference(approval_keys)
+        if missing:
+            raise ValueError(f"II3050 evidence missing approval keys: {sorted(missing)}")
+        if not any("No II3050 scenario column" in item for item in non_claims):
+            raise ValueError("II3050 evidence must state no scenario column is final")
+        if not any("No II3050 growth denominator" in item for item in non_claims):
+            raise ValueError("II3050 evidence must state no growth factor is approved")
+
+        object.__setattr__(self, "source", source)
+        object.__setattr__(self, "raw_bundle", raw_bundle)
+        object.__setattr__(self, "table_evidence", table)
+        object.__setattr__(self, "growth_factor_choices_for_pi_review", choices)
+        object.__setattr__(self, "pi_approval_keys_before_executable_use", approval_keys)
+        object.__setattr__(self, "non_claims", non_claims)
+
+    @property
+    def missing_approval_keys(self) -> tuple[str, ...]:
+        return self.pi_approval_keys_before_executable_use
+
+    def require_executable_growth_factor_approval(self) -> None:
+        """Always fail until a later signed II3050 growth artifact replaces this evidence."""
+        raise ValueError(
+            "D-014 II3050 PV growth values are unsigned; executable PV requires signed scenario column, "
+            "growth denominator, growth formula/value, CBS convention, allocation, and PV-PARAM approval"
+        )
+
+    def identity_record(self) -> dict[str, object]:
+        return {
+            "packet_id": self.packet_id,
+            "data_id": self.data_id,
+            "status": self.status,
+            "raw_sha256": self.raw_bundle["sha256"],
+            "raw_size_bytes": self.raw_bundle["size_bytes"],
+            "row_label": self.table_evidence["row_label"],
+            "unit": self.table_evidence["unit"],
+            "planning_year_candidate_scenarios": tuple(
+                str(item["scenario"])
+                for item in self.table_evidence["planning_year_2035_candidates"]
+            ),
+            "missing_approval_keys": self.missing_approval_keys,
+            "executable_growth_factor_approved": False,
+        }
+
+
+def load_pv_ii3050_growth_evidence_packet(path: str | Path) -> PVII3050GrowthEvidencePacket:
+    """Load the retrieved II3050 PV growth evidence packet."""
+    payload = json.loads(Path(path).read_text(encoding="utf-8"))
+    return PVII3050GrowthEvidencePacket(
+        packet_id=str(payload.get("packet_id", "")),
+        data_id=str(payload.get("data_id", "")),
+        status=str(payload.get("status", "")),
+        download_performed=bool(payload.get("download_performed")),
+        raw_data_committed=bool(payload.get("raw_data_committed")),
+        approved_route_decision=str(payload.get("approved_route_decision", "")),
+        source_value_packet_id=str(payload.get("source_value_packet_id", "")),
+        cbs_anchor_evidence_id=str(payload.get("cbs_anchor_evidence_id", "")),
+        capacity_route_boundary=str(payload.get("capacity_route_boundary", "")),
+        pv_param_boundary=str(payload.get("pv_param_boundary", "")),
+        pv_orient_boundary=str(payload.get("pv_orient_boundary", "")),
+        source=payload.get("source", {}),
+        raw_bundle=payload.get("raw_bundle", {}),
+        table_evidence=payload.get("table_evidence", {}),
+        growth_factor_choices_for_pi_review=payload.get("growth_factor_choices_for_pi_review", {}),
+        pi_approval_keys_before_executable_use=payload.get("pi_approval_keys_before_executable_use", ()),
+        non_claims=payload.get("non_claims", ()),
+    )
+
+
+@dataclass(frozen=True)
 class PVStatisticalOrientationTiltPacket:
     """Proposed D-014 statistical orientation/tilt packet that stays fail-closed."""
 
