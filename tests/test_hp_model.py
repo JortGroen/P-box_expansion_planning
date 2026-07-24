@@ -42,6 +42,7 @@ from src.hp_model import (
     hp001_profile_artifact_consumption_manifest_from_profile,
     hp001_profile_artifact_consumption_missing_approval_keys,
     hp001_profile_rebuild_preflight_blockers,
+    hp001_stale_or_placeholder_approval_reference_keys,
     hp001_final_readiness_missing_approval_keys,
     hp001_local_scaling_config_from_value_binding_record,
     hp001_residential_when2heat_components,
@@ -1293,6 +1294,47 @@ def test_hp001_profile_rebuild_preflight_accepts_complete_signed_fixture() -> No
 
     assert hp001_profile_rebuild_preflight_blockers(manifest) == ()
     require_hp001_profile_rebuild_preflight_manifest(manifest)
+
+
+def test_hp001_profile_rebuild_preflight_rejects_placeholder_approval_ids() -> None:
+    manifest = _signed_hp001_profile_rebuild_preflight_manifest()
+    manifest["approval_ids"] = {
+        key: f"<future signed {key} approval id>"
+        for key in HP001_FINAL_READINESS_REQUIRED_APPROVAL_KEYS
+    }
+
+    stale_keys = hp001_stale_or_placeholder_approval_reference_keys(manifest["approval_ids"])
+    blockers = hp001_profile_rebuild_preflight_blockers(manifest)
+
+    assert stale_keys == HP001_FINAL_READINESS_REQUIRED_APPROVAL_KEYS
+    assert "stale_or_placeholder_approval:value_column" in blockers
+    assert "stale_or_placeholder_approval:cold_spell_tolerances" in blockers
+    with pytest.raises(ValueError, match="stale_or_placeholder_approval:value_column"):
+        require_hp001_profile_rebuild_preflight_manifest(manifest)
+
+
+def test_hp001_profile_rebuild_preflight_rejects_stale_approval_tokens() -> None:
+    manifest = _signed_hp001_profile_rebuild_preflight_manifest()
+    manifest["approval_ids"] = {
+        key: f"SIGNED-{key}"
+        for key in HP001_FINAL_READINESS_REQUIRED_APPROVAL_KEYS
+    }
+    manifest["approval_ids"]["value_column"] = "proposed-value-column"
+    manifest["approval_ids"]["denominator"] = "PENDING-denominator"
+    manifest["approval_ids"]["unit_conversion"] = "TODO-unit-conversion"
+    manifest["approval_ids"]["sfh_mfh_split"] = "not-approved-split"
+    manifest["approval_ids"]["adoption_electrification"] = "unsigned-adoption"
+    manifest["approval_ids"]["scenario_source_consistency"] = "placeholder-scenario"
+    manifest["approval_ids"]["d004_paired_weather_acceptance"] = "TBD-d004"
+    manifest["approval_ids"]["cold_spell_tolerances"] = "future-cold-spell"
+
+    blockers = hp001_profile_rebuild_preflight_blockers(manifest)
+
+    assert tuple(
+        blocker.removeprefix("stale_or_placeholder_approval:")
+        for blocker in blockers
+        if blocker.startswith("stale_or_placeholder_approval:")
+    ) == HP001_FINAL_READINESS_REQUIRED_APPROVAL_KEYS
 
 
 def test_hp001_profile_rebuild_preflight_rejects_missing_source_checksum() -> None:

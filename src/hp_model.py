@@ -70,6 +70,16 @@ HP001_FINAL_READINESS_REQUIRED_APPROVAL_KEYS = (
 )
 HP001_PROFILE_ARTIFACT_CONSUMPTION_APPROVED_STATUS = "approved_for_integrated_hp_profile_consumption"
 HP001_PROFILE_REBUILD_PREFLIGHT_READY_STATUS = "approved_for_hp001_profile_rebuild_preflight"
+HP001_STALE_APPROVAL_REFERENCE_TOKENS = (
+    "future",
+    "placeholder",
+    "proposed",
+    "pending",
+    "unsigned",
+    "todo",
+    "tbd",
+    "not-approved",
+)
 HP001_PROFILE_ARTIFACT_REQUIRED_COMPONENTS = (
     ("SFH", "space", "NL_heat_profile_space_SFH", HP001_SPACE_COP_COLUMN),
     ("MFH", "space", "NL_heat_profile_space_MFH", HP001_SPACE_COP_COLUMN),
@@ -839,6 +849,10 @@ def hp001_profile_rebuild_preflight_blockers(manifest: Mapping[str, Any]) -> tup
     else:
         approval_ids = approval_ids_raw
     blockers.extend(f"missing_approval:{key}" for key in hp001_final_readiness_missing_approval_keys(approval_ids))
+    blockers.extend(
+        f"stale_or_placeholder_approval:{key}"
+        for key in hp001_stale_or_placeholder_approval_reference_keys(approval_ids)
+    )
 
     source_artifacts = manifest.get("source_artifacts")
     if not isinstance(source_artifacts, Mapping):
@@ -1657,6 +1671,20 @@ def _require_non_empty_text(record: Mapping[str, Any], key: str, *, label: str) 
     if not text:
         raise ValueError(f"{label} {key} must be non-empty")
     return text
+
+
+def hp001_stale_or_placeholder_approval_reference_keys(approval_ids: Mapping[str, str]) -> tuple[str, ...]:
+    """Return approval keys whose IDs still look like templates or draft text."""
+    approval_mapping = _as_provenance_mapping(approval_ids, "approval_ids")
+    stale: list[str] = []
+    for key in HP001_FINAL_READINESS_REQUIRED_APPROVAL_KEYS:
+        value = str(approval_mapping.get(key, "")).strip()
+        if not value:
+            continue
+        lowered = value.lower()
+        if "<" in value or ">" in value or any(token in lowered for token in HP001_STALE_APPROVAL_REFERENCE_TOKENS):
+            stale.append(key)
+    return tuple(stale)
 
 
 def _append_artifact_reference_blockers(raw: object, label: str, blockers: list[str]) -> None:

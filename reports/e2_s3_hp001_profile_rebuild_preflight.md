@@ -8,7 +8,7 @@ Future HP work will need a deterministic rebuild/checksum step for the HP-001 pr
 
 ## What The Preflight Checks
 
-- Final HP approval IDs: value column, denominator, GJ-to-TWh conversion, SFH/MFH split, 2035 adoption/electrification, A-016 scenario-source consistency, D-004 paired-weather acceptance, and cold-spell tolerances.
+- Final HP approval IDs: value column, denominator, GJ-to-TWh conversion, SFH/MFH split, 2035 adoption/electrification, A-016 scenario-source consistency, D-004 paired-weather acceptance, and cold-spell tolerances. These IDs must be real approval references, not template or stale strings such as `<future ...>`, `placeholder`, `proposed`, `pending`, `unsigned`, `TODO`, `TBD`, or `not-approved`.
 - Source artifacts: D-003 When2Heat source, D-004 WEATHER-001 member artifact, and D-013 value-binding record each need path, SHA-256, data ID, and provenance.
 - WEATHER-001 identity: HP and PV weather records must match on `shared_weather_driver_id`, `member_id`, source, content SHA-256, timestep count, and cadence.
 - Output targets: the future profile artifact path, profile manifest path, checksum manifest path, 35,040 quarter-hour timesteps, 900-second cadence, four HP-001 components, and kW electric-power units.
