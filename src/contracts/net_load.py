@@ -1864,6 +1864,8 @@ def build_accepted_artifact_loader_blocker_preflight(
     artifact_sha256_by_path: Mapping[str, str] | None = None,
     component_output_manifest_paths_by_kind: Mapping[str, str] | None = None,
     component_output_manifest_sha256_by_path: Mapping[str, str] | None = None,
+    component_output_export_preflight_paths_by_kind: Mapping[str, str] | None = None,
+    component_output_export_preflight_sha256_by_path: Mapping[str, str] | None = None,
     missing_component_output_manifest_blockers: Mapping[str, Sequence[str]] | None = None,
     repo_root: str | Path | None = None,
     required_component_kinds: Sequence[ComponentKind] = REQUIRED_INTEGRATION_COMPONENT_KINDS,
@@ -1889,6 +1891,8 @@ def build_accepted_artifact_loader_blocker_preflight(
     source_checksums = dict(artifact_sha256_by_path or {})
     component_manifest_paths = dict(component_output_manifest_paths_by_kind or {})
     component_manifest_checksums = dict(component_output_manifest_sha256_by_path or {})
+    export_preflight_paths = dict(component_output_export_preflight_paths_by_kind or {})
+    export_preflight_checksums = dict(component_output_export_preflight_sha256_by_path or {})
     component_missing_blockers = _normalized_blockers_by_kind(
         missing_component_output_manifest_blockers,
     )
@@ -1922,6 +1926,29 @@ def build_accepted_artifact_loader_blocker_preflight(
 
     _append_bridge_blockers(blocker_items, base)
     _append_cross_component_metadata_blockers(blocker_items, artifacts)
+
+    export_preflight_records: list[dict[str, object]] = []
+    for kind, export_path in sorted(export_preflight_paths.items()):
+        artifact = artifact_by_kind.get(kind)
+        if artifact is None:
+            _append_loader_blocker(
+                blocker_items,
+                "component_output_export_preflight_without_artifact",
+                "component-output export preflight was supplied for a component with no executable artifact",
+                kind=kind,
+                path=export_path,
+                blocker_ids=(f"E3.S2-{kind.upper()}-EXECUTABLE-ARTIFACT",),
+            )
+            continue
+        record, record_blockers = _component_output_export_preflight_record(
+            root,
+            kind=kind,
+            path=export_path,
+            expected_sha256=export_preflight_checksums.get(export_path),
+            executable_artifact=artifact,
+        )
+        export_preflight_records.append(record)
+        blocker_items.extend(record_blockers)
 
     component_records: list[dict[str, object]] = []
     for kind in required:
@@ -1991,6 +2018,7 @@ def build_accepted_artifact_loader_blocker_preflight(
         "no_probability_estimate": True,
         "no_capacity_screen_result": True,
         "real_artifact_preflight": base,
+        "component_output_export_preflight_records": tuple(export_preflight_records),
         "component_output_manifest_records": tuple(component_records),
         "blocker_manifest": {
             "ready": ready_for_artifact_loader_execution,
@@ -2013,6 +2041,8 @@ def build_e3_s2b_integrated_prerun_readiness(
     artifact_sha256_by_path: Mapping[str, str] | None = None,
     component_output_manifest_paths_by_kind: Mapping[str, str] | None = None,
     component_output_manifest_sha256_by_path: Mapping[str, str] | None = None,
+    component_output_export_preflight_paths_by_kind: Mapping[str, str] | None = None,
+    component_output_export_preflight_sha256_by_path: Mapping[str, str] | None = None,
     missing_component_output_manifest_blockers: Mapping[str, Sequence[str]] | None = None,
     scenario_consistency_manifest: Mapping[str, object] | None = None,
     component_year_coverage_by_kind: Mapping[str, Sequence[int]] | None = None,
@@ -2047,6 +2077,8 @@ def build_e3_s2b_integrated_prerun_readiness(
         artifact_sha256_by_path=artifact_sha256_by_path,
         component_output_manifest_paths_by_kind=component_output_manifest_paths_by_kind,
         component_output_manifest_sha256_by_path=component_output_manifest_sha256_by_path,
+        component_output_export_preflight_paths_by_kind=component_output_export_preflight_paths_by_kind,
+        component_output_export_preflight_sha256_by_path=component_output_export_preflight_sha256_by_path,
         missing_component_output_manifest_blockers=missing_component_output_manifest_blockers,
         repo_root=repo_root,
         required_component_kinds=required_component_kinds,
@@ -2694,6 +2726,8 @@ def build_synthetic_ic1_assembly_and_real_input_gate(
     artifact_sha256_by_path: Mapping[str, str] | None = None,
     component_output_manifest_paths_by_kind: Mapping[str, str] | None = None,
     component_output_manifest_sha256_by_path: Mapping[str, str] | None = None,
+    component_output_export_preflight_paths_by_kind: Mapping[str, str] | None = None,
+    component_output_export_preflight_sha256_by_path: Mapping[str, str] | None = None,
     missing_component_output_manifest_blockers: Mapping[str, Sequence[str]] | None = None,
     downstream_blocker_ids: Sequence[str] = DEFAULT_EXECUTABLE_BRIDGE_BLOCKER_IDS,
     required_component_kinds: Sequence[ComponentKind] = REQUIRED_INTEGRATION_COMPONENT_KINDS,
@@ -2764,6 +2798,8 @@ def build_synthetic_ic1_assembly_and_real_input_gate(
         artifact_sha256_by_path=artifact_sha256_by_path,
         component_output_manifest_paths_by_kind=component_output_manifest_paths_by_kind,
         component_output_manifest_sha256_by_path=component_output_manifest_sha256_by_path,
+        component_output_export_preflight_paths_by_kind=component_output_export_preflight_paths_by_kind,
+        component_output_export_preflight_sha256_by_path=component_output_export_preflight_sha256_by_path,
         missing_component_output_manifest_blockers=missing_component_output_manifest_blockers,
         repo_root=repo_root,
         required_component_kinds=required_component_kinds,
@@ -3481,6 +3517,140 @@ def _loader_blocker_record(
         record["path"] = _require_nonempty(path, name="blocker path")
     return record
 
+def _component_output_export_preflight_record(
+    repo_root: Path,
+    *,
+    kind: ComponentKind,
+    path: str,
+    expected_sha256: str | None,
+    executable_artifact: ExecutableInputArtifact,
+) -> tuple[dict[str, object], list[dict[str, object]]]:
+    blockers: list[dict[str, object]] = []
+    record: dict[str, object] = {
+        "kind": kind,
+        "artifact_id": executable_artifact.artifact_id,
+        "path": path,
+        "state": "blocked",
+        "preflight_type": "component_output_export_preflight",
+    }
+    try:
+        resolved = _resolve_repo_artifact_path(repo_root, path, field_name="component_output_export_preflight_path")
+    except ValueError as exc:
+        _append_loader_blocker(
+            blockers,
+            "component_output_export_preflight_path_invalid",
+            str(exc),
+            kind=kind,
+            artifact_id=executable_artifact.artifact_id,
+            path=path,
+            blocker_ids=(f"E3.S2-{kind.upper()}-EXPORT-PREFLIGHT-PATH",),
+        )
+        return record, blockers
+    if not resolved.is_file():
+        _append_loader_blocker(
+            blockers,
+            "component_output_export_preflight_missing",
+            "component-output export preflight path is missing from the repository",
+            kind=kind,
+            artifact_id=executable_artifact.artifact_id,
+            path=path,
+            blocker_ids=(f"E3.S2-{kind.upper()}-EXPORT-PREFLIGHT",),
+        )
+        return record, blockers
+    observed = _sha256_file(resolved)
+    record["sha256"] = observed
+    if expected_sha256 is None:
+        _append_loader_blocker(
+            blockers,
+            "component_output_export_preflight_expected_checksum_missing",
+            "component-output export preflight requires a version-controlled expected SHA-256",
+            kind=kind,
+            artifact_id=executable_artifact.artifact_id,
+            path=path,
+            blocker_ids=(f"E3.S2-{kind.upper()}-EXPORT-PREFLIGHT-CHECKSUM",),
+        )
+    else:
+        record["expected_sha256"] = expected_sha256
+        record["checksum_match"] = observed == expected_sha256
+        if observed != expected_sha256:
+            _append_loader_blocker(
+                blockers,
+                "component_output_export_preflight_checksum_mismatch",
+                "component-output export preflight SHA-256 does not match the expected value",
+                kind=kind,
+                artifact_id=executable_artifact.artifact_id,
+                path=path,
+                blocker_ids=(f"E3.S2-{kind.upper()}-EXPORT-PREFLIGHT-CHECKSUM",),
+            )
+    try:
+        preflight = json.loads(resolved.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        _append_loader_blocker(
+            blockers,
+            "component_output_export_preflight_json_invalid",
+            f"component-output export preflight is not valid JSON: {exc.msg}",
+            kind=kind,
+            artifact_id=executable_artifact.artifact_id,
+            path=path,
+            blocker_ids=(f"E3.S2-{kind.upper()}-EXPORT-PREFLIGHT-JSON",),
+        )
+        return record, blockers
+    status = preflight.get("status")
+    record["status"] = status
+    if kind == "ev":
+        if preflight.get("artifact_type") != "ev_per_node_component_output_export_preflight":
+            _append_loader_blocker(
+                blockers,
+                "component_output_export_preflight_schema_invalid",
+                "EV export preflight must use the per-node component-output export schema",
+                kind=kind,
+                artifact_id=executable_artifact.artifact_id,
+                path=path,
+                blocker_ids=("E3.S2A-EV-PER-NODE-EXPORT-PREFLIGHT",),
+            )
+        completed_count = preflight.get("completed_per_node_export_count", 0)
+        record["completed_per_node_export_count"] = completed_count
+        record["manifest_directory"] = preflight.get("manifest_directory")
+        record["output_directory"] = preflight.get("output_directory")
+        missing_sources = tuple(preflight.get("missing_source_component_outputs") or ())
+        record["missing_source_component_output_count"] = len(missing_sources)
+        if missing_sources:
+            _append_loader_blocker(
+                blockers,
+                "component_output_per_node_source_outputs_missing",
+                "EV per-node export cannot run until the required source multi-node component-output NPZs are present and checksum-verified",
+                kind=kind,
+                artifact_id=executable_artifact.artifact_id,
+                path=path,
+                blocker_ids=("E3.S2A-EV-PER-NODE-SOURCE-NPZ",),
+            )
+            blockers[-1]["missing_source_component_outputs"] = missing_sources
+        if not isinstance(completed_count, int) or isinstance(completed_count, bool) or completed_count <= 0:
+            _append_loader_blocker(
+                blockers,
+                "component_output_per_node_exports_missing",
+                "EV per-node component-output manifests are not present for loader use",
+                kind=kind,
+                artifact_id=executable_artifact.artifact_id,
+                path=path,
+                blocker_ids=("E3.S2A-EV-PER-NODE-MANIFESTS",),
+            )
+        if status != "ready_per_node_component_outputs_available":
+            _append_loader_blocker(
+                blockers,
+                "component_output_export_preflight_not_ready",
+                "component-output export preflight is not ready for executable IC-1 loading",
+                kind=kind,
+                artifact_id=executable_artifact.artifact_id,
+                path=path,
+                blocker_ids=("E3.S2A-EV-PER-NODE-EXPORT-PREFLIGHT",),
+            )
+            blockers[-1]["status"] = status
+    if blockers:
+        return record, blockers
+    record["state"] = "ready"
+    return record, []
+
 def _component_output_manifest_preflight_record(
     repo_root: Path,
     *,
@@ -3628,11 +3798,14 @@ def _component_output_manifest_schema_blockers(
             blocker_ids=(f"E3.S2-{kind.upper()}-COMPONENT-OUTPUT-NO-RESULT-FIELDS",),
         )
         blockers[-1]["fields"] = legacy_fields
-    if manifest["artifact_status"] != "accepted":
+    allowed_statuses = {"accepted"}
+    if executable_artifact.artifact_status == "synthetic_fixture":
+        allowed_statuses.add("synthetic_fixture")
+    if manifest["artifact_status"] not in allowed_statuses:
         _append_loader_blocker(
             blockers,
             "component_output_manifest_not_accepted",
-            "component-output manifest status must be accepted before loader use",
+            "component-output manifest status must be accepted before real loader use; synthetic_fixture is allowed only for synthetic executable fixtures",
             kind=kind,
             artifact_id=str(manifest["artifact_id"]),
             path=path,
@@ -3724,7 +3897,7 @@ def _component_output_manifest_schema_blockers(
         )
         blockers[-1]["fields"] = unsafe_fields
     try:
-        _resolve_repo_artifact_path(repo_root, str(manifest["array_path"]), field_name="array_path")
+        array_path = _resolve_repo_artifact_path(repo_root, str(manifest["array_path"]), field_name="array_path")
     except ValueError:
         _append_loader_blocker(
             blockers,
@@ -3735,6 +3908,42 @@ def _component_output_manifest_schema_blockers(
             path=path,
             blocker_ids=(f"E3.S2-{kind.upper()}-ARRAY-PATH",),
         )
+    else:
+        array_sha256 = manifest["array_sha256"]
+        if not isinstance(array_sha256, str) or not array_sha256.strip():
+            _append_loader_blocker(
+                blockers,
+                "component_output_array_checksum_missing",
+                "component-output array_sha256 must be a non-empty SHA-256 before loader use",
+                kind=kind,
+                artifact_id=str(manifest["artifact_id"]),
+                path=path,
+                blocker_ids=(f"E3.S2-{kind.upper()}-ARRAY-CHECKSUM",),
+            )
+        elif not array_path.is_file():
+            _append_loader_blocker(
+                blockers,
+                "component_output_array_missing",
+                "component-output array_path is missing from the repository",
+                kind=kind,
+                artifact_id=str(manifest["artifact_id"]),
+                path=path,
+                blocker_ids=(f"E3.S2-{kind.upper()}-ARRAY-FILE",),
+            )
+        else:
+            observed_array_sha256 = _sha256_file(array_path)
+            if observed_array_sha256 != array_sha256:
+                _append_loader_blocker(
+                    blockers,
+                    "component_output_array_checksum_mismatch",
+                    "component-output array SHA-256 does not match the manifest before loader use",
+                    kind=kind,
+                    artifact_id=str(manifest["artifact_id"]),
+                    path=path,
+                    blocker_ids=(f"E3.S2-{kind.upper()}-ARRAY-CHECKSUM",),
+                )
+                blockers[-1]["expected_sha256"] = array_sha256
+                blockers[-1]["observed_sha256"] = observed_array_sha256
     return blockers
 
 

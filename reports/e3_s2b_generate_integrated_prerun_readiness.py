@@ -81,6 +81,8 @@ def build_dossier_from_payload(
         artifact_sha256_by_path=payload.get("artifact_sha256_by_path", {}),
         component_output_manifest_paths_by_kind=payload.get("component_output_manifest_paths_by_kind", {}),
         component_output_manifest_sha256_by_path=payload.get("component_output_manifest_sha256_by_path", {}),
+        component_output_export_preflight_paths_by_kind=payload.get("component_output_export_preflight_paths_by_kind", {}),
+        component_output_export_preflight_sha256_by_path=payload.get("component_output_export_preflight_sha256_by_path", {}),
         missing_component_output_manifest_blockers=payload.get("missing_component_output_manifest_blockers", {}),
         scenario_consistency_manifest=payload.get("scenario_consistency_manifest"),
         component_year_coverage_by_kind=payload.get("component_year_coverage_by_kind", {}),
@@ -132,6 +134,22 @@ def _component_manifest_rows(dossier: Mapping[str, Any]) -> str:
         )
     return "\n".join(rows)
 
+
+def _component_export_preflight_rows(dossier: Mapping[str, Any]) -> str:
+    rows: list[str] = []
+    for record in dossier["accepted_artifact_preflight"].get("component_output_export_preflight_records", ()):
+        rows.append(
+            "| {kind} | {state} | {status} | {path} | {checksum} | {completed} | {missing_sources} |".format(
+                kind=record["kind"],
+                state=record["state"],
+                status=record.get("status") or "--",
+                path=record.get("path") or "--",
+                checksum=record.get("checksum_match", "--"),
+                completed=record.get("completed_per_node_export_count", "--"),
+                missing_sources=record.get("missing_source_component_output_count", "--"),
+            )
+        )
+    return "\n".join(rows) or "| -- | -- | -- | -- | -- | -- | -- |"
 
 def _capacity_source_row(dossier: Mapping[str, Any]) -> str:
     record = dossier.get("capacity_provenance_source_record")
@@ -204,7 +222,7 @@ def _report_text(
     return f"""# E3.S2b Integrated Pre-Run Readiness
 
 Task: E3.S2b future-layer capacity/domain screen pre-run design scaffold.
-Status: metadata/preflight only. This packet composes the current Agent A IC-1 accepted-artifact gate with E3.S2b launch-shape checks on current `origin/main` through PR #270. It consumes the merged EV accepted index, checksum preflight, and #265 generic multi-node component-output manifest packet; consolidated HP readiness guard packets plus the #267 HP profile rebuild runner blocker; PV first-experiment value-decision/approval/preflight blocker packets, the #263 PV component-output scaffold, and the #270 PV value-approval packet; the synthetic IC-1 assembly gate; the accepted-artifact blocker refresh; Agent B trust/readiness, rho-sweep guard, hybrid-provenance guard, and #268 alpha event-count scaffold context; and the #264 capacity-provenance packet as metadata only.
+Status: metadata/preflight only. This packet composes the current Agent A IC-1 accepted-artifact gate with E3.S2b launch-shape checks on current `origin/main` through PR #273. It consumes the merged EV accepted index, checksum preflight, #265 generic multi-node component-output manifest packet, and #272 EV per-node export preflight; consolidated HP readiness guard packets plus the #267 HP profile rebuild runner blocker and #271 HP value-binding candidate packet; PV first-experiment value-decision/approval/preflight blocker packets, the #263 PV component-output scaffold, and the #270 PV value-approval packet; the synthetic IC-1 assembly gate; the accepted-artifact blocker refresh; Agent B trust/readiness, rho-sweep guard, hybrid-provenance guard, #268 alpha event-count scaffold context, and #273 endpoint-count probability reporting context; and the #264 capacity-provenance packet as metadata only.
 
 ## Boundary
 
@@ -253,6 +271,12 @@ Capacity convention status: {dossier['capacity_prerun_provenance']['status']}. T
 | --- | --- | --- | --- |
 {_component_manifest_rows(dossier)}
 
+## Component-Output Export Preflights
+
+| Component | State | Status | Preflight path | Checksum match | Completed exports | Missing source outputs |
+| --- | --- | --- | --- | --- | --- | --- |
+{_component_export_preflight_rows(dossier)}
+
 ## Planned-Year Coverage
 
 | Component | Covered years in current metadata | Missing planned years |
@@ -273,7 +297,7 @@ Capacity convention status: {dossier['capacity_prerun_provenance']['status']}. T
 
 ## Interpretation
 
-The useful current-main state is metadata-rich but still fail-closed. EV has an accepted Agent A-facing index, checksum preflight, and #265 generic low/middle/high component-output manifest packet, but those manifests describe 115-node scenario NPZ files while the current A-owned generic NPZ loader accepts only single-node, one-dimensional component-output manifests. That metadata wrapper is therefore reported as a loadability blocker until A adds an explicit multi-node loader or C emits per-node loadable manifests. Adoption metadata is accepted for declared branches, and FLEX-001 is approved as a scaffold protocol. PV now has the first-experiment value-decision packet, approval checklist packets, executable preflight guard, #263 component-output artifact scaffold, and #270 value-approval packet, but PV capacity values, orientation/tilt values, conversion treatment, allocation, reactive-power policy, component-output path policy, A-016 consistency, and final paired HP/PV acceptance remain unsigned. HP now has the consolidated #250 component-output readiness blocker, profile-artifact template, cold-spell acceptance packet, refreshed value-binding packet, and #267 profile rebuild runner blocker, but still lacks signed annual value binding, final A-016 scenario consistency, paired-weather acceptance, cold-spell tolerances, and an accepted component-output manifest. Baseline, HP, PV, adoption, and flexibility still lack accepted generic component-output manifests for the IC-1 loader boundary.
+The useful current-main state is metadata-rich but still fail-closed. EV has an accepted Agent A-facing index, checksum preflight, and #265 generic low/middle/high component-output manifest packet, but those manifests describe 115-node scenario NPZ files while the current A-owned generic NPZ loader accepts only single-node, one-dimensional component-output manifests. The #272 EV per-node export route is now recognized as the intended resolution path, but its current preflight reports zero completed per-node exports because the ignored source multi-node NPZs are missing from the clean checkout. EV therefore remains blocked until per-node one-dimensional manifests and checksum-matching arrays exist. Adoption metadata is accepted for declared branches, and FLEX-001 is approved as a scaffold protocol. PV now has the first-experiment value-decision packet, approval checklist packets, executable preflight guard, #263 component-output artifact scaffold, and #270 value-approval packet, but PV capacity values, orientation/tilt values, conversion treatment, allocation, reactive-power policy, component-output path policy, A-016 consistency, and final paired HP/PV acceptance remain unsigned. HP now has the consolidated #250 component-output readiness blocker, profile-artifact template, cold-spell acceptance packet, refreshed value-binding packet, #267 profile rebuild runner blocker, and #271 value-binding candidate packet, but still lacks signed annual value binding, final A-016 scenario consistency, paired-weather acceptance, cold-spell tolerances, and an accepted component-output manifest. Baseline, HP, PV, adoption, and flexibility still lack accepted generic component-output manifests for the IC-1 loader boundary.
 
 The E3.S2b design also records that the future screen must be a predeclared 2030/2033/2035 by low/middle/high by rho-endpoint plan, but current component metadata does not yet cover all planned years. The #264 capacity provenance packet is now checksum-verified and supplies total 80 MVA plus firm (n-1) 40 MVA raw-reporting fields, but the denominator convention remains pending and no screen can launch until all component-output, A-016, A-013, G2, and convention prerequisites are satisfied. A-013 and G2 remain downstream blockers for later model-error and Tier-1 validation; this report does not use their numerical values.
 
