@@ -1,7 +1,7 @@
 {
   "schema_version": "e3_s2b_integrated_prerun_readiness_input_v1",
   "task_id": "E3.S2b",
-  "intended_use": "e3_s2b_integrated_prerun_gate_current_main_through_pr268",
+  "intended_use": "e3_s2b_integrated_prerun_gate_current_main_through_pr270",
   "scope": "metadata_preflight_only_no_arrays_no_ic2_execution_no_events_no_probability_no_capacity_screen",
   "config": {
     "config_id": "e3_s2b_integrated_prerun_readiness_v1",
@@ -33,7 +33,7 @@
       "no_event_detection": true,
       "no_probability_estimate": true,
       "no_capacity_screen_result": true,
-      "refresh_basis": "origin/main through PR #268; #263 PV component-output scaffold, #265 EV generic multi-node manifests, #266 B hybrid provenance guard, #267 HP profile rebuild runner scaffold, and #268 B alpha event-count scaffold consumed as metadata only; #264 capacity provenance consumed by path and checksum",
+      "refresh_basis": "origin/main through PR #270; #263 PV component-output scaffold, #265 EV generic multi-node manifests, #266 B hybrid provenance guard, #267 HP profile rebuild runner scaffold, #268 B alpha event-count scaffold, and #270 PV value-approval packet consumed as metadata only; #264 capacity provenance consumed by path and checksum",
       "accepted_artifact_loader_helper": "build_accepted_artifact_loader_blocker_preflight",
       "e3_s2b_prerun_helper": "build_e3_s2b_integrated_prerun_readiness",
       "primary_threshold_metadata": "G0-A3: strict L_import > 1.0 p.u. for four consecutive 15-minute import steps over the full year; 1.1 and 1.2 are sensitivities only",
@@ -146,12 +146,12 @@
       }
     },
     {
-      "artifact_id": "D014-PV-FIRST-EXPERIMENT-VALUE-DECISION-PACKET",
+      "artifact_id": "D014-PV-FIRST-EXPERIMENT-VALUE-APPROVAL-PACKET",
       "kind": "pv",
       "artifact_status": "unsigned",
-      "version_id": "d014_pv_first_experiment_value_decision_packet_v1",
-      "source_id": "d014_pv_first_experiment_value_decision_metadata",
-      "member_id": "pv_first_experiment_value_decisions_blocked",
+      "version_id": "d014_pv_first_experiment_value_approval_packet_v1",
+      "source_id": "d014_pv_first_experiment_value_approval_metadata",
+      "member_id": "pv_first_experiment_value_approval_blocked",
       "calendar_id": "calendar_2035_15min_full_year_35040",
       "node_ids": [
         "simbench_1_mv_semiurb_0_sw_all_in_service_load_nodes"
@@ -169,16 +169,21 @@
         "PV-PARAM-001_or_signed_amendment",
         "A-016",
         "future_node_allocation_rule",
-        "FINAL-PAIRED-HP-PV-ACCEPTANCE"
+        "FINAL-PAIRED-HP-PV-ACCEPTANCE",
+        "future_pv_reactive_power_policy",
+        "signed_component_output_manifest_path_policy"
       ],
       "timestep_seconds": 900,
       "shared_weather_driver_id": "d004_alkmaar_berkhout_2014_2023_v1:unselected",
-      "manifest_path": "data/metadata/weather_pv/d014_pv_first_experiment_value_decision_packet.json",
+      "manifest_path": "data/metadata/weather_pv/d014_pv_first_experiment_value_approval_packet.json",
       "provenance": {
         "readiness_bucket": "proposed_blocked",
-        "packet_status": "PR #257 PV value-decision packet present; executable PV values/formula/allocation/paired acceptance remain unsigned",
+        "packet_status": "PR #270 PV value-approval packet present; it proposes PI signature choices but still authorizes no executable PV values, arrays, or component-output manifest.",
         "supporting_executable_preflight_guard": "data/metadata/weather_pv/d014_pv_executable_preflight_guard.json",
-        "supporting_first_experiment_approval_packet": "data/metadata/weather_pv/d014_pv_first_experiment_approval_packet.json"
+        "supporting_first_experiment_approval_packet": "data/metadata/weather_pv/d014_pv_first_experiment_approval_packet.json",
+        "supporting_value_decision_packet": "data/metadata/weather_pv/d014_pv_first_experiment_value_decision_packet.json",
+        "supporting_value_approval_packet": "data/metadata/weather_pv/d014_pv_first_experiment_value_approval_packet.json",
+        "supporting_component_output_artifact_scaffold": "data/metadata/weather_pv/d014_pv_component_output_artifact_scaffold.json"
       }
     },
     {
@@ -229,9 +234,9 @@
     }
   ],
   "metadata": {
-    "refresh_basis": "origin/main through PR #268; #263 PV component-output scaffold, #265 EV generic multi-node manifests, #266 B hybrid provenance guard, #267 HP profile rebuild runner scaffold, and #268 B alpha event-count scaffold consumed as metadata only; #264 capacity provenance consumed by path and checksum",
+    "refresh_basis": "origin/main through PR #270; #263 PV component-output scaffold, #265 EV generic multi-node manifests, #266 B hybrid provenance guard, #267 HP profile rebuild runner scaffold, #268 B alpha event-count scaffold, and #270 PV value-approval packet consumed as metadata only; #264 capacity provenance consumed by path and checksum",
     "hard_boundary": "no arrays, no IC-2 execution, no events, no P(E), no capacity-screen result, no manuscript numbers",
-    "current_main_commit": "a6d7c3b29ce778ef3cae2a51a9522e5f42da3bde",
+    "current_main_commit": "a64ca618375d072bbf5bfcb88cbd8c6d61cc64d3",
     "capacity_provenance_packet_path": "reports/e3_s2b_capacity_provenance_packet.json",
     "component_output_loader_contract": "single_node_1d_component_output_v1; current EV #265 generic manifests are multi-node and fail closed until A supports multi-node loading or C emits per-node loadable manifests"
   },
@@ -325,7 +330,9 @@
     "hp_profile_rebuild_runner_blocker_manifest": "data/metadata/hp_scaling/hp001_profile_rebuild_runner_blocker_manifest.json",
     "hp_profile_rebuild_runner_report": "reports/e2_s3_hp001_profile_rebuild_preflight.md",
     "agent_b_hybrid_provenance_guard_log": "reports/agent_logs/agent-b/E5.S4-trust-certificate-analytic-gate.md",
-    "agent_b_alpha_probability_estimator_log": "reports/agent_logs/agent-b/E4.S1-alpha-probability-estimator-readiness.md"
+    "agent_b_alpha_probability_estimator_log": "reports/agent_logs/agent-b/E4.S1-alpha-probability-estimator-readiness.md",
+    "pv_first_experiment_value_approval_packet": "data/metadata/weather_pv/d014_pv_first_experiment_value_approval_packet.json",
+    "pv_first_experiment_value_approval_report": "reports/e2_s4_d014_pv_first_experiment_value_approval_packet.md"
   },
   "supporting_metadata_sha256_by_path": {
     "reports/e3_s2_accepted_artifact_blocker_preflight_input.json": "374de84d5899286c28f0f36a6a7d11a60483804c35726e762e6cb4f34346da30",
@@ -368,13 +375,16 @@
     "reports/e2_s4_d014_pv_component_output_artifact_scaffold.md": "faad77bdf6b1710fdd15b161c3a222abd9fc2c2818760441f28a3e228cbfe360",
     "data/metadata/hp_scaling/hp001_profile_rebuild_runner_blocker_manifest.json": "56b09d7922dd46b9d0f8c7ef6a967dfe46cc66c39c7da2c1d8a8d19ffd969e7a",
     "reports/e2_s3_hp001_profile_rebuild_preflight.md": "36f0bd92fdc526b1e816febeb55dea932071ef06543b68f6895e9bcde8cdf30e",
-    "reports/agent_logs/agent-b/E5.S4-trust-certificate-analytic-gate.md": "8e906d6ab592f7009e330082ffe5bdfbc6091765f9872c9b97315425b65ec669"
+    "reports/agent_logs/agent-b/E5.S4-trust-certificate-analytic-gate.md": "8e906d6ab592f7009e330082ffe5bdfbc6091765f9872c9b97315425b65ec669",
+    "reports/agent_logs/agent-b/E4.S1-alpha-probability-estimator-readiness.md": "64925ef87a5408582586518a13a5fac45638868243f456f136ce18e0d0d9c1b1",
+    "data/metadata/weather_pv/d014_pv_first_experiment_value_approval_packet.json": "b8f2e570d6c50d74be7d430ab14f11d0f1d54d9c097693537d93d3ac3250d2e2",
+    "reports/e2_s4_d014_pv_first_experiment_value_approval_packet.md": "5b45ea2067a31b8e91650e511064586c583aa33fa6deb6520da361b8b1376ba2"
   },
   "artifact_sha256_by_path": {
     "reports/e2_s5_baseline_diversity_readiness.md": "35dddc989ff32e313ffcb22c16d26f494596445b6ba1879117168feb285a9d0c",
     "data/metadata/ev_adoption/e2_s2_ev_ic1_accepted_artifact_index_preflight.json": "927a0c734592ef4defe17c045da9ab14bc6ba8d864fb415262e9811e3ab234b3",
     "data/metadata/hp_scaling/hp001_component_output_readiness_blocker_packet.json": "14d7a28bfc9c08c35c99cd4622060ee9f9cdfcdde46360d3be71a65726515997",
-    "data/metadata/weather_pv/d014_pv_first_experiment_value_decision_packet.json": "3c97678013ae63afdbd678626222f14e5b3df44951f9d4c5d6abe8c879941fdf",
+    "data/metadata/weather_pv/d014_pv_first_experiment_value_approval_packet.json": "b8f2e570d6c50d74be7d430ab14f11d0f1d54d9c097693537d93d3ac3250d2e2",
     "data/metadata/ev_adoption/e2_s6_a014_alkmaar_executable_adoption_artifact.json": "5504d71bda5c388254013690c64407763bb37179a5cd82b6aa1199f216d933ad",
     "src/flex_aggregator.py": "7b07ffb68d8e153593c47cd611f653a2208c37c7836275566e6d783a87a583cb"
   },
