@@ -189,7 +189,7 @@ def _report_text(
     return f"""# E3.S2b Integrated Pre-Run Readiness
 
 Task: E3.S2b future-layer capacity/domain screen pre-run design scaffold.
-Status: metadata/preflight only. This packet composes the current Agent A IC-1 accepted-artifact gate with E3.S2b launch-shape checks on current `origin/main` through PR #250/#256/#257. It consumes the merged EV accepted index and checksum preflight, consolidated HP readiness guard packets, PV first-experiment value-decision/approval/preflight blocker packets, the synthetic IC-1 assembly gate, the accepted-artifact blocker refresh, and Agent B trust/readiness context as metadata only.
+Status: metadata/preflight only. This packet composes the current Agent A IC-1 accepted-artifact gate with E3.S2b launch-shape checks on current `origin/main` through PR #250/#256/#257/#259. It consumes the merged EV accepted index and checksum preflight, consolidated HP readiness guard packets, PV first-experiment value-decision/approval/preflight blocker packets, the synthetic IC-1 assembly gate, the accepted-artifact blocker refresh, and Agent B trust/readiness plus rho-sweep guard context as metadata only.
 
 ## Boundary
 

@@ -1,7 +1,7 @@
 {
   "schema_version": "e3_s2b_integrated_prerun_readiness_input_v1",
   "task_id": "E3.S2b",
-  "intended_use": "e3_s2b_integrated_prerun_readiness_current_main_through_pr250_pr256_pr257",
+  "intended_use": "e3_s2b_integrated_prerun_readiness_current_main_through_pr250_pr256_pr257_pr259",
   "scope": "metadata_preflight_only_no_arrays_no_ic2_execution_no_events_no_probability_no_capacity_screen",
   "config": {
     "config_id": "e3_s2b_integrated_prerun_readiness_v1",
@@ -33,7 +33,7 @@
       "no_event_detection": true,
       "no_probability_estimate": true,
       "no_capacity_screen_result": true,
-      "refresh_basis": "origin/main through PR #250/#256/#257; #250/#251/#252/#253/#254/#255/#256/#257 consumed as metadata only",
+      "refresh_basis": "origin/main through PR #250/#256/#257/#259; #250/#251/#252/#253/#254/#255/#256/#257/#259 consumed as metadata only",
       "accepted_artifact_loader_helper": "build_accepted_artifact_loader_blocker_preflight",
       "e3_s2b_prerun_helper": "build_e3_s2b_integrated_prerun_readiness",
       "primary_threshold_metadata": "G0-A3: strict L_import > 1.0 p.u. for four consecutive 15-minute import steps over the full year; 1.1 and 1.2 are sensitivities only"
@@ -222,9 +222,9 @@
     }
   ],
   "metadata": {
-    "refresh_basis": "origin/main through PR #250/#256/#257; #250/#251/#252/#253/#254/#255/#256/#257 consumed as metadata only",
+    "refresh_basis": "origin/main through PR #250/#256/#257/#259; #250/#251/#252/#253/#254/#255/#256/#257/#259 consumed as metadata only",
     "hard_boundary": "no arrays, no IC-2 execution, no events, no P(E), no capacity-screen result, no manuscript numbers",
-    "current_main_commit": "104c49bfbf12f846c213a93273430d54e07e8b51"
+    "current_main_commit": "63ae72e824c3b81e9a09266251b9416e6b76677d"
   },
   "missing_artifact_blockers": {},
   "capacity_provenance": null,
@@ -301,7 +301,9 @@
     "hp_refreshed_executable_value_binding_packet": "data/metadata/hp_scaling/hp001_alkmaar_gm0361_executable_value_binding_decision_packet.json",
     "hp_component_output_readiness_report": "reports/e2_s3_hp001_component_output_readiness_blocker.md",
     "hp_profile_artifact_consumption_report": "reports/e2_s3_hp001_profile_artifact_consumption_manifest.md",
-    "hp_cold_spell_acceptance_report": "reports/e2_s3_hp001_cold_spell_acceptance_readiness.md"
+    "hp_cold_spell_acceptance_report": "reports/e2_s3_hp001_cold_spell_acceptance_readiness.md",
+    "agent_b_e4_s1_rho_sweep_payload_guards": "reports/e4_s1_rho_sweep_payload_guards.md",
+    "agent_b_pbox_monotonicity_module": "src/pbox_monotonicity.py"
   },
   "supporting_metadata_sha256_by_path": {
     "reports/e3_s2_accepted_artifact_blocker_preflight_input.json": "374de84d5899286c28f0f36a6a7d11a60483804c35726e762e6cb4f34346da30",
@@ -330,7 +332,9 @@
     "data/metadata/hp_scaling/hp001_alkmaar_gm0361_executable_value_binding_decision_packet.json": "5483ed6a0cc39b9323e4e3366458b412230b822973592769d010feb9ac5dc920",
     "reports/e2_s3_hp001_component_output_readiness_blocker.md": "a5d867c8accb37bf658f04f7de3c6718a2f8f7c5879a1b7980d6c8d4f6e87439",
     "reports/e2_s3_hp001_profile_artifact_consumption_manifest.md": "b46e0f3bdad2579c0e0470a5b50497fff907dd8080d2727f8b876f78ce4e0aa3",
-    "reports/e2_s3_hp001_cold_spell_acceptance_readiness.md": "055cce65ddb92a5cf6a852564ae411c1a0e0dc05e1e28d89e125124953a57d20"
+    "reports/e2_s3_hp001_cold_spell_acceptance_readiness.md": "055cce65ddb92a5cf6a852564ae411c1a0e0dc05e1e28d89e125124953a57d20",
+    "reports/e4_s1_rho_sweep_payload_guards.md": "98c24865d1cd7b99ba2ea0414d62cc74be2868d7db57d19092c99ca1814594c3",
+    "src/pbox_monotonicity.py": "6d34e53ec804aca3d55f4f6bc27bc8fd198116fb6ca79d7a7e998a6c8ddbd86d"
   },
   "artifact_sha256_by_path": {
     "reports/e2_s5_baseline_diversity_readiness.md": "35dddc989ff32e313ffcb22c16d26f494596445b6ba1879117168feb285a9d0c",
