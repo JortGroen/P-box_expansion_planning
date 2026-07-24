@@ -12,7 +12,7 @@ from dataclasses import dataclass
 import math
 from typing import Mapping, Sequence
 
-from src.pbox import PBoxFamily, VertexUseMode
+from src.pbox import PBoxFamily, VertexUseMode, probability_estimate_from_counts
 from src.pbox_error import (
     OUTPUT_ERROR_APPLICATION,
     OUTPUT_ERROR_DEPENDENCE,
@@ -31,6 +31,42 @@ from src.pbox_result_guards import (
 
 UseStatus = str
 RUNNER_REPORT_BOUNDARY_PROTOCOL = "guarded-pbox-report-v1"
+ALPHA_EVENT_COUNT_ESTIMATOR_PROTOCOL = "e4s1-alpha-event-count-estimator-v1"
+ALPHA_EVENT_COUNT_ESTIMATOR_USE_STATUS = "synthetic-estimator-readiness"
+ALPHA_EVENT_COUNT_REAL_USE_BLOCKER_PROTOCOL = (
+    "e4s1-alpha-estimator-real-use-blockers-v1"
+)
+ALPHA_EVENT_COUNT_REAL_USE_BLOCKERS: tuple[str, ...] = (
+    "missing_real_endpoint_event_manifests",
+    "missing_signed_g2_tier1_endpoints",
+    "missing_signed_a013_grid_error",
+    "missing_capacity_convention_and_provenance",
+    "missing_a016_scenario_consistency",
+    "missing_g3_monotonicity_approval_if_vertex_shortcut_claimed",
+)
+_ALPHA_EVENT_COUNT_ENDPOINT_METADATA_FIELDS = {
+    "a013_grid_error_approval_id",
+    "a016_scenario_consistency_id",
+    "capacity_convention_linkage",
+    "capacity_denominator_provenance",
+    "direction_gate",
+    "endpoint_record_manifest_id",
+    "error_sampling",
+    "g2_tier1_envelope_approval_id",
+    "loading_endpoint_application",
+    "probability_widening",
+}
+_ALPHA_EVENT_COUNT_FORBIDDEN_FIELDS = frozenset(
+    {
+        "defuzzified_probability",
+        "expected_probability",
+        "mean_probability",
+        "mid_probability",
+        "p_hat",
+        "p_mid",
+        "probability",
+    }
+)
 
 
 @dataclass(frozen=True)
@@ -117,6 +153,389 @@ class RunnerReportBoundaryRecord:
             ),
             "paper_facing_requested": paper_facing_requested,
         }
+
+
+@dataclass(frozen=True)
+class AlphaEventCountRecord:
+    """Precomputed lower/upper endpoint event counts for one alpha level."""
+
+    alpha: float
+    lower_successes: int
+    upper_successes: int
+    sample_count: int
+    sample_ids: tuple[str, ...]
+
+    def __post_init__(self) -> None:
+        if not math.isfinite(self.alpha) or not 0.0 <= self.alpha <= 1.0:
+            raise ValueError("alpha must be finite and in [0, 1]")
+        if self.sample_count <= 0:
+            raise ValueError("sample_count must be positive")
+        if not (
+            0 <= self.lower_successes <= self.upper_successes <= self.sample_count
+        ):
+            raise ValueError(
+                "expected 0 <= lower_successes <= upper_successes <= sample_count"
+            )
+        if len(self.sample_ids) != self.sample_count:
+            raise ValueError("sample_ids must match sample_count")
+        if len(set(self.sample_ids)) != len(self.sample_ids):
+            raise ValueError("sample_ids must be unique within an alpha level")
+        if any(
+            not isinstance(sample_id, str) or not sample_id.strip()
+            for sample_id in self.sample_ids
+        ):
+            raise ValueError("sample_ids must contain nonempty strings")
+
+    def to_mapping(self) -> dict[str, object]:
+        return {
+            "alpha": self.alpha,
+            "lower_successes": self.lower_successes,
+            "sample_count": self.sample_count,
+            "sample_ids": list(self.sample_ids),
+            "upper_successes": self.upper_successes,
+        }
+
+
+@dataclass(frozen=True)
+class AlphaProbabilityEstimatorPacket:
+    """Synthetic E4.S1 handoff from endpoint event counts to probability rows."""
+
+    packet_id: str
+    event_count_records: tuple[AlphaEventCountRecord, ...]
+    endpoint_metadata: Mapping[str, object]
+    probability_rows: tuple[dict[str, object], ...]
+    confidence_level: float = 0.95
+    require_nested: bool = True
+    use_status: str = ALPHA_EVENT_COUNT_ESTIMATOR_USE_STATUS
+    protocol: str = ALPHA_EVENT_COUNT_ESTIMATOR_PROTOCOL
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.packet_id, str) or not self.packet_id.strip():
+            raise ValueError("packet_id must be a nonempty string")
+        if self.protocol != ALPHA_EVENT_COUNT_ESTIMATOR_PROTOCOL:
+            raise ValueError(
+                f"protocol must be {ALPHA_EVENT_COUNT_ESTIMATOR_PROTOCOL!r}"
+            )
+        if self.use_status != ALPHA_EVENT_COUNT_ESTIMATOR_USE_STATUS:
+            raise ValueError(
+                "alpha probability estimator packets must remain synthetic-only"
+            )
+        if not 0.0 < self.confidence_level < 1.0:
+            raise ValueError("confidence_level must be in (0, 1)")
+        _validate_alpha_event_count_records(
+            self.event_count_records,
+            require_nested=self.require_nested,
+        )
+        _validate_alpha_event_endpoint_metadata(self.endpoint_metadata)
+        expected_rows = probability_rows_from_alpha_event_counts(
+            self.event_count_records,
+            confidence_level=self.confidence_level,
+            require_nested=self.require_nested,
+        )
+        if self.probability_rows != expected_rows:
+            raise ValueError(
+                "probability_rows must be derived from event_count_records"
+            )
+
+    @property
+    def real_use_blocker_manifest(self) -> dict[str, object]:
+        return build_alpha_probability_real_use_blocker_manifest(
+            manifest_id=f"{self.packet_id}:real-use-blockers"
+        )
+
+    def to_mapping(self) -> dict[str, object]:
+        return {
+            "confidence_level": self.confidence_level,
+            "endpoint_metadata": dict(self.endpoint_metadata),
+            "event_count_records": [
+                record.to_mapping() for record in self.event_count_records
+            ],
+            "invariants": {
+                "alpha_indexed_lower_upper_reporting": True,
+                "crn_sample_identity": "same ordered sample_ids across alpha rows",
+                "defuzzification": "forbidden",
+                "endpoint_metadata_required": True,
+                "probability_widening": "forbidden",
+            },
+            "non_claims": [
+                "no real trajectories",
+                "no real P(E)",
+                "no real rho sweep",
+                "no capacity choice",
+                "no A-013 or G2 numerical signoff",
+                "no G3 verdict",
+                "no decision-engine recommendation",
+                "no manuscript number",
+            ],
+            "packet_id": self.packet_id,
+            "probability_rows": [dict(row) for row in self.probability_rows],
+            "protocol": self.protocol,
+            "real_use_blocker_manifest": self.real_use_blocker_manifest,
+            "require_nested": self.require_nested,
+            "use_status": self.use_status,
+        }
+
+
+def probability_rows_from_alpha_event_counts(
+    event_count_records: Sequence[AlphaEventCountRecord | Mapping[str, object]],
+    *,
+    confidence_level: float = 0.95,
+    require_nested: bool = True,
+) -> tuple[dict[str, object], ...]:
+    """Convert precomputed endpoint event counts to alpha-indexed rows.
+
+    This helper is deliberately count-only: endpoint events must already have
+    been produced from widened loading trajectories. It recomputes probabilities
+    and CIs from counts so no downstream report can smuggle in a probability
+    margin or a defuzzified scalar.
+    """
+
+    _reject_alpha_event_count_collapsed_fields(event_count_records)
+    records = tuple(
+        _coerce_alpha_event_count_record(record) for record in event_count_records
+    )
+    _validate_alpha_event_count_records(records, require_nested=require_nested)
+    rows: list[dict[str, object]] = []
+    for record in sorted(records, key=lambda item: item.alpha):
+        lower = probability_estimate_from_counts(
+            record.lower_successes,
+            record.sample_count,
+            confidence_level=confidence_level,
+        )
+        upper = probability_estimate_from_counts(
+            record.upper_successes,
+            record.sample_count,
+            confidence_level=confidence_level,
+        )
+        rows.append(
+            {
+                "alpha": record.alpha,
+                "ci_lower_lower": lower.ci_lower,
+                "ci_lower_upper": lower.ci_upper,
+                "ci_upper_lower": upper.ci_lower,
+                "ci_upper_upper": upper.ci_upper,
+                "lower_successes": record.lower_successes,
+                "p_lower": lower.probability,
+                "p_upper": upper.probability,
+                "sample_count": record.sample_count,
+                "sample_ids": list(record.sample_ids),
+                "upper_successes": record.upper_successes,
+            }
+        )
+    assert_alpha_indexed_probability_report(rows)
+    return tuple(rows)
+
+
+def build_alpha_probability_estimator_packet(
+    *,
+    packet_id: str,
+    event_count_records: Sequence[AlphaEventCountRecord | Mapping[str, object]],
+    endpoint_metadata: Mapping[str, object],
+    confidence_level: float = 0.95,
+    require_nested: bool = True,
+) -> AlphaProbabilityEstimatorPacket:
+    """Build the synthetic/fail-closed E4.S1 probability-estimator packet."""
+
+    records = tuple(_coerce_alpha_event_count_record(record) for record in event_count_records)
+    rows = probability_rows_from_alpha_event_counts(
+        records,
+        confidence_level=confidence_level,
+        require_nested=require_nested,
+    )
+    return AlphaProbabilityEstimatorPacket(
+        packet_id=packet_id,
+        event_count_records=records,
+        endpoint_metadata=endpoint_metadata,
+        probability_rows=rows,
+        confidence_level=confidence_level,
+        require_nested=require_nested,
+    )
+
+
+def build_alpha_probability_real_use_blocker_manifest(
+    *, manifest_id: str
+) -> dict[str, object]:
+    """Return blocker keys for future real E4 probability-estimator use."""
+
+    if not isinstance(manifest_id, str) or not manifest_id.strip():
+        raise ValueError("manifest_id must be a nonempty string")
+    return {
+        "blockers": list(ALPHA_EVENT_COUNT_REAL_USE_BLOCKERS),
+        "manifest_id": manifest_id,
+        "manifest_protocol": ALPHA_EVENT_COUNT_REAL_USE_BLOCKER_PROTOCOL,
+        "non_claims": [
+            "no real trajectories accepted by this scaffold",
+            "no real P(E)",
+            "no capacity convention choice",
+            "no A-013 or G2 numerical signoff",
+            "no G3 verdict",
+            "no manuscript number",
+        ],
+        "ready_for_real_use": False,
+        "use_status": "real-use-blocker",
+    }
+
+
+def assert_alpha_probability_estimator_packet(payload: Mapping[str, object]) -> None:
+    """Validate a serialized synthetic alpha probability-estimator packet."""
+
+    _reject_alpha_event_count_collapsed_fields(payload)
+    required = {
+        "confidence_level",
+        "endpoint_metadata",
+        "event_count_records",
+        "invariants",
+        "packet_id",
+        "probability_rows",
+        "protocol",
+        "real_use_blocker_manifest",
+        "require_nested",
+        "use_status",
+    }
+    _require_mapping_fields(payload, required, name="alpha estimator packet")
+    if payload["protocol"] != ALPHA_EVENT_COUNT_ESTIMATOR_PROTOCOL:
+        raise ValueError(
+            f"protocol must be {ALPHA_EVENT_COUNT_ESTIMATOR_PROTOCOL!r}"
+        )
+    if payload["use_status"] != ALPHA_EVENT_COUNT_ESTIMATOR_USE_STATUS:
+        raise ValueError(
+            "alpha probability estimator packets must remain synthetic-only"
+        )
+    if not isinstance(payload["require_nested"], bool):
+        raise TypeError("require_nested must be boolean")
+    confidence_level = float(payload["confidence_level"])
+    records = tuple(
+        _coerce_alpha_event_count_record(
+            _expect_mapping(record, name="event_count_record")
+        )
+        for record in _expect_sequence(
+            payload["event_count_records"], name="event_count_records"
+        )
+    )
+    expected = build_alpha_probability_estimator_packet(
+        packet_id=str(payload["packet_id"]),
+        event_count_records=records,
+        endpoint_metadata=_expect_mapping(
+            payload["endpoint_metadata"], name="endpoint_metadata"
+        ),
+        confidence_level=confidence_level,
+        require_nested=bool(payload["require_nested"]),
+    )
+    rows = tuple(
+        dict(_expect_mapping(row, name="probability_row"))
+        for row in _expect_sequence(
+            payload["probability_rows"], name="probability_rows"
+        )
+    )
+    if rows != expected.probability_rows:
+        raise ValueError("probability_rows must be recomputable from event counts")
+    if payload["real_use_blocker_manifest"] != expected.real_use_blocker_manifest:
+        raise ValueError("real_use_blocker_manifest must match protocol blockers")
+    invariants = _expect_mapping(payload["invariants"], name="invariants")
+    if invariants.get("defuzzification") != "forbidden":
+        raise ValueError("defuzzification must remain forbidden")
+    if invariants.get("probability_widening") != "forbidden":
+        raise ValueError("probability widening must remain forbidden")
+    if invariants.get("alpha_indexed_lower_upper_reporting") is not True:
+        raise ValueError("alpha-indexed lower/upper reporting must be true")
+
+
+def _coerce_alpha_event_count_record(
+    record: AlphaEventCountRecord | Mapping[str, object],
+) -> AlphaEventCountRecord:
+    if isinstance(record, AlphaEventCountRecord):
+        return record
+    mapping = _expect_mapping(record, name="event_count_record")
+    required = {
+        "alpha",
+        "lower_successes",
+        "sample_count",
+        "sample_ids",
+        "upper_successes",
+    }
+    _require_mapping_fields(mapping, required, name="event_count_record")
+    return AlphaEventCountRecord(
+        alpha=float(mapping["alpha"]),
+        lower_successes=_expect_nonnegative_int(
+            mapping["lower_successes"], name="lower_successes"
+        ),
+        upper_successes=_expect_nonnegative_int(
+            mapping["upper_successes"], name="upper_successes"
+        ),
+        sample_count=_expect_nonnegative_int(
+            mapping["sample_count"], name="sample_count"
+        ),
+        sample_ids=tuple(
+            str(sample_id)
+            for sample_id in _expect_sequence(mapping["sample_ids"], name="sample_ids")
+        ),
+    )
+
+
+def _validate_alpha_event_count_records(
+    records: Sequence[AlphaEventCountRecord], *, require_nested: bool
+) -> None:
+    if not records:
+        raise ValueError("event_count_records must not be empty")
+    ordered = tuple(sorted(records, key=lambda item: item.alpha))
+    alphas = tuple(record.alpha for record in ordered)
+    if len(set(alphas)) != len(alphas):
+        raise ValueError("alpha rows must be unique")
+    reference_sample_count = ordered[0].sample_count
+    reference_sample_ids = ordered[0].sample_ids
+    previous_lower = ordered[0].lower_successes / ordered[0].sample_count
+    previous_upper = ordered[0].upper_successes / ordered[0].sample_count
+    for record in ordered:
+        if record.sample_count != reference_sample_count:
+            raise ValueError("all alpha rows must use the same sample_count")
+        if record.sample_ids != reference_sample_ids:
+            raise ValueError("all alpha rows must use the same ordered sample_ids")
+        lower_probability = record.lower_successes / record.sample_count
+        upper_probability = record.upper_successes / record.sample_count
+        if require_nested:
+            if (
+                lower_probability < previous_lower
+                or upper_probability > previous_upper
+            ):
+                raise ValueError("alpha probability rows must be nested")
+        previous_lower = lower_probability
+        previous_upper = upper_probability
+
+
+def _validate_alpha_event_endpoint_metadata(metadata: Mapping[str, object]) -> None:
+    _require_mapping_fields(
+        metadata,
+        _ALPHA_EVENT_COUNT_ENDPOINT_METADATA_FIELDS,
+        name="endpoint_metadata",
+    )
+    for field in _ALPHA_EVENT_COUNT_ENDPOINT_METADATA_FIELDS:
+        if not isinstance(metadata[field], str) or not str(metadata[field]).strip():
+            raise ValueError(f"endpoint_metadata {field} must be a nonempty string")
+    if metadata["loading_endpoint_application"] != OUTPUT_ERROR_APPLICATION:
+        raise ValueError("endpoint metadata must apply endpoints before event detection")
+    if metadata["direction_gate"] != "unwidened_p_net_import_mask":
+        raise ValueError(
+            "endpoint metadata must preserve the unwidened P_net direction gate"
+        )
+    if metadata["probability_widening"] != "forbidden":
+        raise ValueError("endpoint metadata must forbid probability widening")
+    if metadata["error_sampling"] != OUTPUT_ERROR_SAMPLING:
+        raise ValueError("endpoint metadata must forbid independent error sampling")
+
+
+def _reject_alpha_event_count_collapsed_fields(value: object) -> None:
+    if isinstance(value, Mapping):
+        collapsed = sorted(_ALPHA_EVENT_COUNT_FORBIDDEN_FIELDS.intersection(value))
+        if collapsed:
+            raise ValueError(
+                "alpha probability estimator must not contain collapsed fields: "
+                f"{collapsed}"
+            )
+        for nested in value.values():
+            _reject_alpha_event_count_collapsed_fields(nested)
+    elif isinstance(value, Sequence) and not isinstance(value, (str, bytes)):
+        for nested in value:
+            _reject_alpha_event_count_collapsed_fields(nested)
 
 
 def probability_rows_from_pbox_family(
