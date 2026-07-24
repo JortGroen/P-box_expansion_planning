@@ -51,6 +51,7 @@ DEFAULT_OUTPUT_DIR = Path("data/processed/elaad_profiles/component_outputs")
 DEFAULT_PER_NODE_OUTPUT_DIR = Path("data/processed/elaad_profiles/component_outputs/per_node")
 DEFAULT_PER_NODE_MANIFEST_DIR = Path("data/metadata/ev_adoption/per_node_component_output_manifests")
 DEFAULT_PER_NODE_EXPORT_PREFLIGHT = Path("data/metadata/ev_adoption/e3_s2a_ev_per_node_export_preflight.json")
+DEFAULT_PER_NODE_INDEX_PATH = Path("data/metadata/ev_adoption/e3_s2a_ev_per_node_manifest_index_preflight.json")
 RESTORE_INSTRUCTION = (
     "Restore the ignored candidate processed-profile NPZ files listed above "
     "under data/processed/elaad_profiles from the verified local artifact store, "
@@ -907,6 +908,9 @@ def export_ev_per_node_component_outputs(
                 "timestep_count": int(timestamps.size),
                 "array_path": output_rel.as_posix(),
                 "array_sha256": output_sha,
+                "loader_contract": "single_node_1d_component_output_v1",
+                "node_axis_contract": "single_manifest_single_node",
+                "array_shape_contract": "p_kw_q_kvar_timestamps_1d_same_length",
                 "provenance": {
                     "artifact_type": "ev_per_node_component_output_manifest",
                     "scenario": scenario,
@@ -964,6 +968,338 @@ def export_ev_per_node_component_outputs(
     return payload
 
 
+_REQUIRED_PER_NODE_MANIFEST_KEYS = (
+    "artifact_id",
+    "artifact_status",
+    "kind",
+    "component_id",
+    "node_id",
+    "member_id",
+    "source_id",
+    "calendar_id",
+    "timestep_seconds",
+    "array_path",
+    "array_sha256",
+    "loader_contract",
+    "node_axis_contract",
+    "array_shape_contract",
+    "provenance",
+)
+_EXPECTED_PER_NODE_LOADER_CONTRACT = {
+    "loader_contract": "single_node_1d_component_output_v1",
+    "node_axis_contract": "single_manifest_single_node",
+    "array_shape_contract": "p_kw_q_kvar_timestamps_1d_same_length",
+}
+_PER_NODE_INDEX_BLOCKERS = [
+    "E3.S2a-EV-HELD-OUT-ADEQUACY-NOT-RUN",
+    "EV-005-M-SUFFICIENCY-NOT-CERTIFIED",
+    "G5-FINAL-LOW-MIDDLE-HIGH-BRANCH-NOT-SELECTED",
+    "IC-1-INTEGRATED-NET-LOAD-ASSEMBLY-NOT-RUN",
+    "A-016-CROSS-COMPONENT-SCENARIO-CONSISTENCY-NOT-YET-CHECKED",
+]
+
+
+def _contains_blocked_path_token(path: str) -> bool:
+    lowered = path.lower().replace("\\", "/")
+    return any(token in lowered for token in ("held_out", "held-out", "quarantined", "data/raw/", "generic_component_output_manifests"))
+
+
+def _unsafe_manifest_token_fields(manifest: Mapping[str, Any]) -> tuple[str, ...]:
+    unsafe: list[str] = []
+    for field in ("artifact_status", "artifact_id", "component_id", "member_id", "source_id", "calendar_id", "array_path"):
+        value = manifest.get(field)
+        if value is None:
+            continue
+        lowered = str(value).lower()
+        if any(token in lowered for token in _FORBIDDEN_APPROVAL_TOKENS):
+            unsafe.append(field)
+    return tuple(sorted(set(unsafe)))
+
+
+def _expected_per_node_units(
+    generic_packet: Mapping[str, Any],
+    *,
+    output_dir: Path,
+    manifest_dir: Path,
+    scenario_filter: Sequence[str] | None,
+    node_filter: Sequence[str] | None,
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    scenario_records, manifests_by_scenario = _validate_per_node_export_packet(generic_packet)
+    policy = generic_packet.get("policy")
+    if not isinstance(policy, Mapping):
+        raise EVComponentOutputVerificationError("EV generic-loader packet lacks policy flags")
+    for key in (
+        "held_out_access",
+        "quarantined_access",
+        "integrated_analysis_performed",
+        "event_or_p_e_analysis_performed",
+        "capacity_screen_performed",
+        "final_low_middle_high_branch_selected",
+        "m_sufficiency_claimed",
+        "manuscript_numbers_produced",
+    ):
+        if policy.get(key) is not False:
+            raise EVComponentOutputVerificationError(f"Per-node manifest index requires {key}=False")
+    if policy.get("elaad_api_calls", False) is not False:
+        raise EVComponentOutputVerificationError("Per-node manifest index requires elaad_api_calls=False")
+    output_dir = _repo_relative_path(Path(output_dir), field_name="output_dir")
+    manifest_dir = _repo_relative_path(Path(manifest_dir), field_name="manifest_dir")
+    wanted_scenarios = set(scenario_filter or [str(row["scenario"]) for row in scenario_records])
+    wanted_nodes = set(node_filter or [])
+    if not wanted_scenarios:
+        raise EVComponentOutputVerificationError("Per-node manifest index requires at least one scenario")
+    units: list[dict[str, Any]] = []
+    for record in sorted(scenario_records, key=lambda item: str(item["scenario"])):
+        scenario = str(record["scenario"])
+        if scenario not in wanted_scenarios:
+            continue
+        scenario_manifest = manifests_by_scenario.get(scenario)
+        if not isinstance(scenario_manifest, Mapping):
+            raise EVComponentOutputVerificationError(f"Missing scenario manifest for {scenario}")
+        source_rel = _repo_relative_path(Path(str(record.get("array_path", ""))), field_name="array_path")
+        if _contains_blocked_path_token(source_rel.as_posix()):
+            raise EVComponentOutputVerificationError("Per-node manifest index rejects held-out/quarantined/raw/generic source paths")
+        for node_id in _expected_node_ids_for_scenario(scenario_manifest):
+            if wanted_nodes and node_id not in wanted_nodes:
+                continue
+            units.append(
+                {
+                    "scenario": scenario,
+                    "node_id": node_id,
+                    "manifest_path": (manifest_dir / f"ev_2035_{scenario}_{node_id}.json").as_posix(),
+                    "array_path": (output_dir / f"ev_ic1_candidate_component_output_{scenario}_{node_id}.npz").as_posix(),
+                    "source_multi_node_path": source_rel.as_posix(),
+                    "source_multi_node_sha256": str(record.get("array_sha256", "")),
+                }
+            )
+    if not units:
+        raise EVComponentOutputVerificationError("Per-node manifest index selected no scenario/node units")
+    pairs = [(str(unit["scenario"]), str(unit["node_id"])) for unit in units]
+    duplicates = sorted({pair for pair in pairs if pairs.count(pair) > 1})
+    if duplicates:
+        labels = ", ".join(f"{scenario}/{node_id}" for scenario, node_id in duplicates)
+        raise EVComponentOutputVerificationError(f"Per-node manifest index rejects duplicate scenario/node units: {labels}")
+    scenario_order = tuple(dict.fromkeys(str(unit["scenario"]) for unit in units))
+    node_order = tuple(dict.fromkeys(str(unit["node_id"]) for unit in units))
+    return units, {"scenario_order": scenario_order, "node_order": node_order}
+
+
+def _validate_per_node_manifest_for_index(
+    manifest: Mapping[str, Any],
+    *,
+    expected: Mapping[str, Any],
+    artifact_status: str,
+    allow_synthetic_fixture: bool,
+) -> list[str]:
+    blockers: list[str] = []
+    missing_keys = [key for key in _REQUIRED_PER_NODE_MANIFEST_KEYS if key not in manifest]
+    if missing_keys:
+        blockers.append("manifest_required_keys_missing")
+    if manifest.get("kind") != "ev":
+        blockers.append("manifest_kind_not_ev")
+    if manifest.get("node_id") != expected["node_id"]:
+        blockers.append("manifest_node_id_mismatch")
+    if manifest.get("array_path") != expected["array_path"]:
+        blockers.append("manifest_array_path_mismatch")
+    if manifest.get("artifact_status") != artifact_status:
+        blockers.append("manifest_artifact_status_not_allowed")
+    if artifact_status == "synthetic_fixture" and not allow_synthetic_fixture:
+        blockers.append("synthetic_fixture_not_allowed")
+    if artifact_status == "accepted" and allow_synthetic_fixture:
+        blockers.append("accepted_status_not_expected_for_synthetic_fixture")
+    if artifact_status not in {"accepted", "synthetic_fixture"}:
+        blockers.append("manifest_artifact_status_not_accepted")
+    for key, value in _EXPECTED_PER_NODE_LOADER_CONTRACT.items():
+        if manifest.get(key) != value:
+            blockers.append(f"{key}_mismatch")
+    unsafe_fields = _unsafe_manifest_token_fields(manifest)
+    if unsafe_fields:
+        blockers.append("manifest_unsafe_token")
+    array_path = str(manifest.get("array_path", ""))
+    try:
+        _repo_relative_path(Path(array_path), field_name="array_path")
+    except EVComponentOutputVerificationError:
+        blockers.append("manifest_array_path_not_repository_relative")
+    if _contains_blocked_path_token(array_path):
+        blockers.append("manifest_array_path_forbidden")
+    provenance = manifest.get("provenance")
+    if not isinstance(provenance, Mapping):
+        blockers.append("manifest_provenance_missing")
+        return blockers
+    for key in ("held_out_access", "quarantined_access", "event_or_p_e_analysis_performed", "m_sufficiency_claimed"):
+        if provenance.get(key) is not False:
+            blockers.append(f"manifest_{key}_not_false")
+    if provenance.get("candidate_only") is not True:
+        blockers.append("manifest_candidate_only_not_true")
+    if provenance.get("source_multi_node_path") != expected["source_multi_node_path"]:
+        blockers.append("manifest_source_multi_node_path_mismatch")
+    if provenance.get("source_multi_node_sha256") != expected["source_multi_node_sha256"]:
+        blockers.append("manifest_source_multi_node_sha256_mismatch")
+    return blockers
+
+
+def build_ev_per_node_manifest_index(
+    *,
+    generic_packet: Mapping[str, Any],
+    base_dir: Path,
+    generic_packet_path: Path = DEFAULT_GENERIC_LOADER_PACKET,
+    output_dir: Path = DEFAULT_PER_NODE_OUTPUT_DIR,
+    manifest_dir: Path = DEFAULT_PER_NODE_MANIFEST_DIR,
+    index_path: Path | None = DEFAULT_PER_NODE_INDEX_PATH,
+    timestamp_utc: str,
+    scenario_filter: Sequence[str] | None = None,
+    node_filter: Sequence[str] | None = None,
+    require_accepted_status: bool = True,
+    allow_synthetic_fixture: bool = False,
+) -> dict[str, object]:
+    """Build a fail-closed index over loadable one-node EV component artifacts."""
+
+    base_dir = Path(base_dir).resolve()
+    generic_packet_path = _repo_relative_path(Path(generic_packet_path), field_name="generic_packet_path")
+    output_dir = _repo_relative_path(Path(output_dir), field_name="output_dir")
+    manifest_dir = _repo_relative_path(Path(manifest_dir), field_name="manifest_dir")
+    if index_path is not None:
+        index_path = _repo_relative_path(Path(index_path), field_name="index_path")
+    expected_units, ordering = _expected_per_node_units(
+        generic_packet,
+        output_dir=output_dir,
+        manifest_dir=manifest_dir,
+        scenario_filter=scenario_filter,
+        node_filter=node_filter,
+    )
+    accepted_status = "synthetic_fixture" if allow_synthetic_fixture and not require_accepted_status else "accepted"
+    verified: list[dict[str, Any]] = []
+    missing: list[dict[str, Any]] = []
+    stale: list[dict[str, Any]] = []
+    checksum_mismatches: list[dict[str, Any]] = []
+    for unit in expected_units:
+        manifest_path = base_dir / str(unit["manifest_path"])
+        array_path = base_dir / str(unit["array_path"])
+        if not manifest_path.is_file() or not array_path.is_file():
+            missing.append(
+                {
+                    "scenario": unit["scenario"],
+                    "node_id": unit["node_id"],
+                    "manifest_path": unit["manifest_path"],
+                    "array_path": unit["array_path"],
+                    "missing_manifest": not manifest_path.is_file(),
+                    "missing_array": not array_path.is_file(),
+                }
+            )
+            continue
+        manifest = _load_json(manifest_path)
+        blockers = _validate_per_node_manifest_for_index(
+            manifest,
+            expected=unit,
+            artifact_status=accepted_status,
+            allow_synthetic_fixture=allow_synthetic_fixture,
+        )
+        observed_array_sha = _sha256_file(array_path)
+        manifest_array_sha = str(manifest.get("array_sha256", ""))
+        if manifest_array_sha != observed_array_sha:
+            checksum_mismatches.append(
+                {
+                    "scenario": unit["scenario"],
+                    "node_id": unit["node_id"],
+                    "path": unit["array_path"],
+                    "expected_sha256": manifest_array_sha,
+                    "observed_sha256": observed_array_sha,
+                }
+            )
+            blockers.append("array_checksum_mismatch")
+        manifest_sha = _sha256_file(manifest_path)
+        record = {
+            "scenario": unit["scenario"],
+            "node_id": unit["node_id"],
+            "manifest_path": unit["manifest_path"],
+            "manifest_sha256": manifest_sha,
+            "array_path": unit["array_path"],
+            "array_sha256": observed_array_sha,
+            "artifact_status": manifest.get("artifact_status"),
+            "loader_contract": manifest.get("loader_contract"),
+            "node_axis_contract": manifest.get("node_axis_contract"),
+            "array_shape_contract": manifest.get("array_shape_contract"),
+        }
+        if blockers:
+            stale.append({**record, "blockers": sorted(set(blockers))})
+        else:
+            verified.append(record)
+    ready = not missing and not stale and not checksum_mismatches
+    status = (
+        "synthetic_per_node_manifest_index_ready_for_agent_a_loader_fixture"
+        if ready and allow_synthetic_fixture
+        else "accepted_per_node_manifest_index_ready_for_agent_a_loader"
+        if ready
+        else "blocked_per_node_manifest_index_not_ready_for_agent_a_loader"
+    )
+    by_scenario: dict[str, dict[str, Any]] = {}
+    for record in verified:
+        scenario = str(record["scenario"])
+        by_scenario.setdefault(
+            scenario,
+            {
+                "scenario": scenario,
+                "node_ids": [],
+                "component_output_manifest_paths": [],
+                "component_output_manifest_sha256_by_path": {},
+            },
+        )
+        by_scenario[scenario]["node_ids"].append(record["node_id"])
+        by_scenario[scenario]["component_output_manifest_paths"].append(record["manifest_path"])
+        by_scenario[scenario]["component_output_manifest_sha256_by_path"][record["manifest_path"]] = record["manifest_sha256"]
+    payload: dict[str, object] = {
+        "artifact_type": "ev_per_node_component_output_manifest_index_preflight",
+        "artifact_id": "e3_s2a_ev_per_node_manifest_index_preflight",
+        "schema_version": 1,
+        "task_id": "E3.S2a",
+        "status": status,
+        "timestamp_utc": timestamp_utc,
+        "ready_for_agent_a_loader_execution": bool(ready and not allow_synthetic_fixture),
+        "ready_for_synthetic_agent_a_loader_fixture": bool(ready and allow_synthetic_fixture),
+        "source_generic_loader_packet": generic_packet_path.as_posix(),
+        "source_generic_loader_packet_sha256": _repo_blob_or_file_sha256(base_dir, generic_packet_path),
+        "policy": {
+            "candidate_libraries_only": True,
+            "held_out_access": False,
+            "quarantined_access": False,
+            "elaad_api_calls": False,
+            "integrated_analysis_performed": False,
+            "event_or_p_e_analysis_performed": False,
+            "capacity_screen_performed": False,
+            "final_low_middle_high_branch_selected": False,
+            "m_sufficiency_claimed": False,
+            "manuscript_numbers_produced": False,
+            "requires_accepted_per_node_artifacts_for_real_loader_execution": True,
+        },
+        "expected_per_node_unit_count": len(expected_units),
+        "verified_per_node_unit_count": len(verified),
+        "missing_per_node_unit_count": len(missing),
+        "stale_per_node_unit_count": len(stale),
+        "checksum_mismatch_count": len(checksum_mismatches),
+        "scenario_order": list(ordering["scenario_order"]),
+        "node_order": list(ordering["node_order"]),
+        "expected_per_node_units": expected_units,
+        "verified_per_node_units": verified,
+        "missing_per_node_units": missing,
+        "stale_per_node_units": stale,
+        "checksum_mismatches": checksum_mismatches,
+        "agent_a_loader_index_by_scenario": [by_scenario[key] for key in sorted(by_scenario)],
+        "checkpoint": {
+            "complete": True,
+            "resume_command": (
+                ".\\.venv\\Scripts\\python.exe data\\get_ev_component_outputs.py write-per-node-index "
+                "--generic-loader-packet data\\metadata\\ev_adoption\\e3_s2a_ev_ic1_generic_component_output_manifest_packet.json "
+                "--per-node-index-path data\\metadata\\ev_adoption\\e3_s2a_ev_per_node_manifest_index_preflight.json"
+            ),
+            "safe_resume_behavior": "Rerun rehashes every present per-node manifest and NPZ; missing/stale units remain blockers.",
+        },
+        "remaining_blockers": [] if ready else list(_PER_NODE_INDEX_BLOCKERS),
+    }
+    if index_path is not None:
+        _write_json(base_dir / index_path, payload)
+    return payload
+
+
 def _default_timestamp_utc() -> str:
     from datetime import UTC, datetime
 
@@ -978,7 +1314,7 @@ def _parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
             "or regenerates ElaadNL source data."
         )
     )
-    parser.add_argument("mode", choices=("verify", "rebuild", "write-loader-manifests", "export-per-node"))
+    parser.add_argument("mode", choices=("verify", "rebuild", "write-loader-manifests", "export-per-node", "write-per-node-index"))
     parser.add_argument("--base-dir", type=Path, default=Path("."))
     parser.add_argument("--component-input-scaffold", type=Path, default=DEFAULT_COMPONENT_INPUT_SCAFFOLD)
     parser.add_argument("--checksum-preflight", type=Path, default=DEFAULT_CHECKSUM_PREFLIGHT)
@@ -991,6 +1327,9 @@ def _parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
     parser.add_argument("--per-node-manifest-dir", type=Path, default=DEFAULT_PER_NODE_MANIFEST_DIR)
     parser.add_argument("--per-node-artifact-status", default="scaffold")
     parser.add_argument("--allow-accepted-per-node-status", action="store_true")
+    parser.add_argument("--per-node-index-path", type=Path, default=DEFAULT_PER_NODE_INDEX_PATH)
+    parser.add_argument("--allow-synthetic-per-node-index", action="store_true")
+    parser.add_argument("--allow-nonaccepted-per-node-index", action="store_true")
     parser.add_argument("--scenario", action="append", dest="scenarios", default=None)
     parser.add_argument("--node-id", action="append", dest="node_ids", default=None)
     parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT_DIR)
@@ -1035,7 +1374,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                 accepted_artifact_index_path=args.accepted_artifact_index,
                 recovery_preflight_path=checkpoint_path,
             )
-        else:
+        elif args.mode == "export-per-node":
             result = export_ev_per_node_component_outputs(
                 generic_packet=_load_json(base_dir / args.generic_loader_packet),
                 base_dir=base_dir,
@@ -1048,6 +1387,20 @@ def main(argv: Sequence[str] | None = None) -> int:
                 allow_accepted_status=args.allow_accepted_per_node_status,
                 scenario_filter=args.scenarios,
                 node_filter=args.node_ids,
+            )
+        else:
+            result = build_ev_per_node_manifest_index(
+                generic_packet=_load_json(base_dir / args.generic_loader_packet),
+                base_dir=base_dir,
+                generic_packet_path=args.generic_loader_packet,
+                output_dir=args.per_node_output_dir,
+                manifest_dir=args.per_node_manifest_dir,
+                index_path=args.per_node_index_path,
+                timestamp_utc=args.timestamp_utc or _default_timestamp_utc(),
+                scenario_filter=args.scenarios,
+                node_filter=args.node_ids,
+                require_accepted_status=not args.allow_nonaccepted_per_node_index,
+                allow_synthetic_fixture=args.allow_synthetic_per_node_index,
             )
     except EVComponentOutputVerificationError as exc:
         print(str(exc))

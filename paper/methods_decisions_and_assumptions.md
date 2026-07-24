@@ -794,7 +794,15 @@ placeholder outputs. Written real manifests remain `scaffold` until a later
 signed executable route authorizes accepted loader use. Held-out access,
 quarantined access, ElaadNL API calls, integrated analysis, adequacy
 certification, and any `M` sufficiency claim remain false in the recovery,
-generic-loader, and per-node export manifest packets. G0-A3 has resolved Q-5
+generic-loader, per-node export, and per-node manifest-index packets. The per-node
+manifest-index protocol enumerates every declared 2035 scenario/node EV component
+artifact, verifies repository-relative manifest and NPZ checksums when present,
+requires the current single-node 1D Agent A loader-contract fields, and emits an
+A-facing manifest index only when all required per-node artifacts are present with
+accepted status. In clean worktrees without the ignored per-node NPZ outputs, it
+instead writes a blocker manifest listing the missing scenario/node units and keeps
+held-out/quarantined/API/integrated analysis, final branch selection, and M
+sufficiency false. G0-A3 has resolved Q-5
 threshold semantics, so EV readiness no longer treats Q-5 itself as a blocker;
 event use still remains blocked by the other unsigned or missing integrated
 prerequisites listed above. It loads no profile arrays for adequacy, runs no
