@@ -748,12 +748,21 @@ run design, and candidate output files are verified in the consuming worktree.
 The candidate-output checksum check is automated as a checkpointed script step:
 it hashes ignored EV component-output NPZ bytes only when those files are
 present, writes a resumable verification artifact after each declared scenario,
-and otherwise records exact missing paths as a fail-closed blocker. G0-A3 has
+and otherwise records exact missing paths as a fail-closed blocker. The
+candidate component-output recovery protocol is likewise candidate-only: it
+restores only manifest-declared processed-profile files from an explicit local
+artifact root, hashes each source file before copying, and skips an existing
+target file only when its SHA-256 matches the committed checksum preflight.
+Its checkpoint records config identity, expected component-output checksums,
+restored source-member batch metadata, and resume instructions, but deliberately
+does not commit an absolute artifact-root path. Held-out access, quarantined
+access, ElaadNL API calls, integrated analysis, adequacy certification, and any
+`M` sufficiency claim remain false in this recovery manifest. G0-A3 has
 resolved Q-5 threshold semantics, so EV readiness no longer treats Q-5 itself
 as a blocker; event use still remains blocked by the other unsigned or missing
-integrated prerequisites listed above. It loads no profile arrays, runs no
-net-load/event/`P(E)` analysis, certifies no `M` sufficiency, and produces no
-manuscript number.
+integrated prerequisites listed above. It loads no profile arrays for adequacy,
+runs no net-load/event/`P(E)` analysis, certifies no `M` sufficiency, and
+produces no manuscript number.
 
 <!-- methods-id: EV-005A -->
 ### EV-005A - Low-Cost Held-Out Replacement
