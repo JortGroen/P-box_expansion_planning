@@ -3,6 +3,13 @@ from __future__ import annotations
 import pytest
 
 from src.pbox import PBoxAlphaResult, ProbabilityEstimate, VertexUseMode
+from src.pbox_error import (
+    OUTPUT_ERROR_APPLICATION,
+    OUTPUT_ERROR_DEPENDENCE,
+    OUTPUT_ERROR_LOWER_FORMULA,
+    OUTPUT_ERROR_SAMPLING,
+    OUTPUT_ERROR_UPPER_FORMULA,
+)
 from src.pbox_reporting import (
     RUNNER_REPORT_BOUNDARY_PROTOCOL,
     assert_runner_report_boundary_payload,
@@ -67,11 +74,34 @@ def _output_error_record() -> dict[str, object]:
     ]
     return {
         "config": {
+            "a013_grid_error_approval_id": "A-013-synthetic-pending",
+            "capacity_convention_linkage": "synthetic-capacity-linkage",
+            "capacity_denominator_provenance": "synthetic-capacity-placeholder",
+            "composition_formula": {
+                "lower": OUTPUT_ERROR_LOWER_FORMULA,
+                "upper": OUTPUT_ERROR_UPPER_FORMULA,
+            },
+            "dependence_assumption": OUTPUT_ERROR_DEPENDENCE,
+            "envelope": {
+                "epsilon_grid": 0.0,
+                "epsilon_tier1_minus": 0.0,
+                "epsilon_tier1_plus": 0.0,
+            },
+            "envelope_source": "synthetic-envelope-placeholder",
+            "error_application": OUTPUT_ERROR_APPLICATION,
+            "error_sampling": OUTPUT_ERROR_SAMPLING,
             "event_semantics": {
+                "comparator": "strict_greater_than",
                 "direction_gate": "unwidened_p_net_import_mask",
                 "min_consecutive_steps": 4,
                 "threshold_pu": 1.0,
-            }
+                "timestep_seconds": 900,
+            },
+            "g2_tier1_envelope_approval_id": "G2-synthetic-pending",
+            "grid_error_source": "synthetic-grid-placeholder",
+            "probability_widening": "forbidden",
+            "tier1_error_source": "synthetic-tier1-placeholder",
+            "use_status": "synthetic-only",
         },
         "event_count_bounds": {
             "lower_successes": 1,
@@ -265,6 +295,80 @@ def test_selective_ac_metadata_candidate_events_must_match_endpoint_record() -> 
     with pytest.raises(ValueError, match="lower_event must match endpoint record"):
         assert_runner_report_boundary_payload({**payload, "guarded_report": guarded_report})
 
+
+def test_output_error_record_rejects_missing_envelope_config_fields() -> None:
+    record = _output_error_record()
+    config = dict(record["config"])
+    config.pop("a013_grid_error_approval_id")
+
+    with pytest.raises(ValueError, match="a013_grid_error_approval_id"):
+        build_guarded_pbox_report(
+            pbox_family=_pbox_family(),
+            prerequisites=_complete_prerequisites(),
+            output_error_record={**record, "config": config},
+        )
+
+
+def test_output_error_record_rejects_non_g1_a2_formula() -> None:
+    record = _output_error_record()
+    config = dict(record["config"])
+    config["composition_formula"] = {
+        "lower": "L_lower=L_T1-epsilon",
+        "upper": OUTPUT_ERROR_UPPER_FORMULA,
+    }
+
+    with pytest.raises(ValueError, match="composition_formula"):
+        build_guarded_pbox_report(
+            pbox_family=_pbox_family(),
+            prerequisites=_complete_prerequisites(),
+            output_error_record={**record, "config": config},
+        )
+
+
+def test_output_error_record_rejects_probability_widening_or_independent_sampling() -> None:
+    record = _output_error_record()
+    config = dict(record["config"])
+    config["probability_widening"] = "posthoc-margin"
+
+    with pytest.raises(ValueError, match="probability widening"):
+        build_guarded_pbox_report(
+            pbox_family=_pbox_family(),
+            prerequisites=_complete_prerequisites(),
+            output_error_record={**record, "config": config},
+        )
+
+    config = dict(record["config"])
+    config["error_sampling"] = "independent-random-draws"
+    with pytest.raises(ValueError, match="independent error sampling"):
+        build_guarded_pbox_report(
+            pbox_family=_pbox_family(),
+            prerequisites=_complete_prerequisites(),
+            output_error_record={**record, "config": config},
+        )
+
+
+def test_output_error_record_rejects_post_event_application_or_widened_direction_gate() -> None:
+    record = _output_error_record()
+    config = dict(record["config"])
+    config["error_application"] = "probability_margin_after_event_detection"
+
+    with pytest.raises(ValueError, match="before event detection"):
+        build_guarded_pbox_report(
+            pbox_family=_pbox_family(),
+            prerequisites=_complete_prerequisites(),
+            output_error_record={**record, "config": config},
+        )
+
+    config = dict(record["config"])
+    event_semantics = dict(config["event_semantics"])
+    event_semantics["direction_gate"] = "widened_loading_sign"
+    config["event_semantics"] = event_semantics
+    with pytest.raises(ValueError, match="unwidened P_net"):
+        build_guarded_pbox_report(
+            pbox_family=_pbox_family(),
+            prerequisites=_complete_prerequisites(),
+            output_error_record={**record, "config": config},
+        )
 
 def test_output_error_record_must_forbid_probability_widening() -> None:
     with pytest.raises(ValueError, match="probability_widening='forbidden'"):
