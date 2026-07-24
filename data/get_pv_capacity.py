@@ -34,6 +34,8 @@ D014_PV_FIRST_EXPERIMENT_APPROVAL_NAME = "d014_pv_first_experiment_approval_pack
 D014_PV_FIRST_EXPERIMENT_APPROVAL_ID = "D014-PV-FIRST-EXPERIMENT-APPROVAL-PACKET"
 D014_PV_FIRST_EXPERIMENT_VALUE_DECISION_NAME = "d014_pv_first_experiment_value_decision_packet.json"
 D014_PV_FIRST_EXPERIMENT_VALUE_DECISION_ID = "D014-PV-FIRST-EXPERIMENT-VALUE-DECISION-PACKET"
+D014_PV_COMPONENT_OUTPUT_ARTIFACT_SCAFFOLD_NAME = "d014_pv_component_output_artifact_scaffold.json"
+D014_PV_COMPONENT_OUTPUT_ARTIFACT_SCAFFOLD_ID = "D014-PV-COMPONENT-OUTPUT-ARTIFACT-SCAFFOLD"
 D014_DATA_ID = "D-014"
 CBS_TABLE_ID = "85005NED"
 CBS_ODATA_BASE = f"https://opendata.cbs.nl/ODataApi/OData/{CBS_TABLE_ID}"
@@ -1969,6 +1971,121 @@ def build_d014_pv_first_experiment_value_decision_packet(
             "PVGIS remains qualitative sanity/provenance context only and is not a realized sampled WEATHER-001 path.",
         ],
     }
+
+
+def build_d014_pv_component_output_artifact_scaffold_packet(
+    *,
+    value_decision_packet_path: str | Path = "data/metadata/weather_pv/d014_pv_first_experiment_value_decision_packet.json",
+    executable_preflight_guard_path: str | Path = "data/metadata/weather_pv/d014_pv_executable_preflight_guard.json",
+    weather_input_artifact_path: str | Path = "data/metadata/weather_pv/d004_alkmaar_berkhout_2014_2023_v1_weather_input_artifact.json",
+) -> dict[str, Any]:
+    """Return a fail-closed scaffold for future PV component-output artifacts."""
+    value_decision = _metadata_input_record(value_decision_packet_path, D014_PV_FIRST_EXPERIMENT_VALUE_DECISION_ID)
+    preflight = _metadata_input_record(executable_preflight_guard_path, D014_PV_EXECUTABLE_PREFLIGHT_GUARD_ID)
+    weather = _metadata_input_record(weather_input_artifact_path, None)
+    approval_keys = [
+        "signed_d014_capacity_artifact",
+        "signed_statistical_orientation_tilt_artifact",
+        "signed_pv_param_conversion_artifact",
+        "signed_node_allocation_artifact",
+        "signed_a016_scenario_consistency_artifact",
+        "signed_final_paired_hp_pv_acceptance_artifact",
+        "signed_pv_reactive_power_policy_or_q_zero_convention",
+        "signed_component_output_manifest_path_policy",
+    ]
+    return {
+        "packet_id": D014_PV_COMPONENT_OUTPUT_ARTIFACT_SCAFFOLD_ID,
+        "data_id": D014_DATA_ID,
+        "created_utc": _now_utc_iso(),
+        "status": "proposed_component_output_artifact_scaffold_no_real_generation",
+        "download_performed": False,
+        "raw_data_committed": False,
+        "component_output_generation_performed": False,
+        "input_metadata": {
+            "first_experiment_value_decision_packet": value_decision,
+            "executable_preflight_guard": preflight,
+            "weather_input_artifact": weather,
+        },
+        "current_unsigned_packet_behavior": {
+            "current_committed_d014_packets_are_executable": False,
+            "result_if_current_packets_are_invoked": "abort_with_component_output_blocker_manifest",
+            "reason": "D-014 capacity, PV-ORIENT values, PV-PARAM conversion, A-016, allocation, and final paired HP/PV gates remain unsigned",
+        },
+        "future_component_output_manifest_schema": {
+            "manifest_kind": "pv_component_output_npz_manifest_for_ic1_loader",
+            "manifest_required_fields": [
+                "artifact_id",
+                "artifact_status",
+                "kind",
+                "component_id",
+                "node_id",
+                "member_id",
+                "source_id",
+                "calendar_id",
+                "timestep_seconds",
+                "timestep_count",
+                "shared_weather_driver_id",
+                "array_path",
+                "array_sha256",
+                "provenance",
+            ],
+            "npz_required_arrays": ["p_kw", "q_kvar", "timestamps"],
+            "npz_required_scalar_metadata": [
+                "artifact_id",
+                "component_id",
+                "kind",
+                "node_id",
+                "member_id",
+                "source_id",
+                "calendar_id",
+                "timestep_seconds",
+                "shared_weather_driver_id",
+            ],
+            "ic1_sign_convention": "PV generation is exported as negative p_kw; generation_kw itself remains nonnegative inside PV model diagnostics",
+            "q_kvar_policy": "unsigned; future executable use requires a signed PV reactive-power policy or explicit q_zero convention",
+        },
+        "future_runner_contract": {
+            "writer_function": "src.pv_model.write_pv_component_output_npz_artifact",
+            "one_work_unit": "one signed weather member and one signed node allocation/component output manifest",
+            "config_identity_inputs": [
+                "weather_member_id",
+                "shared_weather_driver_id",
+                "weather_content_sha256",
+                "signed_capacity_artifact_sha256",
+                "signed_orientation_tilt_artifact_sha256",
+                "signed_pv_param_artifact_sha256",
+                "signed_allocation_artifact_sha256",
+                "signed_a016_artifact_sha256",
+                "writer_code_version",
+            ],
+            "checkpoint_resume_policy": [
+                "write a manifest draft after each node/member work unit",
+                "skip a completed work unit only when array_path exists and array_sha256 matches the manifest",
+                "abort on changed config identity, missing checksum, unsigned approval ID, or placeholder token in executable fields",
+            ],
+            "expected_scale_note": "full-year PV output for each weather member/node should use checkpointed work units before scaling beyond tests",
+        },
+        "executable_gate": {
+            "component_output_generation_authorized": False,
+            "result_if_invoked": "abort_until_signed_pv_component_output_inputs",
+            "blocking_register_ids": [
+                "D014-PV-CAPACITY-APPROVAL-TEMPLATE_successor",
+                "PV-ORIENT-001_values",
+                "PV-PARAM-001_or_signed_amendment",
+                "A-016",
+                "future_node_allocation_rule",
+                "FINAL-PAIRED-HP-PV-ACCEPTANCE",
+                "future_pv_reactive_power_policy",
+            ],
+        },
+        "pi_approval_keys_before_executable_use": approval_keys,
+        "non_claims": [
+            "No real PV component-output array or manifest is generated by this scaffold.",
+            "No PV capacity value, growth factor, orientation/tilt weight, conversion formula, loss value, temperature value, clipping rule, reactive-power policy, node allocation, PV output, net-load, event, P(E), threshold run, capacity screen, manuscript number, or final paired HP/PV acceptance is approved.",
+            "No roof, building, location-level, 3DBAG, PV-map, or per-roof geometry workflow is implemented before the first experiment.",
+            "The only generated committed artifact is this metadata-only blocker/scaffold packet.",
+        ],
+    }
 def write_d014_pv_capacity_source_value_packet(metadata_dir: str | Path = "data/metadata") -> Path:
     """Write the proposed D-014 source/value packet and return its path."""
     directory = Path(metadata_dir) / "weather_pv"
@@ -2050,6 +2167,17 @@ def write_d014_pv_first_experiment_value_decision_packet(metadata_dir: str | Pat
     )
     return path
 
+
+def write_d014_pv_component_output_artifact_scaffold_packet(metadata_dir: str | Path = "data/metadata") -> Path:
+    """Write the proposed PV component-output artifact scaffold packet and return its path."""
+    directory = Path(metadata_dir) / "weather_pv"
+    directory.mkdir(parents=True, exist_ok=True)
+    path = directory / D014_PV_COMPONENT_OUTPUT_ARTIFACT_SCAFFOLD_NAME
+    path.write_text(
+        json.dumps(build_d014_pv_component_output_artifact_scaffold_packet(), indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    return path
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Prepare D-014 PV capacity source/value metadata.")
     parser.add_argument("--metadata-dir", default="data/metadata")
@@ -2064,6 +2192,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--write-d014-pv-param-conversion-source-choice", action="store_true")
     parser.add_argument("--write-d014-pv-first-experiment-approval", action="store_true")
     parser.add_argument("--write-d014-pv-first-experiment-value-decision", action="store_true")
+    parser.add_argument("--write-d014-pv-component-output-artifact-scaffold", action="store_true")
     parser.add_argument("--retrieve-d014-cbs-anchor-evidence", action="store_true")
     parser.add_argument("--retrieve-d014-ii3050-growth-evidence", action="store_true")
     args = parser.parse_args(argv)
@@ -2080,6 +2209,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         path = retrieve_d014_ii3050_growth_evidence(metadata_dir=args.metadata_dir)
     elif args.retrieve_d014_cbs_anchor_evidence:
         path = retrieve_d014_cbs_capacity_anchor_evidence(metadata_dir=args.metadata_dir)
+    elif args.write_d014_pv_component_output_artifact_scaffold:
+        path = write_d014_pv_component_output_artifact_scaffold_packet(args.metadata_dir)
     elif args.write_d014_pv_first_experiment_value_decision:
         path = write_d014_pv_first_experiment_value_decision_packet(args.metadata_dir)
     elif args.write_d014_pv_first_experiment_approval:
