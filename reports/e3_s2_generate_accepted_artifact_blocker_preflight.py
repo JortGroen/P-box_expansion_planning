@@ -153,7 +153,7 @@ def _report_text(
     return f"""# E3.S2 Accepted-Artifact Loader Blocker Preflight
 
 Task: E3.S2 IC-1 NetLoadProvider readiness.
-Status: metadata/preflight only. This packet instantiates `build_accepted_artifact_loader_blocker_preflight(...)` from the current committed metadata surface on `origin/main` after PR #230, #231, #232, and #233. PR #234 is not consumed; where current readiness depends on it, the dependency is reported as a blocker.
+Status: metadata/preflight only. This packet instantiates `build_accepted_artifact_loader_blocker_preflight(...)` from the current committed metadata surface on `origin/main` after PR #234, #235, #236, #237, and #238. The merged EV consumption packet and adoption artifact are consumed as metadata only; remaining gaps are reported as blockers.
 
 ## Boundary
 
@@ -187,7 +187,7 @@ Source metadata packet checksums are verified before component-output manifests 
 
 ## Interpretation
 
-The current metadata surface is intentionally not accepted for loader execution. EV has an accepted metadata-only IC-1 scaffold and a candidate component-output manifest path, but that manifest is not yet the accepted loader schema and PR #234 remains an unmerged dependency. Flexibility has the approved FLEX-001 scaffold protocol, but no real flexibility values or results are signed. Baseline, HP, PV/weather, and adoption still lack accepted component-output manifests for the loader boundary.
+The current metadata surface is intentionally not accepted for loader execution. EV now has the merged PR #234 consumption packet and a checksum-pinned candidate component-output manifest path, but that manifest is not yet the accepted generic loader schema. Adoption now has the merged PR #235 accepted per-node allocation artifact, but no component-output loader manifest is present for the IC-1 assembly boundary. Flexibility has the approved FLEX-001 scaffold protocol, but no real flexibility values or results are signed. Baseline, HP, PV/weather, adoption, and flexibility still lack accepted component-output manifests for the loader boundary.
 
 The preflight also preserves downstream blockers for A-013, G2, G1-A2 capacity/domain provenance, A-016 scenario consistency, and the capacity convention. G0-A3 is recorded only as governed metadata: strict `L_import > 1.0 p.u.` for four consecutive 15-minute import steps over the full year, with `1.1` and `1.2` only as explicit sensitivities. No threshold is evaluated here.
 
