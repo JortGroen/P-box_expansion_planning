@@ -13,6 +13,13 @@ import math
 from typing import Mapping, Sequence
 
 from src.pbox import PBoxFamily, VertexUseMode
+from src.pbox_error import (
+    OUTPUT_ERROR_APPLICATION,
+    OUTPUT_ERROR_DEPENDENCE,
+    OUTPUT_ERROR_LOWER_FORMULA,
+    OUTPUT_ERROR_SAMPLING,
+    OUTPUT_ERROR_UPPER_FORMULA,
+)
 from src.pbox_ac_promotion import assert_selective_ac_promotion_payload
 from src.pbox_result_guards import (
     FinalResultPrerequisites,
@@ -388,6 +395,7 @@ def _validate_guard_mapping(
     prerequisites = _expect_mapping(guard["prerequisites"], name="guard.prerequisites")
     required_prerequisites = {
         "a013_grid_error_signed",
+        "a016_scenario_consistency_manifested",
         "capacity_convention_approved",
         "capacity_denominator_provenance",
         "g2_tier1_envelope_approved",
@@ -444,6 +452,9 @@ def _validate_output_error_record(record: Mapping[str, object]) -> None:
         raise ValueError(
             "output_error_record must preserve probability_widening='forbidden'"
         )
+    _validate_output_error_config_record(
+        _expect_mapping(record["config"], name="output_error_record.config")
+    )
     event_counts = _expect_mapping(
         record["event_count_bounds"], name="output_error_record.event_count_bounds"
     )
@@ -506,6 +517,99 @@ def _validate_output_error_record(record: Mapping[str, object]) -> None:
         observed_upper += int(upper_event)
     if (observed_lower, observed_upper) != (lower_successes, upper_successes):
         raise ValueError("output_error_record event counts must match sample events")
+
+
+def _validate_output_error_config_record(config: Mapping[str, object]) -> None:
+    required = {
+        "a013_grid_error_approval_id",
+        "capacity_convention_linkage",
+        "capacity_denominator_provenance",
+        "composition_formula",
+        "dependence_assumption",
+        "envelope",
+        "envelope_source",
+        "error_application",
+        "error_sampling",
+        "event_semantics",
+        "g2_tier1_envelope_approval_id",
+        "grid_error_source",
+        "probability_widening",
+        "tier1_error_source",
+        "use_status",
+    }
+    _require_mapping_fields(config, required, name="output_error_record.config")
+    for field in (
+        "a013_grid_error_approval_id",
+        "capacity_convention_linkage",
+        "capacity_denominator_provenance",
+        "envelope_source",
+        "g2_tier1_envelope_approval_id",
+        "grid_error_source",
+        "tier1_error_source",
+        "use_status",
+    ):
+        if not isinstance(config[field], str) or not str(config[field]).strip():
+            raise ValueError(
+                f"output_error_record.config {field} must be a nonempty string"
+            )
+
+    envelope = _expect_mapping(
+        config["envelope"], name="output_error_record.config.envelope"
+    )
+    _require_mapping_fields(
+        envelope,
+        {"epsilon_grid", "epsilon_tier1_minus", "epsilon_tier1_plus"},
+        name="output_error_record.config.envelope",
+    )
+    formula = _expect_mapping(
+        config["composition_formula"],
+        name="output_error_record.config.composition_formula",
+    )
+    if formula.get("lower") != OUTPUT_ERROR_LOWER_FORMULA:
+        raise ValueError(
+            "output_error_record.config lower composition_formula must match G1-A2"
+        )
+    if formula.get("upper") != OUTPUT_ERROR_UPPER_FORMULA:
+        raise ValueError(
+            "output_error_record.config upper composition_formula must match G1-A2"
+        )
+    if config["error_application"] != OUTPUT_ERROR_APPLICATION:
+        raise ValueError(
+            "output_error_record.config must apply loading endpoints before event detection"
+        )
+    if config["dependence_assumption"] != OUTPUT_ERROR_DEPENDENCE:
+        raise ValueError(
+            "output_error_record.config must preserve arbitrary unknown dependence"
+        )
+    if config["error_sampling"] != OUTPUT_ERROR_SAMPLING:
+        raise ValueError(
+            "output_error_record.config must forbid independent error sampling"
+        )
+    if config["probability_widening"] != "forbidden":
+        raise ValueError("output_error_record.config must forbid probability widening")
+
+    event_semantics = _expect_mapping(
+        config["event_semantics"], name="output_error_record.config.event_semantics"
+    )
+    _require_mapping_fields(
+        event_semantics,
+        {
+            "comparator",
+            "direction_gate",
+            "min_consecutive_steps",
+            "threshold_pu",
+            "timestep_seconds",
+        },
+        name="output_error_record.config.event_semantics",
+    )
+    if event_semantics["comparator"] != "strict_greater_than":
+        raise ValueError(
+            "output_error_record.config event comparator must be strict_greater_than"
+        )
+    if event_semantics["direction_gate"] != "unwidened_p_net_import_mask":
+        raise ValueError(
+            "output_error_record.config direction gate must use unwidened P_net"
+        )
 
 
 def _validate_probability_estimate_record(

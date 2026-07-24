@@ -22,6 +22,11 @@ from src.evaluator_sum import count_import_overload_episodes
 from src.pbox import ProbabilityEstimate, _wilson_interval
 
 EnvelopeValue = float | Sequence[float] | np.ndarray
+OUTPUT_ERROR_LOWER_FORMULA = "L_lower=(1-epsilon_grid)*max(0,L_T1-epsilon_tier1_minus)"
+OUTPUT_ERROR_UPPER_FORMULA = "L_upper=(1+epsilon_grid)*(L_T1+epsilon_tier1_plus)"
+OUTPUT_ERROR_APPLICATION = "loading_trajectory_endpoints_before_event_detection"
+OUTPUT_ERROR_DEPENDENCE = "arbitrary_unknown_dependence_not_independently_sampled"
+OUTPUT_ERROR_SAMPLING = "forbidden"
 
 
 @dataclass(frozen=True)
@@ -43,6 +48,7 @@ class OutputErrorEnvelope:
     epsilon_tier1_minus: EnvelopeValue
     epsilon_tier1_plus: EnvelopeValue
 
+
 @dataclass(frozen=True)
 class OutputErrorProtocolConfig:
     """Manifest-ready synthetic E5.S3 output-error protocol configuration.
@@ -59,6 +65,9 @@ class OutputErrorProtocolConfig:
     grid_error_source: str = "synthetic-placeholder"
     tier1_error_source: str = "synthetic-placeholder"
     capacity_denominator_provenance: str = "synthetic-placeholder"
+    capacity_convention_linkage: str = "pending-g1-a2-e3-s2b"
+    a013_grid_error_approval_id: str = "A-013-pending"
+    g2_tier1_envelope_approval_id: str = "G2-pending"
     use_status: str = "synthetic-only"
 
     def __post_init__(self) -> None:
@@ -80,6 +89,9 @@ class OutputErrorProtocolConfig:
             ("grid_error_source", self.grid_error_source),
             ("tier1_error_source", self.tier1_error_source),
             ("capacity_denominator_provenance", self.capacity_denominator_provenance),
+            ("capacity_convention_linkage", self.capacity_convention_linkage),
+            ("a013_grid_error_approval_id", self.a013_grid_error_approval_id),
+            ("g2_tier1_envelope_approval_id", self.g2_tier1_envelope_approval_id),
             ("use_status", self.use_status),
         ):
             if not isinstance(value, str) or not value.strip():
@@ -103,6 +115,9 @@ class OutputErrorProtocolConfig:
             "grid_error_source",
             "tier1_error_source",
             "capacity_denominator_provenance",
+            "capacity_convention_linkage",
+            "a013_grid_error_approval_id",
+            "g2_tier1_envelope_approval_id",
             "use_status",
         }
         missing = required.difference(config)
@@ -132,6 +147,15 @@ class OutputErrorProtocolConfig:
             capacity_denominator_provenance=str(
                 config.get("capacity_denominator_provenance", "synthetic-placeholder")
             ),
+            capacity_convention_linkage=str(
+                config.get("capacity_convention_linkage", "pending-g1-a2-e3-s2b")
+            ),
+            a013_grid_error_approval_id=str(
+                config.get("a013_grid_error_approval_id", "A-013-pending")
+            ),
+            g2_tier1_envelope_approval_id=str(
+                config.get("g2_tier1_envelope_approval_id", "G2-pending")
+            ),
             use_status=str(config.get("use_status", "synthetic-only")),
         )
 
@@ -139,7 +163,16 @@ class OutputErrorProtocolConfig:
         """Return deterministic metadata suitable for an ExperimentRunner manifest."""
 
         return {
+            "a013_grid_error_approval_id": self.a013_grid_error_approval_id,
+            "capacity_convention_linkage": self.capacity_convention_linkage,
             "capacity_denominator_provenance": self.capacity_denominator_provenance,
+            "composition_formula": {
+                "lower": OUTPUT_ERROR_LOWER_FORMULA,
+                "upper": OUTPUT_ERROR_UPPER_FORMULA,
+            },
+            "dependence_assumption": OUTPUT_ERROR_DEPENDENCE,
+            "error_application": OUTPUT_ERROR_APPLICATION,
+            "error_sampling": OUTPUT_ERROR_SAMPLING,
             "envelope": {
                 "epsilon_grid": _jsonable_endpoint_value(self.envelope.epsilon_grid),
                 "epsilon_tier1_minus": _jsonable_endpoint_value(
@@ -155,6 +188,7 @@ class OutputErrorProtocolConfig:
                 "threshold_pu": self.threshold_pu,
                 "timestep_seconds": self.timestep_seconds,
             },
+            "g2_tier1_envelope_approval_id": self.g2_tier1_envelope_approval_id,
             "grid_error_source": self.grid_error_source,
             "probability_widening": "forbidden",
             "tier1_error_source": self.tier1_error_source,

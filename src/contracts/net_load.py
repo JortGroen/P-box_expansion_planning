@@ -752,7 +752,6 @@ class NetLoadResult:
         object.__setattr__(self, "metadata", MappingProxyType(dict(self.metadata)))
 
 
-
 @dataclass(frozen=True)
 class NetLoadLoadingInputReadiness:
     """Validated IC-1 payload metadata for a future IC-2 loading-input call.
@@ -2132,6 +2131,141 @@ def assemble_net_load_from_components(
     )
 
 
+def load_component_adapter_output_from_npz_artifact(
+    manifest: Mapping[str, object],
+    context: NetLoadRealizationContext,
+    *,
+    repo_root: Path | str | None = None,
+    expected_calendar_id: str | None = None,
+    expected_node_ids: Sequence[str] | None = None,
+    allow_synthetic_fixture: bool = False,
+) -> ComponentAdapterOutput:
+    """Load one accepted component-output NPZ artifact into IC-1 adapter form."""
+
+    if not isinstance(manifest, Mapping):
+        raise TypeError("component output artifact manifest must be a mapping")
+    artifact_status = _require_nonempty(
+        _require_manifest_text(manifest, "artifact_status"),
+        name="artifact_status",
+    )
+    if artifact_status == "synthetic_fixture":
+        if not allow_synthetic_fixture:
+            raise ValueError(
+                "synthetic_fixture component output artifacts require allow_synthetic_fixture=True"
+            )
+    elif artifact_status != "accepted":
+        raise ValueError("component output artifact status must be accepted before array loading")
+
+    kind = _require_component_kind(manifest.get("kind"))
+    component_id = _require_nonempty(_require_manifest_text(manifest, "component_id"), name="component_id")
+    node_id = _require_nonempty(_require_manifest_text(manifest, "node_id"), name="node_id")
+    member_id = _require_nonempty(_require_manifest_text(manifest, "member_id"), name="member_id")
+    source_id = _require_nonempty(_require_manifest_text(manifest, "source_id"), name="source_id")
+    calendar_id = _require_nonempty(_require_manifest_text(manifest, "calendar_id"), name="calendar_id")
+    if expected_calendar_id is not None and calendar_id != expected_calendar_id:
+        raise ValueError("component output artifact calendar_id must match the expected calendar")
+    _validate_expected_node_id(node_id, expected_node_ids)
+    timestep_seconds = _require_900_second_cadence(manifest.get("timestep_seconds"))
+    shared_weather_driver_id = _optional_nonempty_text(
+        manifest.get("shared_weather_driver_id"),
+        name="shared_weather_driver_id",
+    )
+    if kind in {"hp", "pv"} and shared_weather_driver_id != context.shared_weather_driver_id:
+        raise ValueError(
+            "weather-dependent component output artifacts must use the context shared_weather_driver_id"
+        )
+
+    provenance = manifest.get("provenance")
+    if not isinstance(provenance, Mapping):
+        raise TypeError("component output artifact provenance must be a mapping")
+    _validate_nonempty_mapping_values(provenance, name="component output artifact provenance")
+    stream_id = _stream_id_for_context_component(context, kind)
+    artifact_id = _require_nonempty(_require_manifest_text(manifest, "artifact_id"), name="artifact_id")
+    array_path = _require_nonempty(_require_manifest_text(manifest, "array_path"), name="array_path")
+    expected_sha256 = _require_nonempty(
+        _require_manifest_text(manifest, "array_sha256"),
+        name="array_sha256",
+    )
+    root = Path.cwd() if repo_root is None else Path(repo_root)
+    resolved_array_path = _resolve_repo_artifact_path(root, array_path, field_name="array_path")
+    if not resolved_array_path.is_file():
+        raise ValueError("component output artifact array_path does not exist")
+    # Checksum verification happens before np.load so accepted provenance cannot
+    # be silently paired with a different trajectory file.
+    observed_sha256 = _sha256_file(resolved_array_path)
+    if observed_sha256 != expected_sha256:
+        raise ValueError("component output artifact array_sha256 does not match the file bytes")
+
+    p_kw, q_kvar, timestamps, array_metadata = _load_component_output_npz(
+        resolved_array_path,
+        expected={
+            "artifact_id": artifact_id,
+            "component_id": component_id,
+            "kind": kind,
+            "node_id": node_id,
+            "member_id": member_id,
+            "source_id": source_id,
+            "calendar_id": calendar_id,
+            "timestep_seconds": str(timestep_seconds),
+            "shared_weather_driver_id": shared_weather_driver_id,
+        },
+    )
+    timestep_count = manifest.get("timestep_count")
+    if timestep_count is not None:
+        if (
+            isinstance(timestep_count, bool)
+            or not isinstance(timestep_count, int)
+            or timestep_count != timestamps.size
+        ):
+            raise ValueError("component output artifact timestep_count must match loaded arrays")
+    metadata = {
+        "artifact_id": artifact_id,
+        "artifact_status": artifact_status,
+        "array_path": array_path,
+        "array_sha256": expected_sha256,
+        "calendar_id": calendar_id,
+        "timestep_seconds": timestep_seconds,
+        "timestep_count": int(timestamps.size),
+        "provenance": dict(provenance),
+    }
+    metadata.update(array_metadata)
+    return ComponentAdapterOutput(
+        component_id=component_id,
+        kind=kind,
+        node_id=node_id,
+        p_kw=p_kw,
+        q_kvar=q_kvar,
+        timestamps=timestamps,
+        member_id=member_id,
+        source_id=source_id,
+        stream_id=stream_id,
+        shared_weather_driver_id=shared_weather_driver_id,
+        metadata=metadata,
+    )
+
+
+def load_net_load_component_from_npz_artifact(
+    manifest: Mapping[str, object],
+    context: NetLoadRealizationContext,
+    *,
+    repo_root: Path | str | None = None,
+    expected_calendar_id: str | None = None,
+    expected_node_ids: Sequence[str] | None = None,
+    allow_synthetic_fixture: bool = False,
+) -> NetLoadComponent:
+    """Load one accepted NPZ artifact and convert it to a validated IC-1 component."""
+
+    adapter_output = load_component_adapter_output_from_npz_artifact(
+        manifest,
+        context,
+        repo_root=repo_root,
+        expected_calendar_id=expected_calendar_id,
+        expected_node_ids=expected_node_ids,
+        allow_synthetic_fixture=allow_synthetic_fixture,
+    )
+    return net_load_component_from_adapter_output(adapter_output, context)
+
+
 def validate_net_load_result(result: NetLoadResult) -> None:
     """Validate an IC-1 result and raise on contract violations."""
 
@@ -2151,15 +2285,23 @@ _VALID_EXECUTABLE_INPUT_STATUSES = frozenset(ExecutableInputArtifactStatus.__arg
 
 
 def _resolve_repo_metadata_path(repo_root: Path, relative_path: str) -> Path:
+    return _resolve_repo_relative_path(repo_root, relative_path, field_name="manifest_path")
+
+
+def _resolve_repo_artifact_path(repo_root: Path, relative_path: str, *, field_name: str) -> Path:
+    return _resolve_repo_relative_path(repo_root, relative_path, field_name=field_name)
+
+
+def _resolve_repo_relative_path(repo_root: Path, relative_path: str, *, field_name: str) -> Path:
     path = Path(relative_path)
     if path.is_absolute():
-        raise ValueError("artifact manifest_path must be repository-relative")
+        raise ValueError(f"artifact {field_name} must be repository-relative")
     resolved_root = repo_root.resolve()
     resolved = (resolved_root / path).resolve()
     try:
         resolved.relative_to(resolved_root)
     except ValueError as exc:
-        raise ValueError("artifact manifest_path must stay within repo_root") from exc
+        raise ValueError(f"artifact {field_name} must stay within repo_root") from exc
     return resolved
 
 def _sha256_file(path: Path) -> str:
@@ -2169,6 +2311,105 @@ def _sha256_file(path: Path) -> str:
             digest.update(chunk)
     return digest.hexdigest()
 
+
+def _require_manifest_text(manifest: Mapping[str, object], key: str) -> str:
+    value = manifest.get(key)
+    if value is None:
+        raise ValueError(f"{key} must not be empty")
+    return _require_nonempty(str(value), name=key)
+
+
+def _require_component_kind(value: object) -> ComponentKind:
+    kind = _require_nonempty(str(value or ""), name="kind")
+    if kind not in _VALID_COMPONENT_KINDS:
+        raise ValueError("kind must be a valid net-load component kind")
+    return kind  # type: ignore[return-value]
+
+
+def _optional_nonempty_text(value: object, *, name: str) -> str | None:
+    if value is None:
+        return None
+    return _require_nonempty(str(value), name=name)
+
+
+def _require_900_second_cadence(value: object) -> int:
+    if isinstance(value, bool) or not isinstance(value, int) or value != 900:
+        raise ValueError("timestep_seconds must be the 900-second IC-1 cadence")
+    return value
+
+
+def _validate_expected_node_id(node_id: str, expected_node_ids: Sequence[str] | None) -> None:
+    if expected_node_ids is None:
+        return
+    expected = tuple(_require_nonempty(item, name="expected_node_id") for item in expected_node_ids)
+    if node_id not in expected:
+        raise ValueError("component output artifact node_id must appear in expected_node_ids")
+
+
+def _stream_id_for_context_component(
+    context: NetLoadRealizationContext,
+    kind: ComponentKind,
+) -> str:
+    for stream in context.component_streams:
+        if stream.component == kind:
+            return stream.stream_id
+    raise ValueError("component output artifact kind must have a matching realization component stream")
+
+
+def _load_component_output_npz(
+    path: Path,
+    *,
+    expected: Mapping[str, str | None],
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, dict[str, object]]:
+    with np.load(path, allow_pickle=False) as data:
+        p_kw = _load_npz_float_vector(data, "p_kw")
+        q_kvar = _load_npz_float_vector(data, "q_kvar")
+        timestamps = _load_npz_datetime_vector(data, "timestamps")
+        for field_name, expected_value in expected.items():
+            observed = _optional_npz_text(data, field_name)
+            if observed is not None and observed != expected_value:
+                raise ValueError(f"component output artifact NPZ {field_name} must match the manifest")
+        if p_kw.shape != q_kvar.shape or p_kw.shape != timestamps.shape:
+            raise ValueError("component output artifact arrays must have identical one-dimensional shapes")
+        array_metadata = {
+            f"npz_{field_name}": observed
+            for field_name in expected
+            if (observed := _optional_npz_text(data, field_name)) is not None
+        }
+    return p_kw, q_kvar, timestamps, array_metadata
+
+
+def _load_npz_float_vector(data: np.lib.npyio.NpzFile, name: str) -> np.ndarray:
+    if name not in data.files:
+        raise ValueError(f"component output artifact NPZ missing required array {name}")
+    array = np.asarray(data[name], dtype=float)
+    if array.ndim != 1 or array.size == 0:
+        raise ValueError(f"component output artifact {name} must be a non-empty one-dimensional array")
+    if not np.isfinite(array).all():
+        raise ValueError(f"component output artifact {name} must contain only finite values")
+    return array
+
+
+def _load_npz_datetime_vector(data: np.lib.npyio.NpzFile, name: str) -> np.ndarray:
+    if name not in data.files:
+        raise ValueError(f"component output artifact NPZ missing required array {name}")
+    try:
+        array = np.asarray(data[name], dtype="datetime64[s]")
+    except (TypeError, ValueError) as exc:
+        raise ValueError("component output artifact timestamps must be datetime64-compatible") from exc
+    if array.ndim != 1 or array.size == 0:
+        raise ValueError("component output artifact timestamps must be a non-empty one-dimensional array")
+    return array
+
+
+def _optional_npz_text(data: np.lib.npyio.NpzFile, name: str) -> str | None:
+    if name not in data.files:
+        return None
+    array = np.asarray(data[name])
+    if array.shape != ():
+        raise ValueError(f"component output artifact NPZ {name} metadata must be scalar")
+    value = str(array.item())
+    return _require_nonempty(value, name=f"NPZ {name}")
 
 def _validate_bridge_capacity_provenance(record: Mapping[str, object] | None) -> dict[str, object] | None:
     if record is None:
@@ -2274,6 +2515,7 @@ def _register_id_matches_component_kind(register_id: str, kind: ComponentKind) -
         return register_id.startswith("FLEX-")
     return False
 
+
 def _normalized_blockers_by_kind(
     values: Mapping[str, Sequence[str]] | None,
 ) -> dict[str, tuple[str, ...]]:
@@ -2288,6 +2530,7 @@ def _normalized_blockers_by_kind(
             raise ValueError("missing_artifact_blockers values must not be empty")
         normalized[kind] = blocker_tuple
     return normalized
+
 
 def _skeletons_by_kind(registry: ComponentAdapterRegistry) -> dict[ComponentKind, ComponentAdapterSkeleton]:
     return {skeleton.kind: skeleton for skeleton in registry.skeletons}
