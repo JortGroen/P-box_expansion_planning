@@ -5,6 +5,7 @@ import gzip
 import json
 from pathlib import Path
 import shutil
+import subprocess
 import sys
 from typing import Any, Mapping, Sequence
 
@@ -12,7 +13,10 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from src.ev_model import materialize_ev_ic1_candidate_component_outputs
+from src.ev_model import (
+    ev_ic1_generic_component_output_loader_manifests,
+    materialize_ev_ic1_candidate_component_outputs,
+)
 
 
 DEFAULT_COMPONENT_INPUT_SCAFFOLD = Path(
@@ -29,6 +33,15 @@ DEFAULT_COMPONENT_OUTPUT_MANIFEST = Path(
 )
 DEFAULT_RECOVERY_CHECKPOINT = Path(
     "data/metadata/ev_adoption/e3_s2a_ev_component_output_recovery_preflight.json"
+)
+DEFAULT_ACCEPTED_ARTIFACT_INDEX = Path(
+    "data/metadata/ev_adoption/e2_s2_ev_ic1_accepted_artifact_index_preflight.json"
+)
+DEFAULT_GENERIC_LOADER_MANIFEST_DIR = Path(
+    "data/metadata/ev_adoption/generic_component_output_manifests"
+)
+DEFAULT_GENERIC_LOADER_PACKET = Path(
+    "data/metadata/ev_adoption/e3_s2a_ev_ic1_generic_component_output_manifest_packet.json"
 )
 DEFAULT_OUTPUT_DIR = Path("data/processed/elaad_profiles/component_outputs")
 RESTORE_INSTRUCTION = (
@@ -67,6 +80,19 @@ def _sha256_file(path: Path) -> str:
     return digest.hexdigest()
 
 
+def _repo_blob_or_file_sha256(base_dir: Path, relative_path: Path) -> str:
+    try:
+        blob = subprocess.check_output(
+            ["git", "-C", str(base_dir), "show", f"HEAD:{relative_path.as_posix()}"],
+            stderr=subprocess.DEVNULL,
+        )
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        return _sha256_file(base_dir / relative_path)
+    import hashlib
+
+    return hashlib.sha256(blob).hexdigest()
+
+
 def _require_output_records(manifest: Mapping[str, Any]) -> list[dict[str, Any]]:
     materialization = manifest.get("materialization")
     if not isinstance(materialization, dict):
@@ -86,7 +112,7 @@ def _require_output_records(manifest: Mapping[str, Any]) -> list[dict[str, Any]]
 def _write_json(path: Path, payload: Mapping[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp_path = path.with_name(f"{path.name}.tmp")
-    tmp_path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    tmp_path.write_bytes((json.dumps(payload, indent=2, sort_keys=True) + "\n").encode("utf-8"))
     tmp_path.replace(path)
 
 
@@ -519,6 +545,51 @@ def rebuild_and_verify_ev_component_outputs(
     return result
 
 
+def write_generic_loader_manifests(
+    *,
+    accepted_artifact_index: Mapping[str, Any],
+    recovery_preflight: Mapping[str, Any],
+    base_dir: Path,
+    manifest_directory: Path = DEFAULT_GENERIC_LOADER_MANIFEST_DIR,
+    packet_path: Path = DEFAULT_GENERIC_LOADER_PACKET,
+    accepted_artifact_index_path: Path = DEFAULT_ACCEPTED_ARTIFACT_INDEX,
+    recovery_preflight_path: Path = DEFAULT_RECOVERY_CHECKPOINT,
+) -> dict[str, object]:
+    """Write generic Agent A-loader EV manifests and their packet."""
+
+    index_sha = _repo_blob_or_file_sha256(base_dir, accepted_artifact_index_path)
+    recovery_sha = _repo_blob_or_file_sha256(base_dir, recovery_preflight_path)
+    initial = ev_ic1_generic_component_output_loader_manifests(
+        accepted_artifact_index,
+        recovery_preflight,
+        accepted_artifact_index_path=accepted_artifact_index_path.as_posix(),
+        accepted_artifact_index_sha256=index_sha,
+        recovery_preflight_path=recovery_preflight_path.as_posix(),
+        recovery_preflight_sha256=recovery_sha,
+        manifest_directory=manifest_directory.as_posix(),
+    )
+    manifest_sha_by_path: dict[str, str] = {}
+    for record in initial["scenario_manifests"]:
+        scenario = str(record["scenario"])
+        rel_path = Path(str(record["path"]))
+        manifest = initial["manifests_by_scenario"][scenario]
+        _write_json(base_dir / rel_path, manifest)
+        manifest_sha_by_path[rel_path.as_posix()] = _sha256_file(base_dir / rel_path)
+
+    final = ev_ic1_generic_component_output_loader_manifests(
+        accepted_artifact_index,
+        recovery_preflight,
+        accepted_artifact_index_path=accepted_artifact_index_path.as_posix(),
+        accepted_artifact_index_sha256=index_sha,
+        recovery_preflight_path=recovery_preflight_path.as_posix(),
+        recovery_preflight_sha256=recovery_sha,
+        manifest_directory=manifest_directory.as_posix(),
+        manifest_sha256_by_path=manifest_sha_by_path,
+    )
+    _write_json(base_dir / packet_path, final)
+    return final
+
+
 def _default_timestamp_utc() -> str:
     from datetime import UTC, datetime
 
@@ -528,17 +599,20 @@ def _default_timestamp_utc() -> str:
 def _parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=(
-            "Verify or rebuild ignored candidate-only EV component-output NPZs "
-            "from committed metadata. This command never fetches or regenerates "
-            "ElaadNL source data."
+            "Verify, rebuild, or write generic-loader manifests for ignored candidate-only "
+            "EV component-output NPZs from committed metadata. This command never fetches "
+            "or regenerates ElaadNL source data."
         )
     )
-    parser.add_argument("mode", choices=("verify", "rebuild"))
+    parser.add_argument("mode", choices=("verify", "rebuild", "write-loader-manifests"))
     parser.add_argument("--base-dir", type=Path, default=Path("."))
     parser.add_argument("--component-input-scaffold", type=Path, default=DEFAULT_COMPONENT_INPUT_SCAFFOLD)
     parser.add_argument("--checksum-preflight", type=Path, default=DEFAULT_CHECKSUM_PREFLIGHT)
     parser.add_argument("--selection-manifest-set", type=Path, default=DEFAULT_SELECTION_MANIFEST_SET)
     parser.add_argument("--component-output-manifest", type=Path, default=DEFAULT_COMPONENT_OUTPUT_MANIFEST)
+    parser.add_argument("--accepted-artifact-index", type=Path, default=DEFAULT_ACCEPTED_ARTIFACT_INDEX)
+    parser.add_argument("--generic-loader-manifest-dir", type=Path, default=DEFAULT_GENERIC_LOADER_MANIFEST_DIR)
+    parser.add_argument("--generic-loader-packet", type=Path, default=DEFAULT_GENERIC_LOADER_PACKET)
     parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT_DIR)
     parser.add_argument("--candidate-source-root", type=Path, default=None)
     parser.add_argument("--checkpoint-path", type=Path, default=DEFAULT_RECOVERY_CHECKPOINT)
@@ -556,7 +630,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                 component_output_manifest,
                 base_dir=base_dir,
             )
-        else:
+        elif args.mode == "rebuild":
             result = rebuild_and_verify_ev_component_outputs(
                 component_input_scaffold=_load_json(base_dir / args.component_input_scaffold),
                 checksum_preflight=_load_json(base_dir / args.checksum_preflight),
@@ -567,6 +641,16 @@ def main(argv: Sequence[str] | None = None) -> int:
                 timestamp_utc=args.timestamp_utc or _default_timestamp_utc(),
                 candidate_source_root=args.candidate_source_root,
                 checkpoint_path=args.checkpoint_path,
+            )
+        else:
+            result = write_generic_loader_manifests(
+                accepted_artifact_index=_load_json(base_dir / args.accepted_artifact_index),
+                recovery_preflight=_load_json(base_dir / args.checkpoint_path),
+                base_dir=base_dir,
+                manifest_directory=args.generic_loader_manifest_dir,
+                packet_path=args.generic_loader_packet,
+                accepted_artifact_index_path=args.accepted_artifact_index,
+                recovery_preflight_path=args.checkpoint_path,
             )
     except EVComponentOutputVerificationError as exc:
         print(str(exc))

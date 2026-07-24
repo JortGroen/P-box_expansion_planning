@@ -1448,6 +1448,42 @@ def test_d014_first_experiment_value_decision_packet_narrows_options_without_val
     assert path.name == "d014_pv_first_experiment_value_decision_packet.json"
     assert payload["status"].startswith("proposed_first_experiment_pv_value_decision_support")
 
+
+def test_d014_pv_component_output_artifact_scaffold_is_metadata_only(tmp_path: Path) -> None:
+    packet = pv_capacity.build_d014_pv_component_output_artifact_scaffold_packet()
+
+    assert packet["packet_id"] == "D014-PV-COMPONENT-OUTPUT-ARTIFACT-SCAFFOLD"
+    assert packet["data_id"] == "D-014"
+    assert packet["download_performed"] is False
+    assert packet["raw_data_committed"] is False
+    assert packet["component_output_generation_performed"] is False
+    assert packet["input_metadata"]["first_experiment_value_decision_packet"]["packet_id"] == (
+        "D014-PV-FIRST-EXPERIMENT-VALUE-DECISION-PACKET"
+    )
+    assert packet["input_metadata"]["executable_preflight_guard"]["packet_id"] == "D014-PV-EXECUTABLE-PREFLIGHT-GUARD"
+    assert len(packet["input_metadata"]["weather_input_artifact"]["sha256"]) == 64
+    assert packet["current_unsigned_packet_behavior"]["current_committed_d014_packets_are_executable"] is False
+    assert packet["current_unsigned_packet_behavior"]["result_if_current_packets_are_invoked"] == (
+        "abort_with_component_output_blocker_manifest"
+    )
+    schema = packet["future_component_output_manifest_schema"]
+    assert schema["manifest_kind"] == "pv_component_output_npz_manifest_for_ic1_loader"
+    assert {"p_kw", "q_kvar", "timestamps"} == set(schema["npz_required_arrays"])
+    assert "negative p_kw" in schema["ic1_sign_convention"]
+    assert "unsigned" in schema["q_kvar_policy"]
+    assert packet["future_runner_contract"]["writer_function"] == "src.pv_model.write_pv_component_output_npz_artifact"
+    assert packet["future_runner_contract"]["checkpoint_resume_policy"]
+    assert packet["executable_gate"]["component_output_generation_authorized"] is False
+    assert "PV-PARAM-001_or_signed_amendment" in packet["executable_gate"]["blocking_register_ids"]
+    assert "signed_pv_reactive_power_policy_or_q_zero_convention" in packet["pi_approval_keys_before_executable_use"]
+    assert "signed_component_output_manifest_path_policy" in packet["pi_approval_keys_before_executable_use"]
+    assert any("No real PV component-output" in item for item in packet["non_claims"])
+
+    path = pv_capacity.write_d014_pv_component_output_artifact_scaffold_packet(tmp_path)
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    assert path.name == "d014_pv_component_output_artifact_scaffold.json"
+    assert payload["status"].startswith("proposed_component_output_artifact_scaffold")
+
 def test_d014_orientation_tilt_value_choice_packet_lists_unsigned_candidate_values(tmp_path: Path) -> None:
     packet = pv_capacity.build_d014_pv_orientation_tilt_value_choice_packet()
 
