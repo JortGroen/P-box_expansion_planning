@@ -27,6 +27,7 @@ from src.contracts.net_load import (
     build_ic1_assembly_plan_from_registry,
     build_component_adapter_registry_from_artifacts,
     build_realization_context,
+    build_executable_loading_bridge_preflight,
     build_net_load_result,
     dry_run_integrated_input_preflight,
     net_load_component_from_adapter_output,
@@ -39,7 +40,7 @@ from src.contracts.net_load import (
     validate_executable_input_gate,
     validate_future_layer_screen_preflight,
 )
-from src.contracts.loading_trajectory import TimeDomain
+from src.contracts.loading_trajectory import LoadingTrajectoryPreRunConfig, TimeDomain
 from reports.e3_s2_generate_executable_readiness_preflight import _component_groups, _table_rows
 
 
@@ -2026,6 +2027,126 @@ def test_executable_assembly_scaffold_rejects_current_unsigned_project_readiness
             time_domain="window_set",
         )
     assert adapter.calls == 0
+
+
+def _trajectory_prerun_config() -> LoadingTrajectoryPreRunConfig:
+    return LoadingTrajectoryPreRunConfig(
+        config_id="synthetic-e3-s2-loading-bridge",
+        purpose="e3_s2b_future_layer_screen",
+        planning_years=(2030, 2033, 2035),
+        metadata={"scaffold_only": True},
+    )
+
+
+def _synthetic_capacity_provenance() -> dict[str, object]:
+    return {
+        "s_nom_agg_kva": 80000.0,
+        "convention_status": "pending_g1_a2_e3_s2b",
+        "source": "synthetic-transformer-denominator-fixture",
+        "metadata": {"no_capacity_convention_choice": True},
+    }
+
+
+def test_executable_loading_bridge_links_ic1_gate_to_ic2_prerun_metadata_only() -> None:
+    bridge = build_executable_loading_bridge_preflight(
+        _screen_preflight_config(),
+        _executable_input_artifacts(),
+        _trajectory_prerun_config(),
+        capacity_provenance=_synthetic_capacity_provenance(),
+    )
+
+    assert bridge["dry_run_only"] is True
+    assert bridge["metadata_preflight_only"] is True
+    assert bridge["ready_for_ic1_input_assembly"] is True
+    assert bridge["ready_for_synthetic_loading_manifest"] is True
+    assert bridge["ready_for_first_real_experiment"] is False
+    assert bridge["no_real_net_load_arrays"] is True
+    assert bridge["no_event_detection"] is True
+    assert bridge["no_event_counts"] is True
+    assert bridge["no_probability_estimate"] is True
+    assert bridge["no_capacity_screen_result"] is True
+    assert bridge["trajectory_prerun_manifest"]["governed_event_metadata"] == {
+        "basis": "G0-A3",
+        "primary_threshold_pu": 1.0,
+        "strict_import_loading_gt_threshold": True,
+        "sensitivity_thresholds_pu": (1.1, 1.2),
+        "min_consecutive_15_minute_steps": 4,
+        "not_evaluated_here": True,
+    }
+    assert bridge["manifest_fields"]["capacity_provenance"]["convention_status"] == "pending_g1_a2_e3_s2b"
+    assert bridge["blockers"]["downstream_gate_blockers"] == ("A-013", "G2", "G1-A2", "A-016")
+    assert "threshold_pu" not in bridge
+    assert "overload" not in bridge
+    assert "p_event" not in bridge
+
+
+def test_executable_loading_bridge_reports_current_real_project_blockers_fail_closed() -> None:
+    artifacts = _executable_input_artifacts()
+    artifacts[2] = _executable_input_artifact(
+        "hp",
+        artifact_status="unsigned",
+        signed_register_ids=("HP-001", "D-013", "WEATHER-001"),
+        blocking_register_ids=("D-013", "HP-SCENARIO-CONSISTENCY", "D004-PAIRED-ACCEPTANCE"),
+    )
+    artifacts[3] = _executable_input_artifact(
+        "pv",
+        artifact_status="unsigned",
+        signed_register_ids=("D004-SOURCE-MEMBER-ACCEPTANCE", "PV-CAP-001"),
+        blocking_register_ids=("PV-PARAM-001", "D-014", "PV-CAPACITY-VALUE"),
+    )
+
+    bridge = build_executable_loading_bridge_preflight(
+        _screen_preflight_config(),
+        artifacts,
+        _trajectory_prerun_config(),
+        capacity_provenance=None,
+    )
+
+    assert bridge["ready_for_ic1_input_assembly"] is False
+    assert bridge["ready_for_synthetic_loading_manifest"] is False
+    assert bridge["ready_for_first_real_experiment"] is False
+    assert bridge["blockers"]["component_artifact_blockers_by_kind"]["hp"] == (
+        "D-013",
+        "HP-SCENARIO-CONSISTENCY",
+        "D004-PAIRED-ACCEPTANCE",
+    )
+    assert bridge["blockers"]["component_artifact_blockers_by_kind"]["pv"] == (
+        "PV-PARAM-001",
+        "D-014",
+        "PV-CAPACITY-VALUE",
+    )
+    assert bridge["blockers"]["capacity_provenance_missing"] is True
+    assert bridge["executable_input_preflight"]["executable_input_gate"] is None
+    assert bridge["no_event_detection"] is True
+    assert bridge["no_probability_estimate"] is True
+
+
+def test_executable_loading_bridge_rejects_bad_bridge_metadata() -> None:
+    bad_capacity = {
+        "s_nom_agg_kva": 0.0,
+        "convention_status": "pending_g1_a2_e3_s2b",
+        "source": "synthetic",
+    }
+    with pytest.raises(ValueError, match="s_nom_agg_kva"):
+        build_executable_loading_bridge_preflight(
+            _screen_preflight_config(),
+            _executable_input_artifacts(),
+            _trajectory_prerun_config(),
+            capacity_provenance=bad_capacity,
+        )
+
+    mismatched_trajectory_config = LoadingTrajectoryPreRunConfig(
+        config_id="bad-years",
+        purpose="e3_s2b_future_layer_screen",
+        planning_years=(2035,),
+    )
+    with pytest.raises(ValueError, match="planning_years"):
+        build_executable_loading_bridge_preflight(
+            _screen_preflight_config(),
+            _executable_input_artifacts(),
+            mismatched_trajectory_config,
+            capacity_provenance=_synthetic_capacity_provenance(),
+        )
 
 
 def test_future_layer_screen_preflight_records_manifest_fields_without_results() -> None:

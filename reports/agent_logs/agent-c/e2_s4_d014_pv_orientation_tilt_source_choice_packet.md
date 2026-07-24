@@ -1,0 +1,3 @@
+# Agent C Log - E2.S4 D-014 PV Orientation/Tilt Source Choice
+
+2026-07-24: Prepared a proposed metadata-only source-choice packet for the PV-ORIENT-001 statistical orientation/tilt route. Added a fail-closed loader/tests, methods/register wording, and PI-facing memo. Heavy building-level PV-map/3DBAG per-roof work remains deferred until after the first real experiment. No raw D-014/PV-map/geometry data was downloaded, and no numeric orientation/tilt distribution, PV capacity, capacity convention, per-node allocation, PV-PARAM route, net-load, event, P(E), threshold, capacity-screen, manuscript, or final paired HP/PV result was produced.

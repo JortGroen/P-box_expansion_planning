@@ -13,6 +13,17 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Mapping, Sequence
 
+_FORBIDDEN_COLLAPSED_PROBABILITY_FIELDS = frozenset(
+    {
+        "defuzzified_probability",
+        "expected_probability",
+        "mean_probability",
+        "p_hat",
+        "p_mid",
+        "probability",
+    }
+)
+
 
 class PaperFacingResultKind(str, Enum):
     """B-owned result surfaces that need final-result prerequisite checks."""
@@ -147,21 +158,27 @@ def assert_alpha_indexed_probability_report(
         "ci_upper_lower",
         "ci_upper_upper",
     }
-    seen_alpha: set[float] = set()
+    previous_alpha: float | None = None
     for row in probability_rows:
         missing = required.difference(row)
         if missing:
             raise ValueError(f"probability row is missing fields: {sorted(missing)}")
-        if "defuzzified_probability" in row or "p_hat" in row:
-            raise ValueError("paper-facing probability rows must not collapse the p-box")
-        alpha = float(row["alpha"])
-        if alpha in seen_alpha:
-            raise ValueError("alpha rows must be unique")
-        seen_alpha.add(alpha)
+        collapsed_fields = sorted(_FORBIDDEN_COLLAPSED_PROBABILITY_FIELDS.intersection(row))
+        if collapsed_fields:
+            raise ValueError(
+                "paper-facing probability rows must not collapse the p-box: "
+                f"{collapsed_fields}"
+            )
         values = {name: float(row[name]) for name in required}
         for name, value in values.items():
             if not math.isfinite(value) or not 0.0 <= value <= 1.0:
                 raise ValueError(f"{name} must be finite and in [0, 1]")
+        alpha = values["alpha"]
+        # Strict ordering makes serialized alpha-cut tables deterministic and
+        # prevents duplicate rows from being mistaken for separate evidence.
+        if previous_alpha is not None and alpha <= previous_alpha:
+            raise ValueError("alpha rows must be strictly increasing")
+        previous_alpha = alpha
         if values["p_lower"] > values["p_upper"]:
             raise ValueError("expected p_lower <= p_upper")
         if not values["ci_lower_lower"] <= values["p_lower"] <= values["ci_lower_upper"]:

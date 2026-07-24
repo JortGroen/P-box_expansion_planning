@@ -11,6 +11,8 @@ D014_PACKET_NAME = "d014_pv_capacity_source_value_packet.json"
 D014_PACKET_ID = "D014-PV-CAPACITY-SOURCE-VALUE-PACKET"
 D014_STATISTICAL_ORIENTATION_TILT_NAME = "d014_pv_statistical_orientation_tilt_packet.json"
 D014_STATISTICAL_ORIENTATION_TILT_ID = "D014-PV-STATISTICAL-ORIENTATION-TILT-PACKET"
+D014_ORIENTATION_TILT_SOURCE_CHOICE_NAME = "d014_pv_orientation_tilt_source_choice_packet.json"
+D014_ORIENTATION_TILT_SOURCE_CHOICE_ID = "D014-PV-ORIENTATION-TILT-SOURCE-CHOICE-PACKET"
 D014_DATA_ID = "D-014"
 CBS_TABLE_ID = "85005NED"
 CBS_ODATA_BASE = f"https://opendata.cbs.nl/ODataApi/OData/{CBS_TABLE_ID}"
@@ -25,6 +27,11 @@ THREEDBAG_API_DOCS_URL = "https://api.3dbag.nl/api.html"
 THREEDBAG_COPYRIGHT_URL = "https://docs.3dbag.nl/en/copyright/"
 PVGIS_API_DOCS_URL = "https://joint-research-centre.ec.europa.eu/photovoltaic-geographical-information-system-pvgis/using-pvgis-5/api-non-interactive-service_en"
 PVLIB_MODELCHAIN_URL = "https://pvlib-python.readthedocs.io/en/stable/user_guide/modeling_topics/modelchain.html"
+KILLINGER_2018_DOI_URL = "https://doi.org/10.1016/j.solener.2018.08.051"
+KILLINGER_2018_UU_URL = "https://research-portal.uu.nl/en/publications/on-the-search-for-representative-characteristics-of-pv-systems-da/"
+RAMADHANI_2023_DOI_URL = "https://doi.org/10.1016/j.seja.2023.100036"
+UTRECHT_PV_FORECASTING_DOI_URL = "https://doi.org/10.1016/j.renene.2021.09.067"
+JRC_DBSM_NATURE_URL = "https://www.nature.com/articles/s41560-025-01947-x"
 ALKMAAR_GM_CODE = "GM0361"
 PLANNING_YEAR = 2035
 
@@ -376,6 +383,219 @@ def build_d014_pv_statistical_orientation_tilt_packet() -> dict[str, Any]:
     }
 
 
+def build_d014_pv_orientation_tilt_source_choice_packet() -> dict[str, Any]:
+    """Return a proposed source-choice packet for statistical PV geometry.
+
+    This packet identifies candidate evidence for a typical/statistical
+    orientation-and-tilt distribution. It does not select numeric class bins,
+    class weights, conversion treatment, capacity values, or allocation.
+    """
+    approval_keys = [
+        "orientation_tilt_distribution_source_id",
+        "source_access_and_license_or_citation_boundary",
+        "orientation_class_bin_definitions",
+        "tilt_class_bin_definitions",
+        "class_weight_values",
+        "class_weight_basis_capacity_installation_area_or_assumption",
+        "azimuth_angle_convention",
+        "tilt_angle_convention",
+        "pv_conversion_treatment_for_classes",
+        "pv_param_001_or_amended_conversion_decision",
+        "d014_capacity_value_artifact",
+        "node_allocation_rule",
+    ]
+    return {
+        "packet_id": D014_ORIENTATION_TILT_SOURCE_CHOICE_ID,
+        "data_id": D014_DATA_ID,
+        "created_utc": _now_utc_iso(),
+        "status": "proposed_source_choice_packet_no_raw_download_no_executable_values",
+        "download_performed": False,
+        "raw_data_committed": False,
+        "approved_scope_decision": "PV-ORIENT-001",
+        "first_experiment_scope": {
+            "statistical_orientation_tilt_classes_only": True,
+            "heavy_building_level_pv_map_deferred": True,
+            "roof_or_location_level_extraction_allowed_now": False,
+            "specific_3dbag_per_roof_workflow_allowed_now": False,
+        },
+        "recommended_source_order_for_pi_review": [
+            {
+                "rank": 1,
+                "source_id": "killinger_2018_pv_system_characteristics",
+                "recommendation": "primary empirical source candidate if the needed country/cluster distribution parameters are accessible and citable",
+                "source_backing": "published PV-system metadata analysis across Europe and other regions; includes tilt, azimuth, capacity, yield, and distribution-function approximations",
+                "assumption_boundary": "must still extract or cite the exact Netherlands-relevant class parameters before executable use",
+            },
+            {
+                "rank": 2,
+                "source_id": "utrecht_rooftop_pv_observed_systems",
+                "recommendation": "local Dutch plausibility and validation context, not primary weights unless the PI accepts the small/regional sample",
+                "source_backing": "published study of rooftop PV systems in Utrecht province with observed orientation and tilt ranges/distribution figure",
+                "assumption_boundary": "may not represent Alkmaar or 2035 fleet composition without PI judgement",
+            },
+            {
+                "rank": 3,
+                "source_id": "ramadhani_2023_rooftop_uncertainty_method",
+                "recommendation": "method template for statistical azimuth/tilt uncertainty if empirical Netherlands weights are unavailable",
+                "source_backing": "open-access rooftop-facet uncertainty study using distributions for hosting-capacity modelling",
+                "assumption_boundary": "Swedish roof-facet evidence is not a Dutch installed-PV distribution; using it would be an explicit transfer assumption",
+            },
+            {
+                "rank": 4,
+                "source_id": "pi_declared_simple_class_prior",
+                "recommendation": "fallback only if the PI wants a transparent assumption rather than more source work before the first experiment",
+                "source_backing": "assumption-only until PI signs bins and weights",
+                "assumption_boundary": "must be labelled as expert/PI prior, not empirical source evidence",
+            },
+        ],
+        "source_candidates": [
+            {
+                "source_id": "killinger_2018_pv_system_characteristics",
+                "title": "On the search for representative characteristics of PV systems",
+                "url": KILLINGER_2018_DOI_URL,
+                "secondary_url": KILLINGER_2018_UU_URL,
+                "source_type": "peer_reviewed_empirical_pv_system_metadata",
+                "can_support": [
+                    "typical/statistical tilt and azimuth distribution source candidate",
+                    "capacity/yield metadata context for weighting decisions",
+                    "distribution-function route rather than per-building geometry",
+                ],
+                "cannot_support": [
+                    "Alkmaar-specific installed capacity total",
+                    "node allocation",
+                    "automatic executable bins or weights before extraction and PI signoff",
+                ],
+                "current_packet_role": "source candidate only; no values extracted",
+            },
+            {
+                "source_id": "utrecht_rooftop_pv_observed_systems",
+                "title": "Operational day-ahead solar power forecasting for aggregated PV systems with a varying spatial distribution",
+                "url": UTRECHT_PV_FORECASTING_DOI_URL,
+                "source_type": "peer_reviewed_dutch_regional_observed_pv_context",
+                "can_support": [
+                    "Dutch rooftop PV orientation/tilt plausibility checks",
+                    "sanity bounds for class choices if the PI signs use of a small regional sample",
+                ],
+                "cannot_support": [
+                    "national or Alkmaar fleet-wide class weights by itself",
+                    "capacity convention or 2035 scaling",
+                    "building-level extraction under PV-ORIENT-001",
+                ],
+                "current_packet_role": "local context candidate only; no values extracted",
+            },
+            {
+                "source_id": "ramadhani_2023_rooftop_uncertainty_method",
+                "title": "On the properties of residential rooftop azimuth and tilt uncertainties for photovoltaic power generation modeling and hosting capacity analysis",
+                "url": RAMADHANI_2023_DOI_URL,
+                "source_type": "open_access_rooftop_uncertainty_method_template",
+                "can_support": [
+                    "statistical distribution-method template for hosting-capacity style PV studies",
+                    "source-backed argument that orientation/tilt uncertainty matters",
+                ],
+                "cannot_support": [
+                    "Dutch installed-PV class weights without a transfer assumption",
+                    "first-experiment building-level roof extraction",
+                    "D-014 capacity value or PV conversion parameters",
+                ],
+                "current_packet_role": "method candidate only; transfer assumption would need PI approval",
+            },
+            {
+                "source_id": "pvgis_reference",
+                "title": "PVGIS API/reference configurations",
+                "url": PVGIS_API_DOCS_URL,
+                "source_type": "solar_resource_and_pv_reference_tool",
+                "can_support": [
+                    "class-wise qualitative sanity checks after class bins are signed",
+                    "comparison with normalized PVGIS outputs for selected orientations if approved",
+                ],
+                "cannot_support": [
+                    "statistical class weights",
+                    "realized WEATHER-001 path",
+                    "installed capacity or node allocation",
+                ],
+                "current_packet_role": "sanity/provenance only",
+            },
+            {
+                "source_id": "pvlib_conversion_candidate",
+                "title": "pvlib modelchain or equivalent transparent PV conversion",
+                "url": PVLIB_MODELCHAIN_URL,
+                "source_type": "implementation_route_not_data_source",
+                "can_support": [
+                    "future class-wise plane-of-array conversion if dependency/formula is approved",
+                    "transparent separation of weather, geometry, module, and inverter assumptions",
+                ],
+                "cannot_support": [
+                    "orientation/tilt source data or weights",
+                    "PV capacity values",
+                    "approval of PR=0.86/direct-GHI",
+                ],
+                "current_packet_role": "conversion implementation candidate only",
+            },
+            {
+                "source_id": "jrc_dbsm_or_3dbag_deferred_building_level_work",
+                "title": "JRC/DBSM, 3DBAG, or other building-level PV-map routes",
+                "url": JRC_DBSM_NATURE_URL,
+                "source_type": "post_first_experiment_roof_or_building_geometry_context",
+                "can_support": [
+                    "later sensitivity, validation, or source-discovery work after explicit approval",
+                ],
+                "cannot_support": [
+                    "first real experiment orientation/tilt source under PV-ORIENT-001",
+                    "near-term per-building allocation or roof extraction",
+                ],
+                "current_packet_role": "explicitly deferred future improvement",
+            },
+        ],
+        "proposed_class_artifact_requirements": {
+            "artifact_id": "d014_pv_orientation_tilt_class_source_choice",
+            "executable_allowed_now": False,
+            "required_columns_after_pi_signoff": [
+                "class_id",
+                "orientation_bin_label",
+                "azimuth_angle_convention",
+                "tilt_bin_label",
+                "representative_azimuth_degrees_or_formula",
+                "representative_tilt_degrees_or_formula",
+                "capacity_weight_fraction",
+                "weight_basis",
+                "source_id",
+                "source_value_trace",
+            ],
+            "required_invariants_after_pi_signoff": [
+                "class weights are finite and nonnegative",
+                "class weights sum to one within tolerance signed by PI",
+                "azimuth and tilt conventions are explicit",
+                "all values trace to a source row/table/figure or to an approved assumption ID",
+                "capacity totals still come from D-014/PV-CAP-001 rather than the class source",
+                "PV conversion remains blocked until PV-PARAM-001 or an amended decision is signed",
+            ],
+        },
+        "source_backing_summary": {
+            "source_backed_now": [
+                "candidate literature/source identities and roles",
+                "PV-ORIENT-001 scope excluding heavy roof-level work",
+                "D-014/PV-CAP-001 separation of capacity from orientation/tilt",
+            ],
+            "assumption_or_pi_choice_needed": [
+                "which candidate source to use as primary",
+                "exact class bins and representative angles",
+                "exact class weights and weighting basis",
+                "whether statistical classes modify conversion through plane-of-array factors or remain metadata until a later PV-PARAM amendment",
+                "whether a PI-declared prior is acceptable if empirical weights are not extracted before the first experiment",
+            ],
+        },
+        "pi_approval_keys_before_executable_use": approval_keys,
+        "non_claims": [
+            "No source candidate is selected as final.",
+            "No orientation or tilt class bins, representative angles, or weights are approved.",
+            "No raw source, PV-map, roof, building, or location-level geometry data was downloaded.",
+            "No 3DBAG per-roof or heavy building-level workflow is implemented before the first real experiment.",
+            "No PV capacity, growth factor, capacity convention, per-node allocation, PR=0.86, direct-GHI formula, or plane-of-array conversion is approved.",
+            "No net-load, event detection, P(E), threshold run, capacity screen, manuscript result, or final paired HP/PV acceptance is produced.",
+        ],
+    }
+
+
 def write_d014_pv_capacity_source_value_packet(metadata_dir: str | Path = "data/metadata") -> Path:
     """Write the proposed D-014 source/value packet and return its path."""
     directory = Path(metadata_dir) / "weather_pv"
@@ -397,14 +617,29 @@ def write_d014_pv_statistical_orientation_tilt_packet(metadata_dir: str | Path =
     return path
 
 
+def write_d014_pv_orientation_tilt_source_choice_packet(metadata_dir: str | Path = "data/metadata") -> Path:
+    """Write the proposed orientation/tilt source-choice packet and return its path."""
+    directory = Path(metadata_dir) / "weather_pv"
+    directory.mkdir(parents=True, exist_ok=True)
+    path = directory / D014_ORIENTATION_TILT_SOURCE_CHOICE_NAME
+    path.write_text(
+        json.dumps(build_d014_pv_orientation_tilt_source_choice_packet(), indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    return path
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Prepare D-014 PV capacity source/value metadata.")
     parser.add_argument("--metadata-dir", default="data/metadata")
     parser.add_argument("--write-d014-source-value-packet", action="store_true")
     parser.add_argument("--write-d014-statistical-orientation-tilt", action="store_true")
+    parser.add_argument("--write-d014-orientation-tilt-source-choice", action="store_true")
     args = parser.parse_args(argv)
 
-    if args.write_d014_statistical_orientation_tilt:
+    if args.write_d014_orientation_tilt_source_choice:
+        path = write_d014_pv_orientation_tilt_source_choice_packet(args.metadata_dir)
+    elif args.write_d014_statistical_orientation_tilt:
         path = write_d014_pv_statistical_orientation_tilt_packet(args.metadata_dir)
     else:
         path = write_d014_pv_capacity_source_value_packet(args.metadata_dir)
